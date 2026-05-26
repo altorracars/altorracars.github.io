@@ -45,7 +45,8 @@ se lee on-demand cuando un trigger lo exige. Así no quemas contexto.
 | Nodo neuronal | Archivo | Auto-carga | Cuándo leerlo |
 |---|---|---|---|
 | 🧠 **Tronco Encefálico** | `CLAUDE.md` (este) | ✅ Siempre | Router + identidad + doctrinas + gobernanza. |
-| ⚡ **Corto Plazo (WIP)** | `docs/10-MEMORIA-CORTO-PLAZO.md` | ✅ Siempre (2ª lectura) | Sprint actual, pendientes (TODO-NN), cache version, estado vivo. |
+| 🩺 **Estado Global (signos vitales)** | `docs/05-ESTADO-GLOBAL.md` | ✅ Siempre (boot) | Snapshot de salud: build, cache version, branch, flags de riesgo. "¿Dónde estoy parado?" antes de tocar nada. |
+| ⚡ **Corto Plazo (WIP)** | `docs/10-MEMORIA-CORTO-PLAZO.md` | ✅ Siempre (2ª lectura) | Sprint actual, pendientes (TODO-NN), bitácora. (El estado técnico vive en 05.) |
 | 🗺️ **Espacial** | `docs/20-MEMORIA-ESPACIAL.md` | ❌ on-demand | Trigger de Desorientación: dónde vive un componente, flujos, arquitectura, SEO, migración. |
 | 🧪 **Procedimental (experiencia)** | `docs/30-LECCIONES.md` | ❌ on-demand | Trigger de Experiencia: ANTES de una op riesgosa/repetitiva (mover archivos, merge, cron, cache) o si un síntoma "te suena". Gotchas + recetas. |
 | 🗂️ **Índice sináptico** | `docs/00-INDICE.md` | ❌ on-demand | ANTES de leer el historial (offset exacto) Y para el enrutamiento semántico (síntoma → neurona). |
@@ -191,8 +192,9 @@ consolidas. **Es vinculante.**
 
 Al iniciar una conversación nueva estás **estrictamente obligado** a leer SOLO:
 
-1. `CLAUDE.md` (este — auto-cargado).
-2. `docs/10-MEMORIA-CORTO-PLAZO.md` (el WIP vivo).
+1. `CLAUDE.md` (este — auto-cargado): quién eres + cómo operar.
+2. `docs/05-ESTADO-GLOBAL.md`: en qué estado está el sistema AHORA (build, versión, branch, riesgos).
+3. `docs/10-MEMORIA-CORTO-PLAZO.md` (el WIP vivo): en qué estabas trabajando.
 
 **IGNORA el resto del cerebro** (Espacial, Índice, Largo Plazo y hojas de
 detalle) para ahorrar tokens, A MENOS que un trigger (G.2) o una petición
@@ -256,12 +258,17 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
 - **Reflejo de Frescura**: si mueves/creas/renombras/eliminas un componente, ruta o
   flujo, actualiza `20-ESPACIAL` (+ hoja de detalle afectada) en el MISMO cambio.
   Una neurona vieja engaña al próximo "tú" → reproceso/regresión.
-- **Reflejo de Higiene**: `10-CORTO-PLAZO` es pizarra, no archivo (~1 pantalla). Al
-  cerrar una tarea: consolida el desenlace a `99`, extrae lecciones a `30`, y RECORTA
-  el corto plazo al foco vivo.
-- **Reflejo de Auto-auditoría (arranque)**: tras leer CLAUDE.md + Corto Plazo,
-  verifica BARATO (sin escanear todo): ¿corto plazo sobrecargado? ¿tarea cerrada sin
-  consolidar? Si sí, propón/ejecuta la limpieza.
+- **Reflejo de Higiene = Garbage Collector (cuantificado, no opcional)**:
+  `10-CORTO-PLAZO` es pizarra (cap ~110, §G.5). **Al cerrar una tarea, si `10`
+  supera su cap → PODA OBLIGATORIA** (mantenimiento preventivo, como un GC):
+  (1) consolida cada tarea CERRADA como ADR §NN en `99` + fila en `00-INDICE`,
+  (2) extrae sus lecciones a `30`, (3) actualiza `05` si cambió el estado, (4) recorta
+  `10` dejando SOLO el foco vivo + pendientes abiertos. ⛔ Nunca volcar a `99` sin
+  convertir en ADR (eso es basura, no consolidación).
+- **Reflejo de Auto-auditoría (arranque)**: tras leer CLAUDE.md + `05-ESTADO-GLOBAL`
+  + Corto Plazo, verifica BARATO (sin escanear todo): ¿`05` desactualizado? ¿`10`
+  sobre su cap? ¿tarea cerrada sin consolidar? Si sí, propón/ejecuta la limpieza
+  ANTES de empezar la tarea nueva.
 - **Reflejo de Auto-mejora**: si detectas fricción (re-investigaste algo ya sabido,
   una neurona dio info vieja, faltó un índice o lección), MEJORA el cerebro ahí
   mismo: crea lo que faltaba. El cerebro aprende de sus propios tropiezos.
@@ -280,7 +287,8 @@ carga. El tope es BLANDO (señal de acción, no muro):
 | Neurona | Carga | Tope | Al acercarse al tope |
 |---|---|---|---|
 | `CLAUDE.md` | 🔴 auto (siempre) | ~300 líneas | Mover detalle a su neurona. JAMÁS crece con historial/tareas/cache. |
-| `10-CORTO-PLAZO` | 🔴 auto (siempre) | ~110 líneas | Higiene §G.4: consolidar a `99`/`30`, recortar al foco vivo. |
+| `05-ESTADO-GLOBAL` | 🔴 auto (siempre) | ~25 líneas | Es un tablero, no bitácora. Solo señales vitales actuales (pisar, no apilar). |
+| `10-CORTO-PLAZO` | 🔴 auto (siempre) | ~110 líneas | Higiene §G.4 (GC): consolidar a `99`/`30`, recortar al foco vivo. |
 | `20-ESPACIAL` | 🟡 on-demand entera | ~280 líneas | Shard: extraer sub-área a neurona hermana (ej. `21-ESPACIAL-ADMIN.md`). |
 | `30-LECCIONES` | 🟡 on-demand entera | ~350 líneas | Shard por categoría (ej. `31-LECCIONES-GIT.md`). |
 | `00-INDICE` | 🟡 on-demand | ~450 líneas | Es tabla escaneable; dividir el mapa § por rangos si molesta. |
@@ -299,7 +307,7 @@ conoce, el cerebro está roto.** La conexión ES tan importante como el contenid
 ## §7 — Cómo retomar en una sesión nueva
 
 1. **Recuerda quién eres** → §0.0 (constructor y guardián; este cerebro es tu memoria).
-2. Lee `CLAUDE.md` (auto-cargado) + `docs/10-MEMORIA-CORTO-PLAZO.md` (Ignorancia Selectiva §G.1) + **auto-auditoría barata** (§G.4: ¿corto plazo sobrecargado / tarea cerrada sin consolidar?).
+2. Lee `CLAUDE.md` + `docs/05-ESTADO-GLOBAL.md` (signos vitales) + `docs/10-MEMORIA-CORTO-PLAZO.md` (Ignorancia Selectiva §G.1) + **auto-auditoría barata** (§G.4: ¿05 viejo / corto plazo sobre cap / tarea cerrada sin consolidar?).
 3. Si el cliente pregunta "¿qué hay pendiente?" → tabla TODO-NN del Corto Plazo.
 4. Si te desorientas → Espacial `20` [§G.2]. Antes de una op riesgosa/repetitiva → Lecciones `30` [§G.2]. Duda → enrutamiento semántico del Índice `00`.
 5. Si fallas 2× un bug o necesitas detalle de un § → Índice → Largo Plazo [§G.2 / regla de oro §0].

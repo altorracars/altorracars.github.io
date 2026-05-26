@@ -3,7 +3,8 @@
 > **Nodo neuronal: Memoria a Corto Plazo.** Junto con `CLAUDE.md`, este es
 > el ÚNICO archivo que lees al iniciar cada sesión (Directiva de Ignorancia
 > Selectiva, ver `CLAUDE.md §G`). Contiene SOLO lo vivo: en qué trabajamos
-> hoy, pendientes abiertos, versión de cache y estado de planes.
+> hoy, pendientes abiertos y bitácora. (El estado técnico —cache, branch, build—
+> vive en `docs/05-ESTADO-GLOBAL.md`.)
 >
 > **Regla de consolidación**: cuando una tarea se cierra por completo, su
 > "recuerdo" se MUEVE de aquí al nodo de Largo Plazo (`docs/99-HISTORIAL-ADR.md`
@@ -57,8 +58,7 @@
   - **Decisión tomada**: subcarpetas DENTRO de `js/` y `css/` (ej. `js/core/`), NO un `assets/` nuevo → menos rutas tocadas, mismo beneficio.
   - **NO tocar**: `snippets/` (runtime `fetch()` en components.js), `v/` (links de compartir externos), `admin.html` monolito (refactor aparte), toolchain (bun+npm cumplen roles distintos).
 - **Última acción previa**: ✅ Arquitectura Documental Neuronal cerrada como ADR §118.
-- **Branch activa**: `refactor/estructura` (verificar con `git branch --show-current`).
-- **Cache version actual**: `v20260525010000` — el siguiente bump debe ser MAYOR (formato `vYYYYMMDDHHMMSS`).
+- **Estado técnico (build, cache version, branch, riesgos)** → vive en `docs/05-ESTADO-GLOBAL.md` (fuente única, evita duplicado stale).
 
 ---
 

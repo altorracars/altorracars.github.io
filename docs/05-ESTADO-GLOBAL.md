@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-29) |
 |---|---|
-| **Build** | 🟢 SP-1 + SP-5.0 polish en producción. SP-5.0.e+f working tree: tombstone clearedAt + initTrail self-contained (lee localStorage directo, bypassea vehicleHistory state) + SW networkFirst para /js/core/* y /js/public/home/* (evita stale-while-revalidate sirviendo JS viejo en detail pages). |
-| **Cache version vigente** | `v20260530200000` (bumpeado en SP-5.0.f SW+initTrail rewrite) |
+| **Build** | 🟢 SP-1 cinematic + SP-5.0 polish completo (rounds a→f) en producción. Rastro saga cerrada (ADR §124, L-14/L-15, M-04). Foco: evaluando propuesta Omni-Brain (Gemini 3.1 Pro vía Antigravity) — análisis crítico + plan pendiente de aprobación. |
+| **Cache version vigente** | `v20260530200000` (estable post-SP-5.0.f) |
 | **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
 | **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

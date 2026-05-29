@@ -11,13 +11,19 @@
 
 ## 🎯 Foco actual
 
-- **REDISEÑO TOTAL — Fase 1 entregada** (SP-1 ✅ + SP-2 ✅ + SP-3 ✅; ADR §122 SP-1
-  consolidado). Index cinematic vanilla listo para producción tras E2E del cliente +
-  fusión por PR. Lecciones extraídas: **L-11/L-12/L-13** (port class-fidelity,
-  teardown en re-render, lazy modules + delegación).
-- **Próximo (no urgente)**: Fase 2 = **SP-4 + SP-5**.
-  - **SP-4** motor de recomendaciones (ranking real para "Tu rastro"/Recomendados — hoy placeholder cubierto con destacados+ranked) + analytics de carruseles para alimentar el ranking.
-  - **SP-5** resto de páginas con tema cinematic (catálogo, detalle, marca, simulador, comparar, favoritos) + promover `home-chrome.js` a chrome global multi-página.
+- **REDISEÑO Fase 1 + polish SP-5.0 COMPLETOS en producción** (ADR §122 + §124).
+  Index cinematic vanilla funcionando, rastro arreglado, todos los rounds de hotfix
+  consolidados. Lecciones extraídas: **L-11/L-12/L-13** (port + teardown + lazy) +
+  **L-14/L-15** (SW networkFirst + self-contained reads) + **M-03/M-04** (Reflejo de
+  Cierre + verificar fuente de verdad real, no solo código de aplicación).
+- **EN EVALUACIÓN AHORA** — propuesta **Omni-Brain** (Gemini 3.1 Pro vía Antigravity):
+  añadir Lóbulos de Dominio (40-SEGURIDAD, 50-LEGAL, 60-UX, 70-ESCALABILIDAD, etc.) +
+  Trigger de Auditoría + Neurogénesis activa bajo demanda + posible renombre `docs/` →
+  `CEREBRO/`. Pendiente análisis crítico + veredicto + plan + aprobación del cliente
+  antes de ejecutar.
+- **Diferido (Fase 2, no urgente tras Omni-Brain)**: **SP-4** motor recomendaciones
+  real (ranking GA-based para "Tu rastro"/Recomendados) + **SP-5** resto de páginas
+  con tema cinematic + promover `home-chrome.js` a chrome global multi-página.
 
 ---
 

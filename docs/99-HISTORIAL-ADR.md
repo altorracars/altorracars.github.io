@@ -41979,3 +41979,94 @@ Cero código, cero schema, cero deploy backend. Brain edit puro. CLAUDE.md manti
 
 ### 123.4 Doctrina
 Gobernanza §G + Reflejo de Autocrítica. M-03 cierra el bucle: usar → criticar → corregir = madurez. Los principios sin disparador concreto en el momento crítico = teoría sin práctica.
+
+---
+
+## 124. ADR-124 — SP-5.0 rastro saga (4 rounds c→f): visitas + tombstone + SW networkFirst + initTrail self-contained
+
+> "Esta funcionando terrible" → 4 rounds → "ahora si se corrigió". 3 hipótesis equivocadas antes de cazar las dos causas raíz reales.
+
+### 124.1 Causa raíz
+Bug reportado por el cliente tras SP-5.0 deploy: el rastro de visitas no funcionaba consistentemente. Visitar vehículo → volver al index → trail vacío o con phantom visits (vehículos que el cliente nunca visitó). Tras 3 hotfixes que fallaron, RCA §19 encontró DOS causas estructurales simultáneas:
+
+1. **SW `stale-while-revalidate` para JS critical-path** (`service-worker.js:125`): el SW cacheaba `historial-visitas.js` y servía la versión VIEJA en páginas de detalle aunque el index hubiera refreshed. El fix de `_saveToLocalStorage` sync no llegaba a las páginas de detalle hasta el SIGUIENTE deploy + nav (cache update en background).
+2. **`initTrail` dependía de `vehicleHistory._history` en memoria**: race conditions entre `setUser → _loadFromFirestore → _mergeHistory` y `addToHistory` corromían el estado. El render usaba un snapshot stale aunque localStorage tuviera la verdad.
+
+### 124.2 Solución estructural (4 rounds)
+- **SP-5.0.c** — `addToHistory` y `removeFromHistory` ahora llaman `_saveToLocalStorage()` sync antes del `_debouncedSync(1500ms)`. (Necesario pero no suficiente — el detalle page seguía con código viejo via SW.)
+- **SP-5.0.d** — `initTrail.renderTrailNow` forzaba `_loadFromLocalStorage` antes de `hasHistory()`. (Necesario pero seguía dependiendo de vehicleHistory state.)
+- **SP-5.0.e** — Tombstone `clearedAt` en localStorage. `clearHistory` escribe `altorra_vehicle_history_cleared_at = Date.now()`. `_mergeHistory` filtra Firestore items con `timestamp < clearedAt`. Previene phantom visits de Firestore que la sync async no alcanzó a borrar antes de la navegación.
+- **SP-5.0.f** — Fix radical y definitivo:
+  - `service-worker.js` STRATEGY 3.5: `networkFirst` para `/js/core/*` y `/js/public/home/*`. JS critical-path siempre fresh del network, cache solo offline fallback.
+  - `home-carousels.js initTrail` REESCRITO: lee `localStorage.altorra_vehicle_history` directamente con filtro tombstone aplicado en la lectura. Cero dependencia de vehicleHistory class state. Bypassea TODAS las race conditions.
+
+### 124.3 No-regresión
+- API pública de vehicleHistory intacta (clearHistory, addToHistory, removeFromHistory, getHistory, hasHistory). Otros consumers (admin, etc.) no afectados.
+- vehicleDB.getVehicleById sin cambios. Solo el SHAPE de invocación cambió (initTrail ahora llama directo en vez de vía `vehicleHistory.getHistory()`).
+- `node -c` exit 0 en ambos archivos modificados.
+- Cache bumps acumulados v20260530140000 → v20260530200000 (4 bumps).
+- Cero deploy backend. Cero schema.
+
+### 124.4 Tests E2E
+4 rondas de test del cliente, cada una terminando en bug report o "funciona". Round final SP-5.0.f confirmado funcionando: limpiar rastro → visitar vehículos → volver al index → trail con vehículos reales, sin phantoms.
+
+### 124.5 Anti-patterns evitados + lecciones nuevas
+- **L-14** — SW stale-while-revalidate puede servir JS viejo en critical-path post-deploy.
+- **L-15** — Self-contained read patterns eliminan races de estado en memoria.
+- **§19 RCA reforzado** — las primeras 3 rondas fueron hipótesis equivocadas. Solo cuando LEÍ el SW (no asumido) encontré la causa raíz real. Lección dura: la regla "verificar leyendo" aplica también al SW, no solo al código de aplicación.
+
+### 124.6 Archivos modificados / INTACTOS
+**Modificados:** `js/public/home/home-carousels.js` (initTrail rewriting), `js/core/historial-visitas.js` (immediate save + tombstone), `service-worker.js` (STRATEGY 3.5 + cache bumps), `js/core/cache-manager.js` (4 bumps), `docs/05-ESTADO-GLOBAL.md`.
+
+**INTACTOS:** vehicleHistory class API pública, vehicleDB, detail pages template + cron, todos los demás consumers de los módulos tocados.
+
+### 124.7 Doctrina aplicada + cache bump
+- §19 RCA estricto (verificar leyendo, no asumir) — aprendido la dura tras 3 hipótesis equivocadas. §35 (sin global observers). §17 (sin layout animation).
+- Cache final: `v20260530200000`.
+- Reflejo de Autocrítica activado y registrado: M-04 (ver `30-LECCIONES §Meta`) — "iterar fixes sin verificar la fuente de verdad real (el SW en este caso) prolongó el bug 3 rondas".
+
+---
+
+## 125. ADR-125 — Omni-Brain Fase 1: Trigger 🔵 de Auditoría + Lóbulos de Dominio + integración skills/
+
+> Propuesta original de Gemini 3.1 Pro (vía Antigravity) crítica + ajustada por Claude bajo libre albedrío + aprobada por el cliente.
+
+### 125.1 Causa raíz
+El cerebro pre-Omni era excelente para concerns operacionales (estado, decisiones, gotchas, lecciones de proceso) pero **flojo para análisis estratégico especializado** (seguridad, legal, UX, SEO, performance, escalabilidad, copy, a11y). Cada sesión nueva re-investigaba estos dominios desde el contexto pre-entrenado, perdiendo el aprendizaje específico del proyecto Altorra. La carpeta `skills/` existía como knowledge bank externo pero no había protocolo claro sobre cuándo/cómo consultarla ni cómo combinar su framework con findings proyecto-específicos.
+
+### 125.2 Solución estructural
+Extensión de gobernanza + 1 registry nuevo + workflow para sinergia skills↔lóbulos:
+
+1. **`CLAUDE.md §0` (mapa de nodos)** — 2 entradas nuevas: `40-LOBULOS-DOMINIO` (neurona registry, on-demand) + `skills/` (recurso externo, NO neurona).
+2. **`CLAUDE.md §G.2` (Triggers)** — nuevo **Trigger 🔵 de Auditoría/Dominio**: cliente pide análisis especializado → consultar skills/ primero → consultar lóbulo existente → neurogénesis con contenido REAL si no existe → capturar findings + skill usada en el lóbulo.
+3. **`CLAUDE.md §G.4` (Reflejos)** — Reflejo de Neurogénesis extendido explícitamente para lóbulos de dominio (regla: nunca archivos vacíos) + nuevo **Reflejo de Desafío Crítico** (cuestionar reglas/skills con evidencia verificable, no a voluntad) + Reflejo de Cierre incluye verificación de "lóbulo + skills consultadas registradas".
+4. **`docs/40-LOBULOS-DOMINIO.md` (NUEVO)** — registry de 8 categorías esperadas (41-SEGURIDAD, 42-LEGAL, 43-UX, 44-SEO, 45-PERFORMANCE, 46-ESCALABILIDAD, 47-COPYWRITING, 48-A11Y) con disparadores + estado + cobertura + sección "Recursos Externos Complementarios" mapeando dominios a skills relevantes + template para lóbulos hijos.
+5. **`docs/00-INDICE.md`** — fila §125 + sección "Lóbulos de Dominio" en enrutamiento semántico.
+6. **`docs/30-LECCIONES §Meta`** — **M-05** capturando el principio.
+
+### 125.3 No-regresión
+**Cero código. Cero schema. Brain edits puros.**
+
+**Tradeoffs RECHAZADOS de la propuesta original de Gemini** (con justificación verificable):
+- ❌ **Renombrar `docs/` → `CEREBRO/`**: rechazado. Cosmético; costo: rompería 151+ offsets en `00-INDICE`, hardcoded paths en `scripts/brain-check.mjs`, refs en CLAUDE.md y ADRs históricos. Beneficio nulo más allá de naming. Si el cliente insiste futuro, alternativa: symlink simbólico.
+- ❌ **Crear archivos vacíos `40-SEGURIDAD.md` / `50-LEGAL.md` / etc. por anticipado**: rechazado. Viola directamente §G.4 anti-fragmentación. Las neuronas nacen con contenido real, no como placeholders.
+- ❌ **Framing "Framework de IA Distribuida" / "Capacidad Omnisciente" / "Piloto Ejecutivo"**: rechazado. Es marketing sobre la realidad operacional. El cerebro son archivos de texto que dan contexto; valioso pero no "framework". El framing honesto de §0.0 actual ("Claude es ejecutor, el cerebro es herramienta") se mantiene.
+- ❌ **"Libre albedrío para ignorar skills/reglas"**: rechazado, contrapuesto con **Reflejo de Desafío Crítico** — cuestionar con evidencia verificable + propuesta de reemplazo + ADR si toca gobernanza. NO "ignorar a voluntad".
+- ❌ **Absorber `skills/` al cerebro**: rechazado. Skills son recurso externo paralelo. Si se absorbiera, se mezclaría knowledge general con findings proyecto-específicos — confusión y bloating.
+
+### 125.4 Tests
+`brain:check` SANO post-edits (`152/152 índice → 99 sincronizado`). CLAUDE.md cruza ligeramente el tope blando (~335/320) por la adición legítima de gobernanza; aceptable per §G.5 (gobernanza-level addition justifica overage controlado).
+
+### 125.5 Anti-patterns evitados (M-05 + lecciones existentes)
+- **M-05** (nuevo): el cerebro debe crecer en dominios ESTRATÉGICOS, no solo operacionales. Skills externos + lóbulos internos = sinergia, no redundancia.
+- Anti-fragmentación §G.4 respetada: cero archivos vacíos.
+- Honesty en framing: ninguna metafísica añadida.
+- Reflejo de Desafío Crítico: empoderamiento controlado, no anarquía.
+
+### 125.6 Archivos modificados / INTACTOS
+**Modificados:** `CLAUDE.md` (§0 + §G.2 + §G.4 múltiples), `docs/00-INDICE.md`, `docs/30-LECCIONES.md`.
+**Creados:** `docs/40-LOBULOS-DOMINIO.md`.
+**INTACTOS:** todo el código de la web (cero), `skills/` contenido (sin tocar), nodos previos `05/10/20/30/99` (excepto el append de §125 + M-05).
+
+### 125.7 Doctrina aplicada
+Gobernanza §G (Reflejos extendidos, Triggers ampliados, Neurogénesis disciplinada). Honestidad de framing. Anti-fragmentación. Brain edit puro — cero deploy, cero cache bump necesario (no afecta runtime).

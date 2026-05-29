@@ -287,11 +287,17 @@
 
         function fmt() {
             var d = new Date();
-            // toLocaleTimeString es-CO da formato AM/PM con la convención local.
+            // es-CO con {weekday:'long', day:'numeric', month:'long'} da algo
+            // como "jueves, 29 de mayo". El padre .cin-hero-meta tiene
+            // text-transform: uppercase (cinematic.css:127), así que se ve
+            // "JUEVES, 29 DE MAYO" — sin capitalizar manualmente.
+            var date = d.toLocaleDateString('es-CO', {
+                weekday: 'long', day: 'numeric', month: 'long'
+            });
             var time = d.toLocaleTimeString('es-CO', {
                 hour: 'numeric', minute: '2-digit', hour12: true
             });
-            return 'Cartagena · ' + time;
+            return date + ' · ' + time;
         }
 
         el.textContent = fmt();

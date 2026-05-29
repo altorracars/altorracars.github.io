@@ -1163,7 +1163,7 @@ body[data-cin="on"] .alt-footer-news-band { display: none !important; }
    across the seam. Zero hard borders.
    =========================================================== */
 .cin-hero,
-.cin-progs,
+.promo-section,
 .cin-brands,
 .cin-collection,
 .cin-av,
@@ -1179,7 +1179,7 @@ body[data-cin="on"] .alt-footer-news-band { display: none !important; }
 
 /* Soft fade between adjacent sections — top of every section gets
    a faint gradient that matches the bg, killing visible seams. */
-.cin-progs::before,
+.promo-section::before,
 .cin-brands::before,
 .cin-collection::before,
 .cin-av::before,

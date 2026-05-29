@@ -41880,3 +41880,82 @@ Cross-review detectó 3 fragilidades reales: (a) dependencia de la DISCIPLINA de
 
 ### 121.4 Doctrina
 Gobernanza §G + RCA §19. La autocrítica cierra el ciclo: usar → criticar → corregir = madurez.
+
+---
+
+## 122. ADR-122 — SP-1 Index cinematic: port vanilla del rediseño HarmonyOS (T4-T8)
+
+> "No re-implementar en React: portar el rediseño Claude-Design a vanilla preservando los contratos JS existentes."
+
+### 122.1 Causa raíz
+El index legacy (hero CSS-only + `#fw-banner` + widget historial) llegó al techo visual del proyecto y el cliente preparó un rediseño completo en React (`altorra-cars-design-system/project/redesign/Home.jsx`, 1264 LOC) con tema HarmonyOS / Claude Design. Re-implementar en React habría obligado a un bundler y abandonar el modelo "vanilla + Firebase Compat sin build" que mantiene el costo en $2-5/mes y deploys en push. Faltaba un PORT que (a) replicara visualmente el rediseño 1:1, (b) preservara los contratos JS existentes (`vehicleDB`, `favoritesManager`, `vehicleComparator`, `vehicleHistory`, `getVehicleDetailUrl`, `data-modal`, `initHeroSearch`), y (c) entregara una rama fusionable detrás de un E2E manual del cliente.
+
+### 122.2 Solución estructural
+Plan SP-1 (8 tareas; T1-T3 ya entregadas en `7cc7c07`). Ejecución T4-T8 vía flujo subagente-por-tarea + doble revisión (cumplimiento del spec → calidad). Cada cambio salió de subagente sonnet, revisado por subagente de spec, y subagente de calidad, con fix-passes iterativos hasta aprobación.
+
+1. **T4** — `js/public/home/home.js` (orquestador con namespace `window.AltorraHome`, mount-flags idempotentes, guards `typeof` para módulos aún no presentes) + `home-motion.js` (scroll progress → `--p`; parallax hero `transform: translate3d` doctrina §17; reveals por `IntersectionObserver` con clases `is-in`/`cin-mani-in`/`cin-trail-in`/`cin-in`; counters cubic-ease 1600ms con `data-counter-source="brands"` live desde `vehicleDB.getAllBrands()`) + búsqueda intacta (`initHeroSearch()` en `main.js:503` se auto-invoca via `initializePage()`, IDs `#heroSearchInput`/`#heroSearchDropdown` preservados).
+2. **T5** — `js/public/home/home-carousels.js` (~1380 LOC) con 6 secciones data-driven:
+   - **Disponibles**: `vehicleDB.getRankedVehicles()` + `.cin-av-card`; COMPARE funcional via delegación lazy-safe.
+   - **Colección**: `getFeatured()` + `.cin-card` con `featuredTag` (SP-2).
+   - **Promos**: nuevo getter `vehicleDB.getActiveBanners(position)` (async Firestore, filtro `active+position`, orderBy `order`) → `.promo-slide` con todos los campos ricos (SP-3): `badge`/`eyebrow`/título con `*x*→<em>` dorado XSS-safe via `esc()` previo + `safeColor()` allowlist/`subtitle`/`rate`/`pills`/`cta`/`image`; carrusel loop infinito con clones y teleport-on-transitionend; swipe touch/mouse §35-compliant.
+   - **Marcas**: `getAllBrands()` + marquee `.cin-marquee-track` duplicado.
+   - **Tu rastro / Recomendados**: rama según `vehicleHistory.hasHistory()` (evaluada DENTRO del callback `whenDbReady` — race fix encontrado en review).
+   - **Categorías**: conteos reales por `categoria` en los 4 tiles estáticos.
+3. **T6** — `js/public/home/quicktools.js` (395 LOC) dock flotante con 5 tools (Simulador, Comparar, Favoritos, Historial, Financiar); badges live de fuentes reales (`favoritesManager.count`/`vehicleComparator.getCount` con fallback localStorage `altorra_comparador`/`vehicleHistory.getCount`); hide-on-scroll `dy>6 && y>400` / `dy<-6` (thresholds del JSX); intervalo 2s solo mientras el dock está abierto. `data-modal="financiacion"` se conecta al handler delegado en `contact-forms.js:151`. Colisión con `#comparador-widget` resuelta vía 1 línea en `quicktools.css` (`#comparador-widget { display:none !important }` con comentario de integración).
+4. **T7** — Switch + cleanup + cache bump: removidos del index `css/hero.css`, `css/featured-week-banner.css`, `css/historial-visitas.css`; transversales (`css/dark-theme.css`, `performance-fixes.css`, `animaciones.css`, `style.css`) intactos; módulos `historial-visitas.js`/`comparador.js` siguen cargando porque sus APIs las consumen los nuevos módulos. Cache bump `v20260526150000 → v20260529120000` en `service-worker.js` + `cache-manager.js` + `05`. T7 entregó IAP §37 antes del cleanup.
+
+**Hallazgos colaterales corregidos en review:**
+- `cinematic.css` seam-flow keys `.cin-progs` (líneas 1166, 1182) → clase muerta en el markup (el componente real es `className="promo-section"` en `Home.jsx:715`); renombrado a `.promo-section` — sección promos ahora se integra al flow seamless.
+- Acumulación de listeners en `buildPromoCarousel` (incluyendo `document.addEventListener('visibilitychange')`) → factor `_promoTeardown` llamado antes de cada rebuild; handlers nombrados; `removeEventListener` por par.
+- Mousemove persistente en Collection drag → re-factor al patrón mousedown→añadir window-listeners, mouseup→removerlos (mirror de Promo, §35).
+- `innerHTML +=` en trail "Continuar" link → `insertAdjacentHTML('beforeend', ...)` safe-DOM.
+- `hasHistory` evaluado fuera de `whenDbReady` (race con load de `historial-visitas.js`) → movido al callback.
+- Sanitización de colores Firestore vía `safeColor()` allowlist (defense-in-depth, admin-only data).
+- `firstChild.nodeType === 3` guard para inyección de conteo de marcas en el heading.
+- Dead class `.qt-close-icon` → regla mínima añadida en `quicktools.css`.
+- `backdrop-filter` en `.qt-dock` → comentario explicando excepción §17 (panel estructural único, no lista de N).
+
+### 122.3 No-regresión (contratos verificados)
+- **Búsqueda**: IDs preservados → `initHeroSearch` redirige a `busqueda.html?buscar=` sin cambios.
+- **Favoritos**: `.favorite-btn[data-id]` → `favoritesManager.handleHeartClick` + contadores `favCount`/`favCountMobile`/`favoritesCount` intactos.
+- **Comparador**: `.btn-compare[data-compare]` → delegación con guard `typeof` (lazy-safe).
+- **Historial / Detail URL / Modales**: `vehicleHistory.clearHistory` (#cinTrailClear), `getVehicleDetailUrl`, `data-modal="vende-auto"`/`data-modal="financiacion"` (delegado en `contact-forms.js`), `AltorraConcierge` bottom-right.
+- `node -c` exit 0 en los 4 nuevos JS + cache-manager.js.
+- Cero schema, cero deploy backend, cero cambio en admin (SP-2/SP-3 ya en main).
+
+### 122.4 Tests E2E (cliente, navegador)
+Pendiente del cliente (mensaje de commit incluye checklist). Cubre: hero+búsqueda redirige; disponibles cargan de Firebase con fav+comparar funcionales; colección destacados con `featuredTag`; categorías con conteos reales; promos `home_promo` desde admin (SP-3); Tu rastro post-visita (o Recomendados si vacío); marcas marquee con conteo; nav hide-on-scroll 3-estados; QuickTools sin chocar con ALTOR; footer social con URLs reales; responsive + `prefers-reduced-motion`. Validar también que otras páginas (catálogo, detalle, marca, favoritos) no se afectaron por el bump de cache ni por los retiros de CSS del index.
+
+### 122.5 Anti-patterns evitados (doctrinas §17/§19/§35/§37)
+- **§17**: parallax solo `transform: translate3d`; reveals via toggle de clase (CSS transitions); counters animan `textContent` (no layout). `backdrop-filter` SOLO en `.qt-dock` (panel estructural único, excepción documentada en CSS).
+- **§35**: cero `MutationObserver` global; `mousemove`/`touchmove` añadidos en mousedown/touchstart y removidos en release (Collection drag + Promo swipe). Detección + fix en review del mousemove persistente que sobrevivió a la primera implementación; detección + fix de la acumulación de `visibilitychange` y otros listeners en re-render de promo.
+- **§19 RCA**: todos los métodos de API (`getRankedVehicles`/`getVehicleById`/`onChange`/`has`/`clearHistory`) verificados leyendo el código antes de usarlos (no adivinados). Banner getter centralizado en `getActiveBanners` en lugar de queries inline duplicadas.
+- **§37 IAP**: T7 entregó IAP de 5 secciones antes del cleanup.
+- **XSS**: `textContent` uniforme para datos Firestore; única transformación `*x*→<em>` en banner title con `esc()` previo; `safeColor()` allowlist para valores CSS dinámicos.
+
+### 122.6 Archivos modificados / INTACTOS
+
+**Creados (4):**
+- `js/public/home/home.js` (124 LOC) · `home-motion.js` (303 LOC) · `home-carousels.js` (~1380 LOC) · `quicktools.js` (395 LOC).
+
+**Modificados (6):**
+- `index.html` (removidos 3 `<link>` legacy, añadidos 4 `<script>` `js/public/home/*`).
+- `css/home/cinematic.css` (2 líneas: `.cin-progs`→`.promo-section`).
+- `css/home/quicktools.css` (regla `.qt-close-icon`, comentario §17 sobre `backdrop-filter`, supresión `#comparador-widget`).
+- `js/core/database.js` (nuevo `async getActiveBanners(position)`).
+- `service-worker.js` + `js/core/cache-manager.js` (CACHE_VERSION / APP_VERSION → `v20260529120000`).
+- `docs/05-ESTADO-GLOBAL.md` (cache + estado).
+
+**INTACTOS verificados:**
+- `css/style.css` (plan explícito: NO edit).
+- `js/core/{render, favorites-manager, historial-visitas, main, components, auth, firebase-config}.js`.
+- `js/public/{comparador, cookies, contact-forms, citas}.js`.
+- `js/concierge/concierge.js` (ALTOR sigue activo bottom-right).
+- Templates `detalle-vehiculo.html`, `marca.html`, generator `scripts/generate-vehicles.mjs`.
+- Admin (SP-2/SP-3 ya en main).
+
+### 122.7 Doctrina aplicada + cache bump
+- Aplicadas: §17 (motion), §35 (listeners), §19 (RCA), §37 (IAP en T7), §3.6 (Hub/concierge/optimistic UI intactos), §3.2 (cero rename de IDs/clases en markup; solo aditivo).
+- Cache bump: `v20260526150000` → `v20260529120000` (§4).
+- Rollback: `git revert` del commit de código (las 2 CSS-fixes y los 4 JS nuevos se revierten juntos).
+- Riesgo activo: NO fusionar a `main` hasta E2E navegador del cliente (T8.1). Tras E2E OK, fusionar; flag de `05` se quita.

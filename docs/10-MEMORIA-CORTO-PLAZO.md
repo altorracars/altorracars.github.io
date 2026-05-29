@@ -11,17 +11,13 @@
 
 ## 🎯 Foco actual
 
-- **🚀 REDISEÑO TOTAL — EN MARCHA** (ya no en pausa). El cliente compartió el tema nuevo
-  (HarmonyOS, hecho con Claude Design) en `altorra-cars-design-system/project/redesign/`
-  (está en **React**; se porta a **vanilla**). Fuentes reales: Manrope + Instrument Serif
-  + Cardo (NO Poppins). Spec Fase 1: `docs/superpowers/specs/2026-05-26-rediseno-index-fase1-design.md`.
-- **Fase 1 = SP-1 + SP-2 + SP-3** (ejecución vía subagentes, doble revisión):
-  - **SP-2** admin destacados (cutout fuera → usa `imagen`; +`featuredTag`; sin tope de 6) →
-    ✅ código completo + doble revisión OK. **Pendiente: commit del cliente + E2E navegador.**
-    Plan: `docs/superpowers/plans/2026-05-26-sp2-admin-destacados.md`.
-  - **SP-3** admin banners ricos (posición `home_promo`: badge/eyebrow/tasa/pills) → ✅ código completo + doble revisión OK. **Pendiente: commit + E2E.** Plan: `docs/superpowers/plans/2026-05-26-sp3-admin-banners.md`. (Nota diseño: si un banner pasa de `home_promo` a otra posición, los campos ricos quedan inertes en Firestore — aceptable, anotar en ADR.)
-  - **SP-1** index nuevo (vanilla port) → 🔄 EN CURSO. Plan: `docs/superpowers/plans/2026-05-26-sp1-index-redesign.md` (8 tareas). **Hecho**: T1 (`css/home/*` + fuentes Google + assets, falta solo `logo-wheel.png` copiado), T2 (`index.html`: markup estático de las 12 secciones + nav + footer + contratos `#heroSearchInput`/`#favCount`/`#btnLogin`/`id=header`/`id=marcas`/modales), T3 (`js/public/home/home-chrome.js`: nav 3-estados + dropdown + drawer + fixes `#favCountMobile` y guard de `initializeHeader`). **Pendiente**: T4 (`home.js` orquestador + `home-motion.js` parallax/word-reveal/IO/counters + búsqueda), T5 (`home-carousels.js`: disponibles/colección+tag/promos `home_promo`/marcas/rastro — el grande, engancha vehicleDB/favoritesManager/vehicleComparator/vehicleHistory), T6 (`quicktools.js`), T7 (switch index: quitar CSS/JS viejo del index, `css/style.css` NO se edita, + cache bump), T8 (E2E cliente + commit). Ejecución: subagente + doble revisión. ⚠️ NO fusionar SP-1 a `main` hasta T8 (index a medio cablear).
-- **Diferidos**: SP-4 (motor recomendaciones + analytics) · SP-5 (resto de páginas + promover chrome global).
+- **REDISEÑO TOTAL — Fase 1 entregada** (SP-1 ✅ + SP-2 ✅ + SP-3 ✅; ADR §122 SP-1
+  consolidado). Index cinematic vanilla listo para producción tras E2E del cliente +
+  fusión por PR. Lecciones extraídas: **L-11/L-12/L-13** (port class-fidelity,
+  teardown en re-render, lazy modules + delegación).
+- **Próximo (no urgente)**: Fase 2 = **SP-4 + SP-5**.
+  - **SP-4** motor de recomendaciones (ranking real para "Tu rastro"/Recomendados — hoy placeholder cubierto con destacados+ranked) + analytics de carruseles para alimentar el ranking.
+  - **SP-5** resto de páginas con tema cinematic (catálogo, detalle, marca, simulador, comparar, favoritos) + promover `home-chrome.js` a chrome global multi-página.
 
 ---
 
@@ -32,13 +28,13 @@
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
 | **TODO-01/02** | Migración Cloudflare Pages + Vite (deploy en segundos, assets con hash) | 🔮 | ~$10/año dominio |
-| **TODO-03** | Critical CSS inline | ⏸️ diferido | el rediseño lo reemplaza + riesgo visual |
-| **TODO-04** | Resource hints (preconnect) | ✅ hecho | plantillas + busqueda; el cron propaga a las 45 generadas |
-| **TODO-05** | SEO local / metadata | ✅ hecho | Twitter/OG/noindex + schema AutoDealer §90 ya completo |
-| **TODO-06** | Página `/cartagena.html` SEO local | 🔮 | contenido editorial del cliente + rediseño |
+| **TODO-03** | Critical CSS inline | ⏸️ diferido | SP-5 lo reabsorbe |
+| **TODO-04** | Resource hints (preconnect) | ✅ hecho | propagado por cron |
+| **TODO-05** | SEO local / metadata | ✅ hecho | OG/Twitter/AutoDealer §90 |
+| **TODO-06** | Página `/cartagena.html` SEO local | 🔮 | contenido editorial del cliente |
 | **TODO-07/08** | Validar CSAT (§87) + transferencias (§88) en producción | 🔮 | tráfico / equipo 2+ asesores |
 | **TODO-09..13** | Deuda técnica menor (drafts diferidos, CSS muerto, transition:all, substring selectors) | 🔮 | opcional, sin impacto visible |
-| ~~TODO-14~~ | ~~Patrón merge conflict cron~~ | ✅ → lección L-02 | — |
+| ~~TODO-14~~ | ~~Patrón merge conflict cron~~ | ✅ → L-02 | — |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -46,18 +42,19 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📦 Planes mayores (resumen vivo — todos cerrados ✅)
 
-- **§119** reorg `js/` modular (128 archivos) · **§120/§121** cerebro autónomo + linter `brain:check` — LIVE.
-- **§61** RBAC dinámico · **§59** ALTOR Hub (7/7 + C-S8/9/10) · **§82-84** Smart Update · **§90** SEO Fase 4 (rich snippets + Google Business 5.0★/62) · **§91/93** imágenes responsive + lazy · **§115-117** motor cromático (6 paletas) · 27 Cloud Functions.
+- **§122** SP-1 Index cinematic vanilla (port JSX→vanilla, 4 módulos `js/public/home/*`, contratos preservados).
+- **§119** reorg `js/` modular (128 archivos) · **§120/§121** cerebro autónomo + linter `brain:check`.
+- **§61** RBAC dinámico · **§59** ALTOR Hub (7/7 + C-S8/9/10) · **§82-84** Smart Update · **§90** SEO Fase 4 · **§91/93** imágenes responsive + lazy · **§115-117** motor cromático (6 paletas) · 27 Cloud Functions.
 
 ---
 
-## 🔮 Contexto estratégico (afecta prioridades)
+## 🔮 Contexto estratégico
 
-- **REDISEÑO TOTAL en camino**: el cliente hizo un nuevo diseño con "Claude design" y planea
-  migrar toda la web. → NO sobre-invertir en cosmética/estructura visual actual (CSS reorg,
-  Critical CSS) que el rediseño reemplazará. Mejoras de bajo nivel (SEO meta, performance,
-  backend, datos) SÍ sobreviven. El cliente pasará el nuevo diseño "más adelante".
+- **Fase 2 (SP-4/SP-5)** queda diferido sin urgencia: la Fase 1 ya entregó la primera
+  impresión visual completa del proyecto. SP-5 es esfuerzo grande; SP-4 requiere
+  analytics primero. Aprovechar para validar Fase 1 en producción antes de seguir.
 
 ## 📝 Bitácora (efímera — se vacía al consolidar)
 
-- *(vacía — el trabajo de las sesiones 2026-05-25/26 quedó consolidado en ADR §118/§119/§120/§121)*
+- *(vacía — el trabajo de sesiones 2026-05-26/29 quedó consolidado en ADR §122 +
+  lecciones L-11/L-12/L-13)*

@@ -198,6 +198,7 @@
 | §119 | Reestructuración frontend (js/ plano → modular) | 41818 |
 | §120 | Cerebro Documental Neuronal AUTÓNOMO | 41842 |
 | §121 | Autocrítica + linter brain-check + robustez (cross-review) | 41865 |
+| §122 | SP-1 Index cinematic vanilla (T4-T8 — port HarmonyOS/Claude Design) | 41886 |
 
 ---
 
@@ -233,6 +234,7 @@
 | SEO Fase 4 técnica | §90 | ✅ Validado |
 | Fase 3 Performance | §91-§97 | ✅ 3A+3B (3C/3D pendientes TODO-03/04) |
 | Motor cromático tema | §115-§117 | ✅ 6 paletas |
+| Rediseño index cinematic (SP-1) | §122 | ✅ Vanilla port (T1-T8) |
 
 ---
 

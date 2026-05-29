@@ -623,6 +623,27 @@ class VehicleDatabase {
                 return sorted;
         }
     }
+
+    /**
+     * Async: query Firestore for active banners filtered by position.
+     * Used by home-carousels.js (Task 5.3) for the cinematic promo section.
+     * @param {string} position — e.g. 'home_promo'
+     * @returns {Promise<Array>} — resolves to array of banner data objects
+     */
+    async getActiveBanners(position) {
+        if (!window.db) return [];
+        try {
+            var snap = await window.db.collection('banners')
+                .where('active', '==', true)
+                .where('position', '==', position)
+                .orderBy('order', 'asc')
+                .get();
+            return snap.docs.map(function(doc) { return doc.data(); });
+        } catch (e) {
+            console.warn('[DB] getActiveBanners error:', e.message);
+            return [];
+        }
+    }
 }
 
 // Create global database instance

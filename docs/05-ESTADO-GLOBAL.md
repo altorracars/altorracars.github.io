@@ -8,17 +8,17 @@
 > branch, build o al detectar/resolver un riesgo. **Tope ~25 líneas (§G.5)** — es un
 > tablero, no una bitácora.
 
-| Señal | Valor (al 2026-05-26) |
+| Señal | Valor (al 2026-05-29) |
 |---|---|
-| **Build** | 🟡 REDISEÑO EN MARCHA (`refactor/estructura`). Admin: SP-2 (destacados+tag) + SP-3 (banners `home_promo`) ✅. Index: SP-1 T1-T3 ✅ (CSS/markup/chrome), **T4-T8 pendientes**. |
-| **Cache version vigente** | `v20260526150000` (SP-1 **T7** hará el próximo bump MAYOR, §4) |
-| **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1-WIP (3 commits sin fusionar). Cliente fusiona por PR. |
+| **Build** | 🟢 REDISEÑO Fase 1 entregada. SP-1 T1-T7 ✅ + T8 (brain consolidado en ADR §122). Pendiente del cliente: commit + E2E navegador + fusión por PR. |
+| **Cache version vigente** | `v20260529120000` (bumpeado en SP-1 T7) |
+| **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
 | **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos
-- ⚠️ **NO fusionar SP-1 a `main` hasta T8** — el index está a medio cablear (sin data hasta T5). SP-2/SP-3 sí son fusionables (admin completo).
+- ⚠️ **E2E SP-1 requiere deploy a `main`** (L-08: Auth/Firebase bloquea localhost por referrer; única E2E real es contra `altorracars.github.io`). **Recipe**: merge → esperar ~1-2 min GitHub Pages → Ctrl+Shift+R → checklist. **Rollback ready**: `git revert <sha>` + push devuelve el diseño viejo en ~1 min. Riesgo aceptado: ventana de minutos con cinematic visible mientras se valida.
 - Conflicto cron↔cache al fusionar = patrón conocido (`git merge origin/main`, L-02).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · **rediseño index: `css/home/*` + `js/public/home/*` (WIP)** · cerebro autónomo ✅ · SEO ✅ · bot/RBAC/Hub estables ✅
+`js/` modular ✅ · **rediseño index cinematic vanilla** (`css/home/*` + `js/public/home/*`) ✅ · cerebro autónomo ✅ · SEO ✅ · bot/RBAC/Hub estables ✅

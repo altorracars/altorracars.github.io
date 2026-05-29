@@ -219,6 +219,14 @@ class VehicleHistory {
         if (this._history.length > this.maxItems) {
             this._history = this._history.slice(0, this.maxItems);
         }
+        // SP-5.0.c FIX: persistir a localStorage INMEDIATO (sync). El
+        // _debouncedSync de 1500ms se diseñó para batching, pero si el usuario
+        // navega de vuelta al index ANTES de los 1500ms (lo normal al ver
+        // detalles brevemente), la página se descarga con el timer pendiente y
+        // la visita se pierde para siempre — el rastro queda vacío.
+        // localStorage es sync y barato; vale la pena escribir cada vez.
+        // El debounce queda solo para el sync a Firestore (sí justifica batching).
+        this._saveToLocalStorage();
         this._debouncedSync();
     }
 

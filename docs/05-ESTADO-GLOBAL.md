@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-29) |
 |---|---|
-| **Build** | 🟢 SP-1 + SP-5.0 en producción. SP-5.0.b working tree: clock→fecha+hora, marquee 25→15s, filtro logos no-fill (BMW fix), "Limpiar rastro" oculto en Recomendados. Próximo: deploy round 2. |
-| **Cache version vigente** | `v20260530120000` (bumpeado en SP-5.0.b polish round 2) |
+| **Build** | 🟢 SP-1 + SP-5.0 en producción. SP-5.0.c working tree: BUG CRÍTICO arreglado — addToHistory perdía visitas (1500ms debounce vs back-navigation rápido). Fix: localStorage sync inmediato. |
+| **Cache version vigente** | `v20260530140000` (bumpeado en SP-5.0.c hotfix rastro) |
 | **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
 | **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

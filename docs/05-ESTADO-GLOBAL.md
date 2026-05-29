@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-29) |
 |---|---|
-| **Build** | 🟢 REDISEÑO Fase 1 entregada. SP-1 T1-T7 ✅ + T8 (brain consolidado en ADR §122). Pendiente del cliente: commit + E2E navegador + fusión por PR. |
-| **Cache version vigente** | `v20260529120000` (bumpeado en SP-1 T7) |
+| **Build** | 🟢 SP-1 en producción + polish SP-5.0 working tree (hero bg path, padding, clock, +N dinámico, stats reescritos, manifesto sin prometer tiempos, marquee 25s, scrollbar). Próximo: deploy + E2E live. |
+| **Cache version vigente** | `v20260530000000` (bumpeado en SP-5.0 polish post-E2E) |
 | **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
 | **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

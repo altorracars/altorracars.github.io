@@ -277,6 +277,68 @@
     }
 
     // ============================================================
+    // 6 · HERO META RIGHT — reloj/ciudad (SP-5.0)
+    //     Popula #cinHeroClock con "Cartagena · 10:42 PM" en es-CO.
+    //     Refresca cada 30s. Sin reduced-motion check (no es animación).
+    // ============================================================
+    function initHeroClock() {
+        var el = document.getElementById('cinHeroClock');
+        if (!el) return;
+
+        function fmt() {
+            var d = new Date();
+            // toLocaleTimeString es-CO da formato AM/PM con la convención local.
+            var time = d.toLocaleTimeString('es-CO', {
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+            return 'Cartagena · ' + time;
+        }
+
+        el.textContent = fmt();
+        // Refresh cada 30s; no cleanup porque es módulo single-page life-of-tab.
+        setInterval(function () { el.textContent = fmt(); }, 30000);
+    }
+
+    // ============================================================
+    // 7 · HERO VEHICLE COUNT — dinámico (SP-5.0)
+    //     Reemplaza el texto hardcoded "+90 vehículos" con el conteo real
+    //     de vehicleDB.getAllVehicles(). Re-render on onChange('vehicles').
+    //     Mantiene el "+" como floor marketing-friendly.
+    // ============================================================
+    function initHeroVehicleCount() {
+        var el = document.getElementById('cinHeroVehicleCount');
+        if (!el) return;
+
+        function update() {
+            if (!window.vehicleDB || typeof window.vehicleDB.getAllVehicles !== 'function') return;
+            var all = window.vehicleDB.getAllVehicles();
+            if (!all || !all.length) return;
+            el.textContent = '+' + all.length + ' vehículos';
+        }
+
+        if (window.vehicleDB && window.vehicleDB.loaded) {
+            update();
+        } else {
+            // Esperar a que vehicleDB cargue (poll acotado, max ~8s).
+            var tries = 0;
+            var iv = setInterval(function () {
+                tries++;
+                if ((window.vehicleDB && window.vehicleDB.loaded) || tries > 80) {
+                    clearInterval(iv);
+                    update();
+                }
+            }, 100);
+        }
+
+        // Re-render cuando el inventario cambie (admin agrega/borra).
+        if (window.vehicleDB && typeof window.vehicleDB.onChange === 'function') {
+            window.vehicleDB.onChange(function (changeType) {
+                if (changeType === 'vehicles') update();
+            });
+        }
+    }
+
+    // ============================================================
     // INIT
     // ============================================================
     function init() {
@@ -284,6 +346,8 @@
         initHeroParallax();
         initAllRevealObservers();
         initCounters();
+        initHeroClock();
+        initHeroVehicleCount();
 
         // API pública para el orquestador home.js
         window.AltorraHome = window.AltorraHome || {};

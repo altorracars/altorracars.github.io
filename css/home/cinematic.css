@@ -81,7 +81,9 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
   background: var(--cin-bg);
   overflow: hidden;
   isolation: isolate;
-  padding: clamp(60px, 9vh, 100px) clamp(24px, 5vw, 72px) clamp(32px, 6vh, 64px);
+  /* padding-top: nav-h (64px) + headroom para que el meta "Concesionario Líder"
+     no quede tapado por la barra fija. SP-5.0 fix. */
+  padding: clamp(96px, 13vh, 140px) clamp(24px, 5vw, 72px) clamp(32px, 6vh, 64px);
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 28px;
@@ -89,7 +91,9 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
 
 .cin-hero-bg {
   position: absolute; inset: 0; z-index: 0;
-  background-image: url("multimedia/heroindex.webp");
+  /* Path absoluto desde la raíz: el CSS está en /css/home/ y url() es relativa
+     al archivo CSS (NO usa <base href="/">). Lección L-05. */
+  background-image: url("/multimedia/heroindex.webp");
   background-size: cover;
   background-position: center 42%;
   filter: saturate(85%) brightness(0.55);
@@ -243,7 +247,7 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
   gap: 64px;
   width: max-content;
   padding: 18px 0;
-  animation: cinMarquee 60s linear infinite;
+  animation: cinMarquee 25s linear infinite;
   will-change: transform;
 }
 .cin-marquee:hover .cin-marquee-track { animation-play-state: paused; }
@@ -1907,6 +1911,9 @@ body[data-cin="on"] .alt-footer-news-band { display: none !important; }
   animation: heroSearchIn 220ms cubic-bezier(0.22, 1, 0.36, 1);
   max-height: 360px; overflow-y: auto;
 }
+/* [hidden] vence a display:flex de arriba (UA stylesheet NO es !important).
+   SP-5.0 fix: sin esto, el dropdown vacío se renderiza como rectángulo basura. */
+.hero-search-dropdown[hidden] { display: none !important; }
 @keyframes heroSearchIn {
   from { opacity: 0; transform: translateY(-6px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }

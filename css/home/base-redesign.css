@@ -7,6 +7,9 @@
 
 html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
 
+/* SP-5.0 fix: `overflow-x: hidden` en <body> crea un scroll-container que
+   resulta en DOBLE scrollbar (html + body) en algunos navegadores. `clip`
+   suprime el desbordamiento sin crear scroll-container. */
 body {
   font-family: var(--font-body);
   font-size: var(--t-body-lg);
@@ -16,7 +19,7 @@ body {
   background-image: var(--grad-mesh-light);
   background-attachment: fixed;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 [data-theme="dark"] body { background-image: var(--grad-mesh-dark); }

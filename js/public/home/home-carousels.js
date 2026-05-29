@@ -1173,18 +1173,37 @@
         var clearBtn = document.getElementById('cinTrailClear');
         if (!trailBody) return;
 
-        whenDbReady(function () {
-            // Read hasHistory here (inside whenDbReady) so that historial-visitas.js
-            // has had time to load. Evaluating it eagerly at init time could permanently
-            // miss the user's history if the module loads after initTrail runs.
+        function renderTrailNow() {
+            // Read hasHistory here (inside whenDbReady / pageshow handler) so that
+            // historial-visitas.js has had time to load AND localStorage is fresh.
+            // Evaluating eagerly at init could permanently miss the user's history.
             var history = window.vehicleHistory;
             var hasHistory = history && typeof history.hasHistory === 'function' && history.hasHistory();
 
             if (hasHistory) {
                 renderTrailWithHistory(trailBody, clearBtn);
             } else {
+                // SP-5.0.c: explicit hide en transición rastro→recomendados (post-clear
+                // o post-bfcache restore). El [hidden] del markup + la regla CSS
+                // .cin-trail-clear[hidden] ocultan el botón cuando se setea sync.
+                if (clearBtn) clearBtn.hidden = true;
                 renderTrailRecommended(trailBody);
             }
+        }
+
+        whenDbReady(renderTrailNow);
+
+        // SP-5.0.c: bfcache restore handler. Cuando el usuario hace browser-back
+        // desde el detalle, Chrome puede restaurar el index desde memoria sin
+        // rerun de scripts (event.persisted === true) → el trail quedaba stale
+        // con "Recomendados" aunque localStorage ya tuviera la visita.
+        // Solución: forzar a vehicleHistory a releer localStorage y re-renderizar.
+        window.addEventListener('pageshow', function (event) {
+            if (!event.persisted) return; // navegación normal: init ya corrió
+            if (window.vehicleHistory && typeof window.vehicleHistory._loadFromLocalStorage === 'function') {
+                window.vehicleHistory._loadFromLocalStorage();
+            }
+            renderTrailNow();
         });
     }
 
@@ -1213,18 +1232,23 @@
             return;
         }
 
-        // Show clear button
+        // Show clear button. Guard the addEventListener via _cinWired flag para
+        // evitar listener leak si renderTrailWithHistory se re-llama desde el
+        // pageshow handler (bfcache restore — SP-5.0.c).
         if (clearBtn) {
             clearBtn.hidden = false;
-            clearBtn.addEventListener('click', function () {
-                if (window.vehicleHistory && typeof window.vehicleHistory.clearHistory === 'function') {
-                    window.vehicleHistory.clearHistory();
-                }
-                // Switch to recommended variant after clearing
-                clearBtn.hidden = true;
-                trailBody.innerHTML = '';
-                renderTrailRecommended(trailBody);
-            });
+            if (!clearBtn._cinWired) {
+                clearBtn._cinWired = true;
+                clearBtn.addEventListener('click', function () {
+                    if (window.vehicleHistory && typeof window.vehicleHistory.clearHistory === 'function') {
+                        window.vehicleHistory.clearHistory();
+                    }
+                    // Switch to recommended variant after clearing
+                    clearBtn.hidden = true;
+                    trailBody.innerHTML = '';
+                    renderTrailRecommended(trailBody);
+                });
+            }
         }
 
         buildTrailStage(trailBody, vehicles);

@@ -11,19 +11,27 @@
 
 ## 🎯 Foco actual
 
-- **REDISEÑO Fase 1 + polish SP-5.0 COMPLETOS en producción** (ADR §122 + §124).
-  Index cinematic vanilla funcionando, rastro arreglado, todos los rounds de hotfix
-  consolidados. Lecciones extraídas: **L-11/L-12/L-13** (port + teardown + lazy) +
-  **L-14/L-15** (SW networkFirst + self-contained reads) + **M-03/M-04** (Reflejo de
-  Cierre + verificar fuente de verdad real, no solo código de aplicación).
-- **EN EVALUACIÓN AHORA** — propuesta **Omni-Brain** (Gemini 3.1 Pro vía Antigravity):
-  añadir Lóbulos de Dominio (40-SEGURIDAD, 50-LEGAL, 60-UX, 70-ESCALABILIDAD, etc.) +
-  Trigger de Auditoría + Neurogénesis activa bajo demanda + posible renombre `docs/` →
-  `CEREBRO/`. Pendiente análisis crítico + veredicto + plan + aprobación del cliente
-  antes de ejecutar.
-- **Diferido (Fase 2, no urgente tras Omni-Brain)**: **SP-4** motor recomendaciones
-  real (ranking GA-based para "Tu rastro"/Recomendados) + **SP-5** resto de páginas
-  con tema cinematic + promover `home-chrome.js` a chrome global multi-página.
+- **REDISEÑO Fase 1 + SP-5.0 polish COMPLETOS en producción** (ADR §122 + §124).
+  Index cinematic vanilla funcionando, rastro arreglado, lecciones consolidadas
+  (L-11..L-15 + M-03/M-04).
+- **OMNI-BRAIN Fase 1 ENTREGADA en working tree** (ADR §125): Trigger 🔵 de
+  Auditoría + registry `40-LOBULOS-DOMINIO` + integración `skills/` + Reflejo
+  de Desafío Crítico + M-05. **Pendiente del cliente**: commit brain (7 archivos)
+  + push + merge a main. Sin deploy de código (brain-only).
+- **EN CURSO AHORA — SP-5 brainstorming**: tras auditoría completa (Trigger 🔵
+  primer uso real → lóbulo `43-UX.md` activo R0), confirmado que SOLO `index.html` está
+  en HarmonyOS. **~88 páginas legacy** (chrome viejo + Poppins + dark-theme) +
+  **5 páginas con bug de footer faltante**. Plan integral 3-fases brainstormeado, pendiente
+  aprobación cliente antes de spec + plan + ejecución.
+- **PLAN INTEGRAL PROPUESTO** (en discusión):
+  - **SP-5.0.g** (5min): fix bug footer faltante en 5 páginas.
+  - **SP-5.1**: chrome cinematic + tokens + fuentes Manrope/Instrument/Cardo **GLOBAL**
+    (snippets/header.html + snippets/footer.html + components.js + carga css/home/*).
+  - **SP-5.2**: body migration por categorías (soft pages → catálogo → templates con cron).
+- **DIFERIDO (post-SP-5)**:
+  - **SP-4** motor recomendaciones REAL: ranking GA-based para Tu rastro / Recomendados,
+    custom image upload (+IA opcional) para destacados, real-time switch sesión.
+  - Auditorías futuras: `44-SEO`, `45-PERFORMANCE`, `48-ACCESIBILIDAD` cuando se piden.
 
 ---
 

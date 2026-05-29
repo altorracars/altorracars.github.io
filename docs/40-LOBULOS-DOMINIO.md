@@ -21,7 +21,7 @@
 |---|---|---|---|---|
 | **41** | Seguridad | "audita seguridad", "vulnerabilidades", "Firebase rules", "rutas sin auth" | 🟢 vacío | API auth, validación input, prevención inyecciones, manejo de secrets, rules check Firebase. |
 | **42** | Legal/Compliance | "audita legal", "cookies", "privacidad", "GDPR", "Hábeas Data" | 🟢 vacío | Políticas, consentimientos, regulaciones aplicables (Colombia 1581/2012 etc.). |
-| **43** | UX/Diseño | "audita UX", "interfaz", "accesibilidad visual" | 🟢 vacío | Patrones de interfaz, modernización de componentes, jerarquía visual. |
+| **43** | UX/Diseño | "audita UX", "interfaz", "accesibilidad visual" | 🟠 **activo** (R0 2026-05-29) | Patrones de interfaz, modernización de componentes, jerarquía visual. Hallazgos en `43-UX.md`. |
 | **44** | SEO | "audita SEO", "rich snippets", "ranking", "indexación" | 🟢 vacío | Metadata, structured data, on-page, indexación. Complementa §90 historial. |
 | **45** | Performance | "audita performance", "Core Web Vitals", "LCP/CLS/FID" | 🟢 vacío | Métricas reales (Lighthouse), bottlenecks. Complementa doctrina §17. |
 | **46** | Escalabilidad | "audita escalabilidad", "arquitectura", "modernización código" | 🟢 vacío | Anti-deuda técnica, patrones, refactor estructural. |

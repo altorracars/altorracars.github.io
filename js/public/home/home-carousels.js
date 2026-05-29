@@ -1173,28 +1173,70 @@
         var clearBtn = document.getElementById('cinTrailClear');
         if (!trailBody) return;
 
-        function renderTrailNow() {
-            // SP-5.0.d DEFENSA: forzar a vehicleHistory a releer localStorage
-            // ANTES de evaluar hasHistory(). Elimina cualquier race condition
-            // entre el _history en memoria y la verdad en localStorage (que sí
-            // se actualiza sync desde el detail page por SP-5.0.c). Esto cubre
-            // casos donde _mergeHistory de Firestore, navegaciones rápidas, o
-            // cualquier flujo deja el estado en memoria desincronizado.
-            if (window.vehicleHistory && typeof window.vehicleHistory._loadFromLocalStorage === 'function') {
-                window.vehicleHistory._loadFromLocalStorage();
-            }
-            // Read hasHistory here (inside whenDbReady / pageshow handler) so that
-            // historial-visitas.js has had time to load AND localStorage is fresh.
-            // Evaluating eagerly at init could permanently miss the user's history.
-            var history = window.vehicleHistory;
-            var hasHistory = history && typeof history.hasHistory === 'function' && history.hasHistory();
+        // SP-5.0.f: bypassear vehicleHistory class. Leer localStorage DIRECTAMENTE.
+        // Razón: vehicleHistory tiene múltiples ramas (Firestore _mergeHistory,
+        // setUser async, _history en memoria desincronizado, race conditions).
+        // localStorage es la fuente de verdad — quien escribió, escribió.
+        // Filtramos también por el tombstone clearedAt (SP-5.0.e) desde aquí.
+        var HISTORY_KEY = 'altorra_vehicle_history';
+        var CLEARED_AT_KEY = 'altorra_vehicle_history_cleared_at';
 
-            if (hasHistory) {
-                renderTrailWithHistory(trailBody, clearBtn);
+        function getHistoryFromStorage() {
+            try {
+                var raw = localStorage.getItem(HISTORY_KEY);
+                if (!raw) return [];
+                var parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) return [];
+                var clearedAt = 0;
+                try {
+                    var rawClear = localStorage.getItem(CLEARED_AT_KEY);
+                    clearedAt = rawClear ? parseInt(rawClear, 10) : 0;
+                } catch (e) {}
+                return parsed.filter(function (item) {
+                    if (!item || (item.id === undefined || item.id === null)) return false;
+                    var ts = (typeof item.timestamp === 'number') ? item.timestamp : 0;
+                    return clearedAt === 0 || ts >= clearedAt;
+                });
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function bindClearOnce() {
+            if (!clearBtn || clearBtn._cinWired) return;
+            clearBtn._cinWired = true;
+            clearBtn.addEventListener('click', function () {
+                // Clear via vehicleHistory si está disponible (sincroniza Firestore).
+                // Si no, escribir localStorage directo + tombstone como fallback.
+                if (window.vehicleHistory && typeof window.vehicleHistory.clearHistory === 'function') {
+                    window.vehicleHistory.clearHistory();
+                } else {
+                    try {
+                        localStorage.setItem(HISTORY_KEY, '[]');
+                        localStorage.setItem(CLEARED_AT_KEY, String(Date.now()));
+                    } catch (e) {}
+                }
+                clearBtn.hidden = true;
+                trailBody.innerHTML = '';
+                renderTrailRecommended(trailBody);
+            });
+        }
+
+        function renderTrailNow() {
+            var historyItems = getHistoryFromStorage().slice(0, 5);
+            var vehicles = [];
+            if (window.vehicleDB && typeof window.vehicleDB.getVehicleById === 'function') {
+                for (var i = 0; i < historyItems.length; i++) {
+                    var v = window.vehicleDB.getVehicleById(historyItems[i].id);
+                    if (v) vehicles.push({ vehicle: v, timestamp: historyItems[i].timestamp || 0 });
+                }
+            }
+
+            if (vehicles.length > 0) {
+                if (clearBtn) clearBtn.hidden = false;
+                bindClearOnce();
+                buildTrailStage(trailBody, vehicles);
             } else {
-                // SP-5.0.c: explicit hide en transición rastro→recomendados (post-clear
-                // o post-bfcache restore). El [hidden] del markup + la regla CSS
-                // .cin-trail-clear[hidden] ocultan el botón cuando se setea sync.
                 if (clearBtn) clearBtn.hidden = true;
                 renderTrailRecommended(trailBody);
             }
@@ -1202,16 +1244,9 @@
 
         whenDbReady(renderTrailNow);
 
-        // SP-5.0.c: bfcache restore handler. Cuando el usuario hace browser-back
-        // desde el detalle, Chrome puede restaurar el index desde memoria sin
-        // rerun de scripts (event.persisted === true) → el trail quedaba stale
-        // con "Recomendados" aunque localStorage ya tuviera la visita.
-        // Solución: forzar a vehicleHistory a releer localStorage y re-renderizar.
+        // bfcache restore: re-render si el usuario hace browser-back desde detalle.
         window.addEventListener('pageshow', function (event) {
-            if (!event.persisted) return; // navegación normal: init ya corrió
-            if (window.vehicleHistory && typeof window.vehicleHistory._loadFromLocalStorage === 'function') {
-                window.vehicleHistory._loadFromLocalStorage();
-            }
+            if (!event.persisted) return;
             renderTrailNow();
         });
     }

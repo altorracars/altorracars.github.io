@@ -17,7 +17,7 @@
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos
-- ⚠️ **NO fusionar SP-1 a `main` hasta E2E del cliente** (T8.1 checklist en commit). Tras OK navegador, fusionar SP-2/SP-3/SP-1 al mismo tiempo (1 PR o secuencia rápida).
+- ⚠️ **E2E SP-1 requiere deploy a `main`** (L-08: Auth/Firebase bloquea localhost por referrer; única E2E real es contra `altorracars.github.io`). **Recipe**: merge → esperar ~1-2 min GitHub Pages → Ctrl+Shift+R → checklist. **Rollback ready**: `git revert <sha>` + push devuelve el diseño viejo en ~1 min. Riesgo aceptado: ventana de minutos con cinematic visible mientras se valida.
 - Conflicto cron↔cache al fusionar = patrón conocido (`git merge origin/main`, L-02).
 
 ## 🧩 Sub-sistemas (resumen)

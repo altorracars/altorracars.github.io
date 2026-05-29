@@ -51,6 +51,8 @@ se lee on-demand cuando un trigger lo exige. Así no quemas contexto.
 | 🧪 **Procedimental (experiencia)** | `docs/30-LECCIONES.md` | ❌ on-demand | Trigger de Experiencia: ANTES de una op riesgosa/repetitiva (mover archivos, merge, cron, cache) o si un síntoma "te suena". Gotchas + recetas. |
 | 🗂️ **Índice sináptico** | `docs/00-INDICE.md` | ❌ on-demand | ANTES de leer el historial (offset exacto) Y para el enrutamiento semántico (síntoma → neurona). |
 | 📚 **Largo Plazo** | `docs/99-HISTORIAL-ADR.md` | ❌ on-demand | Trigger de Error / detalle histórico de un §. NUNCA completo — usa offset/limit. |
+| 🎯 **Lóbulos de Dominio** | `docs/40-LOBULOS-DOMINIO.md` | ❌ on-demand | Trigger 🔵 §G.2: registry de dominios especializados; lóbulos hijos (`41-SEGURIDAD`, `42-LEGAL`, etc.) nacen on-demand con contenido real. |
+| 🛠️ **Skills externas** | `skills/` + tool Skill | ❌ on-demand | Expertise general de terceros (anthropic-skills, superpowers, etc.). NO es neurona — recurso paralelo. Consultar PRIMERO al disparar Trigger 🔵. |
 
 **Hojas de detalle** (enlazadas desde la Memoria Espacial, no se leen directo salvo necesidad):
 `docs/dependency-map.md` (deps JS), `docs/SITEMAP-FIX.md` (SEO/sitemap),
@@ -205,6 +207,12 @@ Cuando se dispara un trigger, leer el nodo correspondiente deja de ser opcional:
   "te suena a algo ya visto", ahí está la receta. No tropieces dos veces con la misma piedra.
 - **🟢 Trigger de Historia**: si el usuario pregunta el "por qué" de una
   decisión pasada o el detalle de un §, ve al Índice → Largo Plazo (regla de oro §0).
+- **🔵 Trigger de Auditoría/Dominio**: si el cliente pide análisis especializado
+  (seguridad/legal/UX/SEO/performance/escalabilidad/copy/a11y/etc.) → (1) consultar
+  `skills/` por framework relevante vía tool Skill; (2) consultar `40-LOBULOS-DOMINIO`
+  por lóbulo existente; (3) si no existe, neurogénesis del lóbulo hijo (`41-SEGURIDAD`,
+  `42-LEGAL`, etc.) CON contenido REAL — nunca archivo vacío (§G.4); (4) capturar
+  findings + registrar QUÉ skill usé en el lóbulo. Persiste para sesiones futuras.
 
 **Enrutamiento semántico**: ante una duda, NO escanees el cerebro. Ve al
 `docs/00-INDICE.md` (capa "síntoma/tema → neurona") que te dice EXACTAMENTE qué
@@ -243,6 +251,9 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   en la tabla §0, (2) registrarla en el mapa de neuronas de `00-INDICE`, (3)
   anotarla en la bitácora. **Anti-fragmentación**: si dudas, apéndalo a una neurona
   existente. Una neurona huérfana (sin registrar) es un daño a la red.
+  **Lóbulos de Dominio (`40-LOBULOS-DOMINIO`)**: análisis especializados nacen como
+  lóbulos hijos (`41-SEGURIDAD`, `42-LEGAL`, etc.) bajo Trigger 🔵 §G.2, SOLO con
+  contenido real de una auditoría concreta — nunca archivos vacíos por anticipado.
 - **Reflejo de Frescura**: si mueves/creas/renombras/eliminas un componente, ruta o
   flujo, actualiza `20-ESPACIAL` (+ hoja de detalle afectada) en el MISMO cambio.
   Una neurona vieja engaña al próximo "tú" → reproceso/regresión.
@@ -261,21 +272,26 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
 - **Reflejo de Auto-mejora**: llena VACÍOS. Si detectas fricción (re-investigaste
   algo ya sabido, faltó un índice o lección), MEJORA el cerebro ahí mismo: crea lo
   que faltaba.
-- **Reflejo de Autocrítica (post-mortem del cerebro)** — distinto de Auto-mejora:
-  corrige DEFECTOS. Cuando el cerebro CAUSA o contribuye a un error o en revisión al
-  cerrar algo grande → post-mortem breve: (1) nombra el DEFECTO (¿neurona stale? ¿regla
-  mala? ¿routing errado? ¿sobre-fragmentación?), (2) CORRÍGELO en su nodo (bajo el
-  límite de guardián), (3) registra el meta-aprendizaje en `30-LECCIONES §Meta`; si el
-  arreglo es estructural (toca gobernanza) → ADR en `99` + flag en `05`. **Acotado**:
-  solo ante error/fricción real, NUNCA auto-duda en bucle. *Un cerebro equivocado es
-  peor que uno incompleto.*
+- **Reflejo de Autocrítica (post-mortem reactivo)**: si el cerebro contribuyó a un
+  error → (1) nombra el DEFECTO (neurona stale / regla mala / routing errado /
+  sobre-fragmentación), (2) corrige en su nodo (bajo límite de guardián), (3) registra
+  meta-aprendizaje en `30 §Meta`; si toca gobernanza → ADR en `99` + flag en `05`. Solo
+  ante error/fricción real, NUNCA auto-duda en bucle. *Un cerebro equivocado es peor
+  que uno incompleto.*
+- **Reflejo de Desafío Crítico (proactivo)**: puedes cuestionar una regla/skill/neurona
+  del cerebro si tienes EVIDENCIA verificable (no intuición). Protocolo: (1) nombra la
+  regla, (2) evidencia (lo que aprendiste/detectaste), (3) propuesta de reemplazo,
+  (4) si convincente y no destructivo → aplica como Auto-mejora; si toca gobernanza →
+  ADR en `99`. **Cuestionar con evidencia ≠ ignorar a voluntad.** Distinto de Autocrítica
+  (reactiva post-error); Desafío actúa preventivo sobre reglas que parecen obsoletas.
 - **Reflejo de Cierre (anti-patrón "lo documento después" — M-03)**: una tarea NO está
   cerrada hasta verificar **concretamente**: ¿`10` refleja el progreso (TODO-NN)? ·
   ¿`05` actualizado si cambió la salud? · ¿decisión cerrada → ADR §NN en `99` + fila en
   `00`? · ¿lección reutilizable → `30` con disparador? · ¿cambio de comportamiento →
-  cache bumpeado §4? · ¿`npm run brain:check` SANO? Si falta cualquiera, vuelve y hazlo
-  ANTES de pasar a la siguiente. Decir "ya casi" sin alimentar el cerebro = el próximo
-  "tú" sin memoria sufre re-investigando lo ya aprendido.
+  cache bumpeado §4? · ¿`npm run brain:check` SANO? · ¿si fue auditoría especializada,
+  lóbulo hijo creado/actualizado + skills consultadas registradas en él? Si falta
+  cualquiera, vuelve y hazlo ANTES de pasar a la siguiente. Decir "ya casi" sin
+  alimentar el cerebro = el próximo "tú" sin memoria sufre re-investigando lo aprendido.
 
 **🛡️ Límite de guardián (cuidado ante todo)**: los reflejos ENRIQUECEN, nunca
 borran a la ligera. Eliminar o reescribir conocimiento histórico exige certeza

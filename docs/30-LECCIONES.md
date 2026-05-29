@@ -77,6 +77,16 @@
 - **Síntoma**: cards/UI renderizadas antes de que un módulo lazy-loaded (ej. `comparador.js` se idle-loadea ~3s post-page) capturarían una API undefined. Si el binding es per-card en render-time, los clicks no responderían hasta reload.
 - **Receta**: (a) bind UNA vez en el track/container vía event delegation; (b) en el click handler, `typeof window.vehicleComparator === 'object' && vehicleComparator.toggle(id)` — guard en CLICK-time, no en render-time; (c) para badges/UI que muestran estado, fallback a la misma fuente cruda (localStorage `altorra_comparador`) hasta que la API exista. Aplica a cualquier módulo cargado por `requestIdleCallback`, defer-post-load o demand. Confirmado SP-1 T5/T6 (§122).
 
+### L-14 · SW stale-while-revalidate puede servir JS viejo en critical-path post-deploy
+- **Síntoma**: deployaste un fix a un `.js` con cache bump. El index carga la versión nueva (visible en consola `[SW] Service Worker loaded - Version: vXXXX`). PERO al navegar a otra página del mismo origin, el código JS sigue siendo VIEJO aunque el deploy esté hecho. El fix no parece llegar.
+- **Causa**: `service-worker.js` con strategy `stale-while-revalidate` (default para CSS/JS estable) sirve la versión cacheada INMEDIATAMENTE y solo actualiza en background. La versión nueva llega en la SIGUIENTE request — no en la inmediata. Un Ctrl+Shift+R en el index NO invalida el cache del SW para futuras navegaciones — solo bypasa el SW para esa page específica.
+- **Receta**: para JS critical-path (tracking, auth, payments, cualquier cosa donde una versión vieja causa bugs persistentes), usar `networkFirst` en lugar de `stale-while-revalidate`. Ej. `service-worker.js` SP-5.0.f STRATEGY 3.5: networkFirst para `/js/core/*` + `/js/public/home/*`. Tradeoff: marginalmente más lento, pero fresh garantizado. Confirmado §124.
+
+### L-15 · Self-contained read patterns eliminan races de estado en memoria
+- **Síntoma**: un módulo con múltiples mutadores (write local sync + write async network + class state) muestra UI inconsistente. El render lee un snapshot stale del estado en memoria aunque la fuente de verdad (localStorage / Firestore) tenga la data correcta.
+- **Causa**: cuando un módulo class-based tiene varios paths que mutan `this._state` (ej. `vehicleHistory._history` mutado por `addToHistory`, `_mergeHistory`, `clearHistory`, `_loadFromFirestore`), los lectores que confían en ese estado en memoria pueden capturar momentos intermedios de un round-trip async.
+- **Receta**: para lectores CRÍTICOS (renders que el usuario ve), leer DIRECTAMENTE de la fuente de verdad (localStorage / IndexedDB / server) en cada uso. No confiar en el estado en memoria del módulo cuando hay múltiples mutadores. Ej. SP-5.0.f `initTrail` lee `localStorage.altorra_vehicle_history` con JSON.parse directo en cada `renderTrailNow()`, en lugar de `vehicleHistory.getHistory()`. Tradeoff: parsing JSON por render (~µs), pero ZERO race conditions. Confirmado §124.
+
 ---
 
 ## 🔥 Firebase / entorno
@@ -118,6 +128,19 @@
 - **Causa**: faltaba un Reflejo con disparador EXPLÍCITO y verificable al cierre — no solo principios al arranque.
 - **Corrección**: nuevo **Reflejo de Cierre (§G.4)** — checklist enforzable que debe pasarse ANTES de declarar una tarea lista: 10/05/99/00/30/cache §4/brain:check. Si falta cualquiera, la tarea NO está cerrada. Anti-patrón "lo documento después" nombrado y bloqueado. ADR §123.
 - **Principio**: los principios descriptivos no bastan para acciones críticas — hace falta convertirlos en checklist accionables en el momento exacto donde fallan.
+
+### M-04 · Iterar fixes sin verificar la fuente de verdad real (no solo el código de aplicación)
+- **Defecto**: durante SP-5.0 rastro saga, las primeras 3 rondas (c, d, e) iteraron sobre el código de aplicación (`historial-visitas.js`, `home-carousels.js`) asumiendo que el bug era ahí. Cada round failed porque la causa raíz real estaba en **el service worker** (stale-while-revalidate servía código viejo en páginas de detalle). Ronda 4 (SP-5.0.f) cazó el bug solo cuando LEÍ el SW.
+- **Causa**: §19 RCA dice "verificar leyendo el código antes de tocar". Pero "código" lo interpreté como "código de aplicación" — olvidé que el SW, la cache strategy, la configuración del hosting, son TAMBIÉN parte del sistema donde puede esconderse la causa raíz.
+- **Corrección**: §19 RCA se debe leer "la fuente de verdad real" — no solo el código que parece relevante. Antes de iterar fixes en un módulo, verifica también: SW strategy, cache headers, CDN config, build pipeline. Si el bug persiste tras 2 hipótesis fallidas en un módulo, mira FUERA del módulo (infraestructura). Cierra el bucle: §G.2 Trigger de Error (si fallas 2× el mismo bug) ahora debe incluir "verificar infraestructura/cache/SW", no solo "leer §NN en el historial".
+- **Principio**: cuando iteras un fix y el bug persiste, el bug probablemente NO está donde estás mirando. Cambia el lente, no la profundidad. ADR §124.
+
+### M-05 · El cerebro debe crecer en dominios ESTRATÉGICOS, no solo operacionales
+- **Defecto**: pre-Omni, el cerebro acumulaba memoria operacional (estado/decisiones/gotchas/lecciones de proceso) pero NO acumulaba análisis estratégico especializado (seguridad/legal/UX/SEO/performance/escalabilidad/copy/a11y). Cada sesión nueva re-investigaba estos dominios desde mi contexto pre-entrenado, perdiendo el aprendizaje específico del proyecto Altorra. La carpeta `skills/` existía como knowledge bank externo pero sin protocolo de uso.
+- **Causa**: el sistema de neuronas estaba diseñado para CÓDIGO + PROCESO, no para AUDITORÍAS especializadas. Faltaba un mecanismo para acumular hallazgos de dominio + workflow para combinar framework externo (skills) con findings proyecto-específicos.
+- **Corrección**: **ADR §125** — agregado Trigger 🔵 de Auditoría + registry de Lóbulos de Dominio (`40-LOBULOS-DOMINIO`) + integración con `skills/` externa. Los hallazgos específicos del proyecto se acumulan en lóbulos hijos (`41-SEGURIDAD`, `42-LEGAL`, etc.) que nacen on-demand con contenido real. `skills/` provee el framework general; los lóbulos lo aterrizan al proyecto + capturan las excepciones específicas.
+- **Principio**: el cerebro debe poder crecer en cualquier dirección estratégica relevante al proyecto, no solo capturar bugs históricos. Skills externos (framework genérico) + lóbulos internos (findings proyecto-específicos) = sinergia incremental. Sin esto, el conocimiento estratégico se pierde entre sesiones; con esto, se acumula y profundiza.
+- **Anti-patrón explícitamente rechazado**: crear neuronas vacías por anticipado para "preparar el terreno" — viola §G.4 anti-fragmentación. Las neuronas nacen cuando hay contenido REAL, no como placeholders. El registry (`40-LOBULOS-DOMINIO`) lista las CATEGORÍAS esperadas como mapa, no como contenido prematuro.
 
 ---
 

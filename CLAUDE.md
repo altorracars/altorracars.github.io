@@ -262,15 +262,20 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   algo ya sabido, faltó un índice o lección), MEJORA el cerebro ahí mismo: crea lo
   que faltaba.
 - **Reflejo de Autocrítica (post-mortem del cerebro)** — distinto de Auto-mejora:
-  corrige DEFECTOS. Cuando el cerebro CAUSA o contribuye a un error (te dio info
-  vieja/equivocada, una regla te llevó a un mal paso, una neurona mal diseñada) o en
-  una revisión al cerrar algo grande → post-mortem breve: (1) nombra el DEFECTO del
-  cerebro (¿neurona stale? ¿regla mala? ¿routing errado? ¿sobre-fragmentación?),
-  (2) CORRÍGELO en su nodo (bajo el límite de guardián de abajo), (3) registra el
-  meta-aprendizaje en `30-LECCIONES` §"Meta: fallos del propio cerebro"; si el arreglo
-  es estructural (toca gobernanza) → ADR en `99` + flag en `05`. **Acotado**: solo ante
-  error/fricción real o revisión deliberada, NUNCA auto-duda en bucle (quema contexto).
-  *Un cerebro equivocado es peor que uno incompleto.*
+  corrige DEFECTOS. Cuando el cerebro CAUSA o contribuye a un error o en revisión al
+  cerrar algo grande → post-mortem breve: (1) nombra el DEFECTO (¿neurona stale? ¿regla
+  mala? ¿routing errado? ¿sobre-fragmentación?), (2) CORRÍGELO en su nodo (bajo el
+  límite de guardián), (3) registra el meta-aprendizaje en `30-LECCIONES §Meta`; si el
+  arreglo es estructural (toca gobernanza) → ADR en `99` + flag en `05`. **Acotado**:
+  solo ante error/fricción real, NUNCA auto-duda en bucle. *Un cerebro equivocado es
+  peor que uno incompleto.*
+- **Reflejo de Cierre (anti-patrón "lo documento después" — M-03)**: una tarea NO está
+  cerrada hasta verificar **concretamente**: ¿`10` refleja el progreso (TODO-NN)? ·
+  ¿`05` actualizado si cambió la salud? · ¿decisión cerrada → ADR §NN en `99` + fila en
+  `00`? · ¿lección reutilizable → `30` con disparador? · ¿cambio de comportamiento →
+  cache bumpeado §4? · ¿`npm run brain:check` SANO? Si falta cualquiera, vuelve y hazlo
+  ANTES de pasar a la siguiente. Decir "ya casi" sin alimentar el cerebro = el próximo
+  "tú" sin memoria sufre re-investigando lo ya aprendido.
 
 **🛡️ Límite de guardián (cuidado ante todo)**: los reflejos ENRIQUECEN, nunca
 borran a la ligera. Eliminar o reescribir conocimiento histórico exige certeza

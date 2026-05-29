@@ -41959,3 +41959,23 @@ Pendiente del cliente (mensaje de commit incluye checklist). Cubre: hero+búsque
 - Cache bump: `v20260526150000` → `v20260529120000` (§4).
 - Rollback: `git revert` del commit de código (las 2 CSS-fixes y los 4 JS nuevos se revierten juntos).
 - Riesgo activo: NO fusionar a `main` hasta E2E navegador del cliente (T8.1). Tras E2E OK, fusionar; flag de `05` se quita.
+
+---
+
+## 123. ADR-123 — Reflejo de Cierre: el cerebro no se auto-alimentaba sin recordatorio (Autocrítica §G.4)
+
+> Reportado por el cliente: "el cerebro no se está alimentando, no funciona como debería sin que yo tenga que estar recordándolo y que se ejecuten todas sus funcionalidades".
+
+### 123.1 Defecto detectado (Reflejo de Autocrítica §G.4)
+Los Reflejos §G.4 (Captura/Frescura/Higiene/Auto-auditoría) describen QUÉ alimentar y CUÁNDO (ANTES de cerrar tarea), pero están redactados como **principios descriptivos**. Sesiones nuevas los leen, los aceptan teóricamente, pero al cerrar tareas concretas omiten la consolidación — el anti-patrón clásico "ya casi termino, lo documento después" gana, y el cerebro queda stale. Próximas sesiones re-investigan lo ya aprendido o se topan con `05`/`10` desincronizados con la realidad.
+
+### 123.2 Solución estructural
+1. **`CLAUDE.md §G.4`** — agregado **Reflejo de Cierre** explícito: una tarea NO está cerrada hasta verificar concretamente (`10` refleja el progreso; `05` actualizado si cambió la salud; decisión cerrada → ADR §NN en `99` + fila en `00`; lección reutilizable → `30` con disparador; cambio de comportamiento → cache bumpeado §4; `npm run brain:check` SANO). Si falta cualquiera, vuelve y hazlo ANTES de pasar a la siguiente. Anti-patrón "lo documento después" nombrado explícitamente.
+2. **`30-LECCIONES §Meta`** — meta-aprendizaje **M-03**: los principios descriptivos no bastan para acciones críticas — hay que convertirlos en checklist accionables EN EL MOMENTO exacto donde fallan (en este caso, al cierre de tarea, no solo al arranque).
+3. **Tighten de Reflejo de Auto-auditoría** en §G.4 (compactación para hacer espacio dentro del tope de CLAUDE.md sin perder semántica).
+
+### 123.3 No-regresión
+Cero código, cero schema, cero deploy backend. Brain edit puro. CLAUDE.md mantiene tope §G.5 (la compactación de Auto-auditoría compensa la adición de Cierre). `brain:check` esperado SANO post-edits.
+
+### 123.4 Doctrina
+Gobernanza §G + Reflejo de Autocrítica. M-03 cierra el bucle: usar → criticar → corregir = madurez. Los principios sin disparador concreto en el momento crítico = teoría sin práctica.

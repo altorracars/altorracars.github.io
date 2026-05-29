@@ -199,6 +199,7 @@
 | §120 | Cerebro Documental Neuronal AUTÓNOMO | 41842 |
 | §121 | Autocrítica + linter brain-check + robustez (cross-review) | 41865 |
 | §122 | SP-1 Index cinematic vanilla (T4-T8 — port HarmonyOS/Claude Design) | 41886 |
+| §123 | Reflejo de Cierre (M-03) — el cerebro no se auto-alimentaba sin recordatorio | 41965 |
 
 ---
 

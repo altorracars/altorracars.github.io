@@ -113,11 +113,24 @@ class VehicleHistory {
     }
 
     _mergeHistory(firestoreHistory) {
+        // SP-5.0.e: tombstone clearedAt — si el usuario hizo clearHistory, marcamos
+        // el timestamp local. _syncToFirestore es ASYNC y puede no completar antes
+        // de que el usuario navegue, dejando Firestore con visitas viejas. Sin este
+        // filtro, _mergeHistory en la próxima carga restauraría esas visitas viejas
+        // ("phantom visits") y las re-sincronizaría a Firestore, contaminándolo.
+        var clearedAt = this._getClearedAt();
         var merged = {};
         // localStorage items first
         this._history.forEach(function (item) { merged[item.id] = item; });
         // Firestore items (keep the one with the latest timestamp)
         firestoreHistory.forEach(function (item) {
+            // Filtrar items de Firestore más viejos que el tombstone — son las
+            // visitas que el usuario ya borró localmente. Sin timestamp definido
+            // se asume viejo (conservador post-clear).
+            if (clearedAt > 0) {
+                var ts = (typeof item.timestamp === 'number') ? item.timestamp : 0;
+                if (ts < clearedAt) return;
+            }
             if (!merged[item.id] || item.timestamp > merged[item.id].timestamp) {
                 merged[item.id] = item;
             }
@@ -129,6 +142,24 @@ class VehicleHistory {
         // Persist merged result to both stores
         this._saveToLocalStorage();
         if (this._isRegistered) this._syncToFirestore();
+    }
+
+    // SP-5.0.e tombstone helpers
+    _getClearedAtKey() {
+        return this.STORAGE_KEY + '_cleared_at';
+    }
+    _getClearedAt() {
+        try {
+            var raw = localStorage.getItem(this._getClearedAtKey());
+            return raw ? parseInt(raw, 10) : 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+    _setClearedAt(ts) {
+        try {
+            localStorage.setItem(this._getClearedAtKey(), String(ts));
+        } catch (e) {}
     }
 
     _syncToFirestore() {
@@ -263,6 +294,9 @@ class VehicleHistory {
 
     clearHistory() {
         this._history = [];
+        // SP-5.0.e: marcar tombstone para que _mergeHistory ignore visitas viejas
+        // de Firestore en futuras cargas (la sync async puede no haber completado).
+        this._setClearedAt(Date.now());
         this._saveToLocalStorage();
         if (this._isRegistered) this._syncToFirestore();
     }

@@ -113,6 +113,12 @@
 - **Causa**: confié en un resultado de `0` sin verificar archivo-por-archivo.
 - **Corrección**: regla en L-10 — **un chequeo que devuelve 0 puede ser falso negativo; verificar los 0-ref uno por uno** antes de asumir. Refuerza RCA §19.
 
+### M-03 · El cerebro no se auto-alimentaba sin recordatorio explícito
+- **Defecto**: reportado por el cliente — "el cerebro no se está alimentando, no funciona como debería sin que yo tenga que estar recordándolo". Los Reflejos §G.4 (Captura/Frescura/Higiene) describen QUÉ alimentar y CUÁNDO (al cerrar tarea), pero como **principios descriptivos**, no como **checklist accionable**. Sesiones nuevas los leen y aceptan teóricamente, pero al cerrar tareas concretas omiten la consolidación (especialmente bajo presión de "ya casi termino, lo documento después" → nunca se documenta).
+- **Causa**: faltaba un Reflejo con disparador EXPLÍCITO y verificable al cierre — no solo principios al arranque.
+- **Corrección**: nuevo **Reflejo de Cierre (§G.4)** — checklist enforzable que debe pasarse ANTES de declarar una tarea lista: 10/05/99/00/30/cache §4/brain:check. Si falta cualquiera, la tarea NO está cerrada. Anti-patrón "lo documento después" nombrado y bloqueado. ADR §123.
+- **Principio**: los principios descriptivos no bastan para acciones críticas — hace falta convertirlos en checklist accionables en el momento exacto donde fallan.
+
 ---
 
 > Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve

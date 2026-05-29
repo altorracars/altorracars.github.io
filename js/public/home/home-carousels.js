@@ -1174,6 +1174,15 @@
         if (!trailBody) return;
 
         function renderTrailNow() {
+            // SP-5.0.d DEFENSA: forzar a vehicleHistory a releer localStorage
+            // ANTES de evaluar hasHistory(). Elimina cualquier race condition
+            // entre el _history en memoria y la verdad en localStorage (que sí
+            // se actualiza sync desde el detail page por SP-5.0.c). Esto cubre
+            // casos donde _mergeHistory de Firestore, navegaciones rápidas, o
+            // cualquier flujo deja el estado en memoria desincronizado.
+            if (window.vehicleHistory && typeof window.vehicleHistory._loadFromLocalStorage === 'function') {
+                window.vehicleHistory._loadFromLocalStorage();
+            }
             // Read hasHistory here (inside whenDbReady / pageshow handler) so that
             // historial-visitas.js has had time to load AND localStorage is fresh.
             // Evaluating eagerly at init could permanently miss the user's history.

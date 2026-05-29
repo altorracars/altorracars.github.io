@@ -270,6 +270,10 @@ class VehicleHistory {
     removeFromHistory(vehicleId) {
         var id = String(vehicleId);
         this._history = this._history.filter(function (item) { return String(item.id) !== id; });
+        // SP-5.0.d FIX: mismo bug que SP-5.0.c en addToHistory — _debouncedSync
+        // de 1500ms perdía el cambio si el usuario navegaba antes. Persistir
+        // sync inmediato y dejar el debounce solo para Firestore.
+        this._saveToLocalStorage();
         this._debouncedSync();
     }
 

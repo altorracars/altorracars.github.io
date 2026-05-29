@@ -247,7 +247,7 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
   gap: 64px;
   width: max-content;
   padding: 18px 0;
-  animation: cinMarquee 25s linear infinite;
+  animation: cinMarquee 15s linear infinite;
   will-change: transform;
 }
 .cin-marquee:hover .cin-marquee-track { animation-play-state: paused; }
@@ -259,12 +259,16 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
   flex: 0 0 auto;
   height: 64px; width: 160px;
   display: flex; align-items: center; justify-content: center;
-  filter: grayscale(100%) brightness(0) invert(0.85);
+  /* SP-5.0.b: receta original `brightness(0) invert(0.85)` rellenaba fondos
+     macizos (BMW roundel → círculo blanco). Cambio a grayscale + low opacity:
+     respeta cualquier silueta sin "rellenar" backgrounds. */
+  filter: grayscale(100%) contrast(0.85);
+  opacity: 0.55;
   opacity: 0.55;
   transition: filter 400ms ease, opacity 400ms ease, transform 400ms var(--cin-spring);
 }
 .cin-brand img { max-height: 100%; max-width: 100%; object-fit: contain; }
-.cin-brand:hover { filter: grayscale(0%) brightness(1) invert(0); opacity: 1; transform: scale(1.1); }
+.cin-brand:hover { filter: grayscale(0%) contrast(1); opacity: 1; transform: scale(1.1); }
 
 /* ============================================================
    COLECCIÓN — horizontal scroll cards (vehículos)
@@ -971,6 +975,9 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
   transition: border-color 240ms, color 240ms, background 240ms;
 }
 .cin-trail-clear:hover { color: #ff8a7a; border-color: rgba(255,138,122,0.4); background: rgba(255,138,122,0.08); }
+/* SP-5.0.b: [hidden] vence a display:inline-flex (UA stylesheet NO es !important).
+   Sin esto, el botón "Limpiar rastro" aparece incluso en modo Recomendados. */
+.cin-trail-clear[hidden] { display: none !important; }
 
 .cin-trail-stage {
   display: grid;

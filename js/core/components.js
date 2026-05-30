@@ -84,6 +84,14 @@ function injectCinematicAssets() {
 
     var head = document.head;
 
+    // 0. Activar el contexto DARK del chrome cinematic (SP-5.1.b).
+    // tokens-redesign.css define los tokens claros (--ink-text-muted: #5C5C68)
+    // en :root y los oscuros (#B8B8C0) en :root[data-theme="dark"]. Sin este
+    // atributo, el nav cinematic (fondo oscuro) tendría texto oscuro → ilegible.
+    // SEGURO: css/style.css + dark-theme.css + performance-fixes.css NO usan
+    // [data-theme] (su dark es permanente), así que esto NO altera el body legacy.
+    document.documentElement.setAttribute('data-theme', 'dark');
+
     // 1. Preconnect para Google Fonts (perf hint).
     var preconnect = document.createElement('link');
     preconnect.rel = 'preconnect';
@@ -113,6 +121,15 @@ function injectCinematicAssets() {
     chromeLink.rel = 'stylesheet';
     chromeLink.href = 'css/home/chrome-redesign.css';
     head.appendChild(chromeLink);
+
+    // 4.b BRIDGE legacy↔cinematic (SP-5.1.b). DEBE cargar DESPUÉS de
+    // chrome-redesign.css. Vence las reglas del tema viejo (#header,
+    // body #header con !important de performance-fixes, body .nav-link,
+    // body .footer-bottom) que pisan el chrome por especificidad.
+    var bridgeLink = document.createElement('link');
+    bridgeLink.rel = 'stylesheet';
+    bridgeLink.href = 'css/home/chrome-bridge.css';
+    head.appendChild(bridgeLink);
 
     // 5. Chrome JS (scroll-machine 3-estados + dropdown + drawer).
     // NOTA: `defer` no aplica a scripts inyectados dinámicamente (es atributo

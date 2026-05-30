@@ -1,0 +1,99 @@
+/* ============================================================
+   ALTORRA CARS · CHROME BRIDGE — legacy ↔ cinematic (SP-5.1.b)
+   ------------------------------------------------------------
+   Las páginas LEGACY cargan css/style.css + css/dark-theme.css +
+   css/performance-fixes.css, que estilizan el contenedor del header
+   por ID (#header → 1-0-0, body #header → 1-0-1, performance-fixes
+   con !important) y el footer/nav-link por `body .*` (0-1-1).
+   Esas reglas PISAN el chrome cinematic (`.alt-nav`/`.footer-*` =
+   0-1-0) → el chrome se ve roto (barra fija opaca, texto ilegible).
+
+   Este archivo RESTAURA el look cinematic en legacy ganando con
+   especificidad #header.alt-nav (1-1-0) + !important quirúrgico
+   (necesario porque performance-fixes usa !important). Se inyecta
+   ÚLTIMO (tras chrome-redesign.css) SOLO en páginas legacy — el
+   index NO lo carga (no tiene el conflicto; su chrome es inline).
+
+   Acompaña a: components.js setea <html data-theme="dark"> al
+   inyectar el chrome (activa los tokens dark de tokens-redesign.css;
+   sin él, --ink-text-muted resuelve a #5C5C68 oscuro → ilegible).
+   Seguro porque los CSS viejos NO reaccionan a [data-theme].
+   ============================================================ */
+
+/* ───── NAV · contenedor ─────────────────────────────────────
+   El #header viejo era position:fixed (placeholder reserva 80px).
+   El cinematic es sticky, pero el nav queda dentro de un
+   #header-placeholder pequeño → sticky no "pega" durante el scroll.
+   Por eso en legacy usamos position:fixed flotante centrado (mismo
+   look; el placeholder reserva el espacio). El scroll-machine de
+   home-chrome.js opera con transform — funciona igual en fixed. */
+#header.alt-nav {
+  position: fixed !important;
+  top: 16px !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: auto !important;
+  width: calc(100% - 32px) !important;
+  max-width: calc(1320px - 32px) !important;
+  margin: 0 auto !important;
+  background: rgba(20, 18, 24, 0.55) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 20px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Estados del scroll-machine — el background debe ganar al base de
+   arriba (misma especificidad 1-1-0 → orden en este archivo decide). */
+#header.alt-nav.scrolled {
+  background: rgba(20, 18, 24, 0.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08),
+              0 18px 48px -20px rgba(0, 0, 0, 0.55) !important;
+}
+#header.alt-nav.alt-nav--wheel {
+  width: 60px !important;
+  max-width: 60px !important;
+  border-radius: 999px !important;
+  background: rgba(20, 18, 24, 0.92) !important;
+  border-color: rgba(212, 175, 55, 0.35) !important;
+}
+#header.alt-nav.alt-nav--gone {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ───── Placeholder · reservar el espacio del nav fixed ──────
+   El nav cinematic es fixed (fuera de flujo). El placeholder debe
+   reservar ~80px para que el contenido no quede tapado (igual que
+   con el header viejo, que también era fixed). Forzado para
+   consistencia entre todas las legacy. */
+#header-placeholder {
+  min-height: 80px !important;
+  display: block !important;
+}
+
+/* ───── NAV · links (vencer body .nav-link de dark-theme.css 0-1-1) ──
+   Sin !important: #header.alt-nav .nav-link (1-2-0) > body .nav-link. */
+#header.alt-nav .nav-link {
+  color: var(--ink-text-muted);
+}
+#header.alt-nav .nav-link:hover {
+  color: var(--ink-text);
+}
+#header.alt-nav .nav-link.active {
+  color: var(--gold-300);
+}
+
+/* ───── FOOTER · vencer body .footer-bottom (dark-theme 0-1-1) ──
+   .alt-footer .footer-bottom (0-2-0) > body .footer-bottom. */
+.alt-footer .footer-bottom {
+  border-top: 1px solid var(--surface-stroke);
+}
+[data-theme="dark"] .alt-footer .footer-bottom {
+  border-top-color: rgba(212, 175, 55, 0.15);
+}
+
+/* El footer cinematic es transparente y fluye al final del documento
+   (no fixed) — no necesita override de posición. El body legacy le da
+   su fondo oscuro, sobre el que el .alt-footer translúcido se asienta. */

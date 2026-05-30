@@ -105,6 +105,17 @@
 - Casos validados §119: `admin-upload.html` (sin auth → rules §68 rechazan escrituras), `theme-switcher.js` (comentario "eliminado — tema dark permanente", 0 cargas).
 - **Acción**: cuarentenar a `_legacy/` (reversible) + documentar en `_legacy/README.md`, NO borrar de una.
 
+### L-16 · Inyectar chrome/CSS nuevo en páginas que cargan el tema viejo → conflicto de especificidad + scope de tokens
+- **Síntoma**: inyectas un componente/chrome nuevo (markup + CSS) en páginas que YA cargan un CSS legacy. El componente "no se ve" o se ve roto (posición/fondo/colores del tema viejo), aunque el CSS nuevo cargue.
+- **Causa DOBLE** (SP-5.1.b §127, verificado leyendo CSS):
+  1. **Especificidad**: el tema viejo estiliza por ID (`#header` 1-0-0, `body #header` 1-0-1) o con `!important` (performance-fixes), venciendo al CSS nuevo basado en clases (`.alt-nav` 0-1-0) — sin importar el orden de carga. El nuevo reusa `id="header"` (contrato) → el ID viejo lo pisa.
+  2. **Scope de tokens / data-theme**: el CSS nuevo depende de tokens condicionados (`:root[data-theme="dark"]`). Si la página nueva NO tiene el `data-theme` que el componente espera, los tokens resuelven al valor equivocado (ej. texto oscuro sobre fondo oscuro → ilegible). El index sí tenía `<html data-theme="dark">`; las legacy no.
+- **Receta**:
+  1. **Verificar el contexto de tokens primero**: ¿el componente nuevo depende de `[data-theme]` u otro atributo de scope? Si la página destino no lo tiene, setearlo por JS al inyectar — PERO antes verificar (`grep data-theme` en los CSS viejos) que NO rompa el tema viejo. Si los CSS viejos no reaccionan al atributo, es seguro.
+  2. **Bridge de especificidad**: crear un CSS override cargado ÚLTIMO que gane al tema viejo con especificidad ≥ (combinar ID+clase: `#header.alt-nav` 1-1-0 > `body #header` 1-0-1) + `!important` SOLO donde el viejo use `!important`. No editar el tema viejo (reversibilidad).
+  3. **Layout model**: si el viejo usaba `position: fixed` (placeholder reserva espacio) y el nuevo `sticky`, y el nuevo se inyecta dentro de un contenedor pequeño → sticky no "pega". Usar fixed en el bridge para encajar con el placeholder.
+- **Meta-lección**: inyectar UI nueva donde convive CSS viejo NO es solo "cargar el CSS nuevo" — es ganar la guerra de especificidad + asegurar el scope de tokens. Presupuestar un "bridge" desde el diseño cuando hay coexistencia de temas.
+
 ---
 
 ## 🪞 Meta: fallos del propio cerebro (Reflejo de Autocrítica `CLAUDE.md §G.4`)

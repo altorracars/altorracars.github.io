@@ -18,16 +18,19 @@
   Auditoría + registry `40-LOBULOS-DOMINIO` + integración `skills/` + Reflejo
   de Desafío Crítico + M-05. **Pendiente del cliente**: commit brain (7 archivos)
   + push + merge a main. Sin deploy de código (brain-only).
-- **SP-5.1 chrome global ENTREGADO en working tree** (ADR §126): snippets/{header,footer}.html
-  cinematic + components.js injectCinematicAssets() + home-chrome.js listener altorra:chrome:ready
-  + cache bump v20260531000000. ~87 páginas legacy recibirán chrome cinematic en próximo
-  page-load tras deploy. Body queda intacto (SP-5.2 lo absorbe).
+- **SP-5.1 chrome global COMMITEADO** (ADR §126) + **SP-5.1.b bridge ENTREGADO en working
+  tree** (ADR §127): el chrome cinematic NO se veía en legacy (cliente: "no observo nada").
+  Causa raíz doble (RCA §19): (1) falta `data-theme="dark"` → texto ilegible; (2) especificidad
+  CSS (#header/body #header con !important de performance-fixes pisan .alt-nav). Fix:
+  components.js setea data-theme=dark + `css/home/chrome-bridge.css` (override 1-1-0 + !important,
+  nav a position:fixed). Cache `v20260531120000`. Lección **L-16**.
 - **PRÓXIMOS PASOS**:
-  1. Cliente commitea + deploya SP-5.1.
-  2. Verificación visual en 4 páginas (nosotros, busqueda, favoritos, vehiculos/some-slug).
-  3. Si OK → arrancamos **SP-5.2.a Soft pages body migration** (nosotros, contacto,
-     simulador, comparar, favoritos, perfil, resenas, terminos, privacidad, cookies, 404).
-  4. Auditoría 45-PERFORMANCE eventual para validar LCP/FCP impact del font load global.
+  1. Cliente commitea + deploya SP-5.1.b (6 archivos: chrome-bridge.css NUEVO + components.js
+     + sw + cache-manager + docs).
+  2. **RE-validar 4 páginas legacy** (nosotros, busqueda, favoritos, vehiculos/slug): chrome
+     cinematic flotante + texto LEGIBLE + scroll-machine + dropdown + drawer. Footer legible.
+  3. Si OK → **SP-5.2.a Soft pages body migration**.
+  4. Auditoría 45-PERFORMANCE eventual (LCP/FCP del font load global).
 - **DIFERIDO (post-SP-5)**:
   - **SP-4** motor recomendaciones REAL: ranking GA-based para Tu rastro / Recomendados,
     custom image upload (+IA opcional) para destacados, real-time switch sesión.

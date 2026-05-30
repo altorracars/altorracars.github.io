@@ -333,6 +333,7 @@
     @keyframes plSpin{to{transform:rotate(360deg)}}
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
     <link rel="preload" as="image" href="multimedia/heroes/cookies-hero.jpg" fetchpriority="high">
 
     <noscript>
@@ -347,29 +348,21 @@
 
     <div id="header-placeholder"></div>
 
-    <section class="gradient-hero">
-        <picture>
-        <source type="image/avif" srcset="multimedia/optimized/cookies-hero-480.avif 480w, multimedia/optimized/cookies-hero-768.avif 768w, multimedia/optimized/cookies-hero-1280.avif 1280w, multimedia/optimized/cookies-hero-1920.avif 1920w" sizes="100vw">
-        <source type="image/webp" srcset="multimedia/optimized/cookies-hero-480.webp 480w, multimedia/optimized/cookies-hero-768.webp 768w, multimedia/optimized/cookies-hero-1280.webp 1280w, multimedia/optimized/cookies-hero-1920.webp 1920w" sizes="100vw">
-        <img src="multimedia/heroes/cookies-hero.jpg" alt="Política de Cookies" class="gradient-hero-bg" width="1920" height="800" fetchpriority="high" loading="eager" decoding="async">
-    </picture>
-        <div class="gradient-hero-overlay"></div>
-        <div class="hero-ambient" aria-hidden="true"></div>
-        <div class="container">
-            <h1>Política de <span>Cookies</span></h1>
-            <p>Información sobre el uso de cookies y tecnologías similares en la plataforma de ALTORRA CARS.</p>
-            <span class="hero-badge">Última actualización: Febrero 2025</span>
-        </div>
-        <div class="hero-bottom-fade"></div>
-    </section>
-
-    <section class="cookies-content">
-        <div class="container">
-            <div class="legal-card">
+    <main class="soft-page" data-cin="on">
+        <section class="soft-hero soft-hero--small">
+            <div class="soft-hero-inner">
+                <span class="cin-eyebrow">Legal · Cookies</span>
+                <h1 class="soft-hero-h">Política de Cookies</h1>
+                <p class="soft-hero-sub">Última actualización: Febrero 2025.</p>
+            </div>
+        </section>
+        <section class="soft-section legal-section">
+            <article class="legal-article">
                 <h2>Que son las cookies</h2>
                 <p>Las cookies son pequenos archivos de texto que se almacenan en tu dispositivo (ordenador, tablet o movil) cuando visitas nuestro sitio web. Estas cookies nos permiten reconocer tu navegador y mejorar tu experiencia de navegacion, recordar tus preferencias y proporcionar funcionalidades esenciales de la plataforma.</p>
                 <p>En ALTORRA CARS utilizamos cookies y tecnologias similares (como localStorage y Service Workers) para garantizar el correcto funcionamiento de nuestra plataforma, ofrecer funcionalidades personalizadas y mejorar continuamente nuestros servicios.</p>
-
+            </article>
+            <article class="legal-article">
                 <h2>Tipos de cookies que usamos</h2>
 
                 <h3>1. Cookies Esenciales</h3>
@@ -401,7 +394,8 @@
                     <li><strong>Service Worker:</strong> Cache de recursos estaticos (imagenes, CSS, JavaScript) para carga mas rapida en visitas posteriores.</li>
                     <li><strong>Cache Manager:</strong> Gestion inteligente del cache para reducir tiempos de carga.</li>
                 </ul>
-
+            </article>
+            <article class="legal-article">
                 <h2>Detalle de cookies utilizadas</h2>
                 <div class="cookie-table-wrapper">
                     <table class="cookie-table">
@@ -460,7 +454,8 @@
                 <div class="info-box">
                     <p><strong>Nota:</strong> Las cookies de sesion se eliminan automaticamente cuando cierras tu navegador. Las cookies permanentes se mantienen hasta que las elimines manualmente o caduquen segun su duracion establecida.</p>
                 </div>
-
+            </article>
+            <article class="legal-article">
                 <h2>Cookies de terceros</h2>
                 <p>Utilizamos servicios de terceros que pueden establecer sus propias cookies:</p>
                 <ul>
@@ -469,7 +464,8 @@
                     <li><strong>Google Fonts:</strong> Tipografia Poppins cargada desde servidores de Google.</li>
                 </ul>
                 <p>Estas cookies estan sujetas a las politicas de privacidad de sus respectivos proveedores. Te recomendamos revisar las politicas de privacidad de Google y Firebase para mas informacion.</p>
-
+            </article>
+            <article class="legal-article">
                 <h2>Como gestionar las cookies</h2>
                 <p>Puedes controlar y eliminar las cookies a traves de la configuracion de tu navegador. A continuacion, te mostramos como hacerlo en los navegadores mas comunes:</p>
 
@@ -493,7 +489,8 @@
                 </div>
 
                 <p>Ten en cuenta que la mayoria de navegadores aceptan cookies automaticamente. Puedes configurar tu navegador para rechazar cookies, pero esto puede afectar la funcionalidad de nuestro sitio web.</p>
-
+            </article>
+            <article class="legal-article">
                 <h2>Tecnologias similares a las cookies</h2>
                 <p>Ademas de las cookies tradicionales, utilizamos otras tecnologias de almacenamiento local:</p>
 
@@ -505,7 +502,8 @@
 
                 <h3>Service Workers</h3>
                 <p>Scripts que se ejecutan en segundo plano para proporcionar funcionalidades avanzadas como cache offline, notificaciones push y sincronizacion en segundo plano. Mejoran significativamente la velocidad de carga de la plataforma.</p>
-
+            </article>
+            <article class="legal-article">
                 <h2>Impacto de desactivar las cookies</h2>
                 <p>Si decides desactivar las cookies, es posible que experimentes limitaciones en la funcionalidad de nuestro sitio web:</p>
                 <ul>
@@ -519,11 +517,13 @@
                 <div class="info-box">
                     <p><strong>Recomendacion:</strong> Para disfrutar de la experiencia completa de ALTORRA CARS, te recomendamos mantener las cookies activadas, especialmente las cookies esenciales y de funcionalidad.</p>
                 </div>
-
+            </article>
+            <article class="legal-article">
                 <h2>Actualizaciones de esta politica</h2>
                 <p>ALTORRA CARS se reserva el derecho de modificar esta Politica de Cookies en cualquier momento. Cualquier cambio sera publicado en esta pagina con la fecha de actualizacion correspondiente. Te recomendamos revisar periodicamente esta politica para mantenerte informado sobre como utilizamos las cookies.</p>
                 <p>La version actual de esta politica es de <strong>Febrero 2025</strong>.</p>
-
+            </article>
+            <article class="legal-article">
                 <h2>Mas informacion sobre privacidad</h2>
                 <p>Para obtener mas informacion sobre como tratamos tus datos personales, te invitamos a revisar nuestra <a href="privacidad.html">Politica de Privacidad</a>, donde encontraras detalles sobre la recopilacion, uso y proteccion de tu informacion personal.</p>
 
@@ -543,9 +543,9 @@
                     <strong>ALTORRA CARS</strong> - Division de ALTORRA Company SAS<br>
                     Cartagena, Bolivar, Colombia
                 </p>
-            </div>
-        </div>
-    </section>
+            </article>
+        </section>
+    </main>
 
     <div id="footer-placeholder"></div>
     <script src="js/core/firebase-config.js" defer></script>

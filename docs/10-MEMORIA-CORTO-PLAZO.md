@@ -18,19 +18,20 @@
   Auditoría + registry `40-LOBULOS-DOMINIO` + integración `skills/` + Reflejo
   de Desafío Crítico + M-05. **Pendiente del cliente**: commit brain (7 archivos)
   + push + merge a main. Sin deploy de código (brain-only).
-- **SP-5.1 chrome global COMMITEADO** (ADR §126) + **SP-5.1.b bridge ENTREGADO en working
-  tree** (ADR §127): el chrome cinematic NO se veía en legacy (cliente: "no observo nada").
-  Causa raíz doble (RCA §19): (1) falta `data-theme="dark"` → texto ilegible; (2) especificidad
-  CSS (#header/body #header con !important de performance-fixes pisan .alt-nav). Fix:
-  components.js setea data-theme=dark + `css/home/chrome-bridge.css` (override 1-1-0 + !important,
-  nav a position:fixed). Cache `v20260531120000`. Lección **L-16**.
-- **PRÓXIMOS PASOS**:
-  1. Cliente commitea + deploya SP-5.1.b (6 archivos: chrome-bridge.css NUEVO + components.js
-     + sw + cache-manager + docs).
-  2. **RE-validar 4 páginas legacy** (nosotros, busqueda, favoritos, vehiculos/slug): chrome
-     cinematic flotante + texto LEGIBLE + scroll-machine + dropdown + drawer. Footer legible.
-  3. Si OK → **SP-5.2.a Soft pages body migration**.
-  4. Auditoría 45-PERFORMANCE eventual (LCP/FCP del font load global).
+- **SP-5.1 + SP-5.1.b EN PRODUCCIÓN ✅** (ADR §126 + §127): chrome cinematic global en las
+  ~87 páginas legacy, validado (cliente: "mucho mejor"). El bridge (`chrome-bridge.css` +
+  data-theme) resolvió el conflicto de especificidad legacy↔cinematic (L-16).
+- **EN CURSO: SP-5.2 body migration soft pages — DECOMPUESTO en 3 lotes** (es un PORT;
+  diseños cinematic en redesign `SoftPages.jsx`/`Compare.jsx`/`Simulator.jsx` + `soft.css`/`pages.css`):
+  - **SP-5.2.a (piloto) ✅ working tree** (ADR §128): Legales + 404 → cinematic. `soft-redesign.css` (tokens+soft.css), contenido legal preservado 1:1 (13/15/9 cláusulas). Patrón soft-page establecido. Pendiente: deploy + E2E.
+  - **SP-5.2.b**: Editorial — nosotros + contacto + resenas (`About`/`Contact`/`Reviews`).
+  - **SP-5.2.c**: App-like — favoritos + perfil + comparar + simulador (engancha favoritesManager/vehicleComparator/calculadora). 🔴 alto riesgo.
+- **📌 MEJORAS DEL COMPARADOR (cliente, para SP-5.2.c)**: el comparador cinematic (`Compare.jsx`,
+  slots A/B + VS + estado vacío "Pon dos vehículos lado a lado") le gustó. Cambios pedidos:
+  (1) CTA "Ir al catálogo" → "**Explorar vehículos**"; (2) permitir **selección de vehículos
+  INLINE** desde el comparador (picker propio), sin redirigir a busqueda.html y volver.
+- ⚠️ Coexistencia tema-viejo↔cinematic = conflictos de especificidad (L-16); SP-5.2 eventualmente
+  retira style.css/dark-theme.css de las páginas migradas.
 - **DIFERIDO (post-SP-5)**:
   - **SP-4** motor recomendaciones REAL: ranking GA-based para Tu rastro / Recomendados,
     custom image upload (+IA opcional) para destacados, real-time switch sesión.

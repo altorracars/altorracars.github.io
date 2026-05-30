@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-05-30) |
 |---|---|
-| **Build** | 🟢 SP-5.2 rediseño cinematic COMPLETO + §137 pulido — commiteado/pusheado por el cliente. **SP-4 §138 motor de recomendaciones (fase 1: similitud content-based) → working tree.** Pendiente: SP-4 fase 2 (popularidad/destacados/real-time) diferida. |
-| **Cache version vigente** | `v20260531270000` (§138 SP-4 recomendaciones) |
-| **Branch activa** | `refactor/estructura` — **+1 commit sobre `origin/main`** (favoritos §132, pendiente push). El resto ya en main. |
-| **Producción (`main`)** | `origin/main` = perfil §131 (cinematic, auto-deploy Pages) → **validar perfil en vivo**. Favoritos llega al pushear. |
+| **Build** | 🟢 Rediseño cinematic COMPLETO punta a punta (§122–§137) + SP-4 recomendaciones fase 1 (§138) — **TODO mergeado a `origin/main` = producción** (verificado: HEAD local `d62f058` es ancestro de origin/main). Pendiente: SP-4 fase 2 diferida. |
+| **Cache version vigente** | `v20260531280000` (comparador CTA "Explorar vehículos" + sync main) |
+| **Branch activa** | `refactor/estructura` — **71 commits DETRÁS de `origin/main`** (auto-merge PRs del CI: vehicle pages 4h + assets `multimedia/optimized/` + cache bumps). HEAD es ancestro → `git merge origin/main` = fast-forward limpio. ⚠️ Consolidación sin commitear: `docs/10` (poda) + `docs/30` (M-07). |
+| **Producción (`main`)** | `origin/main` contiene TODO hasta §138 (cinematic completo + recomendaciones fase 1, auto-deploy Pages). **Falta validar en vivo** (Ctrl+Shift+R): comparador/simulador/recomendaciones. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

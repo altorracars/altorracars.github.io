@@ -11,43 +11,41 @@
 
 ## 🎯 Foco actual
 
-- **REDISEÑO Fase 1 + SP-5.0 polish COMPLETOS en producción** (ADR §122 + §124).
-  Index cinematic vanilla funcionando, rastro arreglado, lecciones consolidadas
-  (L-11..L-15 + M-03/M-04).
-- **OMNI-BRAIN Fase 1 ENTREGADA en working tree** (ADR §125): Trigger 🔵 de
-  Auditoría + registry `40-LOBULOS-DOMINIO` + integración `skills/` + Reflejo
-  de Desafío Crítico + M-05. **Pendiente del cliente**: commit brain (7 archivos)
-  + push + merge a main. Sin deploy de código (brain-only).
-- **SP-5.1 + SP-5.1.b EN PRODUCCIÓN ✅** (ADR §126 + §127): chrome cinematic global en las
-  ~87 páginas legacy, validado (cliente: "mucho mejor"). El bridge (`chrome-bridge.css` +
-  data-theme) resolvió el conflicto de especificidad legacy↔cinematic (L-16).
-- **EN CURSO: SP-5.2 body migration soft pages — DECOMPUESTO en 3 lotes** (es un PORT;
-  diseños cinematic en redesign `SoftPages.jsx`/`Compare.jsx`/`Simulator.jsx` + `soft.css`/`pages.css`):
-  - **SP-5.2.a (piloto) ✅ working tree** (ADR §128): Legales + 404 → cinematic. `soft-redesign.css` (tokens+soft.css), contenido legal preservado 1:1 (13/15/9 cláusulas). Patrón soft-page establecido. Pendiente: deploy + E2E.
-  - **SP-5.2.b ✅ working tree** (ADR §129): Editorial — nosotros (`About`) + contacto (`Contact`, form funcional preservado: contactForm + 7 campos + contact.js). + fix `.cin-eyebrow` global en soft-redesign.css. Pendiente: deploy + E2E.
-  - **SP-5.2.c**: App-like (contenido generado por JS — reescribir el render a cinematic
-    preservando lógica + verificando consumidores compartidos). **PATRÓN (ADR §130, validado en
-    resenas)**: (1) port hero/layout a `.soft-page`/`.soft-hero` + `<link>` soft-redesign.css;
-    (2) reescribir SOLO la(s) función(es) de render del JS de esa página → markup cinematic
-    (clases de soft-redesign.css); (3) PRESERVAR la lógica de datos + funciones compartidas;
-    (4) VERIFICAR qué otras páginas usan ese JS antes de tocarlo (RCA §19).
-    - **c.1 resenas ✅ COMMITEADO** (ADR §130, commit `e115841`): reviews.js renderFullReviewsPage → cinematic.
-    - **c.2a perfil ✅ working tree** (ADR §131): Opción A — cinematic por ARMONIZACIÓN DE TOKENS (remapeo `--pf-*`→`--cin-*` scoped a `body[data-cin=on]` en perfil.css + hero `.soft-hero` + **0 cambios en perfil.js**). Dashboard de 7 secciones 100% preservado. El JSX `Profile()` era un mock de 4 tabs → no se usó como estructura. Pendiente: deploy + E2E (solo prod, L-08). Lección reutilizable → **L-17**.
-      · ⚠️ Decisión del cliente: A (preservar dashboard) sobre B (réplica del mock = regresión). Nombre en hero quedó genérico ("Bienvenido de nuevo") para no tocar JS; personalizarlo = 3 líneas en `updateSidebarUser` si se quiere a futuro.
-    - **c.2b favoritos ✅ working tree** (ADR §132): Opción 1 (cliente) — armonización CSS de las `.vehicle-card` (de render.js, COMPARTIDO — intacto) + hero/controles/estados, scoped a `body[data-cin=on]` en favorites-page.css. CERO cambios JS (diff-render/badges/comparador intactos). Se descartó reescribir a `.cin-av-card` (riesgo alto, no verificable en localhost). Pendiente: deploy + E2E (solo prod, L-08).
-    - **SP-5.2.c COMPLETO** ✅: c.1 resenas §130 · c.2 perfil §131 + favoritos §132 · c.3 comparador §134 (flotante) + §135 (página) · **c.4 simulador §136** (armonización tokens como perfil, cero cambios al cálculo). Todo el cuerpo de las soft/app-pages está cinematic. + **§137 QA/pulido** (flotante comparador vs QuickTools; gráfico del simulador). + **§138 SP-4 motor de recomendaciones por similitud** (content-based local, enfoque B — `js/core/recommendations.js`; el trail del index ahora muestra autos semejantes al rastro, no los vistos; fallback robusto). Working tree. **← RETOMAR: validar SP-4 en prod (ver 2-3 autos → "Recomendados" semejantes). Diferido: SP-4 fase 2 (popularidad global/custom image destacados/real-time), SP-5 polish.**
-    - **c.3 comparar** — ⚠️ requiere **brainstorm propio**: mejoras del cliente (le gustó `Compare.jsx`: slots A/B + VS + "Pon dos vehículos lado a lado") = (1) CTA "Ir al catálogo"→"**Explorar vehículos**"; (2) **selección de vehículos INLINE** desde el comparador (picker propio, sin redirigir a busqueda). Es feature nuevo, no solo port. Engancha `vehicleComparator`.
-    - **c.4 simulador** (2389 líneas, calculadora de crédito) → sprint propio. Diseño: `Simulator.jsx`.
-- **📌 MEJORAS DEL COMPARADOR (cliente, para SP-5.2.c)**: el comparador cinematic (`Compare.jsx`,
-  slots A/B + VS + estado vacío "Pon dos vehículos lado a lado") le gustó. Cambios pedidos:
-  (1) CTA "Ir al catálogo" → "**Explorar vehículos**"; (2) permitir **selección de vehículos
-  INLINE** desde el comparador (picker propio), sin redirigir a busqueda.html y volver.
-- ⚠️ Coexistencia tema-viejo↔cinematic = conflictos de especificidad (L-16); SP-5.2 eventualmente
-  retira style.css/dark-theme.css de las páginas migradas.
-- **DIFERIDO (post-SP-5)**:
-  - **SP-4** motor recomendaciones REAL: ranking GA-based para Tu rastro / Recomendados,
-    custom image upload (+IA opcional) para destacados, real-time switch sesión.
-  - Auditorías futuras: `44-SEO`, `45-PERFORMANCE`, `48-ACCESIBILIDAD` cuando se piden.
+> **Pizarra podada al cierre de sesión 2026-05-30** (contexto saturado → handoff a ventana
+> nueva). El detalle histórico vive en los ADRs **§122–§138** (`99` + `00-INDICE`). Aquí solo el estado vivo.
+
+- **REDISEÑO TOTAL cinematic — COMPLETO** (§122 index + §124 SP-5.0 + §126/§127 SP-5.1 chrome global
+  + §128–§137 SP-5.2 cuerpo de TODAS las páginas). Index, legales, 404, nosotros, contacto, reseñas,
+  perfil, favoritos, comparador (flotante+página) y simulador están en el tema cinematic. Header/footer
+  unificados (§133). Todo **commiteado** (último `d62f058`).
+- **SP-4 recomendaciones — FASE 1 hecha** (§138): motor por **similitud al rastro** (content-based local,
+  `js/core/recommendations.js`). El trail del index muestra autos semejantes al rastro (no los vistos;
+  esos quedan en QuickTools/perfil). Pesos ajustables en el objeto `W`.
+
+### ← Para RETOMAR (ventana nueva)
+> Sesión 2026-05-30 (B): branch sincronizada con `origin/main` (FF limpio), pulido comparador hecho,
+> validación en **localhost preview** (no prod). Lección preview local → **L-20**.
+
+1. **Validar en PRODUCCIÓN** (Ctrl+Shift+R) — pendiente (localhost ya OK, pero Auth/Analytics 403 ahí por L-08):
+   - SP-4: ver 2-3 fichas → el index muestra "Recomendados" **semejantes**.
+   - Comparador: flotante abajo-izq no choca con QuickTools (⊞); slots A/B + picker inline + diff dorado.
+   - Perfil/favoritos: dashboard/cards en cinematic.
+   - ✅ **Validado en localhost**: comparador (CTA nuevo "Explorar vehículos", empty state, 27 autos cargan)
+     + simulador (cinematic OK, calcula $45.5M→cuota $1.140.601 18.86%EA, dorado `212,168,90` consistente).
+2. **Detalles puntuales por pulir**:
+   - ✅ **Comparador CTA "Ir al catálogo" → "Explorar vehículos"** hecho (`comparar.html:269` `.cmp-empty-cta`).
+     `.cmp-back` (línea 185) se dejó como "Volver al catálogo" a propósito (back-link con flecha).
+   - ⚠️ **Simulador "grises del 2º bloque" NO SE REPRODUCEN** (RCA §19): el panel de resultados usa solo
+     superficies cinematic (morado `21,18,26` / negro `8,7,10` / dorado). El único gris `128,128,128`
+     está en el **footer GLOBAL** (`footer-legal`/`footer-bottom`) — si molesta, es tarea de footer, no del simulador.
+     Re-confirmar con el cliente QUÉ gris vio antes de tocar.
+3. **Diferido sin urgencia**: SP-4 **fase 2** (popularidad global = contador `vehiculos/{id}.views` en Firestore + reglas; custom image upload destacados; real-time switch sesión). SP-5 polish fino. Auditorías `44-SEO`/`45-PERFORMANCE`/`48-ACCESIBILIDAD` cuando se pidan.
+
+### Patrón clave de la sesión (SP-5.2)
+**Armonización por remapeo de tokens `:root`/CSS (L-17/L-18) > reescritura**, cuando el JSX de referencia
+es un mock más pobre que el módulo real (perfil, favoritos, simulador). Reescritura solo donde el diseño
+aportaba estructura nueva (reseñas, comparador). Motor recomendaciones → **L-19**. Git stale (no afirmar
+despliegue sin `fetch`) → **M-06**.
 
 ---
 
@@ -80,10 +78,11 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 🔮 Contexto estratégico
 
-- **Fase 2 (SP-4/SP-5)** queda diferido sin urgencia: la Fase 1 ya entregó la primera
-  impresión visual completa del proyecto. SP-5 es esfuerzo grande; SP-4 requiere
-  analytics primero. Aprovechar para validar Fase 1 en producción antes de seguir.
+- **Rediseño TOTAL cinematic + recomendaciones (fase 1) ENTREGADOS.** El sitio está
+  visualmente completo de punta a punta. Lo que resta: validación en producción + pulido
+  fino + diferidos (SP-4 fase 2, auditorías por dominio). Buen momento para QA en prod y
+  priorizar mejoras incrementales según feedback real de usuarios.
 
 ## 📝 Bitácora (efímera — se vacía al consolidar)
 
-- **§133 chrome unify + §134 comparador flotante** (working tree, mismo lote — comparten chrome-redesign.css). §133: botones `.btn-*` (de base-redesign.css, no inyectado en legacy) portados a chrome-redesign.css scoped `.alt-nav` + badge `.nav-pip` reposicionado afuera + **badge oculto cuando favoritos=0** (favorites-manager updateAllCounters). Lección L-18. §134 (SP-5.2.c.3 Paso 1): flotante comparador cinematic + abajo-IZQUIERDA + máx 2; CSS en chrome-redesign.css → aparece también en el index. Pendiente Paso 2: página comparar.html → Compare.jsx.
+- *(vacía — sesión 2026-05-30 consolidada en ADRs §131–§138 + lecciones L-17/L-18/L-19 + M-06/M-07; todo commiteado hasta `d62f058`)*

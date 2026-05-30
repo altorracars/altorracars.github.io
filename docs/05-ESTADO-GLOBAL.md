@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-29) |
 |---|---|
-| **Build** | 🟢 SP-1 + SP-5.0 + Omni-Brain Fase 1 en producción. **SP-5.1 + SP-5.1.b working tree** (chrome global + bridge legacy↔cinematic: data-theme dark + override de especificidad). SP-5.1 commiteado; SP-5.1.b pendiente commit. Re-validar 4 páginas legacy tras deploy. |
-| **Cache version vigente** | `v20260531120000` (bumpeado en SP-5.1.b bridge) |
+| **Build** | 🟢 SP-1 + SP-5.0 + SP-5.1+b + Omni-Brain en producción. **SP-5.2.a working tree** (body migration piloto: legales + 404 → cinematic, contenido legal preservado). Próximo: deploy + E2E, luego SP-5.2.b (editorial). |
+| **Cache version vigente** | `v20260531140000` (SP-5.2.a piloto) |
 | **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
 | **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

@@ -263,6 +263,7 @@
     @keyframes plSpin{to{transform:rotate(360deg)}}
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
 </head>
 <body>
     <!-- Page Loader -->
@@ -273,90 +274,17 @@
 
     <div id="header-placeholder"></div>
 
-    <div class="error-page">
-        <div class="error-container">
-            <div class="error-illustration">
-                <svg class="error-car" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Cuerpo del auto -->
-                    <path d="M30 60 L50 60 L60 40 L140 40 L150 60 L170 60 L170 75 L30 75 Z" fill="#b89658"/>
-                    <!-- Ventanas -->
-                    <path d="M65 45 L75 45 L70 55 L60 55 Z" fill="#1f2937"/>
-                    <path d="M80 45 L100 45 L100 55 L75 55 Z" fill="#1f2937"/>
-                    <path d="M105 45 L125 45 L130 55 L105 55 Z" fill="#1f2937"/>
-                    <!-- Ruedas -->
-                    <circle cx="55" cy="75" r="15" fill="#1f2937"/>
-                    <circle cx="55" cy="75" r="8" fill="#6b7280"/>
-                    <circle cx="145" cy="75" r="15" fill="#1f2937"/>
-                    <circle cx="145" cy="75" r="8" fill="#6b7280"/>
-                    <!-- Luces -->
-                    <rect x="165" y="55" width="8" height="8" rx="2" fill="#ef4444"/>
-                    <rect x="27" y="55" width="8" height="8" rx="2" fill="#fbbf24"/>
-                    <!-- Signo de interrogación -->
-                    <text x="100" y="35" font-size="24" font-weight="bold" fill="#ef4444" text-anchor="middle">?</text>
-                </svg>
+    <main class="soft-page" data-cin="on">
+        <section class="nf-section">
+            <div class="nf-num"><span>4</span><span class="nf-mid">0</span><span>4</span></div>
+            <h1 class="nf-h">Esta ruta <span class="nf-h-accent">no existe.</span></h1>
+            <p class="nf-sub">El link puede estar roto, el vehículo ya se vendió o llegaste aquí por suerte.</p>
+            <div class="nf-actions">
+                <a href="index.html" class="soft-cta">Volver al inicio</a>
+                <a href="busqueda.html" class="soft-cta soft-cta--alt">Explorar vehículos</a>
             </div>
-
-            <div class="error-code">404</div>
-
-            <h1 class="error-title">Parece que este vehículo se fue</h1>
-
-            <p class="error-message">
-                La página que buscas no existe o ha sido movida.
-                No te preocupes, tenemos muchos otros vehículos increíbles esperándote.
-            </p>
-
-            <div class="error-search">
-                <form class="error-search-form" action="busqueda.html" method="get">
-                    <input type="text" name="q" class="error-search-input"
-                           placeholder="Buscar vehículos...">
-                    <button type="submit" class="error-search-btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="m21 21-4.35-4.35"/>
-                        </svg>
-                    </button>
-                </form>
-            </div>
-
-            <div class="error-actions">
-                <a href="index.html" class="btn-error btn-error-primary">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                        <polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
-                    Ir al inicio
-                </a>
-                <a href="busqueda.html" class="btn-error btn-error-secondary">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="m21 21-4.35-4.35"/>
-                    </svg>
-                    Buscar vehículos
-                </a>
-            </div>
-
-            <div class="error-suggestions">
-                <h3>Explora nuestras categorías</h3>
-                <div class="suggestion-links">
-                    <a href="vehiculos-suv.html" class="suggestion-link">
-                        SUV
-                    </a>
-                    <a href="vehiculos-sedan.html" class="suggestion-link">
-                        Sedán
-                    </a>
-                    <a href="vehiculos-pickup.html" class="suggestion-link">
-                        Pickup
-                    </a>
-                    <a href="vehiculos-hatchback.html" class="suggestion-link">
-                        Hatchback
-                    </a>
-                    <a href="busqueda.html" class="suggestion-link">
-                        Catálogo
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <div id="footer-placeholder"></div>
 

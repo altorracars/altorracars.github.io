@@ -42170,3 +42170,42 @@ Re-validar las 4 páginas (nosotros/busqueda/favoritos/vehiculos-slug): el chrom
 - Cache: `v20260531000000` → `v20260531120000` (§4).
 - Lección nueva: **L-16** (`30-LECCIONES` — especificidad legacy↔nuevo + data-theme scope).
 - Rollback: `git revert`; el bridge desaparece, las legacy vuelven al chrome roto (o revert completo de SP-5.1+b → chrome viejo).
+
+---
+
+## 128. ADR-128 — SP-5.2.a: Body migration piloto (Legales + 404)
+
+> Primer lote de SP-5.2 (body migration). El chrome ya es cinematic global (SP-5.1+b); ahora se migra el BODY de las páginas. Piloto = las más simples (texto): legales + 404. Cliente: carta blanca ("sigamos bajo tu recomendación").
+
+### 128.1 Causa raíz
+Post-SP-5.1+b, el chrome (nav+footer) es cinematic en las ~87 legacy, pero los BODIES siguen en el tema viejo (Poppins, dark-theme, hero con imagen). El contraste chrome-cinematic↔body-legacy se ve inconsistente. SP-5.2 migra los bodies; este piloto cubre las 4 páginas de menor riesgo (legales + 404 = texto, sin JS funcional).
+
+### 128.2 Solución estructural (PORT, fuente: redesign `SoftPages.jsx` + `soft.css`)
+1. **`css/home/soft-redesign.css` (NUEVO, 751 líneas)**: bloque de tokens `--cin-*` (de cinematic.css, auto-contenido para que las legacy que NO cargan cinematic.css los tengan) + `soft.css` verbatim (724 líneas). 136 refs a `--cin-*` resueltas.
+2. **`terminos.html`, `privacidad.html`, `cookies.html`**: body legal reescrito a `<main class="soft-page">` → `.soft-hero--small` (eyebrow + título serif) + `.legal-section` con N `.legal-article` (h2+p). **Contenido legal preservado palabra por palabra** (terminos 13 cláusulas, privacidad 15, cookies 9 + tabla de cookies). Hero con imagen + TOC del viejo descartados (el redesign no los usa). `<link>` a soft-redesign.css añadido al `<head>`.
+3. **`404.html`**: body central → `.nf-section` (número 404 cinematic + título + CTAs). Rutas reales: "Volver al inicio"→index.html, "Explorar vehículos"→busqueda.html (el redesign usaba `catalog.html` inexistente; "Explorar vehículos" por consistencia con la mejora pedida para el comparador). Redirect script (`/vehiculos/<slug>.html` 404 → detalle dinámico) + placeholders + scripts PRESERVADOS.
+4. Cache bump `v20260531120000` → `v20260531140000`.
+
+### 128.3 No-regresión
+- Chrome intacto (placeholders + components.js sin tocar).
+- Contenido legal verificado 1:1 (conteo de cláusulas migradas = original; spot-check de texto verbatim).
+- `<style>` inline viejos de las legales (reglas `.terms-content`/`.legal-card`) quedan como CSS muerto INOCUO — verificado que NO tienen reglas genéricas (body/main/section) que pisen `.soft-page`.
+- style.css/dark-theme.css se mantienen (las clases viejas quedan sin elementos en el DOM nuevo). Retiro = optimización posterior.
+- `<head>` SEO/meta/canonical preservados (solo se añadió el `<link>`).
+
+### 128.4 Tests E2E (cliente)
+4 páginas (Ctrl+Shift+R): legales con hero cinematic pequeño (eyebrow dorado + título Instrument Serif) + cláusulas legibles con texto completo; 404 con número grande + CTAs funcionales. Chrome cinematic arriba/abajo, sin errores rojos.
+
+### 128.5 Anti-patterns evitados
+- Port fiel (no diseño inventado). §3.2 (placeholders/IDs intactos). Contenido legal NO alterado (sensible). Tokens auto-contenidos (no se tocó cinematic.css del index → cero riesgo al index en producción).
+
+### 128.6 Archivos modificados / INTACTOS
+**Creados:** `css/home/soft-redesign.css`.
+**Modificados:** `terminos.html`, `privacidad.html`, `cookies.html`, `404.html`, `service-worker.js`, `js/core/cache-manager.js`, `docs/05/10/00/43-UX`.
+**INTACTOS:** chrome (snippets, components.js, css/home/chrome-*), cinematic.css, index.html, style.css/dark-theme.css, admin, demás soft pages (SP-5.2.b/c).
+
+### 128.7 Doctrina aplicada + cache bump
+- §3.2 (HTML estable). Port fiel. §G.2 Trigger 🔵 (lóbulo 43-UX R3). §G.4 Reflejo de Cierre.
+- Cache: `v20260531120000` → `v20260531140000` (§4).
+- Deuda documentada: tokens `--cin-*` duplicados (cinematic.css + soft-redesign.css) → centralizar en refactor posterior; CSS muerto en `<style>` inline de legales → limpieza opcional.
+- Rollback: `git revert`; las 4 páginas vuelven al body viejo.

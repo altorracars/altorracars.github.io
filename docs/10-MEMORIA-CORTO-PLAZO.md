@@ -25,7 +25,11 @@
   diseños cinematic en redesign `SoftPages.jsx`/`Compare.jsx`/`Simulator.jsx` + `soft.css`/`pages.css`):
   - **SP-5.2.a (piloto) ✅ working tree** (ADR §128): Legales + 404 → cinematic. `soft-redesign.css` (tokens+soft.css), contenido legal preservado 1:1 (13/15/9 cláusulas). Patrón soft-page establecido. Pendiente: deploy + E2E.
   - **SP-5.2.b ✅ working tree** (ADR §129): Editorial — nosotros (`About`) + contacto (`Contact`, form funcional preservado: contactForm + 7 campos + contact.js). + fix `.cin-eyebrow` global en soft-redesign.css. Pendiente: deploy + E2E.
-  - **SP-5.2.c**: App-like — favoritos + perfil + comparar + simulador + **resenas** (movida aquí: reviews.js data-driven). Engancha favoritesManager/vehicleComparator/calculadora/reviews.js. 🔴 alto riesgo.
+  - **SP-5.2.c**: App-like (contenido generado por JS — reescribir render a cinematic preservando lógica):
+    - **c.1 resenas ✅ working tree** (ADR §130): reviews.js renderFullReviewsPage → cinematic. PATRÓN validado.
+    - **c.2 (próximo)**: favoritos (favoritesManager grid) + perfil (perfil.js dashboard).
+    - **c.3**: comparar — ⚠️ requiere brainstorm (mejoras del cliente: "Explorar vehículos" + selección INLINE, no solo port).
+    - **c.4**: simulador (2389 líneas, calculadora) → sprint propio.
 - **📌 MEJORAS DEL COMPARADOR (cliente, para SP-5.2.c)**: el comparador cinematic (`Compare.jsx`,
   slots A/B + VS + estado vacío "Pon dos vehículos lado a lado") le gustó. Cambios pedidos:
   (1) CTA "Ir al catálogo" → "**Explorar vehículos**"; (2) permitir **selección de vehículos

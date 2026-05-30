@@ -254,8 +254,8 @@ class ReviewsSystem {
 
             if (reviews.length === 0) {
                 container.innerHTML = `
-                    <div class="reviews-page" style="text-align:center;padding:4rem 1rem;">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#4b5563" stroke-width="1.5" style="margin-bottom:1rem;">
+                    <div class="rev-empty" style="text-align:center;padding:4rem 1rem;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(184,150,88,.5)" stroke-width="1.5" style="margin-bottom:1rem;">
                             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                         <h3 style="color:#9ca3af;margin-bottom:0.5rem;">Aún no hay reseñas</h3>
@@ -265,34 +265,60 @@ class ReviewsSystem {
                 return;
             }
 
-            container.innerHTML = `
-                <div class="reviews-page">
-                    <div class="reviews-summary-card">
-                        <div class="summary-left">
-                            <div class="summary-big-rating">
-                                <span class="big-number">${stats.average}</span>
-                                <div class="big-stars">${self.renderStars(Math.round(parseFloat(stats.average)), 'large')}</div>
+            const distRows = [5, 4, 3, 2, 1].map(function(rating) {
+                const count = stats.ratings[rating] || 0;
+                const pct = stats.total > 0 ? ((count / stats.total) * 100).toFixed(0) : 0;
+                return `
+                    <div class="rev-dist-row">
+                        <span class="rev-dist-label">${rating} ★</span>
+                        <span class="rev-dist-bar"><span style="width:${pct}%"></span></span>
+                        <span class="rev-dist-count">${count}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const cards = reviews.map(function(r) {
+                const rating = parseInt(r.rating) || 5;
+                const dateStr = self.formatDate(r);
+                const avatar = self._getAvatar(r);
+                const name = r.name || 'Anónimo';
+                const location = r.location ? `<span class="rev-card-loc">${r.location}</span>` : '';
+                const verifiedBadge = r.verified
+                    ? `<span class="rev-verified" title="Compra verificada">✓</span>`
+                    : '';
+                const titleHtml = r.title ? `<p class="rev-card-title">"${r.title}"</p>` : '';
+                const vehicleHtml = r.vehicle ? `<p class="rev-card-vehicle">🚗 ${r.vehicle}</p>` : '';
+                return `
+                    <article class="rev-card">
+                        <div class="rev-card-head">
+                            <span class="rev-avatar">${avatar}</span>
+                            <div class="rev-card-meta">
+                                <strong class="rev-card-name">${name}${verifiedBadge}</strong>
+                                ${location}
+                                ${dateStr ? `<span class="rev-card-date">${dateStr}</span>` : ''}
                             </div>
-                            <p class="summary-text">Basado en ${stats.total} reseñas verificadas</p>
+                            <span class="rev-stars">${self.renderStars(rating)}</span>
                         </div>
-                        <div class="summary-right">
-                            ${[5, 4, 3, 2, 1].map(rating => {
-                                const count = stats.ratings[rating];
-                                const percentage = stats.total > 0 ? (count / stats.total * 100).toFixed(0) : 0;
-                                return `
-                                    <div class="rating-bar">
-                                        <span class="rating-label">${rating}</span>
-                                        <svg class="star-mini filled" viewBox="0 0 24 24" width="12" height="12"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/></svg>
-                                        <div class="bar-track"><div class="bar-fill" style="width: ${percentage}%"></div></div>
-                                        <span class="rating-percent">${percentage}%</span>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
+                        ${vehicleHtml}
+                        ${titleHtml}
+                        <p class="rev-text">${r.text || ''}</p>
+                    </article>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="rev-summary">
+                    <div class="rev-summary-avg">
+                        <span class="rev-summary-num">${stats.average}</span>
+                        <span class="rev-summary-stars">${self.renderStars(Math.round(parseFloat(stats.average)), 'large')}</span>
+                        <span class="rev-summary-count">${stats.total} reseñas</span>
                     </div>
-                    <div class="reviews-list">
-                        ${reviews.map(r => self.renderFullReviewCard(r)).join('')}
+                    <div class="rev-summary-dist">
+                        ${distRows}
                     </div>
+                </div>
+                <div class="rev-list">
+                    ${cards}
                 </div>
             `;
         };

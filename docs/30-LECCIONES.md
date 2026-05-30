@@ -134,6 +134,11 @@
 - **Receta**: (1) si el markup es snippet 1:1, NO es problema de HTML → es CSS. (2) lista las clases que usa el chrome y `grep`-éalas en `css/` para ver en qué archivo viven. (3) las que estén SOLO en un CSS no-inyectado → pórtalas al CSS que SÍ se inyecta (`chrome-redesign.css`), **scoped al contenedor del chrome** (`.alt-nav`/`.alt-footer`) para no chocar con el body legacy. NUNCA inyectes el CSS base entero si tiene resets globales.
 - **Meta-lección**: "extraer el chrome a un snippet" no basta — hay que garantizar que TODO el CSS del que depende viaje con él a las páginas que lo inyectan. Un componente compartido es tan portable como su CSS. (Relacionada: L-16 coexistencia legacy↔cinematic.)
 
+### L-19 · Recomendación por similitud SIN backend — content-based con el rastro local
+- **Patrón (§138)**: para "autos semejantes a los vistos" NO hace falta GA API ni ML. Basta: (1) perfil agregado del rastro local (categorías/precio/marca/features ponderados por recencia), (2) score de similitud multi-dimensional ponderado por candidato, (3) fallback a destacados+nuevos (nunca vacío). Todo client-side con `vehicleHistory` + `vehicleDB`.
+- **Claves**: el cliente pidió "un todo" (no solo precio/marca) → pesos por dimensión (objeto `W` ajustable). Excluir lo ya visto. Guard `typeof` + fallback al comportamiento previo (L-13) para no romper si el módulo no carga.
+- **Disparador**: ante "recomendaciones / relacionados / similares", evaluar content-based local ANTES de meter analytics/backend (menos acoplamiento, sin reglas Firestore).
+
 ---
 
 ## 🪞 Meta: fallos del propio cerebro (Reflejo de Autocrítica `CLAUDE.md §G.4`)
@@ -170,6 +175,12 @@
 - **Corrección**: **ADR §125** — agregado Trigger 🔵 de Auditoría + registry de Lóbulos de Dominio (`40-LOBULOS-DOMINIO`) + integración con `skills/` externa. Los hallazgos específicos del proyecto se acumulan en lóbulos hijos (`41-SEGURIDAD`, `42-LEGAL`, etc.) que nacen on-demand con contenido real. `skills/` provee el framework general; los lóbulos lo aterrizan al proyecto + capturan las excepciones específicas.
 - **Principio**: el cerebro debe poder crecer en cualquier dirección estratégica relevante al proyecto, no solo capturar bugs históricos. Skills externos (framework genérico) + lóbulos internos (findings proyecto-específicos) = sinergia incremental. Sin esto, el conocimiento estratégico se pierde entre sesiones; con esto, se acumula y profundiza.
 - **Anti-patrón explícitamente rechazado**: crear neuronas vacías por anticipado para "preparar el terreno" — viola §G.4 anti-fragmentación. Las neuronas nacen cuando hay contenido REAL, no como placeholders. El registry (`40-LOBULOS-DOMINIO`) lista las CATEGORÍAS esperadas como mapa, no como contenido prematuro.
+
+### M-06 · Afirmé "sin desplegar" con `git rev-list origin/main..HEAD` SIN `git fetch` → `origin/main` local stale
+- **Defecto**: le dije al cliente que su trabajo (simulador) NO estaba desplegado, basándome en `git rev-list origin/main..HEAD = 1`. Pero el `origin/main` LOCAL estaba desactualizado (no hice `git fetch`); el cliente YA había pusheado. Afirmé un estado de despliegue FALSO; el cliente me corrigió ("esto es falso ya hice todos los commit y git push").
+- **Causa**: asumí que `origin/main` local reflejaba el remoto. Las refs `origin/*` locales solo se actualizan con `fetch`/`pull`; un `git push` del cliente NO actualiza mi copia local.
+- **Corrección**: NUNCA afirmar estado de despliegue/remoto desde refs `origin/*` locales sin `git fetch` primero (o sin que el cliente confirme). Working tree limpio + commits locales NO dicen nada del remoto. Ante "¿está desplegado?": fetch o preguntar.
+- **Principio**: RCA §19 ("verificar, no asumir") aplica también a GIT — las refs remotas cacheadas son fuente de verdad STALE. No es código, pero es igual de traicionero.
 
 ---
 

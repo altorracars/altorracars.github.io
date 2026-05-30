@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-30) |
 |---|---|
-| **Build** | 🟢 §131/§132/§133 en prod. **Working tree (sin commit): badge fav=0 + comparador §134/§135 + simulador §136 → SP-5.2.c COMPLETO** (resenas/perfil/favoritos/comparar/simulador → cinematic). Siguiente: validar lote + SP-4/SP-5 polish (diferidos). |
-| **Cache version vigente** | `v20260531260000` (§137 QA/pulido) |
+| **Build** | 🟢 SP-5.2 rediseño cinematic COMPLETO + §137 pulido — commiteado/pusheado por el cliente. **SP-4 §138 motor de recomendaciones (fase 1: similitud content-based) → working tree.** Pendiente: SP-4 fase 2 (popularidad/destacados/real-time) diferida. |
+| **Cache version vigente** | `v20260531270000` (§138 SP-4 recomendaciones) |
 | **Branch activa** | `refactor/estructura` — **+1 commit sobre `origin/main`** (favoritos §132, pendiente push). El resto ya en main. |
 | **Producción (`main`)** | `origin/main` = perfil §131 (cinematic, auto-deploy Pages) → **validar perfil en vivo**. Favoritos llega al pushear. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

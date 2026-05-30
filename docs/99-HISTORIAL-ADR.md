@@ -42479,3 +42479,30 @@ c.1 resenas §130 · c.2 perfil §131 + favoritos §132 · c.3 comparador §134/
 - Solo posición CSS (flotante) + colores del gráfico (Chart config). Cero lógica.
 - Contraste texto/dorado del simulador revisado: los botones dorados ya usan `color:#000` → OK, sin cambio.
 - Validación visual fina pendiente del cliente (browser MCP estuvo caído esta sesión).
+
+## 138. ADR-138 — SP-4: Motor de recomendaciones por similitud al rastro
+
+> Cliente: recomendaciones de autos SEMEJANTES a los vistos, multi-dimensional ("un todo": categoría + precio + marca + características), NO solo vistas. Enfoque B (content-based client-side). Spec: `docs/superpowers/specs/2026-05-30-sp4-recomendaciones-design.md`.
+
+### 138.1 Causa raíz / decisión
+El "Recomendados" del trail del index (`home-carousels.js renderTrailRecommended`) mostraba solo destacados + ranked genérico — NO personalizado. Enfoque **B (content-based con rastro local + vehicleDB)**, NO GA Data API: el núcleo de similitud no necesita backend. Popularidad global → fase 2 opcional.
+
+### 138.2 Solución
+1. **`js/core/recommendations.js`** (nuevo): `AltorraRecommendations.getRecommendations(limit)`. Perfil del rastro (ponderado por recencia) → score de similitud multi-dimensional (categoría 30 / precio 25 cercanía / marca 15 / características 15 overlap / transmisión+combustible 10 / novedad 5) → top N + fallback (destacados + más nuevos → nunca vacío). Excluye los ya vistos.
+2. **`home-carousels.js`**: `renderTrailRecommended` usa el motor (guard typeof → fallback al comportamiento previo si no cargó, L-13). `renderTrailNow` SIEMPRE muestra recomendaciones (el trail deja de duplicar "los vistos", que siguen en QuickTools + perfil); clearBtn oculto.
+3. **`index.html`**: carga recommendations.js (defer) antes de home-carousels.js.
+4. Cache bump `v20260531260000` → `v20260531270000`.
+
+### 138.3 No-regresión
+- Sin backend nuevo, sin reglas Firestore. `recommendations.js` + `home-carousels.js` `node -c` OK.
+- Guard typeof + fallback robusto → si el motor falla, vuelve al comportamiento previo. Excluye vistos → no recomienda lo ya conocido.
+- Código sin uso en home-carousels (getHistoryFromStorage/bindClearOnce del trail) — inocuo; limpieza opcional futura.
+
+### 138.4 Tests E2E (cliente — producción)
+Index, tras ver 2-3 vehículos: "Recomendados / Los que te podrían gustar" muestra autos SEMEJANTES (categoría/rango precio/marca afín), NO los ya vistos. Sin rastro: destacados + nuevos (nunca vacío). Pesos en `recommendations.js` (objeto `W`) ajustables si el ranking no convence.
+
+### 138.5 Archivos
+**Nuevos:** `js/core/recommendations.js`. **Modificados:** `home-carousels.js`, `index.html`, `service-worker.js`, `cache-manager.js`, `docs/*`. **INTACTOS:** historial-visitas.js, vehicleDB, render.js.
+
+### 138.6 Pendiente (fase 2)
+Popularidad global (contador views + reglas), custom image destacados, real-time switch. Lección → L-19.

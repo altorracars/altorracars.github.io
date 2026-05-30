@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-30) |
 |---|---|
-| **Build** | 🟢 SP-1 + SP-5.0 + SP-5.1+b + Omni-Brain en producción. **SP-5.2.a/b/c.1/c.2 working tree** (legales+404, nosotros+contacto, resenas, **perfil** → cinematic). Perfil (§131) = armonización por tokens (NO reescritura). Falta SP-5.2.c: **favoritos** (siguiente), comparar (brainstorm), simulador. |
-| **Cache version vigente** | `v20260531190000` (SP-5.2.c.2 perfil) |
+| **Build** | 🟢 SP-1 + SP-5.0 + SP-5.1+b + Omni-Brain en producción. **SP-5.2.c.2 COMPLETO en rama** (perfil §131 commit `451cfdb`; favoritos §132 working tree) — ambos cinematic por armonización CSS. a/b/c.1 también en rama. Pendiente deploy a main. Falta SP-5.2.c: comparar (brainstorm), simulador. |
+| **Cache version vigente** | `v20260531200000` (SP-5.2.c.2 favoritos) |
 | **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
 | **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

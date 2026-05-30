@@ -25,11 +25,18 @@
   diseños cinematic en redesign `SoftPages.jsx`/`Compare.jsx`/`Simulator.jsx` + `soft.css`/`pages.css`):
   - **SP-5.2.a (piloto) ✅ working tree** (ADR §128): Legales + 404 → cinematic. `soft-redesign.css` (tokens+soft.css), contenido legal preservado 1:1 (13/15/9 cláusulas). Patrón soft-page establecido. Pendiente: deploy + E2E.
   - **SP-5.2.b ✅ working tree** (ADR §129): Editorial — nosotros (`About`) + contacto (`Contact`, form funcional preservado: contactForm + 7 campos + contact.js). + fix `.cin-eyebrow` global en soft-redesign.css. Pendiente: deploy + E2E.
-  - **SP-5.2.c**: App-like (contenido generado por JS — reescribir render a cinematic preservando lógica):
-    - **c.1 resenas ✅ working tree** (ADR §130): reviews.js renderFullReviewsPage → cinematic. PATRÓN validado.
-    - **c.2 (próximo)**: favoritos (favoritesManager grid) + perfil (perfil.js dashboard).
-    - **c.3**: comparar — ⚠️ requiere brainstorm (mejoras del cliente: "Explorar vehículos" + selección INLINE, no solo port).
-    - **c.4**: simulador (2389 líneas, calculadora) → sprint propio.
+  - **SP-5.2.c**: App-like (contenido generado por JS — reescribir el render a cinematic
+    preservando lógica + verificando consumidores compartidos). **PATRÓN (ADR §130, validado en
+    resenas)**: (1) port hero/layout a `.soft-page`/`.soft-hero` + `<link>` soft-redesign.css;
+    (2) reescribir SOLO la(s) función(es) de render del JS de esa página → markup cinematic
+    (clases de soft-redesign.css); (3) PRESERVAR la lógica de datos + funciones compartidas;
+    (4) VERIFICAR qué otras páginas usan ese JS antes de tocarlo (RCA §19).
+    - **c.1 resenas ✅ COMMITEADO** (ADR §130, commit `e115841`): reviews.js renderFullReviewsPage → cinematic.
+    - **c.2 favoritos + perfil ← RETOMAR AQUÍ**. ⚠️ Más pesadas de lo estimado (exploradas, no portadas):
+      · **favoritos** (959 líneas): hero+stats (`#favHero`/`#favStatCount`) + controles búsqueda/sort (`#favSearchInput`/`#favSortSelect`) + grid `#favoritesGrid` que usa **`renderVehicleCard` de `render.js`** (COMPARTIDO con busqueda/marcas — NO tocar render.js; para cards cinematic usar `.cin-av-card` de home-carousels o un render local) + empty states + JS inline. css: `favorites-empty-fullpage.css`.
+      · **perfil** (110 líneas markup): dashboard FUNCIONAL CRÍTICO (datos/edición del usuario) generado por `js/core/perfil.js` (clases `.pf-*`). Reescribir su markup preservando IDs/lógica (como se hizo con el form de contacto). Diseño: `Profile()` en SoftPages.jsx.
+    - **c.3 comparar** — ⚠️ requiere **brainstorm propio**: mejoras del cliente (le gustó `Compare.jsx`: slots A/B + VS + "Pon dos vehículos lado a lado") = (1) CTA "Ir al catálogo"→"**Explorar vehículos**"; (2) **selección de vehículos INLINE** desde el comparador (picker propio, sin redirigir a busqueda). Es feature nuevo, no solo port. Engancha `vehicleComparator`.
+    - **c.4 simulador** (2389 líneas, calculadora de crédito) → sprint propio. Diseño: `Simulator.jsx`.
 - **📌 MEJORAS DEL COMPARADOR (cliente, para SP-5.2.c)**: el comparador cinematic (`Compare.jsx`,
   slots A/B + VS + estado vacío "Pon dos vehículos lado a lado") le gustó. Cambios pedidos:
   (1) CTA "Ir al catálogo" → "**Explorar vehículos**"; (2) permitir **selección de vehículos

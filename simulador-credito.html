@@ -112,6 +112,25 @@
             border-radius: 2px;
         }
 
+        /* SP-5.2.c.4 (§136) — Hero cinematic editorial (eyebrow + título fino + acento serif) */
+        .sim-cin-hero { max-width: 1400px; margin: 0 auto; padding: 52px 20px 22px; text-align: center; }
+        .sim-cin-eyebrow {
+            display: inline-block; font-size: 11px; letter-spacing: 0.36em; text-transform: uppercase;
+            color: var(--sim-primary); font-weight: 600; margin-bottom: 18px;
+        }
+        .sim-cin-h {
+            font-family: "Manrope", "Plus Jakarta Sans", system-ui, sans-serif; font-weight: 200;
+            font-size: clamp(34px, 5.2vw, 64px); line-height: 1.02; letter-spacing: -0.04em;
+            margin: 0 0 14px; color: var(--sim-text); text-wrap: balance;
+        }
+        .sim-cin-accent {
+            font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400;
+            background: var(--sim-gradient);
+            -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+            line-height: 1.1; padding: 0.06em 0.04em;
+        }
+        .sim-cin-sub { font-size: clamp(14px, 1.2vw, 16px); color: var(--sim-text-secondary); max-width: 600px; margin: 0 auto; line-height: 1.55; }
+
         /* Main container */
         .sim-container {
             max-width: 1400px;
@@ -1415,16 +1434,12 @@
 
     <!-- Main Content -->
     <main class="simulator-page">
-        <!-- Titulo compacto -->
-        <div class="sim-title-section">
-            <div class="sim-title-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-            </div>
-            <h1 class="sim-title-text">Simula tu Credito</h1>
-            <div class="sim-title-line"></div>
-        </div>
+        <!-- SP-5.2.c.4 (§136) — hero cinematic editorial -->
+        <section class="sim-cin-hero">
+            <span class="sim-cin-eyebrow">Simulador · bancos aliados</span>
+            <h1 class="sim-cin-h">Tu cuota mensual,<br><span class="sim-cin-accent">comparada al instante.</span></h1>
+            <p class="sim-cin-sub">Simulamos con nuestros bancos aliados. Resultado referencial — cada banco confirma las condiciones finales con tu solicitud formal.</p>
+        </section>
 
         <!-- Simulator -->
         <div class="sim-container">

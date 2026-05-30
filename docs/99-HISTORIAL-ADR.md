@@ -42450,7 +42450,8 @@ El `Simulator.jsx` del redesign es un MOCK más pobre que el simulador real (rea
 ### 136.2 Solución (armonización, como perfil §131 / L-17)
 1. **`simulador-credito.html`** `:root --sim-*` remapeado a la paleta cinematic (--sim-primary #D4A85A, --sim-bg #08070A, --sim-card #15121A sólido, --sim-text #F4EEDE, líneas crema translúcidas, gradiente dorado cinematic). Valores literales (no depende de soft-redesign.css). + acento dorado residual `#c9a227`→`#D4A85A` (2 usos en bloque secundario / config Chart.js).
 2. **CERO cambios JS**: ui/simulator/finance/data intactos → cálculo de crédito sin tocar.
-3. Cache bump `v20260531230000` → `v20260531240000`.
+3. **Hero cinematic editorial** (`.sim-cin-hero`: eyebrow + h1 fino + acento serif dorado) reemplaza el título uppercase `.sim-title-section` — da el SALTO visible. (El remapeo de tokens solo era sutil: el simulador viejo YA era negro+dorado `#0a0a0a`/`#c9a227`, casi igual al cinematic → recolorear no se notaba sin el hero.)
+4. Cache bump `v20260531230000` → `v20260531250000`.
 
 ### 136.3 No-regresión
 - Sin cambios JS → calculadora (bancos, tasas, grupos de riesgo, modalidades, Chart.js) opera igual.

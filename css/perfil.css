@@ -1407,3 +1407,63 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
 @media (hover: none) {
     .pf-fav-remove { opacity: 1; }
 }
+
+/* ============================================================
+   SP-5.2.c.2 — ARMONIZACIÓN CINEMATIC (ADR §131)
+   Viste el dashboard de perfil con el lenguaje cinematic SIN reescribir
+   su estructura ni su lógica. Aditivo y scoped a body[data-cin="on"] →
+   100% reversible (quitar data-cin del <body> revierte al tema legacy).
+   Estrategia: remapear los 13 tokens --pf-* a la paleta --cin-* (definida
+   en css/home/soft-redesign.css, que perfil.html ahora carga) + ajustes
+   puntuales a los pocos colores hardcodeados que no pasan por tokens.
+   CERO cambios en perfil.js (el markup .pf-* sigue idéntico).
+   ============================================================ */
+body[data-cin="on"] {
+    --pf-bg:             #08070A;                /* --cin-bg */
+    --pf-card:           #15121A;                /* --cin-bg-elev (sólido: protege modales/overlays) */
+    --pf-card-hover:     #1b1722;
+    --pf-border:         rgba(244,238,222,0.10); /* --cin-line */
+    --pf-border-hover:   rgba(244,238,222,0.20);
+    --pf-gold:           #D4A85A;                /* --cin-gold */
+    --pf-gold-hover:     #F0C674;                /* --cin-gold-hot (hover brilla, sello cinematic) */
+    --pf-gold-15:        rgba(212,168,90,0.12);
+    --pf-text:           #F4EEDE;                /* --cin-ink */
+    --pf-text-secondary: rgba(244,238,222,0.62); /* --cin-ink-soft */
+    --pf-text-muted:     rgba(244,238,222,0.42); /* ~--cin-ink-faint con +legibilidad para hints */
+    /* --pf-danger / --pf-success se mantienen (colores semánticos) */
+}
+
+/* Hero soft sobre el dashboard — clearance garantizado del #header fixed */
+body[data-cin="on"] .profile-main { padding-top: 0; }
+body[data-cin="on"] .pf-soft-hero { padding-top: clamp(96px, 12vh, 140px); }
+body[data-cin="on"] .pf-soft-hero .soft-hero-inner { max-width: 1080px; }
+
+/* Texto/iconos OSCUROS sobre superficies doradas (sello cinematic, no #fff) */
+body[data-cin="on"] .pf-btn-gold,
+body[data-cin="on"] .pf-avatar,
+body[data-cin="on"] .pf-sidebar-avatar,
+body[data-cin="on"] .pf-nav-badge { color: #08070A; }
+body[data-cin="on"] .pf-avatar-cam [data-lucide],
+body[data-cin="on"] .pf-avatar-cam svg { color: #08070A; stroke: #08070A; }
+
+/* Inputs / selects → superficie + línea cinematic */
+body[data-cin="on"] .pf-input,
+body[data-cin="on"] .pf-input-prefix { background: rgba(8,7,10,0.6); border-color: rgba(244,238,222,0.12); }
+body[data-cin="on"] .pf-select option { background: #15121A; }
+
+/* Tiles elevados (providers / stats / search cards) → superficie cinematic translúcida */
+body[data-cin="on"] .pf-provider-item,
+body[data-cin="on"] .pf-stat,
+body[data-cin="on"] .pf-search-card { background: rgba(244,238,222,0.03); border-color: rgba(244,238,222,0.08); }
+
+/* Botones outline → línea + tinta cinematic */
+body[data-cin="on"] .pf-btn-outline { border-color: rgba(244,238,222,0.16); color: var(--pf-text); }
+body[data-cin="on"] .pf-btn-danger { border-color: rgba(244,238,222,0.16); }
+
+/* Textos hardcodeados de las search cards → tinta cinematic */
+body[data-cin="on"] .pf-search-name { color: var(--pf-text); }
+body[data-cin="on"] .pf-search-filters { color: var(--pf-text-secondary); }
+body[data-cin="on"] .pf-search-date { color: var(--pf-text-muted); }
+
+/* Knob del toggle apagado → tinta suave cinematic */
+body[data-cin="on"] .pf-toggle-slider::before { background: rgba(244,238,222,0.45); }

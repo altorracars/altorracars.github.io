@@ -42281,3 +42281,42 @@ favoritos/perfil/comparar/simulador siguen el mismo molde: hero/layout cinematic
 - Cache: `v20260531160000` → `v20260531180000` (§4).
 - Pendiente SP-5.2.c: favoritos, perfil, comparar (con mejoras "Explorar vehículos" + selección inline → brainstorm), simulador (2389 líneas → sprint propio).
 - Rollback: `git revert`.
+
+## 131. ADR-131 — SP-5.2.c.2 (parte 1): Perfil → cinematic por ARMONIZACIÓN DE TOKENS (no reescritura)
+
+> Segunda pieza del lote app-like. El cliente eligió **Opción A** (recomendada): vestir el dashboard de perfil con el lenguaje cinematic SIN destruir su funcionalidad. Divergencia DELIBERADA del patrón §130 — y la razón importa.
+
+### 131.1 Causa raíz
+El `Profile()` del redesign (`SoftPages.jsx`) es un **mock de 4 tabs** con datos inventados. El perfil REAL (`js/core/perfil.js`, 1.903 líneas) es un dashboard de **7 secciones** con Firebase: avatar upload (canvas), barra de completitud, historial, búsquedas guardadas, solicitudes con stepper, citas con WhatsApp, preferencias de notificación por categoría, cambio de contraseña, borrado de cuenta. Aplicar el patrón §130 (reescribir el render a las clases del JSX) **destruiría 3 de 7 secciones + funciones críticas** → choque frontal con "cero regresiones". El patrón §130 NO aplica a perfil.
+
+### 131.2 Solución estructural (Opción A — armonización, no reescritura)
+Insight clave (verificado leyendo el CSS): `perfil.css` centraliza TODO en **13 tokens `--pf-*`** en `:root`. Remapear esos tokens a la paleta `--cin-*` viste el dashboard entero (~1.900 líneas de reglas) sin tocar una sola regla estructural.
+1. **`perfil.html`**: `<body data-cin="on">` + `<link>` `css/home/soft-redesign.css` + hero `.soft-hero.soft-hero--small.pf-soft-hero` insertado como primer hijo de `.profile-main` (antes de `.pf-mobile-tabs`). Dashboard 100% intacto debajo.
+2. **`css/perfil.css`** (append, scoped `body[data-cin="on"]`): remapeo de los 13 tokens `--pf-*` → `--cin-*` (bg #08070A, gold #D4A85A, ink #F4EEDE, líneas crema translúcidas) + overrides puntuales a los ~10 colores HARDCODEADOS que no pasan por tokens (texto oscuro #08070A sobre dorado en btn-gold/avatares/badge/cam; inputs/tiles/search-cards a superficie cinematic; knob del toggle). `--pf-card` se mantiene SÓLIDO (#15121A, no translúcido) para no romper modales/overlays.
+3. **`perfil.js` CERO cambios** — el markup `.pf-*` que genera sigue idéntico; solo cambian los valores que resuelven los tokens.
+4. Header fixed (`#header`, style.css L102): hero con `padding-top: clamp(96px,12vh,140px)` garantiza clearance; `.profile-main` padding-top → 0.
+5. Cache bump `v20260531180000` → `v20260531190000`.
+
+### 131.3 No-regresión
+- Sin cambios en JS (no aplica `node -c`). IDs/clases `.pf-*`/`#pf*` intactos → avatar, edición, password, delete, toggles, listeners operan igual.
+- Capa scoped a `[data-cin="on"]` → reversible quitando el atributo. `:root` original intacto.
+- `perfil.css` llaves balanceadas (323/323). soft-redesign.css selectores disjuntos del dashboard (sus `.pf-tabs/.pf-panel/.pf-grid/.pf-requests/.pf-saved` son del mock JSX, el perfil real NO los usa → no colisionan).
+
+### 131.4 Tests E2E (cliente — SOLO producción, L-08)
+Perfil logueado bloqueado en localhost (Firebase referrer). Tras deploy + Ctrl+Shift+R en `altorracars.github.io/perfil.html`: (1) hero cinematic "Bienvenido de nuevo" arriba; (2) fondo #08070A + cards/inputs/botones en oro cinematic; (3) las 7 secciones funcionan: editar datos guarda, avatar upload, toggles persisten, cambio de contraseña, citas/solicitudes/historial/búsquedas cargan; (4) texto oscuro legible sobre botones dorados; (5) mobile: tabs + clearance del header OK.
+
+### 131.5 Anti-patterns evitados
+- §19 RCA: leí perfil.js (1.903) + perfil.css (1.410) ANTES de tocar; verifiqué header fixed + los colores hardcodeados que el remapeo no alcanza.
+- §17.4: cero rename de IDs/clases; cambio aditivo (capa al final + atributo data-cin).
+- Evité destruir funcionalidad por "fidelidad al mock" (el JSX no cubría el dashboard real).
+
+### 131.6 Archivos modificados / INTACTOS
+**Modificados:** `perfil.html` (body data-cin + link + hero), `css/perfil.css` (capa de armonización al final), `service-worker.js`, `js/core/cache-manager.js`, `docs/05/10/00/30`.
+**INTACTOS:** `js/core/perfil.js` (0 cambios), todas las reglas estructurales de perfil.css, demás páginas.
+
+### 131.7 Doctrina + cache
+- §3.2 (aditivo) + §3.4 IAP + §19 RCA + §G.4 Cierre.
+- Patrón nuevo reutilizable → **L-17** (armonización cinematic por remapeo de tokens en dashboards con `:root` centralizado).
+- Cache: `v20260531180000` → `v20260531190000` (§4).
+- Pendiente SP-5.2.c: **favoritos** (siguiente — port cinematic completo de cards, render local sin tocar render.js), comparar (brainstorm), simulador (sprint propio).
+- Rollback: `git revert` o quitar `data-cin="on"` del `<body>`.

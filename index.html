@@ -1271,6 +1271,9 @@
     <!-- Secciones data-driven (Task 5): disponibles, colección, promos,
          marcas, rastro/recomendados y conteos de categorías. Se registra
          en window.AltorraHome.carousels para que home.js lo llame. -->
+    <!-- SP-4 (§138): motor de recomendación por similitud al rastro. DEBE ir antes
+         de home-carousels.js (que lo consume en renderTrailRecommended). -->
+    <script src="js/core/recommendations.js" defer></script>
     <script src="js/public/home/home-carousels.js" defer></script>
     <!-- Dock flotante de herramientas (Task 6): simulador, comparar,
          favoritos, historial y financiación. Hide-on-scroll-down,

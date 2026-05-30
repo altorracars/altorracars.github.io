@@ -1223,23 +1223,12 @@
         }
 
         function renderTrailNow() {
-            var historyItems = getHistoryFromStorage().slice(0, 5);
-            var vehicles = [];
-            if (window.vehicleDB && typeof window.vehicleDB.getVehicleById === 'function') {
-                for (var i = 0; i < historyItems.length; i++) {
-                    var v = window.vehicleDB.getVehicleById(historyItems[i].id);
-                    if (v) vehicles.push({ vehicle: v, timestamp: historyItems[i].timestamp || 0 });
-                }
-            }
-
-            if (vehicles.length > 0) {
-                if (clearBtn) clearBtn.hidden = false;
-                bindClearOnce();
-                buildTrailStage(trailBody, vehicles);
-            } else {
-                if (clearBtn) clearBtn.hidden = true;
-                renderTrailRecommended(trailBody);
-            }
+            // SP-4 (§138): el trail muestra RECOMENDACIONES por similitud al rastro
+            // (motor en js/core/recommendations.js). Los vehículos vistos siguen
+            // accesibles en QuickTools ("Vistos recientemente") + perfil. El clearBtn
+            // se oculta: la sección ya no es "tu rastro" sino recomendaciones.
+            if (clearBtn) clearBtn.hidden = true;
+            renderTrailRecommended(trailBody);
         }
 
         whenDbReady(renderTrailNow);
@@ -1302,14 +1291,21 @@
      * Trail variant: no history — "Recomendados" (featured + top vehicles).
      */
     function renderTrailRecommended(trailBody) {
-        // Get up to 5 featured vehicles; fill up with ranked if needed
-        var featured = (window.vehicleDB.getFeatured ? window.vehicleDB.getFeatured() : []).slice(0, 5);
-        if (featured.length < 5) {
-            var ranked = window.vehicleDB.getRankedVehicles ? window.vehicleDB.getRankedVehicles() : [];
-            var featuredIds = {};
-            for (var fi = 0; fi < featured.length; fi++) featuredIds[featured[fi].id] = true;
-            for (var ri = 0; ri < ranked.length && featured.length < 5; ri++) {
-                if (!featuredIds[ranked[ri].id]) featured.push(ranked[ri]);
+        // SP-4 (§138): motor de recomendación por similitud al rastro.
+        var featured = [];
+        if (window.AltorraRecommendations && typeof window.AltorraRecommendations.getRecommendations === 'function') {
+            featured = window.AltorraRecommendations.getRecommendations(5);
+        }
+        // Fallback (motor no cargado / sin resultados): destacados + ranked (comportamiento previo)
+        if (!featured.length) {
+            featured = (window.vehicleDB.getFeatured ? window.vehicleDB.getFeatured() : []).slice(0, 5);
+            if (featured.length < 5) {
+                var ranked = window.vehicleDB.getRankedVehicles ? window.vehicleDB.getRankedVehicles() : [];
+                var featuredIds = {};
+                for (var fi = 0; fi < featured.length; fi++) featuredIds[featured[fi].id] = true;
+                for (var ri = 0; ri < ranked.length && featured.length < 5; ri++) {
+                    if (!featuredIds[ranked[ri].id]) featured.push(ranked[ri]);
+                }
             }
         }
         if (!featured.length) return; // nothing to show

@@ -86,5 +86,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera — se vacía al consolidar)
 
-- *(vacía — el trabajo de sesiones 2026-05-26/29 quedó consolidado en ADR §122 +
-  lecciones L-11/L-12/L-13)*
+- **§133 chrome unify** (working tree, falta commit+push): el cliente notó en prod que el header difería entre páginas (icono favoritos) y que el badge tapaba el corazón. Causa: los botones del chrome (`.btn-*`) viven en base-redesign.css, que components.js NO inyecta en legacy. Fix: portados a chrome-redesign.css scoped a `.alt-nav` + `.nav-pip` reposicionado afuera. Lección L-18. Mejora opcional pendiente: ocultar badge si favoritos=0.

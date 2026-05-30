@@ -128,6 +128,12 @@
 - **Cuándo NO aplica**: si el diseño objetivo exige estructura DISTINTA (no solo recolorear), o si el CSS hardcodea todo sin tokens (ahí toca la guerra de L-16). Distinguir "recolorear" (esta lección) de "rediseñar" (otro esfuerzo).
 - **Meta-lección**: cuando el redesign de referencia es un MOCK más pobre que el módulo real, "réplica exacta" se vuelve destructivo. Vestir > reescribir. Confirmar el alcance con el cliente cuando fidelidad y cero-regresión chocan.
 
+### L-18 · El chrome compartido (header/footer) puede depender de clases de un CSS que NO se inyecta en legacy
+- **Síntoma**: el header/footer se ve distinto entre el index (chrome inline) y las páginas legacy (chrome inyectado por components.js), aunque el MARKUP sea idéntico (snippet 1:1). Ej §133: el badge `.nav-pip` de favoritos tapaba el corazón SOLO en legacy.
+- **Causa (§133, verificado)**: el chrome usa clases (`.btn/.btn-icon/…`) definidas en un CSS que el index carga (`base-redesign.css`) pero que `components.js` NO inyecta en legacy (porque ese CSS tiene un reset global `*{}` + `body{}` que rompería el contenido legacy). Sin esas clases, los botones del chrome colapsan en legacy.
+- **Receta**: (1) si el markup es snippet 1:1, NO es problema de HTML → es CSS. (2) lista las clases que usa el chrome y `grep`-éalas en `css/` para ver en qué archivo viven. (3) las que estén SOLO en un CSS no-inyectado → pórtalas al CSS que SÍ se inyecta (`chrome-redesign.css`), **scoped al contenedor del chrome** (`.alt-nav`/`.alt-footer`) para no chocar con el body legacy. NUNCA inyectes el CSS base entero si tiene resets globales.
+- **Meta-lección**: "extraer el chrome a un snippet" no basta — hay que garantizar que TODO el CSS del que depende viaje con él a las páginas que lo inyectan. Un componente compartido es tan portable como su CSS. (Relacionada: L-16 coexistencia legacy↔cinematic.)
+
 ---
 
 ## 🪞 Meta: fallos del propio cerebro (Reflejo de Autocrítica `CLAUDE.md §G.4`)

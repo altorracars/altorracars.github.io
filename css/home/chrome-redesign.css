@@ -251,7 +251,9 @@
 [data-theme="dark"] .nav-dd-link-sm:hover { background: rgba(255,255,255,0.06); }
 
 .alt-nav-actions { display: flex; align-items: center; gap: 6px; }
-.nav-pip { position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--gold-500); color: var(--ink-900); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+/* Badge de favoritos — flota en la esquina superior-derecha del botón, FUERA del
+   icono (top/right negativos) para NO tapar el corazón (feedback cliente §133). */
+.nav-pip { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--gold-500); color: var(--ink-900); font-size: 10px; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.4); pointer-events: none; }
 
 .mob-only { display: none; }
 .hide-sm { display: inline; }
@@ -433,3 +435,37 @@
 .alt-footer-link:hover { color: var(--gold-600); }
 .alt-footer-bottom { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 24px; margin-top: 32px; border-top: 1px solid var(--surface-stroke); }
 [data-theme="dark"] .alt-footer-bottom { border-color: var(--dark-stroke); }
+
+/* ============================================================
+   ADR §133 — BOTONES DEL CHROME EN PÁGINAS LEGACY
+   Causa raíz: el chrome (.alt-nav) usa .btn/.btn-icon/.btn-ghost/.btn-subtle/
+   .btn-primary, pero esas reglas viven en base-redesign.css, que components.js
+   NO inyecta en legacy (tiene un reset global `*{}` que rompería el body).
+   Sin .btn-icon el <a> de Favoritos colapsaba al tamaño del SVG y el badge
+   .nav-pip caía sobre el corazón. Portadas aquí (chrome-redesign.css SÍ se
+   inyecta) y scoped a .alt-nav → NO tocan los .btn del body legacy. El index
+   ya las tiene vía base-redesign.css → resultado idéntico (header unificado).
+   ============================================================ */
+.alt-nav .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 36px; padding: 0 16px;
+  font-size: var(--t-body); font-weight: 600;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  transition: transform var(--dur-2) var(--ease-fluent),
+              background var(--dur-2) var(--ease-fluent),
+              border-color var(--dur-2) var(--ease-fluent),
+              box-shadow var(--dur-2) var(--ease-fluent);
+  user-select: none; white-space: nowrap;
+}
+.alt-nav .btn:active { transform: scale(0.97); }
+.alt-nav .btn-icon { width: 36px; padding: 0; }
+.alt-nav .btn-ghost { background: transparent; color: var(--ink-text); }
+.alt-nav .btn-ghost:hover { background: rgba(15,15,25,0.06); }
+[data-theme="dark"] .alt-nav .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+.alt-nav .btn-subtle { background: rgba(15,15,25,0.04); color: var(--ink-text); border-color: var(--surface-stroke); }
+.alt-nav .btn-subtle:hover { background: rgba(15,15,25,0.08); border-color: var(--surface-stroke-hi); }
+[data-theme="dark"] .alt-nav .btn-subtle { background: rgba(255,255,255,0.06); border-color: var(--dark-stroke); }
+[data-theme="dark"] .alt-nav .btn-subtle:hover { background: rgba(255,255,255,0.10); }
+.alt-nav .btn-primary { background: var(--grad-gold); color: var(--ink-900); border-color: var(--gold-600); box-shadow: var(--shadow-4), inset 0 1px 0 rgba(255,255,255,0.4); }
+.alt-nav .btn-primary:hover { box-shadow: var(--shadow-gold); transform: translateY(-1px); }

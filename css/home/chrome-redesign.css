@@ -469,3 +469,86 @@
 [data-theme="dark"] .alt-nav .btn-subtle:hover { background: rgba(255,255,255,0.10); }
 .alt-nav .btn-primary { background: var(--grad-gold); color: var(--ink-900); border-color: var(--gold-600); box-shadow: var(--shadow-4), inset 0 1px 0 rgba(255,255,255,0.4); }
 .alt-nav .btn-primary:hover { box-shadow: var(--shadow-gold); transform: translateY(-1px); }
+
+/* ============================================================
+   ADR §134 — COMPARADOR FLOTANTE CINEMATIC (SP-5.2.c.3 · Paso 1)
+   El widget lo genera comparador.js en todas las páginas que lo cargan
+   (incl. el index, que ya lo carga pero NO cargaba css/comparador.css →
+   por eso el flotante no se veía en el index). Su CSS va aquí porque el
+   chrome-redesign.css se carga en el index (estático) Y se inyecta en
+   legacy (components.js) → flotante unificado en TODO el sitio.
+   Posición abajo-IZQUIERDA para no chocar con el bot ALTOR (abajo-derecha).
+   Vence al .comparador-widget legacy de comparador.css por orden de carga.
+   ============================================================ */
+.comparador-widget {
+  position: fixed; bottom: 24px; left: 24px; right: auto; top: auto;
+  width: 300px; max-width: calc(100vw - 48px);
+  background: var(--cin-bg-elev, #15121A);
+  border: 1px solid rgba(244,238,222,0.12);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.75);
+  z-index: 9990; overflow: hidden;
+  transform: translateY(calc(100% + 32px)); opacity: 0; visibility: hidden;
+  transition: transform .5s var(--cin-spring, cubic-bezier(.34,1.32,.64,1)), opacity .4s ease, visibility .4s;
+  font-family: var(--cin-sans, "Manrope", system-ui, sans-serif);
+}
+.comparador-widget.has-vehicles { transform: translateY(0); opacity: 1; visibility: visible; }
+.comparador-widget-header {
+  display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(212,168,90,0.16), rgba(244,238,222,0.02));
+  border-bottom: 1px solid rgba(244,238,222,0.08);
+  color: var(--cin-ink, #F4EEDE); cursor: pointer; user-select: none;
+}
+.comparador-icon {
+  display: grid; place-items: center; width: 32px; height: 32px;
+  background: rgba(212,168,90,0.14); border: 1px solid rgba(212,168,90,0.28);
+  border-radius: 9px; color: var(--cin-gold-hot, #F0C674);
+}
+.comparador-title {
+  flex: 1; font-weight: 600; font-size: 12px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--cin-ink, #F4EEDE);
+}
+.comparador-count {
+  display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px;
+  background: var(--cin-gold, #D4A85A); color: #08070A;
+  border-radius: 999px; font-weight: 700; font-size: 12px;
+}
+.comparador-widget-body { max-height: 0; overflow: hidden; transition: max-height .35s var(--cin-ease, cubic-bezier(.22,1,.36,1)); }
+.comparador-widget.expanded .comparador-widget-body { max-height: 320px; overflow-y: auto; }
+.comparador-empty { padding: 22px 16px; text-align: center; color: var(--cin-ink-soft, rgba(244,238,222,0.62)); font-size: 13px; }
+.comparador-items { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.comparador-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px;
+  background: rgba(244,238,222,0.03); border: 1px solid rgba(244,238,222,0.07); border-radius: 10px;
+}
+.comparador-item img { width: 50px; height: 36px; object-fit: cover; border-radius: 7px; flex-shrink: 0; }
+.comparador-item-info { flex: 1; min-width: 0; }
+.comparador-item-name { display: block; font-weight: 600; font-size: 12.5px; color: var(--cin-ink, #F4EEDE); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comparador-item-year { font-size: 11px; color: var(--cin-ink-soft, rgba(244,238,222,0.62)); }
+.comparador-item-remove {
+  display: grid; place-items: center; width: 26px; height: 26px; flex-shrink: 0;
+  background: rgba(255,94,94,0.12); border: 1px solid rgba(255,94,94,0.28);
+  border-radius: 7px; color: #ff8a7a; cursor: pointer; transition: background .2s, transform .2s;
+}
+.comparador-item-remove:hover { background: rgba(255,94,94,0.22); transform: scale(1.08); }
+.comparador-widget-footer { display: none; flex-direction: column; gap: 8px; padding: 12px; background: rgba(8,7,10,0.4); border-top: 1px solid rgba(244,238,222,0.08); }
+.comparador-widget.expanded .comparador-widget-footer { display: flex; }
+.comparador-widget .btn-comparar {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px;
+  background: linear-gradient(135deg, var(--cin-gold-hot, #F0C674), var(--cin-gold, #D4A85A) 55%, var(--cin-gold-deep, #8a6a2c));
+  color: #08070A; border: 0; border-radius: 10px; font-weight: 700; font-size: 12px;
+  letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; font-family: inherit;
+  transition: transform .2s, filter .2s;
+}
+.comparador-widget .btn-comparar:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
+.comparador-widget .btn-comparar:disabled { background: rgba(244,238,222,0.10); color: rgba(244,238,222,0.4); cursor: not-allowed; }
+.comparador-widget .btn-limpiar {
+  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 9px;
+  background: transparent; color: var(--cin-ink-soft, rgba(244,238,222,0.62));
+  border: 1px solid rgba(244,238,222,0.14); border-radius: 9px; font-weight: 600; font-size: 12px;
+  cursor: pointer; font-family: inherit; transition: color .2s, border-color .2s;
+}
+.comparador-widget .btn-limpiar:hover { color: #ff8a7a; border-color: rgba(255,138,122,0.4); }
+@media (max-width: 768px) {
+  .comparador-widget { left: 12px; bottom: 16px; width: calc(100vw - 24px); max-width: 320px; }
+}

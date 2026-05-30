@@ -622,6 +622,9 @@ class FavoritesManager {
                 var current = parseInt(el.textContent, 10);
                 if (isNaN(current)) current = 0;
                 if (current !== count) self._animateCounter(el, current, count);
+                // El badge del header (.nav-pip #favCount) se oculta sin favoritos
+                // para no ensuciar el corazón con un "0" (feedback cliente, ADR §133).
+                if (id === 'favCount') el.style.display = count > 0 ? '' : 'none';
             } else {
                 allFound = false;
             }
@@ -638,6 +641,7 @@ class FavoritesManager {
                         var current = parseInt(el.textContent, 10);
                         if (isNaN(current)) current = 0;
                         if (current !== newCount) self._animateCounter(el, current, newCount);
+                        if (id === 'favCount') el.style.display = newCount > 0 ? '' : 'none';
                         found++;
                     }
                 });

@@ -1,11 +1,11 @@
 // ============================================
 // COMPARADOR DE VEHÍCULOS - ALTORRA CARS
-// Permite comparar hasta 3 vehículos lado a lado
+// Permite comparar hasta 2 vehículos lado a lado (ADR §134)
 // ============================================
 
 class VehicleComparator {
     constructor() {
-        this.maxVehicles = 3;
+        this.maxVehicles = 2;
         this.storageKey = 'altorra_comparador';
         this.vehicles = [];
         this.init();

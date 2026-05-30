@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-30) |
 |---|---|
-| **Build** | 🟢 SP-5.2.c.2 (perfil §131 + favoritos §132) cinematic — desplegado/validado en prod por el cliente. **§133 chrome unify (botones del header en legacy + reposición badge favoritos) → working tree, falta commit+push.** Falta SP-5.2.c: comparar (brainstorm), simulador. |
-| **Cache version vigente** | `v20260531210000` (§133 chrome unify) |
+| **Build** | 🟢 SP-5.2.c.2 (perfil §131 + favoritos §132) en prod. **Working tree (sin commit): §133 chrome unify (botones header legacy + badge favoritos oculto en 0) + §134 comparador flotante cinematic/izquierda/máx2 (SP-5.2.c.3 Paso 1).** Pendiente: SP-5.2.c.3 Paso 2 (página comparar.html → Compare.jsx), simulador. |
+| **Cache version vigente** | `v20260531220000` (§134 comparador flotante) |
 | **Branch activa** | `refactor/estructura` — **+1 commit sobre `origin/main`** (favoritos §132, pendiente push). El resto ya en main. |
 | **Producción (`main`)** | `origin/main` = perfil §131 (cinematic, auto-deploy Pages) → **validar perfil en vivo**. Favoritos llega al pushear. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

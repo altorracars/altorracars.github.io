@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-05-30) |
 |---|---|
-| **Build** | 🟢 SP-1 + SP-5.0 + SP-5.1+b + Omni-Brain en producción. **SP-5.2.c.2 COMPLETO en rama** (perfil §131 commit `451cfdb`; favoritos §132 working tree) — ambos cinematic por armonización CSS. a/b/c.1 también en rama. Pendiente deploy a main. Falta SP-5.2.c: comparar (brainstorm), simulador. |
-| **Cache version vigente** | `v20260531200000` (SP-5.2.c.2 favoritos) |
-| **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
-| **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
+| **Build** | 🟢 SP-5.2.c.2 (perfil §131 + favoritos §132) cinematic — desplegado/validado en prod por el cliente. **§133 chrome unify (botones del header en legacy + reposición badge favoritos) → working tree, falta commit+push.** Falta SP-5.2.c: comparar (brainstorm), simulador. |
+| **Cache version vigente** | `v20260531210000` (§133 chrome unify) |
+| **Branch activa** | `refactor/estructura` — **+1 commit sobre `origin/main`** (favoritos §132, pendiente push). El resto ya en main. |
+| **Producción (`main`)** | `origin/main` = perfil §131 (cinematic, auto-deploy Pages) → **validar perfil en vivo**. Favoritos llega al pushear. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

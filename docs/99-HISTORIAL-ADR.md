@@ -42356,3 +42356,38 @@ Favoritos requiere login+datos. Tras deploy + Ctrl+Shift+R en `altorracars.githu
 - Cache: `v20260531190000` → `v20260531200000` (§4).
 - **SP-5.2.c.2 COMPLETO** (perfil §131 + favoritos §132). Pendiente SP-5.2.c: comparar (c.3 — brainstorm: CTA "Explorar vehículos" + selección inline), simulador (c.4 — sprint propio, 2389 líneas).
 - Rollback: `git revert` o quitar `data-cin="on"` del `<body>`.
+
+## 133. ADR-133 — Chrome unificado: botones del header en páginas legacy + badge de favoritos
+
+> Reporte del cliente (validando producción): "las otras páginas no comparten el mismo header — se nota en el icono de favoritos; el número tapa el corazón, no se sabe que es favoritos". Pidió unificar a un único lenguaje de header/footer.
+
+### 133.1 Causa raíz (verificada leyendo código + CSS; browser MCP estaba caído → diagnóstico por código)
+Header/footer cinematic viven en `snippets/header.html` + `footer.html`, inyectados por `components.js` en las ~87 legacy (el index los tiene inline, 1:1). El MARKUP es idéntico. La diferencia es CSS: el chrome usa `.btn/.btn-icon/.btn-ghost/.btn-subtle/.btn-primary`, definidos SOLO en `css/home/base-redesign.css`. `injectCinematicAssets()` inyecta tokens-redesign + chrome-redesign + chrome-bridge, pero **NO base-redesign.css** (tiene un reset global `*{margin:0;padding:0}` + `body{}` que rompería el body legacy). → en legacy el `<a class="btn btn-icon btn-ghost">` de Favoritos NO recibía tamaño 36×36 → colapsaba al SVG → el badge `.nav-pip` (top:4px/right:4px) caía sobre el corazón. El index sí carga base-redesign.css → header OK. Bug latente de SP-5.1 (chrome extraído pero dependiente de un CSS no inyectado).
+
+### 133.2 Solución estructural
+1. **`css/home/chrome-redesign.css`** (sí se inyecta en legacy + lo carga el index):
+   - Portadas las reglas de botones del chrome (`.btn/.btn-icon/.btn-ghost/.btn-subtle/.btn-primary` + variantes `[data-theme=dark]`), verbatim de base-redesign.css pero **scoped a `.alt-nav`** → NO tocan los `.btn` del body legacy. El index ya las tenía vía base → resultado idéntico → header unificado en TODO el sitio.
+   - `.nav-pip` (badge favoritos) reposicionado de `top:4px/right:4px` (sobre el corazón) → `top:-5px/right:-5px` (flota FUERA del icono, esquina sup-der) + sombra + `pointer-events:none`. Resuelve "el número tapa el corazón" en index Y legacy.
+2. Cache bump `v20260531200000` → `v20260531210000`.
+
+### 133.3 No-regresión
+- Botones scoped a `.alt-nav` → `.btn` del body legacy intacto. Footer/modales no usan los `.btn` del chrome.
+- Aditivo salvo la edición de `.nav-pip` (1 regla, reposición). chrome-redesign.css llaves 210/210.
+- Tokens usados ya en tokens-redesign.css (inyectado) + `data-theme=dark` (lo setea components.js). `.t-gold-grad`/`.container` NO faltaban (también en style.css/dark-theme que legacy carga) → solo faltaban los `.btn-*`.
+
+### 133.4 Tests E2E (cliente — producción)
+Tras deploy + Ctrl+Shift+R, comparar header index vs favoritos/perfil/nosotros/contacto: (1) idénticos; (2) Favoritos = corazón 36×36 con badge dorado flotando en la esquina SIN tapar el corazón; (3) Ingresar (.btn-subtle) y Registrarse (.btn-primary) con estilo cinematic correcto en legacy; (4) el badge no tapa el corazón en NINGUNA página.
+
+### 133.5 Anti-patterns evitados
+- §19 RCA: causa hallada leyendo components.js + `grep .btn` en css/ (solo base-redesign + admin) — no se adivinó.
+- §3.2: NO se inyectó base-redesign.css entero (reset global rompería legacy); se portó solo lo necesario, scoped.
+- L-16 (coexistencia legacy↔cinematic): fix en chrome-redesign.css (se inyecta) + scoped.
+
+### 133.6 Archivos modificados / INTACTOS
+**Modificados:** `css/home/chrome-redesign.css` (botones scoped + `.nav-pip`), `service-worker.js`, `js/core/cache-manager.js`, `docs/05/10/00/30`.
+**INTACTOS:** `snippets/header.html`/`footer.html` (markup ya 1:1), `components.js`, `base-redesign.css`, index inline, body de todas las páginas.
+
+### 133.7 Doctrina + cache
+- §3.2 + §19 RCA + L-16 + §G.4 Cierre. Lección → L-18.
+- Mejora opcional propuesta al cliente: ocultar el badge cuando favoritos=0 (requiere toque en favorites-manager `updateAllCounters`, blast radius global).
+- Cache: `v20260531200000` → `v20260531210000` (§4). Rollback: `git revert`.

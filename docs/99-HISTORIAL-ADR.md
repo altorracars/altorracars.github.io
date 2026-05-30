@@ -42418,3 +42418,24 @@ Reescribir `comparar.html` al diseño `Compare.jsx` (slots A/B + VS + picker inl
 ### 134.6 Archivos
 **Modificados:** `css/home/chrome-redesign.css` (flotante cinematic), `js/public/comparador.js` (maxVehicles=2), `service-worker.js`, `cache-manager.js`, `docs/*`.
 **INTACTOS:** `index.html` (ya cargaba comparador.js), `components.js`, `home-carousels.js`, `css/comparador.css` (lo aborda el Paso 2).
+
+## 135. ADR-135 — Comparador página cinematic (SP-5.2.c.3 · Paso 2)
+
+> Reescritura de `comparar.html` al diseño `Compare.jsx`: slots A/B + VS + picker inline + tabla de diferencias (ganador en dorado) + veredicto + empty. Máx 2. Port React→vanilla.
+
+### 135.1 Solución
+1. **`comparar.html`** (reescrita): `<body data-cin="on" class="cmp-active">` + `<main class="cmp-page" id="compare-root">` que el JS inline llena. Añadidos `<link>` soft-redesign.css (tokens `--cin-*`) + comparar-cinematic.css. Header/footer/loader/scripts core preservados.
+2. **JS inline (port de Compare.jsx a vanilla)**: estado = `vehicleComparator` (COMPARTIDO con el flotante, máx 2) + datos reales de `vehicleDB`. Render: hero + slots A/B (vacío→abre picker, lleno→media+info+remove+ficha) + tabla (GROUPS info/motor/comercial/estado, diff dorado en año/precio/km) + veredicto de precio + empty. Picker inline (`.cmp-picker`): modal con búsqueda que filtra vehicleDB excluyendo el otro slot + los ya añadidos; click → `vehicleComparator.add` → re-render. Delegación de eventos (sobrevive re-render); Escape cierra el picker.
+3. **`css/home/comparar-cinematic.css`** (nuevo): port de las `.cmp-*` de redesign/pages.css + oculta el flotante en la propia página (`body.cmp-active .comparador-widget`).
+4. Cache bump `v20260531220000` → `v20260531230000`.
+
+### 135.2 No-regresión
+- `vehicleComparator` unificado: agregar desde el picker o desde una card (flotante) → mismo estado (storage `altorra_comparador`, máx 2). NO se usa el `alt-cmp` del mock JSX.
+- 2 scripts inline validados (`new Function`, 0 errores). comparar-cinematic.css 71/71 llaves.
+- `getVehicleDetailUrl` (render.js) reutilizado para links (fallback `detalle-vehiculo.html?id=`). XSS: todo texto Firestore vía `esc()`.
+
+### 135.3 Tests E2E (cliente — producción)
+Tras deploy + Ctrl+Shift+R en `comparar.html`: (1) hero "Pon dos vehículos lado a lado"; (2) slots vacíos → click abre picker inline con búsqueda; elegir coloca en el slot; (3) con 2 → tabla diff (mejor valor en dorado con ✦) + veredicto + CTAs (ver A/B/WhatsApp); (4) quitar slot lo vacía; (5) máx 2 (picker excluye añadidos); (6) el flotante NO aparece en esta página; (7) estado compartido con el flotante de otras páginas.
+
+### 135.4 Archivos
+**Modificados:** `comparar.html` (reescrito), `service-worker.js`, `cache-manager.js`, `docs/*`. **Nuevos:** `css/home/comparar-cinematic.css`. **INTACTOS:** comparador.js (lógica `vehicleComparator`), vehicleDB, render.js.

@@ -12,12 +12,12 @@
     <link rel="canonical" href="https://altorracars.github.io/comparar.html">
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Compara hasta 3 vehículos lado a lado. Analiza especificaciones, precios y características para tomar la mejor decisión de compra.">
+    <meta name="description" content="Compara dos vehículos lado a lado. Analiza especificaciones, precios y diferencias para tomar la mejor decisión de compra.">
     <meta name="robots" content="index, follow">
 
     <!-- Open Graph -->
     <meta property="og:title" content="Comparar Vehículos - ALTORRA CARS">
-    <meta property="og:description" content="Herramienta de comparación de vehículos. Compara hasta 3 autos simultáneamente.">
+    <meta property="og:description" content="Compara dos vehículos lado a lado. Las diferencias se resaltan automáticamente.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://altorracars.github.io/comparar.html">
     <meta property="og:image" content="https://altorracars.github.io/multimedia/hero-car.jpg">
@@ -26,7 +26,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://altorracars.github.io/comparar.html">
     <meta name="twitter:title" content="Comparar Vehículos - ALTORRA CARS">
-    <meta name="twitter:description" content="Herramienta de comparación de vehículos. Compara hasta 3 autos simultáneamente.">
+    <meta name="twitter:description" content="Compara dos vehículos lado a lado en ALTORRA CARS.">
     <meta name="twitter:image" content="https://altorracars.github.io/multimedia/hero-car.jpg">
 
     <!-- Styles -->
@@ -35,16 +35,14 @@
     <link rel="stylesheet" href="css/comparador.css">
     <link rel="stylesheet" href="css/dark-theme.css">
     <link rel="stylesheet" href="css/performance-fixes.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
+    <link rel="stylesheet" href="css/home/comparar-cinematic.css">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
-    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
-         unauthenticated header buttons when the user is already logged in.
-         Sets html.auth-authenticated or html.auth-guest based on the
-         localStorage flag persisted by auth.js (updateHeaderAuthState).
-         CSS in style.css uses these classes to hide/show login buttons. -->
+    <!-- Auth hint reader — synchronous, pre-paint (FOUC fix de header). -->
     <script>
     (function () {
         try {
@@ -57,14 +55,7 @@
         }
     })();
     </script>
-    <!-- Critical header CSS — inlined for first-paint stability.
-         (1) Reserves 80px for the header so layout doesn't shift when
-             components.js injects the fetched header HTML.
-         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
-             prevents the sequential paint of favoritos→login→register→bell).
-         (3) Auth hint rules duplicated here so they apply even before
-             style.css finishes parsing (defense-in-depth).
-         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <!-- Critical header CSS — inlined for first-paint stability. -->
     <style>
     #header-placeholder{min-height:80px;display:block}
     header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
@@ -87,12 +78,8 @@
     @keyframes plSpin{to{transform:rotate(360deg)}}
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
-
-    <noscript>
-            <link rel="stylesheet" href="css/toast-notifications.css">
-    </noscript>
 </head>
-<body>
+<body data-cin="on" class="cmp-active">
     <!-- Page Loader -->
     <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
         <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
@@ -101,48 +88,10 @@
 
     <div id="header-placeholder"></div>
 
-    <div class="comparar-page">
-        <div class="comparar-container">
-            <div class="comparar-header">
-                <h1>Comparar Vehículos</h1>
-                <p>Analiza las especificaciones de hasta 3 vehículos lado a lado</p>
-            </div>
-
-            <div id="comparison-content">
-                <!-- Se carga dinámicamente -->
-                <div class="loading-state" style="text-align: center; padding: 60px;">
-                    <div class="spinner"></div>
-                    <p style="margin-top: 16px; color: #6b7280;">Cargando comparación...</p>
-                </div>
-            </div>
-
-            <div class="comparison-actions" id="comparison-actions" style="display: none;">
-                <a href="#" id="btn-whatsapp-compare" class="btn-action primary" target="_blank">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                    </svg>
-                    Consultar por WhatsApp
-                </a>
-                <button class="btn-action secondary" id="btn-share-compare">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="18" cy="5" r="3"/>
-                        <circle cx="6" cy="12" r="3"/>
-                        <circle cx="18" cy="19" r="3"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                    </svg>
-                    Compartir comparación
-                </button>
-                <button class="btn-action secondary" id="btn-clear-compare">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3,6 5,6 21,6"/>
-                        <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"/>
-                    </svg>
-                    Limpiar comparador
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- SP-5.2.c.3 Paso 2 (ADR §135) — comparador cinematic. JS inline (abajo)
+         renderiza slots A/B + picker inline + tabla diff + veredicto en #compare-root,
+         usando vehicleComparator (compartido con el flotante) + vehicleDB. -->
+    <main class="cmp-page" id="compare-root"></main>
 
     <div id="footer-placeholder"></div>
 
@@ -158,351 +107,260 @@
     <script src="js/public/comparador.js" defer></script>
 
     <script>
-        // Funciones de formateo
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('es-CO', {
-                style: 'currency',
-                currency: 'COP',
-                minimumFractionDigits: 0
-            }).format(amount);
+    // ════════════════════════════════════════════════════════════
+    // COMPARADOR — página cinematic (port de redesign/Compare.jsx a vanilla)
+    // Estado = vehicleComparator (compartido con el flotante, máx 2).
+    // ════════════════════════════════════════════════════════════
+    (function () {
+        var root = document.getElementById('compare-root');
+        if (!root) return;
+
+        var pickerSide = null;   // 'a' | 'b' | null
+        var pickerQuery = '';
+
+        // ── Helpers ──────────────────────────────────────────
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+        function fmtPrice(n) { return '$' + Number(n || 0).toLocaleString('es-CO'); }
+        function fmtKm(n) { return Number(n || 0).toLocaleString('es-CO') + ' km'; }
+        function cap(s) { return s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : ''; }
+        function priceOf(v) { return (v && (v.precioOferta || v.precio)) || 0; }
+        var CAT_NAMES = { suv: 'SUV', sedan: 'Sedán', pickup: 'Pickup', hatchback: 'Hatchback', camioneta: 'Camioneta' };
+        function catName(c) { return CAT_NAMES[c] || cap(c); }
+        function detailUrl(v) {
+            return (typeof getVehicleDetailUrl === 'function')
+                ? getVehicleDetailUrl(v)
+                : ('detalle-vehiculo.html?id=' + encodeURIComponent(v.id));
+        }
+        function getIds() {
+            return (window.vehicleComparator ? vehicleComparator.getIds() : []).slice(0, 2);
+        }
+        function getVehicles() {
+            return getIds().map(function (id) { return vehicleDB.getVehicleById(String(id)); }).filter(Boolean);
         }
 
-        function formatKilometers(km) {
-            if (km === 0) return '0 km';
-            return new Intl.NumberFormat('es-CO').format(km) + ' km';
-        }
-
-        function capitalizar(str) {
-            if (!str) return '';
-            return str.charAt(0).toUpperCase() + str.slice(1);
-        }
-
-        function formatCategoria(cat) {
-            const categorias = {
-                'suv': 'SUV',
-                'sedan': 'Sedán',
-                'pickup': 'Pickup',
-                'hatchback': 'Hatchback'
-            };
-            return categorias[cat] || capitalizar(cat);
-        }
-
-        // Especificaciones a comparar
-        const specGroups = [
-            {
-                title: 'Información General',
-                specs: [
-                    { key: 'tipo', label: 'Tipo', format: capitalizar },
-                    { key: 'categoria', label: 'Categoría', format: formatCategoria },
-                    { key: 'year', label: 'Año' },
-                    { key: 'color', label: 'Color', default: 'No especificado' }
-                ]
-            },
-            {
-                title: 'Motor y Rendimiento',
-                specs: [
-                    { key: 'motor', label: 'Motor', default: 'No especificado' },
-                    { key: 'cilindraje', label: 'Cilindraje', default: 'No especificado' },
-                    { key: 'potencia', label: 'Potencia', default: 'No especificado' },
-                    { key: 'combustible', label: 'Combustible', format: capitalizar },
-                    { key: 'transmision', label: 'Transmisión', format: capitalizar },
-                    { key: 'traccion', label: 'Tracción', default: 'No especificado' }
-                ]
-            },
-            {
-                title: 'Dimensiones y Capacidad',
-                specs: [
-                    { key: 'puertas', label: 'Puertas', default: '-' },
-                    { key: 'pasajeros', label: 'Pasajeros', default: '-' },
-                    { key: 'direccion', label: 'Dirección', default: 'No especificado' }
-                ]
-            },
-            {
-                title: 'Estado y Documentación',
-                specs: [
-                    { key: 'kilometraje', label: 'Kilometraje', format: formatKilometers, compare: 'lower' },
-                    { key: 'revisionTecnica', label: 'Rev. Técnico-Mecánica', format: v => v ? 'Al día' : 'Consultar' },
-                    { key: 'peritaje', label: 'Peritaje', format: v => v ? 'Realizado' : 'Disponible' },
-                    { key: 'ubicacion', label: 'Ubicación', default: 'Cartagena' }
-                ]
-            }
+        // ── Tabla de especificaciones ────────────────────────
+        var GROUPS = [
+            { title: 'Información General', rows: [
+                { label: 'Año',        get: function (v) { return v.year; },          fmt: function (x) { return x || '—'; },                                       better: 'higher' },
+                { label: 'Carrocería', get: function (v) { return catName(v.categoria); }, fmt: function (x) { return x || '—'; } },
+                { label: 'Color',      get: function (v) { return v.color; },          fmt: function (x) { return x ? cap(x) : '—'; } },
+                { label: 'Condición',  get: function (v) { return v.tipo; },           fmt: function (x) { return x === 'nuevo' ? '0 KM · Estreno' : (x ? 'Usado verificado' : '—'); } }
+            ]},
+            { title: 'Motor y rendimiento', rows: [
+                { label: 'Cilindraje',  get: function (v) { return v.cilindraje; },  fmt: function (x) { return x || '—'; } },
+                { label: 'Potencia',    get: function (v) { return v.potencia; },    fmt: function (x) { return x || '—'; } },
+                { label: 'Combustible', get: function (v) { return v.combustible; }, fmt: function (x) { return x ? cap(x) : '—'; } },
+                { label: 'Transmisión', get: function (v) { return v.transmision; }, fmt: function (x) { return x ? cap(x) : '—'; } },
+                { label: 'Tracción',    get: function (v) { return v.traccion; },    fmt: function (x) { return x || '—'; } }
+            ]},
+            { title: 'Comercial', rows: [
+                { label: 'Precio', get: function (v) { return priceOf(v); }, fmt: function (x) { return fmtPrice(x); }, better: 'lower' }
+            ]},
+            { title: 'Estado y documentación', rows: [
+                { label: 'Kilometraje', get: function (v) { return v.kilometraje; }, fmt: function (x) { return (x || x === 0) ? fmtKm(x) : '—'; }, better: 'lower' },
+                { label: 'Ubicación',   get: function (v) { return v.ubicacion; },   fmt: function (x) { return x || 'Cartagena'; } }
+            ]}
         ];
+        function toNum(x) {
+            if (typeof x === 'number') return x;
+            var n = parseFloat(String(x).replace(/[^\d.]/g, ''));
+            return isNaN(n) ? null : n;
+        }
+        function diffWinner(row, a, b) {
+            if (!a || !b || !row.better) return null;
+            var na = toNum(row.get(a)), nb = toNum(row.get(b));
+            if (na === null || nb === null || na === nb) return null;
+            var aWins = row.better === 'lower' ? na < nb : na > nb;
+            return aWins ? 'a' : 'b';
+        }
 
-        async function loadComparison() {
-            const contentEl = document.getElementById('comparison-content');
-            const actionsEl = document.getElementById('comparison-actions');
+        // ── Render parciales ─────────────────────────────────
+        function heroHTML() {
+            return '' +
+                '<section class="cmp-hero">' +
+                    '<a href="busqueda.html" class="cmp-back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg> Volver al catálogo</a>' +
+                    '<span class="cin-eyebrow">Comparador · máx 2</span>' +
+                    '<h1 class="cmp-h">Pon dos vehículos <span class="cmp-h-accent">lado a lado.</span></h1>' +
+                    '<p class="cmp-sub">Las diferencias se resaltan automáticamente. Lo mejor de cada uno te lo señalamos en dorado.</p>' +
+                '</section>';
+        }
+        function slotHTML(v, side) {
+            if (!v) {
+                return '' +
+                    '<button type="button" class="cmp-slot is-empty" data-pick="' + side.toLowerCase() + '">' +
+                        '<span class="cmp-slot-empty-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 5v14M5 12h14"/></svg></span>' +
+                        '<span class="cmp-slot-empty-title">Agregar vehículo ' + side + '</span>' +
+                        '<span class="cmp-slot-empty-sub">Elige cualquiera del catálogo</span>' +
+                    '</button>';
+            }
+            var img = v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
+            return '' +
+                '<div class="cmp-slot is-filled">' +
+                    '<div class="cmp-slot-media" style="background-image:url(\'' + esc(img) + '\')">' +
+                        '<button type="button" class="cmp-slot-remove" data-remove="' + esc(v.id) + '" aria-label="Quitar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6 18 18M6 18 18 6"/></svg></button>' +
+                    '</div>' +
+                    '<div class="cmp-slot-info">' +
+                        '<span class="cmp-slot-brand">' + esc(cap(v.marca)) + '</span>' +
+                        '<h3 class="cmp-slot-model">' + esc(v.modelo) + '</h3>' +
+                        '<span class="cmp-slot-year">' + esc(v.year || '') + ' · ' + esc(catName(v.categoria)) + '</span>' +
+                        '<span class="cmp-slot-price">' + fmtPrice(priceOf(v)) + '</span>' +
+                        '<a href="' + esc(detailUrl(v)) + '" class="cmp-slot-link">Ver ficha <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>' +
+                    '</div>' +
+                '</div>';
+        }
+        function slotsHTML(a, b) {
+            return '' +
+                '<section class="cmp-slots-section"><div class="cmp-slots">' +
+                    slotHTML(a, 'A') +
+                    '<span class="cmp-vs">VS</span>' +
+                    slotHTML(b, 'B') +
+                '</div></section>';
+        }
+        function tableHTML(a, b) {
+            var groups = GROUPS.map(function (g) {
+                var rows = g.rows.map(function (row) {
+                    var winner = diffWinner(row, a, b);
+                    var ca = a ? esc(row.fmt(row.get(a), a)) : '—';
+                    var cb = b ? esc(row.fmt(row.get(b), b)) : '—';
+                    var clsA = winner === 'a' ? 'is-win' : (a && b && winner === 'b' ? 'is-lose' : '');
+                    var clsB = winner === 'b' ? 'is-win' : (a && b && winner === 'a' ? 'is-lose' : '');
+                    return '<div class="cmp-row"><span class="cmp-row-label">' + esc(row.label) + '</span>' +
+                        '<span class="cmp-row-cell ' + clsA + '">' + ca + '</span>' +
+                        '<span class="cmp-row-cell ' + clsB + '">' + cb + '</span></div>';
+                }).join('');
+                return '<div class="cmp-group"><h3 class="cmp-group-title">' + esc(g.title) + '</h3><div class="cmp-rows">' + rows + '</div></div>';
+            }).join('');
+            return '<section class="cmp-table-section"><div class="cmp-table">' + groups + '</div>' + (a && b ? verdictHTML(a, b) : '') + '</section>';
+        }
+        function verdictHTML(a, b) {
+            var pa = priceOf(a), pb = priceOf(b);
+            var h;
+            if (pa < pb) h = 'El <em>' + esc(cap(a.marca)) + ' ' + esc(a.modelo) + '</em> ofrece mejor precio.';
+            else if (pa > pb) h = 'El <em>' + esc(cap(b.marca)) + ' ' + esc(b.modelo) + '</em> ofrece mejor precio.';
+            else h = 'Ambos están al mismo precio — la decisión está en los detalles.';
+            var msg = 'Hola Altorra, estoy comparando:\n• ' + cap(a.marca) + ' ' + a.modelo + ' ' + (a.year || '') + ' — ' + fmtPrice(pa) +
+                '\n• ' + cap(b.marca) + ' ' + b.modelo + ' ' + (b.year || '') + ' — ' + fmtPrice(pb) +
+                '\n\nNecesito asesoría para decidir.\nComparación: ' + window.location.href;
+            var wa = 'https://wa.me/573235016747?text=' + encodeURIComponent(msg);
+            return '' +
+                '<div class="cmp-verdict">' +
+                    '<span class="cin-eyebrow">Veredicto</span>' +
+                    '<h3 class="cmp-verdict-h">' + h + '</h3>' +
+                    '<div class="cmp-verdict-actions">' +
+                        '<a href="' + esc(detailUrl(a)) + '" class="cmp-verdict-cta">Ver ' + esc(cap(a.marca)) + '</a>' +
+                        '<a href="' + esc(detailUrl(b)) + '" class="cmp-verdict-cta">Ver ' + esc(cap(b.marca)) + '</a>' +
+                        '<a href="' + esc(wa) + '" target="_blank" rel="noopener" class="cmp-verdict-cta cmp-verdict-cta--wa">' +
+                            '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.2-1.7-.8-2-.9-.3-.1-.5-.2-.7.2-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.4-1.5-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 .9-1 2.3 0 1.3 1 2.6 1.1 2.8.1.2 2 3 4.8 4.2 2 .9 2.4 1 3.2.9.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.4zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.6 1.4 5.1L2 22l5.1-1.4c1.5.8 3.2 1.3 5 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>' +
+                            ' Consultar por WhatsApp' +
+                        '</a>' +
+                    '</div>' +
+                '</div>';
+        }
+        function emptyHTML() {
+            return '' +
+                '<section class="cmp-empty-section"><div class="cmp-empty">' +
+                    '<span class="cmp-empty-mark"><svg viewBox="0 0 100 100" fill="none"><rect x="20" y="20" width="25" height="60" stroke="currentColor" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 4"/><rect x="55" y="20" width="25" height="60" stroke="currentColor" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 4"/><path d="M48 50h4" stroke="currentColor" stroke-width="1" opacity="0.6"/></svg></span>' +
+                    '<h3>Empieza eligiendo dos vehículos</h3>' +
+                    '<p>Selecciónalos del catálogo o desde la ficha individual con el botón «Comparar».</p>' +
+                    '<a href="busqueda.html" class="cmp-empty-cta">Ir al catálogo</a>' +
+                '</div></section>';
+        }
+        function pickerListHTML() {
+            var ids = getIds();
+            var excludeId = pickerSide === 'a' ? ids[1] : ids[0];
+            var q = pickerQuery.trim().toLowerCase();
+            var all = (vehicleDB.vehicles || []).filter(function (v) {
+                if (String(v.id) === String(excludeId)) return false;
+                if (window.vehicleComparator && vehicleComparator.has(String(v.id))) return false;
+                if (!q) return true;
+                return ((v.marca || '') + ' ' + (v.modelo || '') + ' ' + (v.year || '')).toLowerCase().indexOf(q) !== -1;
+            }).slice(0, 40);
+            if (all.length === 0) return '<div class="cmp-picker-empty">Sin resultados</div>';
+            return all.map(function (v) {
+                var img = v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
+                return '<button type="button" class="cmp-picker-item" data-add="' + esc(v.id) + '">' +
+                    '<span class="cmp-picker-thumb" style="background-image:url(\'' + esc(img) + '\')"></span>' +
+                    '<span class="cmp-picker-info"><span class="cmp-picker-brand">' + esc(cap(v.marca)) + '</span><span class="cmp-picker-model">' + esc(v.modelo) + ' · ' + esc(v.year || '') + '</span></span>' +
+                    '<span class="cmp-picker-price">' + fmtPrice(priceOf(v)) + '</span>' +
+                '</button>';
+            }).join('');
+        }
+        function pickerHTML() {
+            return '' +
+                '<div class="cmp-picker" id="cmpPicker" role="dialog" aria-label="Elegir vehículo">' +
+                    '<div class="cmp-picker-panel">' +
+                        '<div class="cmp-picker-head"><h3>Elige un vehículo</h3><button type="button" class="cmp-picker-close" id="cmpPickerClose" aria-label="Cerrar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6 18 18M6 18 18 6"/></svg></button></div>' +
+                        '<div class="cmp-picker-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="cmpPickerInput" placeholder="Marca, modelo, año…" autocomplete="off"></div>' +
+                        '<div class="cmp-picker-list" id="cmpPickerList">' + pickerListHTML() + '</div>' +
+                    '</div>' +
+                '</div>';
+        }
 
-            // Cargar datos
-            await vehicleDB.load();
-            const vehicleIds = vehicleComparator.getIds();
+        // ── Render principal ─────────────────────────────────
+        function render() {
+            var vs = getVehicles();
+            var a = vs[0] || null, b = vs[1] || null;
+            var html = heroHTML() + slotsHTML(a, b);
+            if (a || b) html += tableHTML(a, b);
+            else html += emptyHTML();
+            root.innerHTML = html;
+            if (pickerSide) {
+                root.insertAdjacentHTML('beforeend', pickerHTML());
+                var input = document.getElementById('cmpPickerInput');
+                if (input) { input.value = pickerQuery; input.focus(); }
+            }
+        }
 
-            if (vehicleIds.length < 2) {
-                renderEmptyState(contentEl);
-                actionsEl.style.display = 'none';
+        // ── Eventos (delegación, sobrevive re-render) ────────
+        root.addEventListener('click', function (e) {
+            var pickBtn = e.target.closest('[data-pick]');
+            if (pickBtn) { pickerSide = pickBtn.getAttribute('data-pick'); pickerQuery = ''; render(); return; }
+
+            var removeBtn = e.target.closest('[data-remove]');
+            if (removeBtn) {
+                if (window.vehicleComparator) vehicleComparator.remove(removeBtn.getAttribute('data-remove'));
+                render();
                 return;
             }
-
-            // Obtener vehículos
-            const vehicles = vehicleIds
-                .map(id => vehicleDB.getVehicleById(id))
-                .filter(v => v);
-
-            if (vehicles.length < 2) {
-                renderEmptyState(contentEl);
-                actionsEl.style.display = 'none';
+            var addBtn = e.target.closest('[data-add]');
+            if (addBtn) {
+                if (window.vehicleComparator) vehicleComparator.add(addBtn.getAttribute('data-add'));
+                pickerSide = null; pickerQuery = '';
+                render();
                 return;
             }
-
-            renderComparisonTable(vehicles, contentEl);
-            actionsEl.style.display = 'flex';
-            setupWhatsAppButton(vehicles);
-        }
-
-        function renderEmptyState(container) {
-            container.innerHTML = `
-                <div class="comparar-empty">
-                    <div class="comparar-empty-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7" rx="1"/>
-                            <rect x="14" y="3" width="7" height="7" rx="1"/>
-                            <rect x="3" y="14" width="7" height="7" rx="1"/>
-                            <rect x="14" y="14" width="7" height="7" rx="1"/>
-                        </svg>
-                    </div>
-                    <h2>No hay vehículos para comparar</h2>
-                    <p>Agrega al menos 2 vehículos al comparador para ver sus diferencias lado a lado.</p>
-                    <a href="busqueda.html" class="btn-explorar">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="m21 21-4.35-4.35"/>
-                        </svg>
-                        Explorar vehículos
-                    </a>
-                </div>
-            `;
-        }
-
-        function renderComparisonTable(vehicles, container) {
-            const numVehicles = vehicles.length;
-            const canAddMore = numVehicles < 3;
-
-            let html = `
-                <div class="comparison-table-wrapper">
-                    <table class="comparison-table">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                ${vehicles.map(v => `
-                                    <td class="vehicle-column-header">
-                                        <button class="btn-remove-vehicle" data-remove="${v.id}" title="Quitar del comparador">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                                <line x1="6" y1="6" x2="18" y2="18"/>
-                                            </svg>
-                                        </button>
-                                        <img src="${v.imagen}" alt="${v.marca} ${v.modelo}"
-                                             onerror="this.src='multimedia/vehicles/placeholder-car.jpg'">
-                                        <h3>${capitalizar(v.marca)} ${v.modelo}</h3>
-                                        <div class="vehicle-year">${v.year} · ${formatCategoria(v.categoria)}</div>
-                                        <div class="vehicle-price">${formatCurrency(v.precioOferta || v.precio)}</div>
-                                        <a href="${getVehicleDetailUrl(v)}" class="btn-ver-detalle">Ver detalle</a>
-                                    </td>
-                                `).join('')}
-                                ${canAddMore ? `
-                                    <td class="add-vehicle-column">
-                                        <a href="busqueda.html" class="btn-add-vehicle">
-                                            <div class="icon">
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                                </svg>
-                                            </div>
-                                            <span>Agregar vehículo</span>
-                                        </a>
-                                    </td>
-                                ` : ''}
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            // Fila de precio para comparación rápida
-            const prices = vehicles.map(v => v.precioOferta || v.precio);
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-
-            html += `
-                <tr>
-                    <th>Precio</th>
-                    ${vehicles.map(v => {
-                        const price = v.precioOferta || v.precio;
-                        let className = '';
-                        if (prices.length > 1) {
-                            if (price === minPrice) className = 'highlight-best';
-                            else if (price === maxPrice) className = 'highlight-worst';
-                        }
-                        return `<td class="${className}">${formatCurrency(price)}</td>`;
-                    }).join('')}
-                    ${canAddMore ? '<td></td>' : ''}
-                </tr>
-            `;
-
-            // Grupos de especificaciones
-            specGroups.forEach(group => {
-                html += `
-                    <tr class="category-row">
-                        <th colspan="${numVehicles + 1 + (canAddMore ? 1 : 0)}">${group.title}</th>
-                    </tr>
-                `;
-
-                group.specs.forEach(spec => {
-                    const values = vehicles.map(v => {
-                        let val = v[spec.key];
-                        if (val === undefined || val === null || val === '') {
-                            val = spec.default || '-';
-                        } else if (spec.format) {
-                            val = spec.format(val);
-                        }
-                        return { raw: v[spec.key], formatted: val };
-                    });
-
-                    // Determinar mejores/peores valores si es comparable
-                    let bestIdx = -1, worstIdx = -1;
-                    if (spec.compare && values.length > 1) {
-                        const numericValues = values.map((v, i) => ({
-                            idx: i,
-                            val: typeof v.raw === 'number' ? v.raw : null
-                        })).filter(v => v.val !== null);
-
-                        if (numericValues.length > 1) {
-                            if (spec.compare === 'lower') {
-                                bestIdx = numericValues.reduce((a, b) => a.val < b.val ? a : b).idx;
-                                worstIdx = numericValues.reduce((a, b) => a.val > b.val ? a : b).idx;
-                            } else {
-                                bestIdx = numericValues.reduce((a, b) => a.val > b.val ? a : b).idx;
-                                worstIdx = numericValues.reduce((a, b) => a.val < b.val ? a : b).idx;
-                            }
-                        }
-                    }
-
-                    html += `
-                        <tr>
-                            <th>${spec.label}</th>
-                            ${values.map((v, i) => {
-                                let className = '';
-                                if (i === bestIdx) className = 'highlight-best';
-                                else if (i === worstIdx) className = 'highlight-worst';
-                                return `<td class="${className}">${v.formatted}</td>`;
-                            }).join('')}
-                            ${canAddMore ? '<td></td>' : ''}
-                        </tr>
-                    `;
-                });
-            });
-
-            // Características
-            html += `
-                <tr class="category-row">
-                    <th colspan="${numVehicles + 1 + (canAddMore ? 1 : 0)}">Características Destacadas</th>
-                </tr>
-                <tr>
-                    <th>Equipamiento</th>
-                    ${vehicles.map(v => {
-                        const features = v.caracteristicas || [];
-                        if (features.length === 0) {
-                            return '<td>-</td>';
-                        }
-                        return `<td>
-                            <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
-                                ${features.slice(0, 6).map(f => `<li>${f}</li>`).join('')}
-                                ${features.length > 6 ? `<li style="color: #6b7280;">+${features.length - 6} más...</li>` : ''}
-                            </ul>
-                        </td>`;
-                    }).join('')}
-                    ${canAddMore ? '<td></td>' : ''}
-                </tr>
-            `;
-
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            container.innerHTML = html;
-
-            // Event listeners para remover vehículos
-            container.querySelectorAll('.btn-remove-vehicle').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.remove;
-                    vehicleComparator.remove(id);
-                    loadComparison();
-                });
-            });
-        }
-
-        function setupWhatsAppButton(vehicles) {
-            const btn = document.getElementById('btn-whatsapp-compare');
-            if (!btn || vehicles.length === 0) return;
-
-            const vehicleList = vehicles.map(v =>
-                `• ${capitalizar(v.marca)} ${v.modelo} ${v.year} - ${formatCurrency(v.precioOferta || v.precio)}`
-            ).join('\n');
-
-            const message = `Hola ALTORRA CARS, estoy comparando los siguientes vehiculos:
-
-${vehicleList}
-
-Me gustaria recibir mas informacion y asesoria para tomar una decision.
-
-Ver comparacion: ${window.location.href}`;
-
-            btn.href = `https://wa.me/573235016747?text=${encodeURIComponent(message)}`;
-        }
-
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            loadComparison();
-        });
-
-        document.getElementById('btn-share-compare')?.addEventListener('click', async () => {
-            const url = window.location.href;
-
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: 'Comparación de Vehículos - ALTORRA CARS',
-                        text: 'Mira esta comparación de vehículos',
-                        url: url
-                    });
-                } catch (e) {
-                    // Usuario canceló o error
-                }
-            } else {
-                // Fallback: copiar al portapapeles
-                try {
-                    await navigator.clipboard.writeText(url);
-                    if (typeof toast !== 'undefined') {
-                        toast.success('Enlace copiado al portapapeles');
-                    }
-                } catch (e) {
-                    if (typeof toast !== 'undefined') {
-                        toast.error('No se pudo copiar el enlace');
-                    }
-                }
+            if (e.target.closest('#cmpPickerClose') || e.target.id === 'cmpPicker') {
+                pickerSide = null; render(); return;
             }
         });
-
-        document.getElementById('btn-clear-compare')?.addEventListener('click', () => {
-            vehicleComparator.clear();
-            loadComparison();
-            if (typeof toast !== 'undefined') {
-                toast.info('Comparador limpiado');
+        root.addEventListener('input', function (e) {
+            if (e.target.id === 'cmpPickerInput') {
+                pickerQuery = e.target.value;
+                var listEl = document.getElementById('cmpPickerList');
+                if (listEl) listEl.innerHTML = pickerListHTML();
             }
         });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && pickerSide) { pickerSide = null; render(); }
+        });
+
+        // ── Init ─────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            var boot = function () {
+                if (typeof vehicleDB === 'undefined') { setTimeout(boot, 60); return; }
+                Promise.resolve(vehicleDB.load && vehicleDB.load()).then(render).catch(render);
+                render();
+            };
+            boot();
+        });
+    })();
     </script>
 
-        <script src="js/core/page-loader.js"></script>
+    <script src="js/core/page-loader.js"></script>
     <!-- Cache Manager -->
     <script src="js/core/cache-manager.js" defer></script>
 </body>

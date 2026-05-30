@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-30) |
 |---|---|
-| **Build** | 🟢 SP-5.2.c.2 (perfil §131 + favoritos §132) en prod. **Working tree (sin commit): §133 chrome unify (botones header legacy + badge favoritos oculto en 0) + §134 comparador flotante cinematic/izquierda/máx2 (SP-5.2.c.3 Paso 1).** Pendiente: SP-5.2.c.3 Paso 2 (página comparar.html → Compare.jsx), simulador. |
-| **Cache version vigente** | `v20260531220000` (§134 comparador flotante) |
+| **Build** | 🟢 §131/§132 + §133 chrome unify en prod (commiteados). **Working tree (sin commit): badge fav=0 + §134 comparador flotante + §135 comparador página cinematic → SP-5.2.c.3 COMPLETO.** Falta SP-5.2.c.4 simulador (sprint propio). |
+| **Cache version vigente** | `v20260531230000` (§135 comparador página) |
 | **Branch activa** | `refactor/estructura` — **+1 commit sobre `origin/main`** (favoritos §132, pendiente push). El resto ya en main. |
 | **Producción (`main`)** | `origin/main` = perfil §131 (cinematic, auto-deploy Pages) → **validar perfil en vivo**. Favoritos llega al pushear. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

@@ -42320,3 +42320,39 @@ Perfil logueado bloqueado en localhost (Firebase referrer). Tras deploy + Ctrl+S
 - Cache: `v20260531180000` → `v20260531190000` (§4).
 - Pendiente SP-5.2.c: **favoritos** (siguiente — port cinematic completo de cards, render local sin tocar render.js), comparar (brainstorm), simulador (sprint propio).
 - Rollback: `git revert` o quitar `data-cin="on"` del `<body>`.
+
+## 132. ADR-132 — SP-5.2.c.2 (parte 2): Favoritos → cinematic por ARMONIZACIÓN CSS de las .vehicle-card
+
+> Tercera pieza app-like. El cliente eligió **Opción 1** (recomendada): vestir cards/hero/estados de favoritos con CSS scoped, en vez de reescribir el render a `.cin-av-card`. Cero-regresión sobre lógica compleja (diff-render, badges del watcher, comparador) que NO se puede validar en localhost.
+
+### 132.1 Causa raíz / decisión
+El grid de favoritos renderiza con `renderVehicles()` de `render.js` → `.vehicle-card` (COMPARTIDO con búsqueda/marcas; intocable §3.2). `FavPage` (~640 líneas inline) tiene lógica delicada: diff-render animado, badges del watcher (precio↓/↑, vendido), skeleton, sort/filter, integración con el comparador. Reescribir el render a `.cin-av-card` (fidelidad pixel-perfect con el index) tocaría 5+ métodos + selectores + delegación del comparador — riesgo alto y NO verificable en localhost (favoritos requiere login+datos+comparador). La estructura de `.vehicle-card` (imagen+favorito+badges / título+specs+precio) es PARALELA a `.cin-av-card`, así que un override CSS la viste de cinematic convincentemente.
+
+### 132.2 Solución estructural (Opción 1 — armonización CSS, como perfil §131)
+1. **`favoritos.html`**: `<body data-cin="on">` (único cambio de markup). Sin nuevo `<link>` (no se usan clases `.soft-*`).
+2. **`css/favorites-page.css`** (append, scoped `body[data-cin="on"]`, valores cinematic literales): recolorea `.vehicle-card` (vence el glassmorphism blanco de dark-theme.css con especificidad 0,2,1), título/specs/precio, botón favorito (activo rojo, paridad con `.cin-av-fav.is-on`), badges, hero `.fav-stat*`/subtítulo, controles `.fav-search`/`.fav-select`, y estados (empty/auth-gate/no-match + `.btn-catalog`). `backdrop-filter: none` en stats/controles (§3.1; en cards ya lo neutraliza performance-fixes).
+3. **CERO cambios JS**: `render.js`, `FavPage` inline, comparador, watcher — todo intacto.
+4. Cache bump `v20260531190000` → `v20260531200000`.
+
+### 132.3 No-regresión
+- Sin cambios JS → diff-render, badges, skeleton, sort/filter, favorito, comparador operan igual.
+- Override scoped a `[data-cin="on"]` → reversible; no afecta búsqueda/marcas (sin data-cin) aunque compartan `.vehicle-card`/render.js.
+- Especificidad (0,2,1) > dark-theme `body .vehicle-card` (0,1,1). Los `!important` de performance-fixes (backdrop-filter/transition/::after) no colisionan con color/fondo/borde. `favorites-page.css` llaves balanceadas.
+
+### 132.4 Tests E2E (cliente — SOLO producción, L-08)
+Favoritos requiere login+datos. Tras deploy + Ctrl+Shift+R en `altorracars.github.io/favoritos.html`: (1) cards en superficie cinematic (fondo translúcido, borde sutil, oro), título tinta clara, precio oro, hover dorado; (2) botón ♥ activo en rojo; (3) hero con stats cinematic; (4) búsqueda/sort/eliminar-todos funcionan y se ven cinematic; (5) estados sin-favoritos / gate de login / sin-resultados legibles; (6) badges del watcher (si hay) siguen apareciendo sobre las cards; (7) comparador sigue funcionando.
+
+### 132.5 Anti-patterns evitados
+- §19 RCA: subagente Explore extrajo las declaraciones reales de `.vehicle-card`/`.fav-*` en los 4 CSS antes de escribir el override; verificada la especificidad vs dark-theme/performance-fixes.
+- §3.2: render.js COMPARTIDO intacto. §17.4: IDs/clases intactos. §3.1: sin backdrop-filter nuevo en grids.
+- Evité el render-rewrite arriesgado y no verificable en localhost.
+
+### 132.6 Archivos modificados / INTACTOS
+**Modificados:** `favoritos.html` (solo `<body data-cin>`), `css/favorites-page.css` (capa de armonización al final), `service-worker.js`, `js/core/cache-manager.js`, `docs/05/10/00/99`.
+**INTACTOS:** `js/core/render.js`, `js/core/favorites-manager.js`, JS inline `FavPage`, comparador, búsqueda/marcas.
+
+### 132.7 Doctrina + cache
+- §3.1 + §3.2 + §3.4 IAP + §19 RCA + §G.4 Cierre. Patrón → L-17 (armonización por CSS, reutilizado).
+- Cache: `v20260531190000` → `v20260531200000` (§4).
+- **SP-5.2.c.2 COMPLETO** (perfil §131 + favoritos §132). Pendiente SP-5.2.c: comparar (c.3 — brainstorm: CTA "Explorar vehículos" + selección inline), simulador (c.4 — sprint propio, 2389 líneas).
+- Rollback: `git revert` o quitar `data-cin="on"` del `<body>`.

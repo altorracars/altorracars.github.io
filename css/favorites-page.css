@@ -979,3 +979,122 @@ body .no-favorites--auth .btn-catalog-secondary:hover {
         transition: none;
     }
 }
+
+/* ============================================================
+   SP-5.2.c.2 (parte 2) — ARMONIZACIÓN CINEMATIC DE FAVORITOS (ADR §132)
+   Viste las .vehicle-card (de render.js, COMPARTIDO — intacto) + hero /
+   controles / estados con el lenguaje cinematic, vía override scoped a
+   body[data-cin="on"]. Aditivo y reversible (quitar data-cin del <body>
+   revierte al tema legacy). CERO cambios JS (render.js + FavPage intactos).
+   Mismo enfoque que perfil §131. Especificidad (0,2,1) vence al
+   body .vehicle-card (0,1,1) de dark-theme.css; los !important de
+   performance-fixes (backdrop-filter/transition) no tocan color/fondo/borde.
+   Paleta: elev rgba(244,238,222,.03) · oro #D4A85A · oro-hot #F0C674 ·
+   tinta #F4EEDE · soft rgba(244,238,222,.62) · línea rgba(244,238,222,.10).
+   ============================================================ */
+
+/* ---- Card de vehículo (vence el glassmorphism blanco de dark-theme.css) ---- */
+body[data-cin="on"] .vehicle-card {
+    background: rgba(244, 238, 222, 0.03);
+    border: 1px solid rgba(244, 238, 222, 0.08);
+    border-radius: 14px;
+    box-shadow: none;
+}
+body[data-cin="on"] .vehicle-card:hover {
+    background: rgba(244, 238, 222, 0.05);
+    border-color: rgba(212, 168, 90, 0.32);
+    box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.7);
+}
+body[data-cin="on"] .vehicle-image { background: #15121A; }
+body[data-cin="on"] .vehicle-title { color: #F4EEDE; text-shadow: none; }
+body[data-cin="on"] .vehicle-specs,
+body[data-cin="on"] .vehicle-specs span { color: rgba(244, 238, 222, 0.62); }
+body[data-cin="on"] .vehicle-price,
+body[data-cin="on"] .vehicle-price-offer {
+    color: #F0C674;
+    text-shadow: none;
+    font-weight: 600;
+}
+body[data-cin="on"] .vehicle-price-original { color: rgba(244, 238, 222, 0.32); }
+
+/* Botón favorito → píldora oscura; activo en rojo (paridad con .cin-av-fav.is-on del index) */
+body[data-cin="on"] .favorite-btn {
+    background: rgba(8, 7, 10, 0.7);
+    color: rgba(244, 238, 222, 0.7);
+    border: 1px solid rgba(244, 238, 222, 0.12);
+    box-shadow: none;
+}
+body[data-cin="on"] .favorite-btn:hover { background: rgba(212, 168, 90, 0.18); color: #F0C674; }
+body[data-cin="on"] .favorite-btn.active {
+    background: rgba(255, 94, 94, 0.14);
+    color: #ff5e5e;
+    border-color: rgba(255, 94, 94, 0.32);
+}
+
+/* Badges → chip cinematic oscuro */
+body[data-cin="on"] .badge {
+    background: rgba(8, 7, 10, 0.85);
+    color: #F4EEDE;
+    box-shadow: none;
+    letter-spacing: 0.04em;
+}
+
+/* ---- Hero (mantiene su título dorado; recolora subtítulo + stats) ---- */
+body[data-cin="on"] .fav-hero-subtitle { color: rgba(244, 238, 222, 0.62); }
+body[data-cin="on"] .fav-stat {
+    background: rgba(244, 238, 222, 0.03);
+    border-color: rgba(244, 238, 222, 0.08);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+body[data-cin="on"] .fav-stat:hover {
+    background: rgba(244, 238, 222, 0.05);
+    border-color: rgba(212, 168, 90, 0.32);
+}
+body[data-cin="on"] .fav-stat-icon {
+    background: rgba(212, 168, 90, 0.12);
+    border-color: rgba(212, 168, 90, 0.25);
+    color: #F0C674;
+}
+body[data-cin="on"] .fav-stat-num { color: #F4EEDE; }
+body[data-cin="on"] .fav-stat-label { color: rgba(244, 238, 222, 0.5); }
+
+/* ---- Controles (búsqueda + sort) ---- */
+body[data-cin="on"] .fav-controls {
+    background: rgba(244, 238, 222, 0.03);
+    border-color: rgba(244, 238, 222, 0.08);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+body[data-cin="on"] .fav-search input,
+body[data-cin="on"] .fav-select {
+    background: rgba(8, 7, 10, 0.6);
+    border-color: rgba(244, 238, 222, 0.10);
+    color: #F4EEDE;
+}
+body[data-cin="on"] .fav-search input:focus,
+body[data-cin="on"] .fav-select:focus {
+    border-color: rgba(212, 168, 90, 0.45);
+    box-shadow: 0 0 0 3px rgba(212, 168, 90, 0.12);
+}
+body[data-cin="on"] .fav-sort-label,
+body[data-cin="on"] .fav-results-info { color: rgba(244, 238, 222, 0.62); }
+
+/* ---- Estados (empty / auth-gate / no-match) ---- */
+body[data-cin="on"] .no-favorites h2,
+body[data-cin="on"] .fav-no-match h3 { color: #F4EEDE; }
+body[data-cin="on"] .no-favorites p,
+body[data-cin="on"] .fav-no-match p { color: rgba(244, 238, 222, 0.62); }
+body[data-cin="on"] .no-favorites-icon { color: rgba(212, 168, 90, 0.5); }
+body[data-cin="on"] .fav-no-match strong { color: #F0C674; }
+body[data-cin="on"] .btn-catalog-primary {
+    background: linear-gradient(135deg, #F0C674, #D4A85A 55%, #8a6a2c);
+    color: #08070A;
+    box-shadow: none;
+}
+body[data-cin="on"] .btn-catalog-secondary,
+body[data-cin="on"] .fav-btn-outline {
+    background: rgba(244, 238, 222, 0.06);
+    color: #F4EEDE;
+    border: 1px solid rgba(244, 238, 222, 0.14);
+}

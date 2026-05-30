@@ -116,6 +116,18 @@
   3. **Layout model**: si el viejo usaba `position: fixed` (placeholder reserva espacio) y el nuevo `sticky`, y el nuevo se inyecta dentro de un contenedor pequeño → sticky no "pega". Usar fixed en el bridge para encajar con el placeholder.
 - **Meta-lección**: inyectar UI nueva donde convive CSS viejo NO es solo "cargar el CSS nuevo" — es ganar la guerra de especificidad + asegurar el scope de tokens. Presupuestar un "bridge" desde el diseño cuando hay coexistencia de temas.
 
+### L-17 · Vestir un módulo legacy con un tema nuevo: remapear sus tokens `:root` (si los tiene), no reescribir markup
+- **Síntoma/decisión**: te piden migrar un módulo grande (dashboard, panel) a un tema visual nuevo, pero su contenido lo genera JS (cientos/miles de líneas) y reescribir ese render arriesga regresiones funcionales graves.
+- **Insight (SP-5.2.c.2 §131, verificado)**: si el CSS del módulo centraliza sus colores en variables `:root` (ej. `--pf-*`), **remapear esas variables** a la paleta nueva viste TODO el módulo sin tocar una sola regla estructural ni el JS. Palanca de máximo impacto / mínimo riesgo.
+- **Receta**:
+  1. `grep` las definiciones de tokens (`--prefijo-...\s*:`) en el CSS. Si están centralizadas en `:root`, ganaste.
+  2. Capa de override **scoped a un atributo** (`body[data-cin="on"] { --pf-*: ... }`) al final del CSS → reversible (quitar el atributo revierte) y no pisa el `:root` original.
+  3. **Cazar los hardcodeados**: `grep` hex/rgba en reglas (fuera de `:root`) — el remapeo NO los alcanza. Sobrescribir los visibles (texto sobre acento, fondos de inputs/tiles) en la misma capa scoped.
+  4. Mantener SÓLIDOS los tokens que alimentan modales/overlays (no volverlos translúcidos) o se rompe el apilado.
+  5. CERO cambios en el JS → IDs/clases intactos → cero regresión funcional.
+- **Cuándo NO aplica**: si el diseño objetivo exige estructura DISTINTA (no solo recolorear), o si el CSS hardcodea todo sin tokens (ahí toca la guerra de L-16). Distinguir "recolorear" (esta lección) de "rediseñar" (otro esfuerzo).
+- **Meta-lección**: cuando el redesign de referencia es un MOCK más pobre que el módulo real, "réplica exacta" se vuelve destructivo. Vestir > reescribir. Confirmar el alcance con el cliente cuando fidelidad y cero-regresión chocan.
+
 ---
 
 ## 🪞 Meta: fallos del propio cerebro (Reflejo de Autocrítica `CLAUDE.md §G.4`)

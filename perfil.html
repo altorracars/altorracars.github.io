@@ -23,6 +23,7 @@
     @keyframes plSpin{to{transform:rotate(360deg)}}
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
 
     <noscript>
             <link rel="stylesheet" href="css/toast-notifications.css">
@@ -62,7 +63,7 @@
     @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
     </style>
 </head>
-<body>
+<body data-cin="on">
     <div id="page-loader" role="status" aria-label="Cargando">
         <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
         <div class="pl-ring" aria-hidden="true"></div>
@@ -71,6 +72,17 @@
     <div id="header-placeholder"></div>
 
     <main class="profile-main">
+        <!-- SP-5.2.c.2 (ADR §131) — Hero cinematic. El dashboard funcional completo
+             (sidebar + 7 secciones generadas por perfil.js) queda 100% intacto debajo.
+             Solo se viste de cinematic vía remapeo de tokens en perfil.css. -->
+        <section class="soft-hero soft-hero--small pf-soft-hero">
+            <div class="soft-hero-bg" aria-hidden="true"></div>
+            <div class="soft-hero-inner">
+                <span class="cin-eyebrow">Tu cuenta</span>
+                <h1 class="soft-hero-h">Bienvenido <span class="soft-hero-h-accent">de nuevo</span>.</h1>
+                <p class="soft-hero-sub">Gestiona tu perfil, tus solicitudes y tus preferencias — todo en un solo lugar.</p>
+            </div>
+        </section>
         <!-- Mobile tabs (visible < 768px) -->
         <div class="pf-mobile-tabs" id="pfMobileTabs"></div>
 

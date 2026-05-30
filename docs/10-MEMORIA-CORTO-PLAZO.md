@@ -24,8 +24,8 @@
 - **EN CURSO: SP-5.2 body migration soft pages — DECOMPUESTO en 3 lotes** (es un PORT;
   diseños cinematic en redesign `SoftPages.jsx`/`Compare.jsx`/`Simulator.jsx` + `soft.css`/`pages.css`):
   - **SP-5.2.a (piloto) ✅ working tree** (ADR §128): Legales + 404 → cinematic. `soft-redesign.css` (tokens+soft.css), contenido legal preservado 1:1 (13/15/9 cláusulas). Patrón soft-page establecido. Pendiente: deploy + E2E.
-  - **SP-5.2.b**: Editorial — nosotros + contacto + resenas (`About`/`Contact`/`Reviews`).
-  - **SP-5.2.c**: App-like — favoritos + perfil + comparar + simulador (engancha favoritesManager/vehicleComparator/calculadora). 🔴 alto riesgo.
+  - **SP-5.2.b ✅ working tree** (ADR §129): Editorial — nosotros (`About`) + contacto (`Contact`, form funcional preservado: contactForm + 7 campos + contact.js). + fix `.cin-eyebrow` global en soft-redesign.css. Pendiente: deploy + E2E.
+  - **SP-5.2.c**: App-like — favoritos + perfil + comparar + simulador + **resenas** (movida aquí: reviews.js data-driven). Engancha favoritesManager/vehicleComparator/calculadora/reviews.js. 🔴 alto riesgo.
 - **📌 MEJORAS DEL COMPARADOR (cliente, para SP-5.2.c)**: el comparador cinematic (`Compare.jsx`,
   slots A/B + VS + estado vacío "Pon dos vehículos lado a lado") le gustó. Cambios pedidos:
   (1) CTA "Ir al catálogo" → "**Explorar vehículos**"; (2) permitir **selección de vehículos

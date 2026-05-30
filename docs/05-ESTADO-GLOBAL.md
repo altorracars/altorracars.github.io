@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-29) |
 |---|---|
-| **Build** | 🟢 SP-1 + SP-5.0 + SP-5.1+b + Omni-Brain en producción. **SP-5.2.a working tree** (body migration piloto: legales + 404 → cinematic, contenido legal preservado). Próximo: deploy + E2E, luego SP-5.2.b (editorial). |
-| **Cache version vigente** | `v20260531140000` (SP-5.2.a piloto) |
+| **Build** | 🟢 SP-1 + SP-5.0 + SP-5.1+b + Omni-Brain en producción. **SP-5.2.a + SP-5.2.b working tree** (body migration: legales+404 + nosotros+contacto → cinematic, form de contacto preservado). Próximo: deploy + E2E, luego SP-5.2.c (app-like: favoritos/perfil/comparar/simulador/resenas). |
+| **Cache version vigente** | `v20260531160000` (SP-5.2.b editorial) |
 | **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
 | **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

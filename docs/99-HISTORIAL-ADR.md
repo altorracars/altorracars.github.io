@@ -42209,3 +42209,40 @@ Post-SP-5.1+b, el chrome (nav+footer) es cinematic en las ~87 legacy, pero los B
 - Cache: `v20260531120000` → `v20260531140000` (§4).
 - Deuda documentada: tokens `--cin-*` duplicados (cinematic.css + soft-redesign.css) → centralizar en refactor posterior; CSS muerto en `<style>` inline de legales → limpieza opcional.
 - Rollback: `git revert`; las 4 páginas vuelven al body viejo.
+
+---
+
+## 129. ADR-129 — SP-5.2.b: Body migration editorial (nosotros + contacto) + fix cin-eyebrow global
+
+> Segundo lote de SP-5.2. Editorial: hero + secciones + form funcional. Resenas se movió a SP-5.2.c (es data-driven via reviews.js, encaja con app-like).
+
+### 129.1 Causa raíz
+Post-SP-5.2.a (legales+404 cinematic), faltan los bodies editoriales. `nosotros` (página de marca) y `contacto` (con form funcional) seguían en tema viejo. Además, gap detectado: `.cin-eyebrow` (usado por TODAS las soft pages en el `.soft-hero`) NO estaba en soft-redesign.css (vive en cinematic.css que las soft pages no cargan) → el eyebrow se veía sin estilo incluso en el piloto SP-5.2.a.
+
+### 129.2 Solución estructural (PORT, fuente: redesign `SoftPages.jsx`)
+1. **`nosotros.html`**: body → port de `About()` (hero + pillars + timeline + numbers + CTA). Datos reales preservados (rutas busqueda.html/contacto.html, "Cartagena y la Costa Caribe"). Copy del redesign + stats.
+2. **`contacto.html`**: body → port de `Contact()` (hero + `.cta-grid` con 3 cta-card WhatsApp/email/tel + `.soft-2col` con form + FAQ accordion CSS-only). **FORM FUNCIONAL PRESERVADO**: `<form id="contactForm">` + los 7 campos (nombre/contacto-pais/telefono/email/asunto/vehiculo/mensaje) con sus id/name/required/options intactos → `contact.js` + `comm-schema.js` siguen funcionando. Solo cambió el wrapper visual (`.soft-form`/`.soft-field`). Datos reales: email `altorracarssale@gmail.com`, tel `+57 323 501 6747`.
+3. **`css/home/soft-redesign.css`**: añadida `.cin-eyebrow` (de cinematic.css) — **fix global**: ahora todas las soft pages (legales/404/nosotros/contacto) tienen el eyebrow estilizado. Eliminado el parche inline que un subagente había puesto en contacto.
+4. Cache bump `v20260531140000` → `v20260531160000`.
+
+### 129.3 No-regresión
+- Form de contacto: contrato funcional verificado (contactForm + 7 ids/names + contact.js cargado). El usuario que envía el form dispara el MISMO flujo.
+- Chrome intacto (placeholders + components.js).
+- `.cin-eyebrow` fix es aditivo (no rompe nada; mejora el piloto retroactivamente).
+- CSS muerto viejo (`.about-*` en nosotros, etc.) inocuo (sin elementos en el DOM nuevo).
+
+### 129.4 Tests E2E (cliente)
+`nosotros.html`: hero cinematic + pillars/timeline/numbers/CTA legibles. `contacto.html`: hero + 3 cta-cards + form cinematic FUNCIONAL (llenar + enviar → llega el mensaje) + FAQ. Eyebrows dorados en todas. Chrome cinematic.
+
+### 129.5 Anti-patterns evitados
+- Form NO roto (lo crítico): IDs/names/contact.js preservados. §3.2. Port fiel. Fix de `.cin-eyebrow` centralizado en soft-redesign.css (no parche por página).
+
+### 129.6 Archivos modificados / INTACTOS
+**Modificados:** `nosotros.html`, `contacto.html`, `css/home/soft-redesign.css` (+cin-eyebrow), `service-worker.js`, `js/core/cache-manager.js`, `docs/05/10/00/43-UX`.
+**INTACTOS:** `js/public/contact.js`, `comm-schema.js`, chrome, las legales/404 (SP-5.2.a), demás soft pages, admin.
+
+### 129.7 Doctrina aplicada + cache bump
+- §3.2 (contrato del form). Port fiel. §G.2 (lóbulo 43-UX R4). §G.4 Reflejo de Cierre + Autocrítica (gap cin-eyebrow → fix global, no parche).
+- Cache: `v20260531140000` → `v20260531160000` (§4).
+- Resenas reasignada a SP-5.2.c (app-like, reviews.js data-driven).
+- Rollback: `git revert`; nosotros/contacto vuelven al body viejo.

@@ -47,19 +47,22 @@
         ============================================ */
 
         :root {
-            --sim-primary: #c9a227;
-            --sim-primary-dark: #a88620;
-            --sim-bg: #0a0a0a;
-            --sim-card: #111111;
-            --sim-card-hover: #1a1a1a;
-            --sim-border: #2a2a2a;
-            --sim-text: #ffffff;
-            --sim-text-secondary: #a0a0a0;
-            --sim-text-muted: #666666;
+            /* SP-5.2.c.4 (ADR §136) — tokens remapeados a la paleta cinematic
+               (mismo patrón que perfil §131 / L-17). Viste TODO el simulador
+               sin tocar la lógica de cálculo de crédito (ui/simulator/finance). */
+            --sim-primary: #D4A85A;
+            --sim-primary-dark: #8a6a2c;
+            --sim-bg: #08070A;
+            --sim-card: #15121A;
+            --sim-card-hover: #1b1722;
+            --sim-border: rgba(244,238,222,0.10);
+            --sim-text: #F4EEDE;
+            --sim-text-secondary: rgba(244,238,222,0.62);
+            --sim-text-muted: rgba(244,238,222,0.42);
             --sim-success: #22c55e;
             --sim-warning: #f59e0b;
             --sim-info: #3b82f6;
-            --sim-gradient: linear-gradient(135deg, #c9a227 0%, #dbb93a 50%, #a88620 100%);
+            --sim-gradient: linear-gradient(135deg, #F0C674 0%, #D4A85A 50%, #8a6a2c 100%);
         }
 
         /* Page wrapper */
@@ -1973,7 +1976,7 @@
                         datasets: [{
                             data: [calc.financed, calc.interest, calc.downPayment],
                             backgroundColor: [
-                                '#c9a227',
+                                '#D4A85A',
                                 '#3b82f6',
                                 '#22c55e'
                             ],
@@ -2038,7 +2041,7 @@
                             {
                                 label: 'Capital',
                                 data: capitalData,
-                                backgroundColor: '#c9a227'
+                                backgroundColor: '#D4A85A'
                             },
                             {
                                 label: 'Intereses',

@@ -10,8 +10,8 @@
 
 | Señal | Valor (al 2026-05-29) |
 |---|---|
-| **Build** | 🟢 SP-1 + SP-5.0 + SP-5.0.g + Omni-Brain Fase 1 en producción. SP-5.1 chrome global working tree (snippets + components.js + home-chrome.js + cache bump). Próximo deploy expande HarmonyOS a las ~87 páginas legacy. |
-| **Cache version vigente** | `v20260531000000` (bumpeado en SP-5.1) |
+| **Build** | 🟢 SP-1 + SP-5.0 + Omni-Brain Fase 1 en producción. **SP-5.1 + SP-5.1.b working tree** (chrome global + bridge legacy↔cinematic: data-theme dark + override de especificidad). SP-5.1 commiteado; SP-5.1.b pendiente commit. Re-validar 4 páginas legacy tras deploy. |
+| **Cache version vigente** | `v20260531120000` (bumpeado en SP-5.1.b bridge) |
 | **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1 (varios commits sin fusionar tras commit del cliente). |
 | **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

@@ -32,11 +32,21 @@ const CAPS = {
 
 const claude = read(join(ROOT, 'CLAUDE.md'));
 
+// Registry de lóbulos de dominio (Omni-Brain, ADR §125): los lóbulos hijos
+// (41-SEGURIDAD, 42-LEGAL, 43-UX, ... 49-*) NO viven en CLAUDE.md §0 — se
+// registran en 40-LOBULOS-DOMINIO.md. Leerlo para no marcarlos huérfanos.
+const lobeRegistryPath = join(DOCS, '40-LOBULOS-DOMINIO.md');
+const lobeRegistry = existsSync(lobeRegistryPath) ? read(lobeRegistryPath) : '';
+
 // 1) Neuronas huérfanas: toda docs/NN-*.md debe estar referenciada en CLAUDE.md
-console.log('1) Neuronas huérfanas (registradas en CLAUDE.md):');
+//    (excepto lóbulos hijos 41-49, que se registran en 40-LOBULOS-DOMINIO).
+console.log('1) Neuronas huérfanas (registradas en CLAUDE.md / 40-LOBULOS):');
 const neurons = readdirSync(DOCS).filter((f) => /^\d{2}-.*\.md$/.test(f));
 for (const n of neurons) {
+  const isChildLobe = /^4[1-9]-/.test(n); // 41..49 = lóbulos de dominio hijos
   if (claude.includes(n)) ok(`${n}`);
+  else if (isChildLobe && lobeRegistry.includes(n)) ok(`${n} (lóbulo hijo → 40-LOBULOS-DOMINIO)`);
+  else if (isChildLobe) warn(`${n} lóbulo hijo NO registrado en 40-LOBULOS-DOMINIO`);
   else warn(`${n} NO referenciada en CLAUDE.md → HUÉRFANA (conectar en §0)`);
 }
 

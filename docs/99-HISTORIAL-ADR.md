@@ -42123,3 +42123,50 @@ Cada una validar: header (scroll-machine 3-estados, mega-dropdown, drawer móvil
 - §G.4 Reflejo de Neurogénesis (lóbulo 43-UX R1 actualizado).
 - Cache: `v20260530200000` → `v20260531000000` (§4).
 - Rollback: `git revert` de este commit; las ~87 páginas vuelven al chrome viejo.
+
+---
+
+## 127. ADR-127 — SP-5.1.b: Bridge legacy↔cinematic (chrome invisible en legacy)
+
+> Cliente tras deploy SP-5.1: *"visualmente no observe nada de esto... revisa que el tema anterior no este dañando al nuevo, debes depurar a medida que vayas implementando"*. Confirmó lección M-04: NO avanzar a SP-5.2 sin verificar SP-5.1 en vivo.
+
+### 127.1 Causa raíz (RCA §19, dos problemas combinados)
+El chrome cinematic inyectado por SP-5.1 NO se veía en las páginas legacy. Dos causas simultáneas, verificadas leyendo el CSS:
+1. **Falta de contexto dark**: `tokens-redesign.css` define los tokens claros en `:root` (`--ink-text-muted: #5C5C68` oscuro) y los oscuros en `:root[data-theme="dark"]` (`#B8B8C0` claro). El `index.html` tiene `<html data-theme="dark">` (por eso funciona); las legacy tienen solo `<html lang="es">` → el nav cinematic (fondo oscuro) renderizaba texto oscuro → ilegible.
+2. **Especificidad CSS**: las legacy cargan `style.css` (`#header` 1-0-0), `dark-theme.css` (`body #header` 1-0-1, `body .nav-link`, `body .footer-bottom`), `performance-fixes.css` (`body #header { background/backdrop-filter !important }`). Esas reglas PISAN el chrome cinematic (`.alt-nav`/`.nav-link`/`.footer-*` = 0-1-0). Resultado: barra fija opaca negra (no el flotante translúcido), sin blur.
+
+### 127.2 Solución estructural
+1. **`components.js injectCinematicAssets()`**: setea `document.documentElement.setAttribute('data-theme', 'dark')` al inicio. SEGURO: los 3 CSS viejos NO usan `[data-theme]` (grep count=0; su dark es permanente) → activa los tokens dark del chrome SIN alterar el body legacy.
+2. **`css/home/chrome-bridge.css` (NUEVO)**: cargado ÚLTIMO (tras chrome-redesign.css), SOLO en legacy. Vence el tema viejo con `#header.alt-nav` (1-1-0) + `!important` quirúrgico (necesario porque performance-fixes usa `!important`):
+   - NAV contenedor → `position: fixed` flotante centrado (el cinematic usa sticky, pero el nav queda dentro de un `#header-placeholder` pequeño → sticky no "pega"; fixed replica el look y encaja con el placeholder min-height:80px que reserva el espacio, igual que el header viejo fixed).
+   - Estados `.scrolled`/`.alt-nav--wheel`/`.alt-nav--gone` (background con especificidad ≥ base).
+   - `#header-placeholder { min-height: 80px !important }` (reserva espacio del nav fixed).
+   - `.nav-link` color (vence `body .nav-link` con `#header.alt-nav .nav-link` 1-2-0).
+   - `.footer-bottom` border (vence `body .footer-bottom` con `.alt-footer .footer-bottom` 0-2-0).
+3. Cache bump `v20260531000000` → `v20260531120000`.
+
+### 127.3 No-regresión
+- `node -c` exit 0 en components.js + cache-manager.js. CSS sin syntax-check (verificación visual cliente).
+- El index NO afectado: `injectCinematicAssets()` hace `if (hasInlineChrome()) return` ANTES de setear data-theme o cargar el bridge → el index (chrome inline) jamás ejecuta esto.
+- Body legacy intacto (los tokens-redesign que data-theme activa NO los usa el body legacy; usa los de style.css/dark-theme.css).
+- Cero deploy backend, cero schema.
+
+### 127.4 Tests E2E (cliente)
+Re-validar las 4 páginas (nosotros/busqueda/favoritos/vehiculos-slug): el chrome cinematic debe verse flotante translúcido, texto LEGIBLE (claro sobre oscuro), scroll-machine, dropdown, drawer. Footer cinematic legible. Body legacy intacto.
+
+### 127.5 Anti-patterns evitados
+- §19 RCA: causa raíz verificada LEYENDO el CSS (especificidad + tokens), no adivinada. Reforzó M-04 (verificar la realidad antes de avanzar).
+- §35: cero MutationObserver. El data-theme se setea una vez (no observer).
+- §17: el bridge no anima layout (solo el chrome ya existente lo hace via transform).
+- No se editó `style.css`/`dark-theme.css`/`performance-fixes.css` (tema viejo intacto; el bridge GANA, no modifica) — reversible con quitar el bridge.
+
+### 127.6 Archivos modificados / INTACTOS
+**Creados:** `css/home/chrome-bridge.css`.
+**Modificados:** `js/core/components.js` (data-theme + bridge link), `service-worker.js` + `js/core/cache-manager.js` (cache bump), `docs/05/10/00/43-UX/30`.
+**INTACTOS:** `index.html`, `css/style.css`, `css/dark-theme.css`, `css/performance-fixes.css`, `chrome-redesign.css`, snippets (SP-5.1 ya correctos), todo el body legacy, admin.
+
+### 127.7 Doctrina aplicada + cache bump
+- §19 RCA estricto + M-04 (verificar fuente de verdad real). §3 (no editar style.css). §G.2 Trigger 🔵 (lóbulo 43-UX R2). §G.4 Reflejo de Autocrítica (el bug de SP-5.1 contribuyó → lección L-16).
+- Cache: `v20260531000000` → `v20260531120000` (§4).
+- Lección nueva: **L-16** (`30-LECCIONES` — especificidad legacy↔nuevo + data-theme scope).
+- Rollback: `git revert`; el bridge desaparece, las legacy vuelven al chrome roto (o revert completo de SP-5.1+b → chrome viejo).

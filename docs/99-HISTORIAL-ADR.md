@@ -42439,3 +42439,28 @@ Tras deploy + Ctrl+Shift+R en `comparar.html`: (1) hero "Pon dos vehículos lado
 
 ### 135.4 Archivos
 **Modificados:** `comparar.html` (reescrito), `service-worker.js`, `cache-manager.js`, `docs/*`. **Nuevos:** `css/home/comparar-cinematic.css`. **INTACTOS:** comparador.js (lógica `vehicleComparator`), vehicleDB, render.js.
+
+## 136. ADR-136 — Simulador de crédito cinematic por armonización de tokens (SP-5.2.c.4)
+
+> Último de SP-5.2.c. El simulador (`simulador-credito.html` 2110 líneas + `js/simulador/` 1070) es funcional CRÍTICO (calculadora de crédito). Igual que perfil §131: armonización por remapeo de tokens, NO reescritura.
+
+### 136.1 Causa raíz / decisión
+El `Simulator.jsx` del redesign es un MOCK más pobre que el simulador real (real: G1-G6, Chart.js, 3 modalidades, matriz de bancos por grupo de riesgo; mock: G1-G4 simplificado). Reescribir a la estructura del JSX perdería features + altísimo riesgo (`ui.js` 519 + `simulator.js` 315 acoplados al markup por IDs/eventos). El CSS inline (~1280 líneas) centraliza colores en **13 tokens `:root --sim-*`** → remapearlos viste todo sin tocar markup ni lógica.
+
+### 136.2 Solución (armonización, como perfil §131 / L-17)
+1. **`simulador-credito.html`** `:root --sim-*` remapeado a la paleta cinematic (--sim-primary #D4A85A, --sim-bg #08070A, --sim-card #15121A sólido, --sim-text #F4EEDE, líneas crema translúcidas, gradiente dorado cinematic). Valores literales (no depende de soft-redesign.css). + acento dorado residual `#c9a227`→`#D4A85A` (2 usos en bloque secundario / config Chart.js).
+2. **CERO cambios JS**: ui/simulator/finance/data intactos → cálculo de crédito sin tocar.
+3. Cache bump `v20260531230000` → `v20260531240000`.
+
+### 136.3 No-regresión
+- Sin cambios JS → calculadora (bancos, tasas, grupos de riesgo, modalidades, Chart.js) opera igual.
+- Remapeo de 13 tokens cubre el primer bloque CSS (usa var(--sim-*)). `--sim-card` sólido para no romper modales. Semánticos (success/warning/info, WhatsApp #25D366, error #ef4444) preservados.
+
+### 136.4 Tests E2E (cliente — producción)
+`simulador-credito.html`: fondo + cards + acentos en oro cinematic; sliders/botones/pills recoloreados; la simulación calcula igual (cuotas, bancos, modalidades, gráfico). ⚠️ Pulir (detalle): grises/bordes hardcodeados residuales del bloque secundario (#a0a0a0/#2a2a2a) + contraste de texto sobre el gradiente dorado.
+
+### 136.5 Archivos
+**Modificados:** `simulador-credito.html` (:root remap + acento), `service-worker.js`, `cache-manager.js`, `docs/*`. **INTACTOS:** `js/simulador/*` (ui/simulator/finance/data — lógica de crédito).
+
+### 136.6 Cierre SP-5.2.c
+c.1 resenas §130 · c.2 perfil §131 + favoritos §132 · c.3 comparador §134/§135 · c.4 simulador §136. **SP-5.2.c COMPLETO.** Patrón dominante: armonización por tokens/CSS (L-17) > reescritura, cuando el JSX de referencia es un mock más pobre que el módulo real (perfil, favoritos, simulador). Reescritura solo donde el diseño objetivo aportaba estructura nueva (reseñas, comparador).

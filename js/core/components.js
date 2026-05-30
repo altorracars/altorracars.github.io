@@ -68,12 +68,82 @@ async function loadComponent(elementId, componentPath) {
     }
 }
 
+// SP-5.1: detecta páginas que YA tienen el chrome cinematic inline (index.html
+// hoy). En esas, no se inyectan assets ni se busca el placeholder — components.js
+// solo ejecuta el resto del wiring (modals, auth, etc.).
+function hasInlineChrome() {
+    return !!document.querySelector('header.alt-nav');
+}
+
+// SP-5.1: inyecta los assets HarmonyOS (fonts + tokens + chrome CSS + chrome JS)
+// en páginas legacy. Idempotente — segunda llamada es no-op gracias al flag
+// data-altorra-cinematic-injected.
+function injectCinematicAssets() {
+    if (hasInlineChrome()) return; // index ya los carga inline
+    if (document.querySelector('link[data-altorra-cinematic-injected]')) return;
+
+    var head = document.head;
+
+    // 1. Preconnect para Google Fonts (perf hint).
+    var preconnect = document.createElement('link');
+    preconnect.rel = 'preconnect';
+    preconnect.href = 'https://fonts.gstatic.com';
+    preconnect.crossOrigin = 'anonymous';
+    head.appendChild(preconnect);
+
+    // 2. Google Fonts: Manrope + Instrument Serif + Cardo (display:swap → sin FOIT).
+    var fontsLink = document.createElement('link');
+    fontsLink.rel = 'stylesheet';
+    fontsLink.href = 'https://fonts.googleapis.com/css2?'
+        + 'family=Manrope:wght@200;300;400;500;600;700'
+        + '&family=Instrument+Serif:ital@0;1'
+        + '&family=Cardo:ital,wght@0,400;0,700;1,400'
+        + '&display=swap';
+    head.appendChild(fontsLink);
+
+    // 3. Tokens HarmonyOS (variables CSS). data-* flag marca idempotencia.
+    var tokensLink = document.createElement('link');
+    tokensLink.rel = 'stylesheet';
+    tokensLink.href = 'css/home/tokens-redesign.css';
+    tokensLink.setAttribute('data-altorra-cinematic-injected', 'tokens');
+    head.appendChild(tokensLink);
+
+    // 4. Chrome styles (.alt-nav, .alt-footer, .nav-dd-wrap, .mob-drawer, etc.).
+    var chromeLink = document.createElement('link');
+    chromeLink.rel = 'stylesheet';
+    chromeLink.href = 'css/home/chrome-redesign.css';
+    head.appendChild(chromeLink);
+
+    // 5. Chrome JS (scroll-machine 3-estados + dropdown + drawer).
+    // NOTA: `defer` no aplica a scripts inyectados dinámicamente (es atributo
+    // para scripts descubiertos en parseo de HTML). Scripts dinámicos son async
+    // por default — no ordering vs CSS. Race con `.alt-nav` se resuelve via el
+    // listener 'altorra:chrome:ready' que home-chrome.js wirea (Task T4).
+    var chromeScript = document.createElement('script');
+    chromeScript.src = 'js/public/home/home-chrome.js';
+    document.body.appendChild(chromeScript);
+}
+
 // Load all components
 async function loadAllComponents() {
+    // SP-5.1: inyectar assets HarmonyOS ANTES de fetch+inject de snippets para
+    // que los <link> de CSS estén parseados cuando el snippet entre al DOM
+    // (evita FOUC del chrome cinematic).
+    injectCinematicAssets();
+
     await Promise.all([
         loadComponent('header-placeholder', 'snippets/header.html'),
         loadComponent('footer-placeholder', 'snippets/footer.html')
     ]);
+
+    // SP-5.1: avisar a home-chrome.js que .alt-nav ya está en el DOM. El listener
+    // hermana al DOMContentLoaded existente; primer fire activa init (idempotente
+    // vía __altorraHomeChromeMounted).
+    if (!hasInlineChrome()) {
+        try {
+            document.dispatchEvent(new CustomEvent('altorra:chrome:ready'));
+        } catch (e) { /* CustomEvent no soportado — ignore (legacy IE) */ }
+    }
 
     // STEP 1 — Apply auth state to header SYNCHRONOUSLY before revealing.
     // Reads localStorage hint + user snapshot to pre-render the avatar (if

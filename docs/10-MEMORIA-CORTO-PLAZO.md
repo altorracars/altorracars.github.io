@@ -18,16 +18,16 @@
   Auditoría + registry `40-LOBULOS-DOMINIO` + integración `skills/` + Reflejo
   de Desafío Crítico + M-05. **Pendiente del cliente**: commit brain (7 archivos)
   + push + merge a main. Sin deploy de código (brain-only).
-- **EN CURSO AHORA — SP-5 brainstorming**: tras auditoría completa (Trigger 🔵
-  primer uso real → lóbulo `43-UX.md` activo R0), confirmado que SOLO `index.html` está
-  en HarmonyOS. **~88 páginas legacy** (chrome viejo + Poppins + dark-theme) +
-  **5 páginas con bug de footer faltante**. Plan integral 3-fases brainstormeado, pendiente
-  aprobación cliente antes de spec + plan + ejecución.
-- **PLAN INTEGRAL PROPUESTO** (en discusión):
-  - **SP-5.0.g** (5min): fix bug footer faltante en 5 páginas.
-  - **SP-5.1**: chrome cinematic + tokens + fuentes Manrope/Instrument/Cardo **GLOBAL**
-    (snippets/header.html + snippets/footer.html + components.js + carga css/home/*).
-  - **SP-5.2**: body migration por categorías (soft pages → catálogo → templates con cron).
+- **SP-5.1 chrome global ENTREGADO en working tree** (ADR §126): snippets/{header,footer}.html
+  cinematic + components.js injectCinematicAssets() + home-chrome.js listener altorra:chrome:ready
+  + cache bump v20260531000000. ~87 páginas legacy recibirán chrome cinematic en próximo
+  page-load tras deploy. Body queda intacto (SP-5.2 lo absorbe).
+- **PRÓXIMOS PASOS**:
+  1. Cliente commitea + deploya SP-5.1.
+  2. Verificación visual en 4 páginas (nosotros, busqueda, favoritos, vehiculos/some-slug).
+  3. Si OK → arrancamos **SP-5.2.a Soft pages body migration** (nosotros, contacto,
+     simulador, comparar, favoritos, perfil, resenas, terminos, privacidad, cookies, 404).
+  4. Auditoría 45-PERFORMANCE eventual para validar LCP/FCP impact del font load global.
 - **DIFERIDO (post-SP-5)**:
   - **SP-4** motor recomendaciones REAL: ranking GA-based para Tu rastro / Recomendados,
     custom image upload (+IA opcional) para destacados, real-time switch sesión.

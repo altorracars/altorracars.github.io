@@ -1,106 +1,136 @@
-<!-- Header Component - ALTORRA CARS -->
-<header id="header">
-    <link rel="icon" type="image/png" href="/multimedia/logo-placeholder.png">
-    <link rel="apple-touch-icon" href="/multimedia/logo-placeholder.png">
-    <nav class="navbar">
-        <div class="container">
-            <div class="nav-wrapper">
+<!-- Cinematic header — extraído 1:1 de index.html L368-502 (SP-5.1, ADR §126). Mantener sync con el inline del index. -->
+    <header class="alt-nav" id="header">
+        <div class="alt-nav-inner container">
+            <a href="index.html" class="alt-logo" aria-label="ALTORRA CARS — Inicio">
+                <span class="alt-logo-stage">
+                    <span class="alt-logo-skid"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-1"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-2"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-3"></span>
+                    <img src="multimedia/logo-wheel.png" alt="" class="alt-logo-icon" width="38" height="38">
+                </span>
+                <span class="alt-logo-text">
+                    <span class="t-gold-grad alt-logo-name" style="font-weight:800;font-size:18px;letter-spacing:0.04em;">ALTORRA</span>
+                    <span class="alt-logo-sub" style="font-size:10px;letter-spacing:0.32em;color:var(--ink-text-muted);font-weight:600;">CARS</span>
+                </span>
+            </a>
 
-                <a href="index.html" class="logo">
-                    <img src="multimedia/logo-placeholder.png" alt="ALTORRA CARS" id="logo-img">
-                </a>
-
-                <!-- Nav menu: horizontal on desktop, slide-out panel on mobile -->
-                <div class="nav-menu" id="navMenu">
-                    <ul class="nav-list">
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">Vehículos</a>
-                            <ul class="dropdown-menu">
-                                <li><a href="vehiculos-suv.html">SUV</a></li>
-                                <li><a href="vehiculos-pickup.html">Pickup</a></li>
-                                <li><a href="vehiculos-sedan.html">Sedán</a></li>
-                                <li><a href="vehiculos-hatchback.html">Hatchback</a></li>
-                                <li><a href="busqueda.html">Ver todos</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">Marcas</a>
-                            <ul class="dropdown-menu" id="brands-submenu">
-                                <li><a href="marca.html?marca=chevrolet">Chevrolet</a></li>
-                                <li><a href="marca.html?marca=renault">Renault</a></li>
-                                <li><a href="marca.html?marca=nissan">Nissan</a></li>
-                                <li><a href="marca.html?marca=kia">Kia</a></li>
-                                <li><a href="marca.html?marca=mazda">Mazda</a></li>
-                                <li><a href="marca.html?marca=toyota">Toyota</a></li>
-                                <li><a href="marca.html?marca=hyundai">Hyundai</a></li>
-                                <li><a href="marca.html?marca=ford">Ford</a></li>
-                                <li><a href="marcas.html">Ver todas</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">Servicios</a>
-                            <ul class="dropdown-menu">
-                                <li><a href="#" data-modal="financiacion">Financiación</a></li>
-                                <li><a href="#" data-modal="vende-auto">Vende tu Auto</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item">
-                            <a href="nosotros.html" class="nav-link">Nosotros</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="contacto.html" class="nav-link">Contacto</a>
-                        </li>
-                    </ul>
-
-                    <!-- ► Sección exclusiva del menú móvil / tablet (≤968px)
-                         Oculta en desktop. No está en el nav-list para evitar duplicación. -->
-                    <div class="mob-actions">
-                        <a href="favoritos.html" class="mob-fav">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                            Favoritos
-                            <span class="mob-badge" id="favCountMobile">0</span>
-                        </a>
-                        <div class="mob-auth-row">
-                            <button class="mob-btn mob-btn-outline" id="mobBtnLogin" aria-label="Ingresar">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                                Ingresar
-                            </button>
-                            <button class="mob-btn mob-btn-gold" id="mobBtnRegister" aria-label="Registrarse">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                Registrarse
-                            </button>
+            <nav class="alt-nav-links" aria-label="Navegación principal">
+                <a href="index.html" class="nav-link active">Inicio</a>
+                <div class="nav-dd-wrap">
+                    <button type="button" class="nav-link" aria-haspopup="true" aria-expanded="false">
+                        Vehículos
+                        <span class="nav-chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </button>
+                    <!-- Mega-dropdown "Vehículos" — wiring (hover/abrir) = Task 3.
+                         Categorías → vehiculos-*.html · condición → páginas reales. -->
+                    <div class="nav-dd acrylic-hi nav-dd-pro" hidden>
+                        <div class="nav-dd-grid">
+                            <div>
+                                <div class="nav-dd-h">Por categoría</div>
+                                <a class="nav-dd-link" href="vehiculos-suv.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/SUV.jpg');"></span>
+                                    <span><strong>SUV</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="vehiculos-sedan.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/SEDAN.jpg');"></span>
+                                    <span><strong>Sedán</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="vehiculos-pickup.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/PICKUP.jpg');"></span>
+                                    <span><strong>Pickup</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="vehiculos-hatchback.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/HATCHBACK.jpg');"></span>
+                                    <span><strong>Hatchback</strong></span>
+                                </a>
+                            </div>
+                            <div>
+                                <div class="nav-dd-h">Por condición</div>
+                                <a class="nav-dd-link" href="busqueda.html?tipo=nuevo">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/NUEVOS.jpg');"></span>
+                                    <span><strong>Nuevos 0KM</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="busqueda.html?tipo=usado">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/USADOS.jpg');"></span>
+                                    <span><strong>Usados</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="vehiculos-pickup.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/CAMIONETAS.jpg');"></span>
+                                    <span><strong>Camionetas</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="busqueda.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/BUSQUEDA.jpg');"></span>
+                                    <span><strong>Ver todos</strong></span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <a href="index.html#marcas" class="nav-link">Marcas</a>
+                <a href="nosotros.html" class="nav-link">Nosotros</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
 
-                <!-- ► Botones de acción desktop (>968px) -->
-                <div class="nav-actions" role="group" aria-label="Acciones de usuario">
-                    <a href="favoritos.html" class="hdr-btn hdr-btn-outline hdr-btn-fav" aria-label="Ver favoritos">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                        Favoritos
-                        <span class="hdr-badge" id="favCount">0</span>
-                    </a>
-                    <button class="hdr-btn hdr-btn-outline" id="btnLogin" aria-label="Ingresar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                        Ingresar
-                    </button>
-                    <button class="hdr-btn hdr-btn-gold" id="btnRegister" aria-label="Registrarse">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Registrarse
-                    </button>
-                    <!-- Notification Center bell (Phase N3) — mounted by notification-center.js -->
-                    <div id="headerNotifBell" class="hdr-notif-bell-slot"></div>
-                    <!-- Estado usuario logueado — rellenado por auth.js -->
-                    <div id="headerUserArea" style="display:none;"></div>
-                </div>
-
-                <button class="hamburger" id="hamburger" aria-label="Abrir menú" aria-expanded="false">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+            <div class="alt-nav-actions">
+                <a href="#" data-modal="vende-auto" class="nav-publish" aria-label="Publica tu vehículo">
+                    <span class="nav-publish-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </span>
+                    <span class="nav-publish-label">Publica tu vehículo</span>
+                    <span class="nav-publish-shine" aria-hidden="true"></span>
+                </a>
+                <a href="favoritos.html" class="btn btn-icon btn-ghost" aria-label="Favoritos" style="position:relative;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>
+                    <span class="nav-pip" id="favCount" aria-live="polite">0</span>
+                </a>
+                <button type="button" class="btn btn-subtle" id="btnLogin">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+                    <span class="hide-sm">Ingresar</span>
                 </button>
-
+                <!-- Botón Registrarse (oculto por defecto para guest vía auth-hint;
+                     auth.js lo gestiona). Mantiene contrato #btnRegister. -->
+                <button type="button" class="btn btn-primary" id="btnRegister" style="display:none;">
+                    <span class="hide-sm">Registrarse</span>
+                </button>
+                <!-- Área de usuario logueado — auth.js renderUserArea() la rellena -->
+                <div id="headerUserArea" style="display:none;"></div>
+                <button type="button" class="btn btn-icon btn-ghost mob-only" id="navMobOpen" aria-label="Menú">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+                </button>
             </div>
         </div>
-    </nav>
-</header>
+
+        <!-- Mobile drawer — toggle (hamburguesa) = Task 3. Oculto por defecto.
+             style="display:none" inline porque .mob-drawer{display:flex} (CSS)
+             vencería al atributo [hidden] de la UA stylesheet; home-chrome.js
+             alterna display:none/'' al abrir/cerrar. -->
+        <div class="mob-drawer" id="navMobDrawer" hidden style="display:none;">
+            <div class="mob-panel acrylic-hi">
+                <div class="row" style="justify-content:space-between;">
+                    <strong class="t-title-sm t-gold-grad">ALTORRA</strong>
+                    <button type="button" class="btn btn-icon btn-ghost" id="navMobClose" aria-label="Cerrar">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <!-- Fila de auth móvil — auth.js updateMobileAuthRow() la rellena -->
+                <div class="mob-auth-row"></div>
+                <div class="mob-links">
+                    <a class="mob-link" href="index.html">Inicio<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="busqueda.html">Vehículos<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="index.html#marcas">Marcas<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="simulador-credito.html">Simulador<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="comparar.html">Comparar<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="nosotros.html">Nosotros<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="contacto.html">Contacto<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link mob-link--fav" href="favoritos.html">
+                        <span class="mob-link-label">Favoritos<!-- pip de favoritos (contrato favCountMobile de favorites-manager.js).
+                             Oculto hasta count>0; home-chrome.js lo muestra/oculta
+                             escuchando el evento favoritesChanged. Estilado como .nav-pip. -->
+                        <span class="nav-pip mob-link-pip" id="favCountMobile" aria-live="polite" style="position:static;display:none;margin-left:8px;">0</span></span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>

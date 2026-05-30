@@ -42246,3 +42246,38 @@ Post-SP-5.2.a (legales+404 cinematic), faltan los bodies editoriales. `nosotros`
 - Cache: `v20260531140000` → `v20260531160000` (§4).
 - Resenas reasignada a SP-5.2.c (app-like, reviews.js data-driven).
 - Rollback: `git revert`; nosotros/contacto vuelven al body viejo.
+
+---
+
+## 130. ADR-130 — SP-5.2.c.1: Reseñas (sub-piloto app-like)
+
+> Primer lote de SP-5.2.c (app-like = contenido generado por JS). Sub-piloto que valida el patrón "reescribir el render del JS a markup cinematic, preservando lógica + funciones compartidas".
+
+### 130.1 Causa raíz
+Las app-like (resenas/favoritos/perfil/comparar/simulador) NO son port simple: su contenido lo genera JS con markup LEGACY. `resenas.html` muestra reviews via `reviews.js renderFullReviewsPage` (markup `.testimonials-*` + reviews.css). Migrar a cinematic exige reescribir el markup que el JS genera, sin romper su lógica.
+
+### 130.2 Solución estructural (PATRÓN app-like establecido)
+1. **`resenas.html`**: hero → `.soft-hero` cinematic + `<link>` soft-redesign.css. `#reviewsContent` + reviews.js + scripts PRESERVADOS.
+2. **`js/public/reviews.js`**: reescrita SOLO `renderFullReviewsPage` (L245, usada únicamente por resenas) → markup cinematic (`.rev-summary` + `.rev-dist-*` + `.rev-card`/`.rev-card-head`). PRESERVADO: lógica de datos (this.reviews, getStats, lectura Firestore), `renderStars`, `renderTestimonialsSection` (la usa el index), `renderTestimonialCard`, demás helpers. Verificado: admin usa `admin-reviews.js` (NO reviews.js) → no afectado.
+3. Todas las clases generadas (`.rev-summary/.rev-dist/.rev-card/.rev-list/.rev-avatar/.rev-stars/.rev-text`) ya existen en soft-redesign.css.
+4. Cache bump `v20260531160000` → `v20260531180000`.
+
+### 130.3 No-regresión
+- `node -c reviews.js` OK. Funciones compartidas intactas (index testimonios sin tocar). admin sin tocar.
+- Lógica de lectura de reviews (Firestore/data) preservada — solo cambió el HTML string.
+
+### 130.4 Tests E2E (cliente)
+`resenas.html`: hero cinematic + reviews renderizadas con `.rev-summary` (promedio + barras de distribución) + cards `.rev-card` legibles. Verificar que las reviews REALES de Firestore cargan. Index: testimonios sin cambios.
+
+### 130.5 Patrón para el resto de SP-5.2.c
+favoritos/perfil/comparar/simulador siguen el mismo molde: hero/layout cinematic + reescribir SOLO la(s) función(es) de render de su JS → markup cinematic, preservando la lógica funcional + verificando que no se rompan consumidores compartidos.
+
+### 130.6 Archivos modificados / INTACTOS
+**Modificados:** `resenas.html`, `js/public/reviews.js` (solo renderFullReviewsPage), `service-worker.js`, `js/core/cache-manager.js`, `docs/05/10/00/43-UX`.
+**INTACTOS:** reviews.js funciones compartidas, admin-reviews.js, chrome, demás soft pages.
+
+### 130.7 Doctrina + cache
+- §3.2 + §19 (verificado el alcance de reviews.js antes de tocar). §G.4 Cierre.
+- Cache: `v20260531160000` → `v20260531180000` (§4).
+- Pendiente SP-5.2.c: favoritos, perfil, comparar (con mejoras "Explorar vehículos" + selección inline → brainstorm), simulador (2389 líneas → sprint propio).
+- Rollback: `git revert`.

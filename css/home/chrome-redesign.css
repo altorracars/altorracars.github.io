@@ -481,7 +481,7 @@
    Vence al .comparador-widget legacy de comparador.css por orden de carga.
    ============================================================ */
 .comparador-widget {
-  position: fixed; bottom: 24px; left: 24px; right: auto; top: auto;
+  position: fixed; bottom: 96px; left: 24px; right: auto; top: auto; /* +72px para librar el QuickTools dock (.qt-wrap) que vive en bottom:24px left:24px (§137) */
   width: 300px; max-width: calc(100vw - 48px);
   background: var(--cin-bg-elev, #15121A);
   border: 1px solid rgba(244,238,222,0.12);
@@ -550,5 +550,5 @@
 }
 .comparador-widget .btn-limpiar:hover { color: #ff8a7a; border-color: rgba(255,138,122,0.4); }
 @media (max-width: 768px) {
-  .comparador-widget { left: 12px; bottom: 16px; width: calc(100vw - 24px); max-width: 320px; }
+  .comparador-widget { left: 12px; bottom: 88px; width: calc(100vw - 24px); max-width: 320px; }
 }

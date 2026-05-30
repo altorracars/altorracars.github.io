@@ -2005,7 +2005,7 @@
                             legend: {
                                 position: 'bottom',
                                 labels: {
-                                    color: '#a0a0a0',
+                                    color: 'rgba(244,238,222,0.6)',
                                     padding: 20,
                                     font: { size: 13 }
                                 }
@@ -2071,14 +2071,14 @@
                         scales: {
                             x: {
                                 stacked: true,
-                                grid: { color: '#2a2a2a' },
-                                ticks: { color: '#a0a0a0' }
+                                grid: { color: 'rgba(244,238,222,0.12)' },
+                                ticks: { color: 'rgba(244,238,222,0.6)' }
                             },
                             y: {
                                 stacked: true,
-                                grid: { color: '#2a2a2a' },
+                                grid: { color: 'rgba(244,238,222,0.12)' },
                                 ticks: {
-                                    color: '#a0a0a0',
+                                    color: 'rgba(244,238,222,0.6)',
                                     callback: function(value) {
                                         return '$' + (value / 1000000).toFixed(0) + 'M';
                                     }
@@ -2088,7 +2088,7 @@
                         plugins: {
                             legend: {
                                 position: 'bottom',
-                                labels: { color: '#a0a0a0' }
+                                labels: { color: 'rgba(244,238,222,0.6)' }
                             },
                             tooltip: {
                                 callbacks: {

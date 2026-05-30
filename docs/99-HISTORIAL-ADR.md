@@ -42465,3 +42465,17 @@ El `Simulator.jsx` del redesign es un MOCK más pobre que el simulador real (rea
 
 ### 136.6 Cierre SP-5.2.c
 c.1 resenas §130 · c.2 perfil §131 + favoritos §132 · c.3 comparador §134/§135 · c.4 simulador §136. **SP-5.2.c COMPLETO.** Patrón dominante: armonización por tokens/CSS (L-17) > reescritura, cuando el JSX de referencia es un mock más pobre que el módulo real (perfil, favoritos, simulador). Reescritura solo donde el diseño objetivo aportaba estructura nueva (reseñas, comparador).
+
+## 137. ADR-137 — QA/pulido cinematic (post SP-5.2.c)
+
+> Pasada de pulido tras desplegar SP-5.2.c. Detalles puntuales que el cliente difirió.
+
+### 137.1 Cambios
+1. **Flotante comparador vs QuickTools**: `.qt-wrap` (QuickTools dock, `css/home/quicktools.css`) vive en `bottom:24px; left:24px` — la MISMA esquina del flotante §134 → chocaban. Flotante reposicionado a `bottom:96px` (desktop) / `88px` (mobile) en chrome-redesign.css → flota encima del QuickTools; coexisten.
+2. **Gráfico del simulador (Chart.js)**: colores hardcodeados de leyenda/ejes/grid (`#a0a0a0`/`#2a2a2a`) que el remapeo de tokens §136 no alcanzó (están en JS, no CSS) → armonizados a crema/línea cinematic. Colores de DATOS (azul intereses, verde inicial) preservados.
+3. Cache bump `v20260531250000` → `v20260531260000`.
+
+### 137.2 No-regresión
+- Solo posición CSS (flotante) + colores del gráfico (Chart config). Cero lógica.
+- Contraste texto/dorado del simulador revisado: los botones dorados ya usan `color:#000` → OK, sin cambio.
+- Validación visual fina pendiente del cliente (browser MCP estuvo caído esta sesión).

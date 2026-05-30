@@ -42389,5 +42389,32 @@ Tras deploy + Ctrl+Shift+R, comparar header index vs favoritos/perfil/nosotros/c
 
 ### 133.7 Doctrina + cache
 - §3.2 + §19 RCA + L-16 + §G.4 Cierre. Lección → L-18.
-- Mejora opcional propuesta al cliente: ocultar el badge cuando favoritos=0 (requiere toque en favorites-manager `updateAllCounters`, blast radius global).
+- Mejora aplicada (cliente "ok incluyelo"): el badge se oculta cuando favoritos=0 → `favorites-manager.js updateAllCounters` setea `display:none` en `#favCount` si count===0 (en el forEach principal + el del MutationObserver). El "0" ya no ensucia el corazón.
 - Cache: `v20260531200000` → `v20260531210000` (§4). Rollback: `git revert`.
+
+## 134. ADR-134 — Comparador flotante cinematic + máx 2 (SP-5.2.c.3 · Paso 1)
+
+> Cliente: conservar el comparador flotante pero cinematic, moverlo a la IZQUIERDA (no chocar con el bot ALTOR abajo-derecha), que aparezca también en el index (donde no salía), y bajar a máx 2. Spec: `docs/superpowers/specs/2026-05-30-comparador-cinematic-design.md`.
+
+### 134.1 Causa raíz (por qué no salía en el index)
+El flotante lo genera `comparador.js` (`createFloatingWidget` → `#comparador-widget`). El index YA carga comparador.js (loader idle, index.html L1290) → el widget se crea, PERO el index NO carga `css/comparador.css` (donde vivía el estilo del widget, legacy blanco) → el widget existía sin estilo (invisible). En legacy sí se veía pero blanco/abajo-derecha (chocaba con el bot).
+
+### 134.2 Solución (Paso 1)
+1. **`css/home/chrome-redesign.css`**: añadido el flotante cinematic (`.comparador-widget` + partes), `bottom:24px; left:24px; right:auto`, paleta `--cin-*`. Va aquí porque chrome-redesign.css se carga en el index (estático) Y se inyecta en legacy (components.js) → flotante unificado en TODO el sitio. Vence al `.comparador-widget` legacy de comparador.css por orden de carga.
+2. **`js/public/comparador.js`**: `maxVehicles 3 → 2`.
+3. Cache bump `v20260531210000` → `v20260531220000`.
+
+### 134.3 No-regresión
+- comparador.js: solo cambió maxVehicles + comentario; lógica (add/remove/toggle/storage/widget/botones de cards) intacta. `node -c` OK.
+- CSS aditivo en chrome-redesign.css (236/236 llaves). El flotante legacy de comparador.css queda obsoleto pero inocuo (chrome-redesign gana por orden; el Paso 2 reescribe la página).
+- El index ya cargaba comparador.js → `window.vehicleComparator` ya existía (home-carousels.js lo usa para `.cin-av-compare`). Solo faltaba el CSS.
+
+### 134.4 Tests E2E (cliente — producción)
+Tras deploy + Ctrl+Shift+R: (1) agregar un vehículo desde una card → el flotante aparece **abajo-IZQUIERDA** (no sobre el bot) con estilo cinematic; (2) aparece en el **index** y en las demás páginas igual; (3) máx **2** (3º → toast "Máximo 2"); (4) "Comparar ahora" lleva a comparar.html; "Limpiar" vacía. ⚠️ Validar que en el index no choque con el botón grid (screen-toggle) abajo-izquierda — si choca, ajustar offset.
+
+### 134.5 Pendiente (Paso 2)
+Reescribir `comparar.html` al diseño `Compare.jsx` (slots A/B + VS + picker inline + diff dorado + veredicto, máx 2). Ocultar el flotante en la propia página comparar.html.
+
+### 134.6 Archivos
+**Modificados:** `css/home/chrome-redesign.css` (flotante cinematic), `js/public/comparador.js` (maxVehicles=2), `service-worker.js`, `cache-manager.js`, `docs/*`.
+**INTACTOS:** `index.html` (ya cargaba comparador.js), `components.js`, `home-carousels.js`, `css/comparador.css` (lo aborda el Paso 2).

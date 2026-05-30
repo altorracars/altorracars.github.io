@@ -33,12 +33,15 @@
  *      botón Ingresar aunque el nav esté oculto. Wrapper aditivo, sin
  *      MutationObserver.
  *
- * Se monta en DOMContentLoaded (idempotente vía flag).
+ * Se monta en DOMContentLoaded o en el evento 'altorra:chrome:ready' (SP-5.1
+ * legacy pages). Idempotente vía flag — init() es el punto de entrada único.
  * ============================================================ */
 (function () {
     'use strict';
 
-    if (window.__altorraHomeChromeMounted) return;
+    // SP-5.1: idempotencia centralizada en init() — no se necesita guard a nivel
+    // IIFE. Si el archivo se evaluara dos veces (raro), init()'s own __altorraHomeChromeMounted
+    // check maneja la deduplicación.
 
     // ── Refs (se resuelven en init, cuando el DOM está listo) ──
     var header = null;
@@ -408,11 +411,14 @@
     // INIT
     // ============================================================
     function init() {
+        if (window.__altorraHomeChromeMounted) return;
         header = document.getElementById('header');
         if (!header || header.className.indexOf('alt-nav') === -1) {
             // Esta página no usa el nav cinematic — no hacemos nada.
+            // SP-5.1: no seteamos el flag aún; podría llamarse de nuevo cuando el DOM esté listo.
             return;
         }
+        window.__altorraHomeChromeMounted = true; // SP-5.1: mover aquí para que init sea idempotente por sí sola.
 
         ddWrap = header.querySelector('.nav-dd-wrap');
         if (ddWrap) {
@@ -444,7 +450,10 @@
         };
     }
 
-    window.__altorraHomeChromeMounted = true;
+    // SP-5.1: en páginas legacy, el chrome se inyecta via components.js DESPUÉS
+    // de DOMContentLoaded. Listener adicional para que init() se active cuando
+    // components.js avise. Primer fire gana (init es idempotente via flag).
+    document.addEventListener('altorra:chrome:ready', init);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

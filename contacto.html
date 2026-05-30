@@ -342,6 +342,7 @@
     @keyframes plSpin{to{transform:rotate(360deg)}}
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
     <link rel="preload" as="image" href="multimedia/heroes/contacto-hero.jpg" fetchpriority="high">
 
     <noscript>
@@ -356,136 +357,195 @@
 
     <div id="header-placeholder"></div>
 
-    <section class="gradient-hero">
-        <picture>
-        <source type="image/avif" srcset="multimedia/optimized/contacto-hero-480.avif 480w, multimedia/optimized/contacto-hero-768.avif 768w, multimedia/optimized/contacto-hero-1280.avif 1280w, multimedia/optimized/contacto-hero-1920.avif 1920w" sizes="100vw">
-        <source type="image/webp" srcset="multimedia/optimized/contacto-hero-480.webp 480w, multimedia/optimized/contacto-hero-768.webp 768w, multimedia/optimized/contacto-hero-1280.webp 1280w, multimedia/optimized/contacto-hero-1920.webp 1920w" sizes="100vw">
-        <img src="multimedia/heroes/contacto-hero.jpg" alt="Contacto ALTORRA CARS" class="gradient-hero-bg" width="1920" height="800" fetchpriority="high" loading="eager" decoding="async">
-    </picture>
-        <div class="gradient-hero-overlay"></div>
-        <div class="hero-ambient" aria-hidden="true"></div>
-        <div class="container">
-            <h1>Hablemos de tu <span>próximo vehículo</span></h1>
-            <p>Nuestro equipo está listo para asesorarte. Respuesta garantizada en menos de 24 horas.</p>
-        </div>
-        <div class="hero-bottom-fade"></div>
-    </section>
+    <main class="soft-page" data-cin="on">
 
-    <section class="contact-main">
-        <div class="container">
-            <div class="contact-layout">
-                <div class="form-card">
-                    <h2>Enviar consulta</h2>
-                    <p>Completa el formulario y te contactaremos via WhatsApp o email segun tu preferencia.</p>
-                    <form class="form-grid" id="contactForm">
-                        <div class="field-group">
-                            <label for="nombre">Nombre completo *</label>
-                            <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre completo">
-                        </div>
-                        <div class="field-group" style="display:flex;gap:10px;align-items:flex-end">
-                            <div style="flex:0 0 120px">
-                                <label for="contacto-pais">Pais *</label>
-                                <select id="contacto-pais" name="pais" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px">
-                                    <option value="+57">🇨🇴 +57</option>
-                                    <option value="+58">🇻🇪 +58</option>
-                                    <option value="+593">🇪🇨 +593</option>
-                                    <option value="+507">🇵🇦 +507</option>
-                                    <option value="+52">🇲🇽 +52</option>
-                                    <option value="+1">🇺🇸 +1</option>
-                                    <option value="+51">🇵🇪 +51</option>
-                                    <option value="+56">🇨🇱 +56</option>
-                                    <option value="+54">🇦🇷 +54</option>
-                                    <option value="+34">🇪🇸 +34</option>
-                                </select>
-                            </div>
-                            <div style="flex:1">
-                                <label for="telefono">Telefono / WhatsApp *</label>
-                                <input type="tel" id="telefono" name="telefono" required placeholder="300 000 0000">
-                            </div>
-                        </div>
-                        <div class="field-group">
-                            <label for="email">Correo electronico *</label>
-                            <input type="email" id="email" name="email" required placeholder="correo@ejemplo.com">
-                        </div>
-                        <div class="field-group">
-                            <label for="asunto">Asunto *</label>
-                            <select id="asunto" name="asunto" required>
-                                <option value="">Selecciona un asunto</option>
-                                <option value="compra">Quiero comprar un vehiculo</option>
-                                <option value="venta">Quiero vender mi auto</option>
-                                <option value="financiacion">Informacion sobre financiacion</option>
-                                <option value="peritaje">Solicitar peritaje</option>
-                                <option value="otro">Otro asunto</option>
-                            </select>
-                        </div>
-                        <div class="field-group full-width">
-                            <label for="vehiculo">Vehiculo de interes</label>
-                            <input type="text" id="vehiculo" name="vehiculo" placeholder="Ej: Chevrolet Onix 2024 o presupuesto aproximado">
-                        </div>
-                        <div class="field-group full-width">
-                            <label for="mensaje">Mensaje *</label>
-                            <textarea id="mensaje" name="mensaje" rows="5" required placeholder="Cuentanos como podemos ayudarte..."></textarea>
-                        </div>
-                        <div class="full-width">
-                            <button type="submit" class="btn-submit-contact">Enviar consulta</button>
-                            <p class="privacy-notice">Al enviar este formulario aceptas nuestra <a href="privacidad.html">Politica de Privacidad</a> y el tratamiento de tus datos personales conforme a la Ley 1581 de 2012.</p>
-                        </div>
-                    </form>
+        <!-- Hero -->
+        <section class="soft-hero">
+            <div class="soft-hero-bg" aria-hidden="true"></div>
+            <div class="soft-hero-inner">
+                <span class="cin-eyebrow">Contacto &middot; respuesta &lt; 2h</span>
+                <h1 class="soft-hero-h">Hablemos.</h1>
+                <p class="soft-hero-sub">
+                    Pregúntanos por un vehículo, por la consignación o por la financiación.
+                    Te respondemos en menos de dos horas en horario hábil.
+                </p>
+            </div>
+        </section>
+
+        <!-- CTA cards: WhatsApp / Email / Teléfono -->
+        <section class="soft-section">
+            <div class="cta-grid">
+                <a href="https://wa.me/573235016747" target="_blank" rel="noopener" class="cta-card">
+                    <span class="cta-card-icon" style="color:#25d366">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.2-1.7-.8-2-.9-.3-.1-.5-.2-.7.2-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.4-1.5-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 .9-1 2.3 0 1.3 1 2.6 1.1 2.8.1.2 2 3 4.8 4.2 2 .9 2.4 1 3.2.9.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.4z M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.6 1.4 5.1L2 22l5.1-1.4c1.5.8 3.2 1.3 5 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+                    </span>
+                    <div>
+                        <strong>WhatsApp</strong>
+                        <span>+57 323 501 6747</span>
+                    </div>
+                </a>
+                <a href="mailto:altorracarssale@gmail.com" class="cta-card">
+                    <span class="cta-card-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                    </span>
+                    <div>
+                        <strong>Email</strong>
+                        <span>altorracarssale@gmail.com</span>
+                    </div>
+                </a>
+                <a href="tel:+573235016747" class="cta-card">
+                    <span class="cta-card-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </span>
+                    <div>
+                        <strong>Teléfono</strong>
+                        <span>(+57) 323 501 6747</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Form + side info -->
+        <section class="soft-section">
+            <div class="soft-2col">
+                <!-- Left: heading + schedule info -->
+                <div>
+                    <span class="cin-eyebrow">Formulario</span>
+                    <h2 class="soft-section-h">Cuéntanos qué buscas</h2>
+                    <p class="soft-section-lead">
+                        Te respondemos en menos de 2 horas en horario hábil (Lun–Vie 8am–6pm · Sáb 9am–2pm).
+                    </p>
+                    <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px">
+                        <a href="mailto:altorracarssale@gmail.com" style="display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;opacity:0.78;font-size:14px">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                            altorracarssale@gmail.com
+                        </a>
+                        <a href="tel:+573235016747" style="display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;opacity:0.78;font-size:14px">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            +57 323 501 6747
+                        </a>
+                        <span style="display:flex;align-items:center;gap:10px;opacity:0.58;font-size:13px">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            Cartagena, Bolívar — Colombia
+                        </span>
+                    </div>
                 </div>
 
-                <div class="info-side">
-                    <div class="whatsapp-cta">
-                        <h3>Respuesta inmediata</h3>
-                        <p>Escribenos directamente por WhatsApp y recibe atencion al instante.</p>
-                        <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20necesito%20informacion%20sobre%20vehiculos" class="wa-btn" target="_blank" rel="noopener">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                            Chatear ahora
-                        </a>
+                <!-- Right: the functional contact form — ids/names preserved verbatim -->
+                <form class="soft-form" id="contactForm">
+                    <label class="soft-field">
+                        <span>Nombre completo *</span>
+                        <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre completo">
+                    </label>
+
+                    <div class="soft-field-row">
+                        <!-- País selector (prefix) -->
+                        <label class="soft-field">
+                            <span>País *</span>
+                            <select id="contacto-pais" name="pais" required>
+                                <option value="+57">🇨🇴 +57</option>
+                                <option value="+58">🇻🇪 +58</option>
+                                <option value="+593">🇪🇨 +593</option>
+                                <option value="+507">🇵🇦 +507</option>
+                                <option value="+52">🇲🇽 +52</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+51">🇵🇪 +51</option>
+                                <option value="+56">🇨🇱 +56</option>
+                                <option value="+54">🇦🇷 +54</option>
+                                <option value="+34">🇪🇸 +34</option>
+                            </select>
+                        </label>
+                        <!-- Teléfono -->
+                        <label class="soft-field">
+                            <span>Teléfono / WhatsApp *</span>
+                            <input type="tel" id="telefono" name="telefono" required placeholder="300 000 0000">
+                        </label>
                     </div>
 
-                    <div class="info-block">
-                        <div class="info-block-icon gold">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                        </div>
-                        <div class="info-block-content">
-                            <h3>Correo electronico</h3>
-                            <p><a href="mailto:altorracarssale@gmail.com">altorracarssale@gmail.com</a></p>
-                        </div>
-                    </div>
+                    <label class="soft-field">
+                        <span>Correo electrónico *</span>
+                        <input type="email" id="email" name="email" required placeholder="correo@ejemplo.com">
+                    </label>
 
-                    <div class="info-block">
-                        <div class="info-block-icon blue">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-                        </div>
-                        <div class="info-block-content">
-                            <h3>Telefono</h3>
-                            <p><a href="tel:+573235016747">+57 323 501 6747</a></p>
-                        </div>
-                    </div>
+                    <label class="soft-field">
+                        <span>Asunto *</span>
+                        <select id="asunto" name="asunto" required>
+                            <option value="">Selecciona un asunto</option>
+                            <option value="compra">Quiero comprar un vehículo</option>
+                            <option value="venta">Quiero vender mi auto</option>
+                            <option value="financiacion">Información sobre financiación</option>
+                            <option value="peritaje">Solicitar peritaje</option>
+                            <option value="otro">Otro asunto</option>
+                        </select>
+                    </label>
 
-                    <div class="info-block">
-                        <div class="info-block-icon purple">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        </div>
-                        <div class="info-block-content">
-                            <h3>Ubicacion</h3>
-                            <p>Cartagena, Bolivar<br>Colombia</p>
-                        </div>
-                    </div>
+                    <label class="soft-field">
+                        <span>Vehículo de interés</span>
+                        <input type="text" id="vehiculo" name="vehiculo" placeholder="Ej: Chevrolet Onix 2024 o presupuesto aproximado">
+                    </label>
 
-                    <div class="info-block">
-                        <div class="info-block-icon gold">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        </div>
-                        <div class="info-block-content">
-                            <h3>Horario de atencion</h3>
-                            <p>Lunes a Viernes: 8:00 AM - 6:00 PM<br>Sabados: 9:00 AM - 2:00 PM</p>
-                        </div>
+                    <label class="soft-field">
+                        <span>Mensaje *</span>
+                        <textarea id="mensaje" name="mensaje" rows="5" required placeholder="Cuéntanos cómo podemos ayudarte..."></textarea>
+                    </label>
+
+                    <div>
+                        <button type="submit" class="soft-cta">
+                            Enviar consulta
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                        </button>
+                        <p style="font-size:0.75rem;color:rgba(244,238,222,0.32);margin-top:12px;line-height:1.5">
+                            Al enviar este formulario aceptas nuestra <a href="privacidad.html" style="color:#D4A85A;text-decoration:underline;text-underline-offset:2px">Política de Privacidad</a> y el tratamiento de tus datos personales conforme a la Ley 1581 de 2012.
+                        </p>
                     </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="soft-section">
+            <span class="cin-eyebrow">Preguntas frecuentes</span>
+            <h2 class="soft-section-h">Lo que suelen preguntarnos</h2>
+            <div class="soft-faq">
+                <div class="soft-faq-item">
+                    <button type="button" class="soft-faq-q" onclick="this.closest('.soft-faq-item').classList.toggle('is-open')">
+                        <span>¿Cómo verifican los vehículos?</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="soft-faq-a"><p>Cada aliado pasa por revisión documental y técnica. Cada vehículo tiene peritaje propio que el aliado titular comparte cuando lo solicitas.</p></div>
+                </div>
+                <div class="soft-faq-item">
+                    <button type="button" class="soft-faq-q" onclick="this.closest('.soft-faq-item').classList.toggle('is-open')">
+                        <span>¿Cobran por la consignación?</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="soft-faq-a"><p>Acompañamos toda la venta con honorarios competitivos. Solo facturamos cuando se concreta. Sin venta no hay cobro.</p></div>
+                </div>
+                <div class="soft-faq-item">
+                    <button type="button" class="soft-faq-q" onclick="this.closest('.soft-faq-item').classList.toggle('is-open')">
+                        <span>¿Hacen entregas en otras ciudades?</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="soft-faq-a"><p>Sí, coordinamos con el aliado titular. Cobertura nacional con logística asegurada.</p></div>
+                </div>
+                <div class="soft-faq-item">
+                    <button type="button" class="soft-faq-q" onclick="this.closest('.soft-faq-item').classList.toggle('is-open')">
+                        <span>¿Aceptan permuta?</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="soft-faq-a"><p>Sí. El aliado evalúa tu vehículo y te hace una oferta como parte de pago. Avalúo gratuito.</p></div>
+                </div>
+                <div class="soft-faq-item">
+                    <button type="button" class="soft-faq-q" onclick="this.closest('.soft-faq-item').classList.toggle('is-open')">
+                        <span>¿Cuánto se demora la financiación?</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="soft-faq-a"><p>Pre-aprobación con bancos aliados en 24h. Desembolso típico en 3 a 5 días hábiles desde la solicitud formal.</p></div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+    </main>
 
     <div id="footer-placeholder"></div>
 

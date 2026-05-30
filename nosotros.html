@@ -48,6 +48,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
     <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
     <link rel="stylesheet" href="css/performance-fixes.css">
     <style>
         /* ── Global ── */
@@ -753,175 +754,136 @@
 
     <div id="header-placeholder"></div>
 
-    <!-- ══════════ HERO INMERSIVO ══════════ -->
-    <section class="about-hero" aria-label="Nosotros — ALTORRA CARS">
-        <!-- §91 Sprint 3A: hero LCP con <picture> responsive AVIF/WebP.
-             Reemplaza el background-image legacy de .about-hero::before.
-             El <img class="about-hero-bg"> queda position:absolute behind
-             del overlay (gradient en .about-hero::after) y ambient lights.
-             Browser elige variant + formato según viewport. Cero cambio
-             visual — LCP -40-60% en mobile. -->
-        <picture>
-            <source type="image/avif" sizes="100vw"
-                    srcset="multimedia/optimized/nosotros-hero-480.avif 480w,
-                            multimedia/optimized/nosotros-hero-768.avif 768w,
-                            multimedia/optimized/nosotros-hero-1280.avif 1280w,
-                            multimedia/optimized/nosotros-hero-1920.avif 1920w">
-            <source type="image/webp" sizes="100vw"
-                    srcset="multimedia/optimized/nosotros-hero-480.webp 480w,
-                            multimedia/optimized/nosotros-hero-768.webp 768w,
-                            multimedia/optimized/nosotros-hero-1280.webp 1280w,
-                            multimedia/optimized/nosotros-hero-1920.webp 1920w">
-            <img class="about-hero-bg"
-                 src="multimedia/nosotros-hero.webp"
-                 alt=""
-                 aria-hidden="true"
-                 fetchpriority="high"
-                 decoding="async"
-                 width="1920" height="1080">
-        </picture>
-        <div class="hero-ambient" aria-hidden="true"></div>
-        <div class="container">
-            <span class="hero-label">
-                <span class="hero-label-dot" aria-hidden="true"></span>
-                Concesionario Líder en Cartagena
-            </span>
-            <h1>SOMOS</h1>
-            <div class="hero-mark" aria-label="ALTORRA CARS">
-                <span class="hero-mark__name">ALTORRA</span>
-                <span class="hero-mark__rule" aria-hidden="true"></span>
-                <span class="hero-mark__sub">CARS</span>
-            </div>
-            <p class="hero-subtitle">Tu aliado en la compra de vehículos usados en Cartagena. Transparencia total, financiación flexible y atención personalizada.</p>
-        </div>
-        <div class="hero-bottom-fade"></div>
-    </section>
+    <main class="soft-page" data-cin="on">
 
-    <!-- ══════════ MISIÓN / VISIÓN / COMPROMISO ══════════ -->
-    <section class="about-pillars">
-        <div class="container">
-            <div class="pillars-grid">
-                <div class="pillar-card">
-                    <div class="pillar-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="9" stroke="url(#gMis)" stroke-width="1.5"/>
-                            <path d="M12 8v5l3 3" stroke="url(#gMis)" stroke-width="1.8"/>
-                            <path d="M12 3v1M12 20v1M3 12h1M20 12h1" stroke="rgba(212,175,55,0.3)" stroke-width="1.5"/>
-                            <defs><linearGradient id="gMis" x1="3" y1="3" x2="21" y2="21"><stop stop-color="#f5df80"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>
-                        </svg>
-                    </div>
-                    <h3>Nuestra Misión</h3>
-                    <p>Facilitar el acceso a vehículos usados de calidad, brindando asesoría profesional, financiación flexible y un proceso de compra transparente para cada uno de nuestros clientes en Cartagena y la región Caribe.</p>
-                </div>
-                <div class="pillar-card">
-                    <div class="pillar-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="url(#gVis)" stroke-width="1.5"/>
-                            <circle cx="12" cy="12" r="3.5" stroke="url(#gVis)" stroke-width="1.8"/>
-                            <circle cx="12" cy="12" r="1" fill="#d4af37"/>
-                            <path d="M12 5v1M12 18v1" stroke="rgba(212,175,55,0.25)" stroke-width="1"/>
-                            <defs><linearGradient id="gVis" x1="1" y1="4" x2="23" y2="20"><stop stop-color="#f5df80"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>
-                        </svg>
-                    </div>
-                    <h3>Nuestra Visión</h3>
-                    <p>Ser la empresa líder en venta de vehículos en Cartagena y la Costa Caribe, reconocida por la calidad de nuestros productos, la transparencia en nuestros procesos y la excelencia en el servicio.</p>
-                </div>
-                <div class="pillar-card">
-                    <div class="pillar-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#gCom)" stroke-width="1.5"/>
-                            <path d="M9 12l2 2 4-4" stroke="url(#gCom)" stroke-width="2"/>
-                            <path d="M12 2v2" stroke="rgba(212,175,55,0.3)" stroke-width="1.5"/>
-                            <defs><linearGradient id="gCom" x1="4" y1="2" x2="20" y2="22"><stop stop-color="#f5df80"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>
-                        </svg>
-                    </div>
-                    <h3>Nuestro Compromiso</h3>
-                    <p>Cada vehículo pasa por inspección técnica completa con peritaje certificado. Garantizamos que la información sea precisa y que el proceso de compra sea seguro y sin sorpresas.</p>
-                </div>
+        <!-- ══════════ HERO ══════════ -->
+        <section class="soft-hero">
+            <div class="soft-hero-bg" aria-hidden="true"></div>
+            <div class="soft-hero-inner">
+                <span class="cin-eyebrow">Nosotros · desde 2017</span>
+                <h1 class="soft-hero-h">
+                    Una ventana digital,<br>
+                    <span class="soft-hero-h-accent">todo un país detrás.</span>
+                </h1>
+                <p class="soft-hero-sub">
+                    Altorra conecta compradores con concesionarios aliados verificados en Cartagena y la Costa Caribe.
+                    No vendemos directo — orquestamos la mejor experiencia con la mejor red.
+                </p>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ══════════ VALORES ══════════ -->
-    <section class="about-values">
-        <div class="container">
-            <div class="section-header">
-                <h2>Nuestros Valores</h2>
-                <p>Los pilares que guían cada decisión y cada interacción con nuestros clientes.</p>
-                <div class="accent-line"></div>
+        <!-- ══════════ PILARES ══════════ -->
+        <section class="soft-section">
+            <div class="soft-2col">
+                <div>
+                    <span class="cin-eyebrow">Pilares</span>
+                    <h2 class="soft-section-h">Cómo trabajamos</h2>
+                    <p class="soft-section-lead">
+                        No reinventamos la venta de carros. La hicimos más limpia.
+                    </p>
+                </div>
+                <ul class="soft-pillars">
+                    <li class="soft-pillar" style="--i:0">
+                        <span class="soft-pillar-n">01</span>
+                        <div>
+                            <h3>Verificación previa</h3>
+                            <p>Cada aliado pasa por revisión documental, comercial y técnica antes de listar.</p>
+                        </div>
+                    </li>
+                    <li class="soft-pillar" style="--i:1">
+                        <span class="soft-pillar-n">02</span>
+                        <div>
+                            <h3>Acompañamiento humano</h3>
+                            <p>No somos un Wallapop. Cada operación tiene asesor dedicado de principio a fin.</p>
+                        </div>
+                    </li>
+                    <li class="soft-pillar" style="--i:2">
+                        <span class="soft-pillar-n">03</span>
+                        <div>
+                            <h3>Financiación pre-aprobada</h3>
+                            <p>Conectamos con 5 bancos aliados. Tu solicitud llega lista, no en cero.</p>
+                        </div>
+                    </li>
+                    <li class="soft-pillar" style="--i:3">
+                        <span class="soft-pillar-n">04</span>
+                        <div>
+                            <h3>Transparencia total</h3>
+                            <p>Peritaje técnico, historial, precio justificado. Sin letras chicas, sin sorpresas.</p>
+                        </div>
+                    </li>
+                </ul>
             </div>
-            <div class="values-grid">
-                <div class="value-card">
-                    <div class="value-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-                    </div>
-                    <h4>Transparencia</h4>
-                    <p>Información clara y honesta en cada transacción, sin letras pequeñas.</p>
-                </div>
-                <div class="value-card">
-                    <div class="value-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38a28e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                    </div>
-                    <h4>Calidad</h4>
-                    <p>Vehículos certificados que cumplen los más altos estándares de revisión.</p>
-                </div>
-                <div class="value-card">
-                    <div class="value-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </div>
-                    <h4>Servicio</h4>
-                    <p>Atención personalizada y acompañamiento en cada etapa del proceso.</p>
-                </div>
-                <div class="value-card">
-                    <div class="value-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-                    </div>
-                    <h4>Confianza</h4>
-                    <p>Relaciones duraderas basadas en el respeto y la honestidad.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ══════════ POR QUÉ ELEGIRNOS ══════════ -->
-    <section class="about-why">
-        <div class="container">
-            <div class="section-header">
-                <h2>¿Por qué elegirnos?</h2>
-                <p>Razones claras para confiar en ALTORRA CARS.</p>
-                <div class="accent-line"></div>
-            </div>
-            <div class="why-grid">
-                <div class="why-card">
-                    <div class="why-number">1</div>
-                    <h4>Amplio Inventario</h4>
-                    <p>Vehículos usados de todas las marcas, con opciones para cada presupuesto y necesidad.</p>
-                </div>
-                <div class="why-card">
-                    <div class="why-number">2</div>
-                    <h4>Inspección Certificada</h4>
-                    <p>Cada vehículo usado pasa por revisión técnico-mecánica completa y peritaje profesional antes de la venta.</p>
-                </div>
-                <div class="why-card">
-                    <div class="why-number">3</div>
-                    <h4>Financiación Flexible</h4>
-                    <p>Planes de financiación adaptados a tu capacidad de pago. Simula tu crédito directamente en nuestra plataforma.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+        <!-- ══════════ LÍNEA DE TIEMPO ══════════ -->
+        <section class="soft-timeline-section">
+            <span class="cin-eyebrow">Línea de tiempo</span>
+            <h2 class="soft-section-h">Nueve años, cinco hitos</h2>
+            <ol class="soft-timeline">
+                <li class="soft-tl-item" style="--i:0">
+                    <span class="soft-tl-year">2017</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Nace Altorra</h3>
+                        <p>Una idea simple: comprar carros en Colombia debería ser tan fácil como comprar online.</p>
+                    </div>
+                </li>
+                <li class="soft-tl-item" style="--i:1">
+                    <span class="soft-tl-year">2019</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Primeros aliados</h3>
+                        <p>Tres concesionarios se suman. Comienza el marketplace digital.</p>
+                    </div>
+                </li>
+                <li class="soft-tl-item" style="--i:2">
+                    <span class="soft-tl-year">2021</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Cobertura nacional</h3>
+                        <p>Llegamos a las 6 ciudades principales y firmamos con bancos aliados.</p>
+                    </div>
+                </li>
+                <li class="soft-tl-item" style="--i:3">
+                    <span class="soft-tl-year">2023</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Catálogo +500</h3>
+                        <p>Más de 500 vehículos verificados en vitrina simultáneamente.</p>
+                    </div>
+                </li>
+                <li class="soft-tl-item" style="--i:4">
+                    <span class="soft-tl-year">2026</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Nueva experiencia</h3>
+                        <p>Estrenamos la plataforma rediseñada. Más rápida, más editorial, más Altorra.</p>
+                    </div>
+                </li>
+            </ol>
+        </section>
 
-    <!-- ══════════ CTA ══════════ -->
-    <section class="about-cta">
-        <div class="container">
-            <h2>¿Listo para encontrar tu auto ideal?</h2>
-            <p>Explora nuestro catálogo o contáctanos para recibir asesoría personalizada sin compromiso.</p>
-            <div class="cta-buttons">
-                <a href="busqueda.html" class="cta-btn primary">Ver Catálogo</a>
-                <a href="contacto.html" class="cta-btn secondary">Contáctanos</a>
+        <!-- ══════════ NÚMEROS ══════════ -->
+        <section class="soft-numbers-section">
+            <div class="soft-numbers">
+                <div><strong>2.400+</strong><span>Clientes desde 2017</span></div>
+                <div><strong>21<em>días</em></strong><span>Promedio para vender</span></div>
+                <div><strong>16</strong><span>Marcas en vitrina</span></div>
+                <div><strong>5</strong><span>Bancos aliados</span></div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <!-- ══════════ CTA ══════════ -->
+        <section class="soft-cta-section">
+            <h2 class="soft-cta-h">¿Listo para empezar?</h2>
+            <p class="soft-cta-sub">Explora la vitrina o ponte en contacto con un asesor.</p>
+            <div class="soft-cta-row">
+                <a href="busqueda.html" class="soft-cta">Ver catálogo</a>
+                <a href="contacto.html" class="soft-cta soft-cta--alt">Hablar con un asesor</a>
+            </div>
+        </section>
+
+    </main>
 
     <div id="footer-placeholder"></div>
     <script src="js/core/firebase-config.js" defer></script>

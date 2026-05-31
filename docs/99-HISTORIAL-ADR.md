@@ -42563,3 +42563,28 @@ Cinematic aplica (bg #08070A, título serif #F4EEDE, precio #F0C674, WA verde, S
 
 ### 140.7 Doctrina + cache bump
 §17.4 (cero renombres, 27 IDs intactos) · §19 (leer antes de tocar) · §37 (IAP, comparador intocable) · §119 (de-monolitización: última gran violación cerrada) · §G.4 Desafío Crítico (favorito/comparar) · L-08 (403 localhost) · L-20 (preview cache-bust). Cache bump `v20260531290000` → `v20260531300000`. ⚠️ El Service Worker sirve assets viejos hasta el bump → la verificación local necesitó desregistrar SW + cache-bust; cliente invalida con **Ctrl+Shift+R**.
+
+## 141. ADR-141 — SP-5.3 pulido del detalle post-validación (3 bugs CSS legacy + elevación glass)
+
+Cliente (validación en prod 2026-05-31): *"en la ficha técnica sale una sombra dorada al pasar el mouse... las características tienen un fondo blanco que no se ve el contenido... la descripción muy básica parece máquina de escribir... metámosle efecto cristal... necesitamos esa exquisitez del index en todas las páginas."*
+
+### 141.1 Causa raíz (RCA §19, verificada por enumeración de reglas en preview)
+Los 3 bugs eran **CSS legacy filtrándose**: las reglas cinematic de §140 fijaban SOLO algunas propiedades → la cascada caía a `style.css`/`dark-theme.css` para el resto.
+1. **Glow dorado hover ficha**: `dark-theme.css` `body .ficha-group:hover { border-color:gold; box-shadow: rgba(212,175,55,.2) 0 0 20px }` (0,2,1). `detalle-cinematic` estilaba `.ficha-group` pero **sin regla `:hover`** → el glow legacy ganaba esa propiedad.
+2. **Fondo blanco características**: `style.css` `.feature-item { background:white }` (otro componente, 0,1,0). La regla cinematic fijaba `color` pero **no `background`** → blanco + texto ink-soft = invisible.
+3. **Descripción "máquina de escribir"**: `descriptionBox.textContent` = muro de texto uniforme con `white-space:pre-line`.
+
+### 141.2 Solución
+1. `body[data-cin="on"] .ficha-group:hover` (0,3,1 > 0,2,1) → override: inset sutil, sin glow dorado.
+2. `body[data-cin="on"] .feature-item { background: transparent }` → vence el blanco; filas limpias con dot dorado + glow + separador hairline.
+3. `detalle-render.js`: descripción parseada (escapada) en `.desc-line` con la "Etiqueta:" resaltada en dorado (`.desc-key`) → look editorial.
+- **Elevación glass/exquisitez (lenguaje `.cin-card` del index)**: `backdrop-filter: blur` en info-card (panel) + descripción (superficies estructurales; doctrina §3.1 → NO en las 22 filas / 37 items); ficha-group + feature-category con gradiente sutil + border hairline + inset highlight; section-title con acento dorado degradado; precio refinado.
+
+### 141.3 No-regresión + tests
+CSS + JS compartidos → **NO requiere regenerar las 27 páginas** (heredan vía `<link>`/`<script>`). 27 IDs/hooks intactos; `node -c` OK. Verificado en preview (id=27): feature bg `rgba(0,0,0,0)`, ficha hover sin glow (mi `:hover` gana por especificidad), 7 `.desc-line`/`.desc-key` dorados, glass `blur(18px/14px)`. Backdrop-filter solo en 2 superficies estructurales (§3.1); parse escapa `<>&` y exige `:\s+` (no rompe URLs).
+
+### 141.4 Anti-patterns + lección
+RCA §19: enumeré las reglas reales en preview ANTES de tocar (no adiviné el origen del blanco/glow). **Lección L-21** (`30`): al migrar un cuerpo legacy a cinematic, las reglas DEBEN fijar explícitamente `background` + estados `:hover`/`:active` (no solo `color`), o `style.css`/`dark-theme.css` filtran esas propiedades. Crítico para los SP-5.3.x restantes (busqueda/marca/landings).
+
+### 141.5 Archivos + cache
+**Modificados**: `css/home/detalle-cinematic.css` (fixes + glass), `js/public/detalle/detalle-render.js` (descripción editorial), `service-worker.js` + `js/core/cache-manager.js` (bump). **INTACTOS**: `detalle-vehiculo.html` (sin cambio de markup → sin regen), comparador/citas/concierge/favorites/historial. Cache bump `v20260531300000` → `v20260531310000`.

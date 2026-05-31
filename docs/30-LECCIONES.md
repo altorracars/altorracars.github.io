@@ -197,6 +197,12 @@
 - **Service Worker sirve assets VIEJOS en preview** (manifestación local de L-14): si editaste HTML/CSS/JS y el preview muestra lo viejo aunque `http-server -c-1` no cachee, es el SW (CACHE_VERSION sin bumpear) interceptando los fetch. Para validar SIN bump: `navigator.serviceWorker.getRegistrations()→unregister()` + `caches.keys()→delete()`, y/o cache-bust (`link.href+='?v='+Date.now()` o navegar a `?fresh=Date.now()`). Ojo a un 2º engaño: elementos con `transition: color` muestran el valor VIEJO durante la transición tras un cache-bust en caliente → mata transiciones (`*{transition:none!important}`) para leer el color SETTLED real. (SP-5.3 §140: sin esto, falsos negativos — botones "negros" + módulos sin mis cambios.) El cliente lo resuelve con **Ctrl+Shift+R** tras el bump §4.
 - **Principio**: ver con mis ojos (estilos reales) > adivinar (RCA §19). Un pendiente puede estar MAL descrito ("grises del 2º bloque") — verifica antes de "arreglar" algo que no existe.
 
+### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color`
+- **Disparador**: una página/componente migrado a `body[data-cin="on"]` muestra fondos blancos, glows o colores legacy que "no puse" (§141: ficha con glow dorado al hover + características con fondo blanco invisible).
+- **Causa**: `style.css` / `dark-theme.css` definen propiedades por clase compartida (`.feature-item{background:white}`, `.ficha-group:hover{box-shadow:gold 0 0 20px}`). Si tu regla cinematic fija SOLO `color` (u otra propiedad), la cascada cae al legacy para las demás (`background`, `box-shadow`, `:hover`). **La especificidad se resuelve POR PROPIEDAD, no por regla** — ganar `color` NO te da `background`.
+- **Receta**: por cada clase-hook reusada, enumera en preview qué reglas legacy la tocan (`Array.from(document.styleSheets)…el.matches(sel)`) y fija EXPLÍCITAMENTE `background` + estados `:hover/:active` en tu regla cinematic, con especificidad ≥ la legacy (`body[data-cin="on"] .x:hover` 0,3,1 > `body .x:hover` 0,2,1).
+- **Aplica a**: los SP-5.3.x restantes (busqueda/marca/marcas/landings) reusan clases-hook del catálogo → mismo riesgo.
+
 ---
 
 > Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve

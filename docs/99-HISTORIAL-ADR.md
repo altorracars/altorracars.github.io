@@ -42625,3 +42625,21 @@ Re-skin puro: `<body data-cin="on">` + `soft-redesign.css` + nuevo `css/home/bus
 
 ### 143.4 Archivos + cache
 **Nuevo**: `css/home/busqueda-cinematic.css`. **Modificados**: `busqueda.html`, `service-worker.js`+`cache-manager.js`. **INTACTOS**: toda la lógica JS de búsqueda/filtros/render. Cache bump `v20260531320000` → `v20260531330000`. **Pendiente SP-5.3.x**: `marca(s).html` + 7 landings `vehiculos-*.html`.
+
+## 144. ADR-144 — `marca.html` (template de marca) cinematic (SP-5.3.c)
+
+Cliente: *"CONTINUEMOS"*. Tercera página del catálogo migrada; reusa el patrón de tarjetas de busqueda/detalle. El generador clona `marca.html` → 18 `marcas/*.html`.
+
+### 144.1 Enfoque (re-skin, cero regresión)
+`<body data-cin="on">` + `soft-redesign.css` + nuevo `css/home/marca-cinematic.css` (scopeado). **NO se tocó JS** (`loadVehicles`/filtros/`renderVehicles`/`getBrandInfo`) ni los `id`/`name` (pageTitle, brandHero/brandBanner/brandHeader/brandTitle, filtersForm + campos, vehiclesGrid, pagination). Anclajes del generador (`<title id="pageTitle">`, header-placeholder, `</head>`, `<script>const params=…`) verbatim.
+
+### 144.2 Cambios
+- `marca.html`: `data-cin` + 2 `<link>` cinematic (markup mínimo; hero/header/sidebar/grid intactos).
+- `marca-cinematic.css`: hero banner (velo), **brand-header serif** (`#brandTitle`), **layout sidebar+main** (`catalog-layout` grid 280px/1fr), **sidebar de filtros glass** (selects/inputs oscuros con caret dorado + botón Aplicar dorado + Limpiar), resultados (contador serif + sortBy), **tarjetas `.vehicle-card` cinematic** (mismo lenguaje), paginación. Responsive: sidebar colapsable <900px.
+- **18 `marcas/*.html` regeneradas** (`npm run generate`).
+
+### 144.3 No-regresión + tests
+**L-21** aplicada. Verificado en preview (`marcas/kia.html`): data-cin, marca-cinematic + soft-redesign cargados, brand-header Instrument Serif, sidebar glass `blur(16px)`, filtros selects `rgba(244,238,222,0.04)` (no blanco), Aplicar dorado; filter+render directo de kia → **4 tarjetas con gradiente cinematic + precio gold-hot** (`#F0C674`). 18 generadas con data-cin + `PRERENDERED_BRAND_ID` OK. ⚠️ El "Cargando…" inicial en preview fue una race de mi sesión (SW-clear repetido starveó la caché que `loadVehicles` awaitó), **no un bug** — en carga limpia (prod) renderiza. Sin screenshots (L-08 + glitch `innerWidth:0`) → validar visual en prod.
+
+### 144.4 Archivos + cache
+**Nuevo**: `css/home/marca-cinematic.css`. **Modificados**: `marca.html`, 18 `marcas/*.html` + `sitemap.xml`/`data/*` (regen), `service-worker.js`+`cache-manager.js`. **INTACTO**: JS de marca. Cache bump `v20260531330000` → `v20260531340000`. **Pendiente SP-5.3.x**: `marcas.html` (índice de marcas) + 7 landings `vehiculos-*.html`.

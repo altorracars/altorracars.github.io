@@ -42608,3 +42608,20 @@ Se separó `descripcion` de VEHÍCULO (se elimina) de las descripciones de **mar
 
 ### 142.4 Archivos + cache
 **Modificados**: `detalle-vehiculo.html`, `detalle-render.js`, `detalle-cinematic.css`, `generate-vehicles.mjs`, `database.js`, `admin.html`, `admin-vehicles.js`, `service-worker.js`+`cache-manager.js`, 27 `vehiculos/*`. **HUÉRFANO (borrable por el cliente)**: `js/admin/admin-desc-gen.js`. **INTACTOS**: descripciones de marca/KB/AI. Cache bump `v20260531310000` → `v20260531320000`.
+
+## 143. ADR-143 — `busqueda.html` (catálogo) cinematic (SP-5.3.b)
+
+Cliente: *"sigamos con [busqueda]… esa exquisitez del index en todas las páginas."* Siguiente página de la migración cinematic (43-UX SP-5.2.b), elegida por jerarquía (mayor tráfico tras index, puerta a todo el inventario).
+
+### 143.1 Enfoque (mismo método probado §140, cero regresión)
+Re-skin puro: `<body data-cin="on">` + `soft-redesign.css` + nuevo `css/home/busqueda-cinematic.css` (page-specific, scopeado `body[data-cin="on"]`). **NO se tocó JS** (`filtros-avanzados.js` / `performSearch` / `renderVehicles`) ni los `id`/`name` de los campos → filtros, orden, paginación, favoritos, comparar y click intactos. Página estática → **sin regen**.
+
+### 143.2 Cambios (markup mínimo + 1 CSS)
+- `busqueda.html`: `data-cin="on"` + 2 `<link>` cinematic + bloque de título en el hero (`.bsq-hero-content`: eyebrow dorado + título serif + subtítulo). H1 SEO sr-only (§90) intacto (el título del hero es decorativo, no heading).
+- `busqueda-cinematic.css`: hero (velo + título serif), filtros (form **glass** `backdrop-filter`, selects/inputs/checkboxes oscuros con caret dorado, botón Buscar dorado + Limpiar/Guardar), cabecera de resultados (contador serif + sortBy + banner), **tarjetas `.vehicle-card` cinematic** (lenguaje del detalle: superficie glass, hover lift + sombra oscura, badges/favorito/comparar dorados, precio gold-hot), paginación dorada. Grid responsive `repeat(auto-fill, minmax(280px,1fr))`.
+
+### 143.3 No-regresión + tests
+**L-21** aplicada (background + `:hover` explícitos para vencer style.css/dark-theme/filtros-avanzados). Verificado en preview (`?fresh`): `data-cin=on`, busqueda-cinematic + soft-redesign cargados, hero eyebrow dorado + título Instrument Serif, form glass (`blur(16px)`), 27 resultados / 12 tarjetas con gradiente cinematic + título ink + precio gold-hot (`#F0C674`), submit dorado, `display:grid`, sin overflow. JS/filtros/render sin cambios. ⚠️ Screenshots imposibles (L-08 403 + glitch `innerWidth:0` del preview) → validación visual fina (hero + nº de columnas) queda para el cliente en prod (Ctrl+Shift+R).
+
+### 143.4 Archivos + cache
+**Nuevo**: `css/home/busqueda-cinematic.css`. **Modificados**: `busqueda.html`, `service-worker.js`+`cache-manager.js`. **INTACTOS**: toda la lógica JS de búsqueda/filtros/render. Cache bump `v20260531320000` → `v20260531330000`. **Pendiente SP-5.3.x**: `marca(s).html` + 7 landings `vehiculos-*.html`.

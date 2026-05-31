@@ -29,6 +29,8 @@
     <link rel="stylesheet" href="css/filtros-avanzados.css">
     <link rel="stylesheet" href="css/dark-theme.css">
     <link rel="stylesheet" href="css/performance-fixes.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
+    <link rel="stylesheet" href="css/home/busqueda-cinematic.css">
     <!-- Non-critical: lazy-loaded so they don't block first paint -->
     <link rel="stylesheet" href="css/toast-notifications.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/comparador.css" media="print" onload="this.media='all'">
@@ -166,7 +168,7 @@
     <link rel="stylesheet" href="css/page-loader.css">
     <link rel="preload" as="image" href="multimedia/categories/BUSQUEDA.jpg" fetchpriority="high">
 </head>
-<body>
+<body data-cin="on">
     <!-- Page Loader -->
     <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
         <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
@@ -184,6 +186,11 @@
         <img src="multimedia/categories/BUSQUEDA.jpg" alt="Búsqueda Avanzada" class="brand-hero-bg" width="1920" height="800" fetchpriority="high" loading="eager" decoding="async">
     </picture>
     <div class="hero-bottom-fade"></div>
+        <div class="bsq-hero-content">
+            <span class="bsq-hero-eyebrow">Catálogo ALTORRA</span>
+            <p class="bsq-hero-title">Encuentra tu próximo vehículo</p>
+            <p class="bsq-hero-sub">Explora todo el inventario con filtros avanzados.</p>
+        </div>
     </section>
 
     <section class="search-advanced-section">

@@ -21,10 +21,10 @@
 **Completo y verificado** → consolidado en **ADR §140** (`99` + `00-INDICE`); `20-ESPACIAL` (carpeta `js/public/detalle/` + `detalle-cinematic.css`) + `43-UX` (Ronda 5) actualizados; cache bump `v20260531300000`. Spec `b2a6bc0`, plan `f56cb8d`.
 - `detalle-vehiculo.html` → cinematic + de-monolitizado: 4 módulos `js/public/detalle/{data,render,gallery,page}.js` + `css/home/detalle-cinematic.css`, `<body data-cin>`, botones **Opción A**, favorito/comparar/sticky cableados. **27 IDs + hooks intactos**. 27 `vehiculos/*` regeneradas. Verificado preview local (id=38, `node -c` OK). El **por qué/cómo** → ADR §140.
 - ✅ **Commiteado + mergeado a prod** (Fase 2 `10605da` + Fase 3 `86681a6` → PR #771, `origin/main ae1bc7e`). ⏳ Falta: **validar en prod con Ctrl+Shift+R** (E2E real) + `git pull` local (rama 6 commits detrás de `origin/main`).
-- ✅ **§141–§143 cerrados + commiteados+pusheados** (`8686ff3`): §141 pulido detalle (fixes + glass), §142 Descripción ELIMINADA (tab/admin; datos dormidos en Firestore; `admin-desc-gen.js` huérfano-borrable), §143 `busqueda.html` cinematic. Detalle → ADRs §141/§142/§143 + lecciones **L-20/L-21** (`30`).
-- 🔧 **§144 `marca.html` cinematic ⏳ SIN commit** (SP-5.3.c): re-skin del template (hero banner + brand-header serif + sidebar filtros glass + tarjetas `.vehicle-card` cinematic + paginación) vía `css/home/marca-cinematic.css` + `data-cin`; **18 `marcas/*` regeneradas**; JS (loadVehicles/filtros/render) intacto. Cache `v20260531340000`. ⚠️ Validar en prod (Ctrl+Shift+R; sin screenshots por glitch `innerWidth:0` del preview).
-- ⏳ **Pendiente cliente**: commitea §144 (mensajes en chat) + `git pull` + valida en prod: detalle, busqueda, marca.
-- 🔮 **SP-5.3.x futuros**: `marcas.html` (índice de marcas) + 7 landings `vehiculos-*.html`.
+- ✅ **§141–§144 cerrados + commiteados+pusheados** (`f0471f1`): §141 pulido detalle, §142 Descripción ELIMINADA (datos dormidos; `admin-desc-gen.js` huérfano-borrable), §143 `busqueda.html`, §144 `marca.html`+18 `marcas/*`. Detalle → ADRs + lecciones **L-20/L-21** (`30`).
+- 🔧 **§145 ⏳ SIN commit**: (1) **fix nav** header "Marcas" → `marcas.html` (antes arrastraba al carrusel del index; corregido en `snippets/header.html` global + `index.html` inline). (2) **`marcas.html` (índice) cinematic** (tokens `--cin-*` + Instrument Serif/Manrope + 18 tarjetas de marca) vía `css/home/marcas-cinematic.css` + `data-cin`. Sin regen. Cache `v20260531350000`. ⚠️ Validar en prod.
+- ⏳ **Pendiente cliente**: commitea §145 (mensajes en chat) + `git pull` + valida en prod (detalle/busqueda/marca/marcas + que el nav "Marcas" abra `marcas.html`).
+- 🔮 **SP-5.3.x futuros**: 7 landings `vehiculos-*.html` (redirects). **Catálogo cinematic completo.**
 
 ---
 

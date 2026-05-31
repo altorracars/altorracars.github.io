@@ -42643,3 +42643,19 @@ Cliente: *"CONTINUEMOS"*. Tercera página del catálogo migrada; reusa el patró
 
 ### 144.4 Archivos + cache
 **Nuevo**: `css/home/marca-cinematic.css`. **Modificados**: `marca.html`, 18 `marcas/*.html` + `sitemap.xml`/`data/*` (regen), `service-worker.js`+`cache-manager.js`. **INTACTO**: JS de marca. Cache bump `v20260531330000` → `v20260531340000`. **Pendiente SP-5.3.x**: `marcas.html` (índice de marcas) + 7 landings `vehiculos-*.html`.
+
+## 145. ADR-145 — Fix nav header "Marcas" + `marcas.html` (índice) cinematic (SP-5.3.d)
+
+Cliente: *"el header de marcas no lleva a la página marcas (está huérfana), arrastra al carrusel del index — no debería ser así."* + continuar la migración cinematic.
+
+### 145.1 Bug de navegación (RCA §19)
+El nav "Marcas" (desktop + móvil) apuntaba a `index.html#marcas` (carrusel del index) → `marcas.html` quedaba huérfana (nada la enlazaba). Fuente: `snippets/header.html` (header global inyectado por `components.js` `loadComponent`) líneas 70/121 + el header inline del propio `index.html` (436/487). **Fix**: las 4 → `marcas.html` (`replace_all`). El header inyectado propaga a TODAS las páginas en runtime (sin regen); el index inline se corrige directo.
+
+### 145.2 marcas.html cinematic
+`marcas.html` ya era dark+dorado pero con paleta **LEGACY** (Poppins, `#d4af37`/`#b89658`, `#0a0a0a`). Alineada al sistema del index: `<body data-cin="on">` + `soft-redesign.css` + nuevo `css/home/marcas-cinematic.css` (override scopeado) → **Instrument Serif** (h1) + **Manrope**, `--cin-gold`/`--cin-gold-hot`, `--cin-bg #08070A`; tarjetas de marca (`.marca-card`) a superficie cinematic; stats/search/skeleton alineados. NO se tocó el JS (`renderBrands`) ni clases-hook. Página estática → sin regen.
+
+### 145.3 No-regresión + tests
+Verificado en preview (`marcas.html`): **header Marcas href = `marcas.html`** (fix OK en header inyectado), h1 Instrument Serif + ink, badge `#F0C674`, stats/grid bg `#08070A`, **18 tarjetas de marca cinematic** (gradiente + Manrope), search cinematic. **L-21** (override por especificidad sobre el `<style>` inline). Generadas reciben el fix del nav vía snippet en runtime.
+
+### 145.4 Archivos + cache
+**Nuevo**: `css/home/marcas-cinematic.css`. **Modificados**: `marcas.html` (data-cin + links), `snippets/header.html` + `index.html` (nav Marcas → marcas.html), `service-worker.js`+`cache-manager.js`. **INTACTO**: `renderBrands`. Cache bump `v20260531340000` → `v20260531350000`. **Pendiente SP-5.3.x**: 7 landings `vehiculos-*.html`.

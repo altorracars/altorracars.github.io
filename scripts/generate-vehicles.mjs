@@ -352,7 +352,6 @@ function generatePage(template, v, slug) {
                 <li><strong>Color:</strong> ${escapeHtml(v.color || 'N/A')}</li>
                 <li><strong>Categoria:</strong> ${escapeHtml(capitalize(v.categoria || ''))}</li>
             </ul>
-            ${v.descripcion ? `<p>${escapeHtml(v.descripcion)}</p>` : ''}
             <p><a href="${SITE_URL}">Volver a ALTORRA CARS</a></p>
         </div>
     </noscript>`;

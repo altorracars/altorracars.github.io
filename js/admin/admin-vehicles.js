@@ -25,7 +25,7 @@
     // Compute diff between old and new vehicle data (only meaningful fields)
     var AUDIT_FIELDS = ['marca', 'modelo', 'year', 'tipo', 'categoria', 'precio', 'precioOferta',
         'kilometraje', 'transmision', 'combustible', 'motor', 'color', 'estado', 'ubicacion',
-        'destacado', 'descripcion', 'imagen', 'concesionario', 'oferta', 'featuredOrder'];
+        'destacado', 'imagen', 'concesionario', 'oferta', 'featuredOrder'];
 
     function computeChanges(oldData, newData) {
         if (!oldData) return [{ field: '(nuevo)', from: null, to: 'creado' }];
@@ -924,7 +924,7 @@
             vMotor: $('vMotor').value, vPotencia: $('vPotencia').value, vCilindraje: $('vCilindraje').value,
             vTraccion: $('vTraccion').value, vDireccion: $('vDireccion').value, vColor: $('vColor').value,
             vPuertas: $('vPuertas').value, vPasajeros: $('vPasajeros').value, vUbicacion: $('vUbicacion').value,
-            vPlaca: $('vPlaca').value, vFasecolda: $('vFasecolda').value, vDescripcion: $('vDescripcion').value,
+            vPlaca: $('vPlaca').value, vFasecolda: $('vFasecolda').value,
             vEstado: $('vEstado').value, vDestacado: $('vDestacado').checked, vOferta: $('vOferta').checked,
             vRevision: $('vRevision').checked, vPeritaje: $('vPeritaje').checked,
             vPrioridad: $('vPrioridad').value, vCaracteristicas: collectAllFeatures().join('\n'), // §D/§E.4 — checkboxes + legacy
@@ -989,7 +989,7 @@
     }
 
     function restoreFormSnapshot(snap) {
-        var fields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vPrecioOferta','vKm','vTransmision','vCombustible','vMotor','vPotencia','vCilindraje','vTraccion','vDireccion','vColor','vPuertas','vPasajeros','vUbicacion','vPlaca','vFasecolda','vDescripcion','vEstado','vPrioridad','vCaracteristicas'];
+        var fields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vPrecioOferta','vKm','vTransmision','vCombustible','vMotor','vPotencia','vCilindraje','vTraccion','vDireccion','vColor','vPuertas','vPasajeros','vUbicacion','vPlaca','vFasecolda','vEstado','vPrioridad','vCaracteristicas'];
         fields.forEach(function(f) { if ($(f) && snap[f] !== undefined) $(f).value = snap[f]; });
         if (snap.vId) $('vId').value = snap.vId;
         $('vDestacado').checked = !!snap.vDestacado;
@@ -1037,7 +1037,7 @@
     }
 
     function snapshotHasAnyData(snap) {
-        var checkFields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vKm','vTransmision','vCombustible','vMotor','vColor','vDescripcion'];
+        var checkFields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vKm','vTransmision','vCombustible','vMotor','vColor'];
         for (var i = 0; i < checkFields.length; i++) { if (snap[checkFields[i]]) return true; }
         if (snap._images && snap._images.length > 0) return true;
         return false;
@@ -1198,7 +1198,6 @@
         $('vUbicacion').value = v.ubicacion || 'Cartagena';
         $('vPlaca').value = v.placa || '';
         $('vFasecolda').value = v.codigoFasecolda || '';
-        $('vDescripcion').value = v.descripcion || '';
         $('vEstado').value = v.estado || 'disponible';
         $('vDestacado').checked = !!v.destacado;
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
@@ -1404,7 +1403,7 @@
             ubicacion: $('vUbicacion').value || 'Cartagena', placa: $('vPlaca').value || 'Disponible al contactar',
             codigoFasecolda: $('vFasecolda').value || 'Consultar',
             revisionTecnica: $('vRevision').checked, peritaje: $('vPeritaje').checked,
-            descripcion: $('vDescripcion').value || '', estado: $('vEstado').value || 'disponible',
+            estado: $('vEstado').value || 'disponible',
             destacado: $('vDestacado').checked,
             featuredWeek: $('vDestacado').checked, /* siempre igual a destacado — campo legacy */
             prioridad: (function() { var ex = AP.vehicles.find(function(v) { return v.id === id; }); return ex ? (ex.prioridad || 0) : 0; })(),
@@ -2003,7 +2002,6 @@
                     '<div class="vis-prv-highlights">' + highlightsHtml + '</div>' +
                     '<div class="vis-prv-section"><h4 class="vis-prv-section-title">Ficha técnica</h4><div class="vis-prv-specs">' + specsHtml + '</div></div>' +
                     featHtml +
-                    (v.descripcion ? '<div class="vis-prv-section"><h4 class="vis-prv-section-title">Descripción</h4><p class="vis-prv-desc">' + AP.escapeHtml(v.descripcion) + '</p></div>' : '') +
                 '</div>' +
             '</div>';
 
@@ -2056,7 +2054,6 @@
         var ubicacion = $('vUbicacion').value || 'Cartagena';
         var placa = $('vPlaca').value || 'Disponible al contactar';
         var estado = $('vEstado').value || 'disponible';
-        var descripcion = $('vDescripcion').value || '';
         var features = collectAllFeatures();
         var imgs = AP.uploadedImageUrls.length ? AP.uploadedImageUrls.slice() : [];
 
@@ -2147,9 +2144,6 @@
                 }).join('') + '</div></div>';
         }
 
-        // Description
-        var descHtml = descripcion ? '<div style="margin-top:0.75rem;padding-top:0.5rem;border-top:1px solid #30363d;"><div style="font-size:0.8rem;font-weight:700;color:#b89658;margin-bottom:0.35rem;">Descripcion</div><p style="font-size:0.8rem;color:#c9d1d9;line-height:1.5;margin:0;">' + AP.escapeHtml(descripcion) + '</p></div>' : '';
-
         // Estado badge
         var estadoBadge = '<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600;color:#fff;background:' + (estadoColors[estado] || '#8b949e') + ';">' + (estadoLabels[estado] || estado) + '</span>';
 
@@ -2158,7 +2152,7 @@
             '<div style="margin-bottom:0.5rem;">' + badgesHtml + ' ' + estadoBadge + '</div>' +
             '<h3 style="margin:0 0 0.25rem;color:#f0f6fc;font-size:1.25rem;">' + AP.escapeHtml(title) + '</h3>' +
             '<p style="margin:0 0 0.5rem;color:#8b949e;font-size:0.85rem;">' + AP.escapeHtml(subtitle) + '</p>' +
-            priceHtml + quickHtml + fichaHtml + featHtml + descHtml +
+            priceHtml + quickHtml + fichaHtml + featHtml +
         '</div>';
 
         var overlay = document.createElement('div');
@@ -2673,44 +2667,5 @@
         }
     });
 
-    // C.5 — Generador de descripción automática
-    var btnGenDesc = $('btnGenDesc');
-    if (btnGenDesc) {
-        btnGenDesc.addEventListener('click', function () {
-            if (!window.AltorraDescGen) {
-                AP.toast('Generador no disponible.', 'error');
-                return;
-            }
-            var specs = {
-                marca: ($('vMarca') || {}).value,
-                modelo: ($('vModelo') || {}).value,
-                year: ($('vYear') || {}).value,
-                tipo: ($('vTipo') || {}).value,
-                categoria: ($('vCategoria') || {}).value,
-                kilometraje: parseInt(($('vKm') || {}).value, 10),
-                transmision: ($('vTransmision') || {}).value,
-                combustible: ($('vCombustible') || {}).value,
-                motor: ($('vMotor') || {}).value,
-                traccion: ($('vTraccion') || {}).value,
-                color: ($('vColor') || {}).value,
-                peritaje: ($('vPeritaje') || {}).checked,
-                revisionTecnica: ($('vRevision') || {}).checked,
-                caracteristicas: collectAllFeatures()
-            };
-            if (!specs.marca || !specs.modelo) {
-                AP.toast('Llená marca y modelo primero.', 'warning');
-                return;
-            }
-            var desc = window.AltorraDescGen.generate(specs);
-            var ta = $('vDescripcion');
-            if (ta) {
-                if (ta.value && ta.value.trim()) {
-                    if (!confirm('Ya hay descripción escrita. ¿Reemplazarla por la generada?')) return;
-                }
-                ta.value = desc;
-                ta.dispatchEvent(new Event('input', { bubbles: true }));
-                AP.toast('Descripción generada. Editala antes de guardar si querés.');
-            }
-        });
-    }
+    // (§142) Generador de descripción eliminado junto con el campo de descripción del vehículo.
 })();

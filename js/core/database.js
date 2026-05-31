@@ -455,8 +455,7 @@ class VehicleDatabase {
                     v.marca || '', v.modelo || '',
                     v.year ? String(v.year) : '',
                     v.color || '', v.categoria || '',
-                    v.combustible || '', v.transmision || '',
-                    v.descripcion || ''
+                    v.combustible || '', v.transmision || ''
                 ].join(' ').toLowerCase();
                 return searchWords.every(word => {
                     // For short numeric words (1-2 digits), require word-boundary match

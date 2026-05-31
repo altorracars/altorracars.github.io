@@ -42588,3 +42588,23 @@ RCA §19: enumeré las reglas reales en preview ANTES de tocar (no adiviné el o
 
 ### 141.5 Archivos + cache
 **Modificados**: `css/home/detalle-cinematic.css` (fixes + glass), `js/public/detalle/detalle-render.js` (descripción editorial), `service-worker.js` + `js/core/cache-manager.js` (bump). **INTACTOS**: `detalle-vehiculo.html` (sin cambio de markup → sin regen), comparador/citas/concierge/favorites/historial. Cache bump `v20260531300000` → `v20260531310000`.
+
+## 142. ADR-142 — Eliminar la Descripción del vehículo (tab + admin + generador) por decisión de producto
+
+Cliente (2026-05-31, tras el pulido §141): *"eliminar la columna de la descripción, solo queda ficha técnica y características; eliminar también la opción de añadir descripción desde el panel admin; los vehículos ya cargados → migración de implementaciones antiguas."* Decidió que la descripción no aporta y la retira del producto.
+
+### 142.1 Alcance (IAP §37) — descripción de VEHÍCULO únicamente
+Se separó `descripcion` de VEHÍCULO (se elimina) de las descripciones de **marca** (`admin-brands`), **contexto KB/IA** (`brain-config`/`admin-kb`/`functions`) y `scoring.js` (`comm.descripcion` = de una *solicitud*) — esas **NO se tocan**.
+
+### 142.2 Cambios
+- **Detalle**: quitado el tab "Descripción" + `#tab-descripcion`/`#descriptionBox` de `detalle-vehiculo.html` (quedan Ficha + Características) + su render en `detalle-render.js` + el CSS muerto (`.description-box`/`.desc-line`/`.desc-key` de §141).
+- **Generador**: quitado `<p>${v.descripcion}</p>` del `<noscript>` SEO + **27 páginas regeneradas**.
+- **Búsqueda**: `database.js` ya no incluye `descripcion` en el haystack del catálogo.
+- **Admin** (cirugía FUNCIONAL, no rediseño — respeta exclusión §43-UX): quitado `<textarea#vDescripcion>` + botón `#btnGenDesc` + `<script>` de `admin-desc-gen.js` (módulo queda **huérfano, NO cargado**) + **11 referencias** en `admin-vehicles.js` (snapshot/restore/checkFields/load/save/preview×2/var/descHtml/AUDIT_FIELDS/handler).
+- **Datos**: `descripcion` en Firestore queda **DORMIDO** (NO se borra — destructivo/irreversible + sin beneficio; al re-guardar un auto en admin el payload ya no lo incluye → se limpia orgánicamente).
+
+### 142.3 No-regresión
+`node -c` OK en los 5 módulos. Admin: 0 refs residuales (`vDescripcion`/`descripcion`/`descHtml`/`btnGenDesc` por grep) → agregar/editar/preview de vehículo intactos. Detalle verificado en preview (id=27): 2 tabs, `descriptionBox` ausente, tabs cambian, ficha(22)/características(37) OK, consola solo 403 L-08. 27 páginas regeneradas sin el tab (grep=0).
+
+### 142.4 Archivos + cache
+**Modificados**: `detalle-vehiculo.html`, `detalle-render.js`, `detalle-cinematic.css`, `generate-vehicles.mjs`, `database.js`, `admin.html`, `admin-vehicles.js`, `service-worker.js`+`cache-manager.js`, 27 `vehiculos/*`. **HUÉRFANO (borrable por el cliente)**: `js/admin/admin-desc-gen.js`. **INTACTOS**: descripciones de marca/KB/AI. Cache bump `v20260531310000` → `v20260531320000`.

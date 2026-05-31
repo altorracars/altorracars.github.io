@@ -21,11 +21,10 @@
 **Completo y verificado** → consolidado en **ADR §140** (`99` + `00-INDICE`); `20-ESPACIAL` (carpeta `js/public/detalle/` + `detalle-cinematic.css`) + `43-UX` (Ronda 5) actualizados; cache bump `v20260531300000`. Spec `b2a6bc0`, plan `f56cb8d`.
 - `detalle-vehiculo.html` → cinematic + de-monolitizado: 4 módulos `js/public/detalle/{data,render,gallery,page}.js` + `css/home/detalle-cinematic.css`, `<body data-cin>`, botones **Opción A**, favorito/comparar/sticky cableados. **27 IDs + hooks intactos**. 27 `vehiculos/*` regeneradas. Verificado preview local (id=38, `node -c` OK). El **por qué/cómo** → ADR §140.
 - ✅ **Commiteado + mergeado a prod** (Fase 2 `10605da` + Fase 3 `86681a6` → PR #771, `origin/main ae1bc7e`). ⏳ Falta: **validar en prod con Ctrl+Shift+R** (E2E real) + `git pull` local (rama 6 commits detrás de `origin/main`).
-- 🔧 **§141 + §142 ✅ commiteados (`b0ba694`); §143 ⏳ SIN commit** (resumen post-validación):
-  - **§141** pulido detalle: fix glow hover ficha + fix fondo blanco características + **glass** (info-card/descripción) + acentos. Lecciones L-20 (ampliada) + **L-21** (CSS legacy se filtra si no fijas `background`/`:hover`).
-  - **§142 Descripción ELIMINADA** del producto (decisión cliente): quitado tab del detalle + campo/generador del admin (`admin-desc-gen.js` **huérfano, borrable**) + búsqueda + noscript SEO; **27 páginas regeneradas**; el campo `descripcion` queda **DORMIDO en Firestore** (no se borró — al re-guardar un auto se limpia solo). Cache `v20260531320000`.
-  - **§143 `busqueda.html` cinematic** (SP-5.3.b): re-skin del catálogo (hero serif + filtros glass + tarjetas `.vehicle-card` cinematic + paginación) vía nuevo `css/home/busqueda-cinematic.css` + `data-cin`; **JS/filtros/render INTACTOS**; sin regen (página estática). Cache `v20260531330000`. ⚠️ Validar hero + nº de columnas del grid en prod (sin screenshots por glitch `innerWidth:0` del preview).
-- 🔮 **SP-5.3.x futuros** (cuerpo aún legacy): `marca(s).html`, 18 `marcas/*`, 7 landing `vehiculos-*.html`. (`busqueda.html` ✅ §143.)
+- ✅ **§141–§143 cerrados + commiteados+pusheados** (`8686ff3`): §141 pulido detalle (fixes + glass), §142 Descripción ELIMINADA (tab/admin; datos dormidos en Firestore; `admin-desc-gen.js` huérfano-borrable), §143 `busqueda.html` cinematic. Detalle → ADRs §141/§142/§143 + lecciones **L-20/L-21** (`30`).
+- 🔧 **§144 `marca.html` cinematic ⏳ SIN commit** (SP-5.3.c): re-skin del template (hero banner + brand-header serif + sidebar filtros glass + tarjetas `.vehicle-card` cinematic + paginación) vía `css/home/marca-cinematic.css` + `data-cin`; **18 `marcas/*` regeneradas**; JS (loadVehicles/filtros/render) intacto. Cache `v20260531340000`. ⚠️ Validar en prod (Ctrl+Shift+R; sin screenshots por glitch `innerWidth:0` del preview).
+- ⏳ **Pendiente cliente**: commitea §144 (mensajes en chat) + `git pull` + valida en prod: detalle, busqueda, marca.
+- 🔮 **SP-5.3.x futuros**: `marcas.html` (índice de marcas) + 7 landings `vehiculos-*.html`.
 
 ---
 

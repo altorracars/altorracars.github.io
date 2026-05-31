@@ -8,12 +8,12 @@
 > branch, build o al detectar/resolver un riesgo. **Tope ~25 líneas (§G.5)** — es un
 > tablero, no una bitácora.
 
-| Señal | Valor (al 2026-05-30) |
+| Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 Rediseño cinematic COMPLETO punta a punta (§122–§137) + SP-4 recomendaciones fase 1 (§138) + comparador CTA "Explorar vehículos" (`cabe72d`) — **TODO en `origin/main` = producción** (verificado vía `fetch`: `cabe72d` es ancestro de origin/main). Pendiente: SP-4 fase 2 diferida. |
-| **Cache version vigente** | `v20260531290000` (§139 footer cinematic — gris fantasma `#808080` eliminado) |
-| **Branch activa** | `refactor/estructura` — **+1 sobre `origin` (sin commitear): §139 footer cinematic** (`chrome-bridge.css` + cache bump + docs). Último pusheado: `cabe72d`. |
-| **Producción (`main`)** | `origin/main` contiene TODO hasta `cabe72d` (cinematic completo + recomendaciones fase 1 + comparador CTA, auto-deploy Pages). **Falta validar en vivo** (Ctrl+Shift+R): recomendaciones/comparador flotante/perfil. (Comparador empty-state + simulador ya validados en localhost — L-20.) |
+| **Build** | 🟢 Cinematic completo (§122–§137) + recomendaciones f1 (§138) + footer fix (§139). **WIP: SP-5.3** detalle-vehiculo rediseño+de-monolitización — **Fase 0+1 hechas y verificadas** (CSS+JS extraídos a módulos, página idéntica), **Fase 2 (cinematic) + 3 (regenerar) PENDIENTES**. Ver `10` §WIP. |
+| **Cache version vigente** | `v20260531290000` (§139). **SP-5.3 bumpea en Fase 3** (aún no). |
+| **Branch activa** | `refactor/estructura` — **+5 sobre `origin/refactor/estructura` SIN PUSH** (§139 footer `9468948` + SP-5.3: spec `b2a6bc0`, plan `f56cb8d`, Fase0 `7a33ac2`, Fase1a `f3884d1`, Fase1b `cfb143f`). |
+| **Producción (`main`)** | `origin/main` hasta `cabe72d` (cinematic + recomendaciones f1 + comparador CTA). §139 + SP-5.3 **NO en producción** (esperan push del cliente). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

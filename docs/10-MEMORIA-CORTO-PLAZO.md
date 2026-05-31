@@ -11,52 +11,45 @@
 
 ## 🎯 Foco actual
 
-> **Pizarra podada al cierre de sesión 2026-05-30** (contexto saturado → handoff a ventana
-> nueva). El detalle histórico vive en los ADRs **§122–§138** (`99` + `00-INDICE`). Aquí solo el estado vivo.
+> **Pizarra podada al cierre de sesión 2026-05-31** (handoff a ventana nueva). El detalle histórico
+> vive en los ADRs **§122–§139** (`99` + `00-INDICE`). Aquí solo el estado vivo.
 
-- **REDISEÑO TOTAL cinematic — COMPLETO** (§122 index + §124 SP-5.0 + §126/§127 SP-5.1 chrome global
-  + §128–§137 SP-5.2 cuerpo de TODAS las páginas). Index, legales, 404, nosotros, contacto, reseñas,
-  perfil, favoritos, comparador (flotante+página) y simulador están en el tema cinematic. Header/footer
-  unificados (§133). Todo **commiteado** (último `d62f058`).
-- **SP-4 recomendaciones — FASE 1 hecha** (§138): motor por **similitud al rastro** (content-based local,
-  `js/core/recommendations.js`). El trail del index muestra autos semejantes al rastro (no los vistos;
-  esos quedan en QuickTools/perfil). Pesos ajustables en el objeto `W`.
+---
 
-### ← Para RETOMAR (ventana nueva)
-> Sesión 2026-05-30 (B): branch sincronizada con `origin/main` (FF limpio), pulido comparador hecho,
-> validación en **localhost preview** (no prod). Lección preview local → **L-20**.
+## 🔧 WIP ACTIVO: SP-5.3 — Rediseño total + de-monolitización de `detalle-vehiculo.html`
 
-1. **Validar en PRODUCCIÓN** (Ctrl+Shift+R) — pendiente (localhost ya OK, pero Auth/Analytics 403 ahí por L-08):
-   - SP-4: ver 2-3 fichas → el index muestra "Recomendados" **semejantes**.
-   - Comparador: flotante abajo-izq no choca con QuickTools (⊞); slots A/B + picker inline + diff dorado.
-   - Perfil/favoritos: dashboard/cards en cinematic.
-   - ✅ **Validado en localhost**: comparador (CTA nuevo "Explorar vehículos", empty state, 27 autos cargan)
-     + simulador (cinematic OK, calcula $45.5M→cuota $1.140.601 18.86%EA, dorado `212,168,90` consistente).
-2. **Detalles puntuales por pulir**:
-   - ✅ **Comparador CTA "Ir al catálogo" → "Explorar vehículos"** hecho (`comparar.html:269` `.cmp-empty-cta`).
-     `.cmp-back` (línea 185) se dejó como "Volver al catálogo" a propósito (back-link con flecha).
-   - ⚠️ **Simulador "grises del 2º bloque" NO SE REPRODUCEN** (RCA §19): el panel de resultados usa solo
-     superficies cinematic (morado `21,18,26` / negro `8,7,10` / dorado). El único gris `128,128,128`
-     está en el **footer GLOBAL** (`footer-legal`/`footer-bottom`) — si molesta, es tarea de footer, no del simulador.
-     Re-confirmar con el cliente QUÉ gris vio antes de tocar.
-### ✅ CERRADO: footer cinematic (§139) — gris fantasma `#808080` eliminado (sesión 2026-05-30 B)
-- Causa: `dark-theme.css:710 body .footer-bottom{color:#808080}` heredado en contenedor del footer cinematic.
-  Era **fantasma/invisible** (textos hijos ya eran cinematic). Fix: `chrome-bridge.css` → `.alt-footer .footer-bottom{color:var(--ink-text-muted)}` (vence por cascade, sin tocar legacy). Verificado preview cache-bust (sim+nosotros): `128,128,128`→`184,184,192`, anyGrey=0. **SIN commitear aún.**
+> **Spec**: `docs/superpowers/specs/2026-05-30-detalle-vehiculo-cinematic-design.md` (`b2a6bc0`).
+> **Plan**: `docs/superpowers/plans/2026-05-31-detalle-vehiculo-cinematic.md` (`f56cb8d`) — 8 tasks / 4 fases.
+> Aprobado por el cliente: alcance "visual + organización + modularización", método A (reescritura
+> preservando hooks), botones **Opción A**, composición galería+panel sticky, favorito conectado.
 
-### 📊 "¿Qué más falta cinematic?" — inventario REAL (al 2026-05-30, reemplaza el viejo de 43-UX R0)
-- **Chrome (header+footer)**: ✅ 100% cinematic en todo el sitio (§126/§127 + §139 cierra footer).
-- **Cuerpo cinematic (root, 11)**: index, 404, comparar, contacto, cookies, favoritos, nosotros, perfil, privacidad, resenas, terminos. (+ simulador armonizado vía tokens §136 aunque no use la hoja soft.)
-- **Cuerpo aún legacy (root, ~9)** → candidato **SP-5.3**: `busqueda.html`, `detalle-vehiculo.html` (⭐ alto tráfico+SEO), `marca.html`, `marcas.html`, 7 landing `vehiculos-*.html`.
-- **Cuerpo legacy generadas (45)**: `vehiculos/*.html` (27) + `marcas/*.html` (18) → migrar = editar TEMPLATE de `scripts/generate-vehicles.mjs` + regenerar (NO archivo por archivo).
-- **Recomendación**: si se ataca, priorizar `detalle-vehiculo.html` + el template generador (volumen + SEO). Detalle por página → lóbulo `43-UX`.
+**✅ FASE 0 + FASE 1 HECHAS Y VERIFICADAS (commiteadas, branch +5 sobre origin, SIN push):**
+- `7a33ac2` Fase 0: guard de aserción de 13 anclajes en `generate-vehicles.mjs` (falla ruidoso, no silencioso).
+- `f3884d1` Fase 1a: CSS inline (1156 líneas) → `css/home/detalle-cinematic.css` **verbatim** + `<link>` en posición de cascada.
+- `cfb143f` Fase 1b: JS inline (870 líneas, 31 fns) → **4 módulos** `js/public/detalle/{data,render,gallery,page}.js` verbatim (plain scripts, scope global compartido como simulador/home; 0 líneas perdidas verificado por multiconjunto). `detalle-vehiculo.html`: **2315 → 293 líneas**.
+- **Verificado en preview localhost** (id=38): título/precio/imagen/9 thumbs/22 ficha/8 features/12 similares OK; thumbSwitch/lightbox open-next-close/tabSwitch OK; globals share/scroll OK. Solo 403 Firebase (L-08).
+- La página quedó **funcionalmente IDÉNTICA** (compuerta estructural superada). El cuerpo AÚN se ve legacy (CSS no reescrito todavía — es Fase 2).
 
-3. **Diferido sin urgencia**: SP-4 **fase 2** (popularidad global = contador `vehiculos/{id}.views` en Firestore + reglas; custom image upload destacados; real-time switch sesión). SP-5 polish fino. Auditorías `44-SEO`/`45-PERFORMANCE`/`48-ACCESIBILIDAD` cuando se pidan.
+### ← RETOMAR SP-5.3 en ventana nueva (Fase 2 + 3)
+Leer el plan (`f56cb8d`) y seguir desde **Task 3**. Resumen:
+- **Fase 2 (compuerta visual)**: Task 3 `data-cin="on"` + `soft-redesign.css` · Task 4 markup cinematic del cuerpo (Opción A botones, **preservar los 27 IDs** del spec §3.1 + clases-hook `.thumbnail/.tab-btn/.tab-content/.lightbox-*`) · Task 5 reescribir `css/home/detalle-cinematic.css` a cinematic (tokens `--cin-*`, serif, dorado, NO 6 colores) · Task 6 re-cablear onclick→addEventListener + activar favorito (`.favorite-btn[data-id]`).
+- **Fase 3**: Task 7 actualizar fallback PRERENDERED en generador + `npm run generate` (27 páginas) + spot-check · Task 8 cache bump (`v20260531290000`→mayor) + ADR §140 + `20-ESPACIAL` (fila `js/public/detalle/`) + `43-UX` + `00-INDICE` + `brain:check`.
+- **Referencias de diseño**: `altorra-cars-design-system/project/redesign/Detail.jsx` (clases `dt-*`, sticky móvil) + mockups en `.superpowers/brainstorm/`.
+- **Contratos a NO romper** (spec §3): `comparador.js` (btnComparar/Text/Icon), `citas.js` (`.btn-agendar-cita`), `concierge.js` (`data-action="open-concierge-vehicle"`), `historial-visitas.js` (tag verbatim + `PRERENDERED_VEHICLE_ID`), `favorites-manager.js` (`.favorite-btn[data-id]`).
 
-### Patrón clave de la sesión (SP-5.2)
-**Armonización por remapeo de tokens `:root`/CSS (L-17/L-18) > reescritura**, cuando el JSX de referencia
-es un mock más pobre que el módulo real (perfil, favoritos, simulador). Reescritura solo donde el diseño
-aportaba estructura nueva (reseñas, comparador). Motor recomendaciones → **L-19**. Git stale (no afirmar
-despliegue sin `fetch`) → **M-06**.
+---
+
+## 🎯 Foco previo (cerrado)
+
+Todo consolidado en ADRs (`99` + `00-INDICE`): cinematic punta a punta (§122–§137), recomendaciones f1 (§138), footer fix (§139). Cuerpo cinematic en 11 root + chrome global 100%. **SP-5.3 (detalle) está ahora migrando el cuerpo de catálogo** — ver §WIP arriba.
+
+### Pendiente de validar en PRODUCCIÓN (Ctrl+Shift+R) — tras el próximo push
+- Recomendaciones (§138): ver 2-3 fichas → index muestra "Recomendados" **semejantes**.
+- Comparador flotante (no choca con QuickTools ⊞) + perfil/favoritos cinematic.
+- (Comparador empty-state, simulador y footer ya validados en localhost — L-20.)
+- **Cuerpo aún legacy tras SP-5.3**: `busqueda.html`, `marca.html`, `marcas.html`, 7 landing `vehiculos-*.html` (futuros SP-5.3.x).
+
+3. **Diferido sin urgencia**: SP-4 **fase 2** (popularidad global = contador `vehiculos/{id}.views` + reglas; custom image destacados; real-time switch). Auditorías `44-SEO`/`45-PERFORMANCE`/`48-ACCESIBILIDAD` cuando se pidan.
 
 ---
 

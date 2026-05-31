@@ -10,9 +10,9 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 Cinematic completo (§122–§141). **SP-5.3 detalle EN PRODUCCIÓN** (PR #771, §140) + **§141 pulido post-validación SIN commit** (3 fixes: glow hover ficha / fondo blanco características / descripción editorial + glass info-card/descripción). ⏳ Validar prod tras mergear §141 (Ctrl+Shift+R). |
-| **Cache version vigente** | `v20260531310000` (§141, SIN commit/merge aún; §140 `v…300000` ya en prod PR #771). |
-| **Branch activa** | `refactor/estructura`: §140 en `main` (PR #771). **§141 (CSS+JS+cerebro) en working tree SIN commit.** Sincroniza local (`git pull`) + commitea §141 (mensajes en chat). |
+| **Build** | 🟢 Cinematic completo (§122–§142). **SP-5.3 detalle EN PRODUCCIÓN** (PR #771, §140). **§141 (pulido: fixes hover/blanco + glass) + §142 (Descripción ELIMINADA: tab+admin, datos dormidos) SIN commit.** ⏳ Validar prod tras mergear. |
+| **Cache version vigente** | `v20260531320000` (§142, SIN commit/merge; §140 `v…300000` en prod PR #771). |
+| **Branch activa** | `refactor/estructura`: §140 en `main` (PR #771). **§141 + §142 en working tree SIN commit.** Sincroniza local (`git pull`) + commitea (mensajes en chat). |
 | **Producción (`main`)** | `origin/main` = `ae1bc7e` (PR #771) = SP-5.3 completo (Fases 0–3) + §139. **Detalle ahora CINEMATIC en prod.** ⏳ Validar Ctrl+Shift+R (E2E real, L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 

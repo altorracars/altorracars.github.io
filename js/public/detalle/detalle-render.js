@@ -63,21 +63,7 @@
             // Características
             renderCaracteristicas(v);
 
-            // Descripción — formato editorial: resalta "Etiqueta:" de cada línea (§141, anti "máquina de escribir")
-            (function () {
-                var box = document.getElementById('descriptionBox');
-                if (!box) return;
-                var raw = v.descripcion || 'No hay descripción disponible para este vehículo.';
-                var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
-                var lines = raw.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
-                box.innerHTML = lines.map(function (l) {
-                    // "Etiqueta: valor" → resalta la etiqueta (requiere ": " con espacio, así NO matchea https://)
-                    var m = l.match(/^([A-Za-zÁÉÍÓÚáéíóúÑñ][A-Za-zÁÉÍÓÚáéíóúÑñ \-]{1,38}):\s+(.+)$/);
-                    return m
-                        ? '<p class="desc-line"><span class="desc-key">' + esc(m[1]) + ':</span> ' + esc(m[2]) + '</p>'
-                        : '<p class="desc-line">' + esc(l) + '</p>';
-                }).join('');
-            })();
+            // (§142) Descripción eliminada del producto — el campo `descripcion` ya no se renderiza.
 
             // WhatsApp — use shareable URL for proper social previews
             const currentUrl = getShareableUrl();

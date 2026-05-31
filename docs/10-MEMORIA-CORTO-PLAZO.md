@@ -21,7 +21,9 @@
 **Completo y verificado** → consolidado en **ADR §140** (`99` + `00-INDICE`); `20-ESPACIAL` (carpeta `js/public/detalle/` + `detalle-cinematic.css`) + `43-UX` (Ronda 5) actualizados; cache bump `v20260531300000`. Spec `b2a6bc0`, plan `f56cb8d`.
 - `detalle-vehiculo.html` → cinematic + de-monolitizado: 4 módulos `js/public/detalle/{data,render,gallery,page}.js` + `css/home/detalle-cinematic.css`, `<body data-cin>`, botones **Opción A**, favorito/comparar/sticky cableados. **27 IDs + hooks intactos**. 27 `vehiculos/*` regeneradas. Verificado preview local (id=38, `node -c` OK). El **por qué/cómo** → ADR §140.
 - ✅ **Commiteado + mergeado a prod** (Fase 2 `10605da` + Fase 3 `86681a6` → PR #771, `origin/main ae1bc7e`). ⏳ Falta: **validar en prod con Ctrl+Shift+R** (E2E real) + `git pull` local (rama 6 commits detrás de `origin/main`).
-- 🔧 **§141 pulido (post-validación del cliente, SIN commit aún)**: fix glow dorado hover ficha + fix fondo blanco características + descripción editorial (`.desc-key` dorado) + **glass** (info-card/descripción) + acentos cinematic. CSS+JS, **sin regen**. Cache `v20260531310000`. Lecciones L-20 (ampliada) + **L-21** (CSS legacy se filtra si no fijas `background`/`:hover`).
+- 🔧 **§141 + §142 SIN commit aún (post-validación del cliente):**
+  - **§141** pulido detalle: fix glow hover ficha + fix fondo blanco características + **glass** (info-card/descripción) + acentos. Lecciones L-20 (ampliada) + **L-21** (CSS legacy se filtra si no fijas `background`/`:hover`).
+  - **§142 Descripción ELIMINADA** del producto (decisión cliente): quitado tab del detalle + campo/generador del admin (`admin-desc-gen.js` **huérfano, borrable**) + búsqueda + noscript SEO; **27 páginas regeneradas**; el campo `descripcion` queda **DORMIDO en Firestore** (no se borró — al re-guardar un auto se limpia solo). Cache `v20260531320000`.
 - 🔮 **SP-5.3.x futuros** (cuerpo aún legacy): `busqueda.html`, `marca(s).html`, 18 `marcas/*`, 7 landing `vehiculos-*.html`.
 
 ---

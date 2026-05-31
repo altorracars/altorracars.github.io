@@ -573,42 +573,6 @@ body[data-cin="on"] .feature-item::before {
     flex-shrink: 0;
 }
 
-/* ===== Descripción ===== */
-body[data-cin="on"] .description-box {
-    background: linear-gradient(180deg, rgba(26, 22, 34, 0.60), rgba(16, 13, 22, 0.62));
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(244, 238, 222, 0.10);
-    border-radius: 16px;
-    padding: clamp(20px, 2.4vw, 32px);
-    box-shadow: 0 20px 48px -36px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(244, 238, 222, 0.05);
-    font-size: 15px;
-    line-height: 1.85;
-    color: var(--cin-ink-soft);
-    max-width: 78ch;
-}
-/* Líneas estructuradas por detalle-render.js (resalta "Etiqueta:") — look editorial, no máquina de escribir (§141) */
-body[data-cin="on"] .description-box .desc-line {
-    margin: 0 0 13px;
-    padding-left: 16px;
-    position: relative;
-}
-body[data-cin="on"] .description-box .desc-line:last-child { margin-bottom: 0; }
-body[data-cin="on"] .description-box .desc-line::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0.7em;
-    width: 7px;
-    height: 1px;
-    background: var(--cin-gold);
-}
-body[data-cin="on"] .description-box .desc-key {
-    color: var(--cin-gold-hot);
-    font-weight: 600;
-    letter-spacing: .01em;
-}
-
 /* ===== Vehículos similares (cards del render global, restyle cinematic) ===== */
 body[data-cin="on"] .similar-section {
     margin-top: clamp(28px, 3.4vw, 48px);

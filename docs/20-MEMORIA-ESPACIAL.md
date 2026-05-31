@@ -33,7 +33,7 @@
 - **Páginas generadas** (CI cada 4h desde Firestore vía `scripts/generate-vehicles.mjs`): `vehiculos/*.html`, `marcas/*.html`, `sitemap.xml`.
 - **Panel admin**: `admin.html` (SPA monolítica) + cadena de `js/admin/admin-*.js`.
 - **Bot ALTOR Hub**: cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`.
-- **CSS**: 31 archivos en `/css/` (planos — Fase 3 pendiente reorganizarlos).
+- **CSS**: ~31 archivos en `/css/` (planos). Hojas cinematic page-specific en `css/home/`: `cinematic.css` (tokens `--cin-*`), `soft-redesign.css`, `comparar-cinematic.css`, **`detalle-cinematic.css` (cuerpo de `detalle-vehiculo`, §140)**.
 - **Backend**: Firebase (Auth, Firestore, RTDB, Storage, 27 Cloud Functions V2, FCM, Analytics). Project ID `altorra-cars`.
 - **Hosting**: GitHub Pages (`altorracars.github.io`). Push a `main` → auto-deploy.
 
@@ -43,7 +43,7 @@
 |---|---|---|
 | `js/core/` (17) | Fundación compartida: `firebase-config`, `database`, `cache-manager`, `components` (inyecta header/footer + cargador dinámico), `auth`, `toast`, `main`, `render`, `page-loader`, `performance`, `comm-schema`, `event-bus`, `favorites-manager`, `favorites-watcher`, `historial-visitas`, `solicitudes-watcher`, `perfil`, `dynamic-lists` | `<script src="js/core/X.js">` en casi todas las páginas + `<base href="/">` |
 | `js/admin/` (79) | Todo lo del panel: `admin-*.js` + `hub-store`, `rbac-catalog`, `smart-fields`, `icons`, `event-bus` | `<script>` en `admin.html` |
-| `js/public/` (9) | Features del sitio: `comparador`, `reviews`, `cookies`, `contact-forms`, `contact`, `filtros-avanzados`, `citas`, `vehicle-hotspots`, `featured-week-banner` | estático en HTML + dinámico vía `components.js` |
+| `js/public/` (9 + subcarpetas) | Features del sitio: `comparador`, `reviews`, `cookies`, `contact-forms`, `contact`, `filtros-avanzados`, `citas`, `vehicle-hotspots`, `featured-week-banner`. **Subcarpetas**: `js/public/home/` (index cinematic, §122) · **`js/public/detalle/` (4): `detalle-{data,render,gallery,page}.js` — `detalle-vehiculo` de-monolitizado, plain scripts scope global, orden data→render→gallery→page (§140)** | estático en HTML + dinámico vía `components.js` |
 | `js/concierge/` (3) | Bot cliente: `concierge`, `concierge-optin`, `kb-client` | dinámico vía `components.js` |
 | `js/ai/` (16) | Cerebro del bot: `engine`, `intent`, `ner`, `fuzzy`, `knowledge-graph`, etc. | dinámico vía `components.js` |
 | `js/simulador/` (4) | Simulador de crédito: `finance`, `simulator`, `data`, `ui` | en `simulador-credito.html` |

@@ -12,38 +12,23 @@
 ## 🎯 Foco actual
 
 > **Pizarra podada al cierre de sesión 2026-05-31** (handoff a ventana nueva). El detalle histórico
-> vive en los ADRs **§122–§139** (`99` + `00-INDICE`). Aquí solo el estado vivo.
+> vive en los ADRs **§122–§140** (`99` + `00-INDICE`). Aquí solo el estado vivo.
 
 ---
 
-## 🔧 WIP ACTIVO: SP-5.3 — Rediseño total + de-monolitización de `detalle-vehiculo.html`
+## 🔧 SP-5.3 — CERRADO (detalle-vehiculo cinematic + de-monolitización) · pendiente commit+merge
 
-> **Spec**: `docs/superpowers/specs/2026-05-30-detalle-vehiculo-cinematic-design.md` (`b2a6bc0`).
-> **Plan**: `docs/superpowers/plans/2026-05-31-detalle-vehiculo-cinematic.md` (`f56cb8d`) — 8 tasks / 4 fases.
-> Aprobado por el cliente: alcance "visual + organización + modularización", método A (reescritura
-> preservando hooks), botones **Opción A**, composición galería+panel sticky, favorito conectado.
-
-**✅ FASE 0 + 1 + 2 HECHAS Y VERIFICADAS** (Fase 0/1 ya en prod vía PR #769; **Fase 2 SIN commit aún**, en `refactor/estructura`):
-- **Fase 0/1** (`7a33ac2`/`f3884d1`/`cfb143f`): guard de anclajes + de-monolitización verbatim (CSS→`detalle-cinematic.css`, JS→4 módulos `js/public/detalle/`). Página quedó funcionalmente idéntica (compuerta estructural).
-- **Fase 2 (compuerta visual, hecha esta sesión 05/31):**
-  - Task 3: `<body data-cin="on">` + `<link soft-redesign.css>` (tokens `--cin-*`).
-  - Task 4: markup Opción A — back link, `main-image-container gallery-main`, fila 4 iconos **Agendar·Preguntar·Comparar·Compartir**, pie **Guardar+Verificado**, barra sticky móvil `.dt-sticky`. **27 IDs + hooks intactos** (one-liner OK); `onclick` de share/flechas eliminados.
-  - Task 5: `css/home/detalle-cinematic.css` reescrito a cinematic (scoped `body[data-cin="on"]`, tokens, serif/Manrope, dorado, `.wa-float` oculto, lightbox/zoom/tabs preservados). **Fix tipografía**: `font-family` en `.detail-page/.dt-sticky/.lightbox/.share-toast` (especificidad 0,2,1 gana a `animaciones.css html:not(.fonts-loaded) body` 0,1,2).
-  - Task 6 (`detalle-page.js`): share/flechas→`addEventListener`; **favorito** `.dt-save` vía `favoritesManager.handleHeartClick` + label propio `.is-on` (patrón `home-carousels.js`, **NO** `.favorite-btn` porque `_updateAllButtonsForVehicle` sobreescribe textContent con glifo ♥ y borraría "Guardar"); **sticky sync** (modelo/precio/wa href); **comparar feedback** (texto/`.active` vía `vehicleComparator.has`, porque `comparador.updateDetailPageButton` depende de `?id=` que el `replaceState` canónico borra — **comparador.js NO se tocó**, spec §3.2).
-  - **Verificado** (preview localhost id=38, `node -c` OK los 4 módulos): cinematic aplica (bg #08070A, serif #F4EEDE, precio #F0C674, WA verde, Sim dorado, ink-soft); grid 1.7fr/1fr→1col móvil sin overflow; tabs/thumbs/lightbox/comparar(toggle+texto+widget)/favorito(gated→prompt login)/sticky(poblado+visible móvil) OK. Solo 403 Firebase (L-08).
-  - ⚠️ **El Service Worker servía assets viejos** (CACHE_VERSION sin bumpear): la verificación necesitó desregistrar SW + cache-bust de `<link>`. El **bump de Fase 3** + Ctrl+Shift+R lo resuelve para el cliente. (Lección candidata para `30`.)
-
-### ← RETOMAR SP-5.3: **FASE 3** (regenerar + cache + cerebro)
-- **Task 7**: actualizar fallback PRERENDERED en `generate-vehicles.mjs` + `npm run generate` (27 páginas; requiere red/Firestore — si no corre local, el cron CI regenera cada 4h) + spot-check 2 páginas.
-- **Task 8**: **cache bump** (`v20260531290000`→mayor) en `service-worker.js` + `cache-manager.js` + **ADR §140** (`99`) + fila `00-INDICE` + `20-ESPACIAL` (filas `js/public/detalle/` + `css/home/detalle-cinematic.css`) + `43-UX` (cuerpo detalle → cinematic) + `brain:check` SANO.
-- **Commits Fase 2 pendientes** (cliente commitea): mensajes por tarea preparados en el chat de la sesión.
-- **Contratos preservados** (spec §3): `comparador.js`/`citas.js`(`.btn-agendar-cita`)/`concierge.js`(`open-concierge-vehicle`)/`historial-visitas.js`(`PRERENDERED_VEHICLE_ID`)/`favorites-manager.js` — todos intactos.
+**Completo y verificado** → consolidado en **ADR §140** (`99` + `00-INDICE`); `20-ESPACIAL` (carpeta `js/public/detalle/` + `detalle-cinematic.css`) + `43-UX` (Ronda 5) actualizados; cache bump `v20260531300000`. Spec `b2a6bc0`, plan `f56cb8d`.
+- `detalle-vehiculo.html` → cinematic + de-monolitizado: 4 módulos `js/public/detalle/{data,render,gallery,page}.js` + `css/home/detalle-cinematic.css`, `<body data-cin>`, botones **Opción A**, favorito/comparar/sticky cableados. **27 IDs + hooks intactos**. 27 `vehiculos/*` regeneradas. Verificado preview local (id=38, `node -c` OK). El **por qué/cómo** → ADR §140.
+- ⏳ **Pendiente del cliente**: Fase 2 ya commiteada (`10605da`); falta commitear **Fase 3** (generador + cache bump + 45 páginas regeneradas + cerebro — mensajes en chat) + mergear `refactor/estructura` → `main`. Tras merge → validar en prod con **Ctrl+Shift+R**.
+- 📝 **Lección candidata para `30`**: el Service Worker sirve assets viejos hasta el bump → verificación local exige desregistrar SW + cache-bust de los `<link>` (o el cliente hace Ctrl+Shift+R).
+- 🔮 **SP-5.3.x futuros** (cuerpo aún legacy): `busqueda.html`, `marca(s).html`, 18 `marcas/*`, 7 landing `vehiculos-*.html`.
 
 ---
 
 ## 🎯 Foco previo (cerrado)
 
-Todo consolidado en ADRs (`99` + `00-INDICE`): cinematic punta a punta (§122–§137), recomendaciones f1 (§138), footer fix (§139). Cuerpo cinematic en 11 root + chrome global 100%. **SP-5.3 (detalle) está ahora migrando el cuerpo de catálogo** — ver §WIP arriba.
+Todo consolidado en ADRs (`99` + `00-INDICE`): cinematic punta a punta (§122–§137), recomendaciones f1 (§138), footer fix (§139), **detalle-vehiculo §140**. Cuerpo cinematic en 11 root + detalle + 27 generadas + chrome global 100%.
 
 ### Pendiente de validar en PRODUCCIÓN (Ctrl+Shift+R) — tras el próximo push
 - Recomendaciones (§138): ver 2-3 fichas → index muestra "Recomendados" **semejantes**.

@@ -322,7 +322,8 @@ function generatePage(template, v, slug) {
     );
 
     // 8. Inject PRERENDERED_VEHICLE_ID before historial-visitas.js so auto-tracking
-    //    can read it synchronously. Falls back to before inline script if not found.
+    //    can read it synchronously. Fallback: detalle-page.js (SP-5.3 — el inline
+    //    'let currentVehicle' se extrajo a js/public/detalle/; ya no existe en el template).
     const prerenderedTag = `<script>window.PRERENDERED_VEHICLE_ID = ${JSON.stringify(String(v.id))};</script>`;
     if (html.includes('<script src="js/core/historial-visitas.js"></script>')) {
         html = html.replace(
@@ -331,8 +332,8 @@ function generatePage(template, v, slug) {
         );
     } else {
         html = html.replace(
-            '    <script>\n        let currentVehicle = null;',
-            `    ${prerenderedTag}\n    <script>\n        let currentVehicle = null;`
+            '<script src="js/public/detalle/detalle-page.js"></script>',
+            `${prerenderedTag}\n    <script src="js/public/detalle/detalle-page.js"></script>`
         );
     }
 

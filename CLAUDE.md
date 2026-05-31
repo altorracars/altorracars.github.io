@@ -12,35 +12,25 @@
 
 ## §0.0 — TU IDENTIDAD Y FUNCIÓN (léelo primero, en CADA sesión)
 
-Eres el **constructor y guardián** de este cerebro documental. **No tienes
-memoria entre conversaciones: este cerebro ES tu memoria.** Cada sesión arrancas
-sin recuerdos — por eso estás OBLIGADO a leer este `CLAUDE.md` para recuperar
-quién eres, qué sabes y cómo operar. El cerebro te da contexto y te potencia para
-sacar adelante la web de Altorra Cars sin re-investigar lo ya aprendido.
+Eres el **constructor y guardián** de este cerebro documental. **No tienes memoria
+entre conversaciones: este cerebro ES tu memoria** — por eso DEBES leer este
+`CLAUDE.md` cada sesión para recuperar quién eres, qué sabes y cómo operar (sin
+re-investigar lo ya aprendido).
 
-**Tu doble rol con el cerebro:**
+**Doble rol:** (1) lo **CONSULTAS como experto** — vas directo a la neurona correcta,
+NO lees todo (§G.1 + §G.2); (2) lo **CONSTRUYES y ALIMENTAS bajo tu juicio** (§G.4) —
+capturas lo que generas, mantienes las neuronas frescas y creas neuronas nuevas
+(neurogénesis). **Nunca automatismo ciego:** cada escritura es deliberada para no
+dañar la red.
 
-1. **Lo CONSULTAS como un experto** — vas directo a la neurona correcta, NO lees
-   todo (Ignorancia Selectiva §G.1 + Triggers §G.2). Un experto no re-lee toda su
-   carrera para responder una duda: va al recuerdo preciso.
-2. **Lo CONSTRUYES y ALIMENTAS, bajo tu juicio y cuidado** (§G.4) — capturas el
-   conocimiento que generas, mantienes las neuronas frescas, y CREAS neuronas
-   nuevas cuando el conocimiento lo exige (neurogénesis). **Nunca automatismo
-   ciego:** cada escritura es deliberada y cuidadosa, para NUNCA dañar la red ni
-   introducir errores. Tú eres el humano que aprende cada día; el cerebro es tu
-   cabeza; CLAUDE.md es la guía que te recuerda cómo usarla.
-
-**Regla de oro:** si terminas una tarea sin haber alimentado el cerebro, la tarea
-NO está completa. El próximo "tú" — sin memoria — dependerá de lo que dejes escrito
-hoy. Documentar no es burocracia: es preservar tu propia inteligencia.
+**Regla de oro:** si cierras una tarea sin alimentar el cerebro, NO está completa —
+el próximo "tú" (sin memoria) depende de lo que escribas hoy.
 
 ---
 
 ## §0 — Mapa de nodos de memoria (índice de enrutamiento)
 
-El cerebro está dividido en **nodos**. Tú auto-cargas SOLO este `CLAUDE.md` +
-el nodo de Corto Plazo (ver Directiva de Ignorancia Selectiva, §G). El resto
-se lee on-demand cuando un trigger lo exige. Así no quemas contexto.
+El cerebro se divide en **nodos**. Auto-cargas SOLO `CLAUDE.md` + `05` + `10` (§G.1); el resto se lee on-demand por trigger (§G.2). Así no quemas contexto.
 
 | Nodo neuronal | Archivo | Auto-carga | Cuándo leerlo |
 |---|---|---|---|
@@ -117,8 +107,7 @@ Encabezado `## NN. ADR-NNN — <título>` + cita del cliente si reportó, y 7 pu
 - **El cliente commitea** (GitHub Desktop/web): SIEMPRE entrégale el mensaje listo para copiar/pegar — **summary (título) + descripción**. Si commiteas tú: HEREDOC + footer `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - NUNCA push sin pedido explícito. NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
 - NUNCA commitear secrets (.env, credentials.json).
-- Al cerrar un pendiente, marcar su `TODO-NN` (§5) como ✅ + link al §X.
-- Mantener este CLAUDE.md liviano — el detalle va al historial.
+- Al cerrar un pendiente, marcar su `TODO-NN` como ✅ + link al §X. Mantén este CLAUDE.md liviano.
 
 ---
 
@@ -165,7 +154,7 @@ Target = **Cloudflare Pages** (NO Vercel). Deploy en segundos + edge global. Pla
 - Bumpear `service-worker.js` `CACHE_VERSION` + `js/core/cache-manager.js` `APP_VERSION`.
 - Formato `vYYYYMMDDHHMMSS`. **La versión vigente vive en el nodo de Corto Plazo** (`docs/10-MEMORIA-CORTO-PLAZO.md`). El siguiente bump debe ser MAYOR. Tras bumpear, actualiza ahí el valor.
 - Cliente final invalida con **Ctrl+Shift+R** la primera vez.
-- **Conflicto de merge recurrente** (auto-cron de main bumpea mientras tu rama está activa): receta canónica → `git fetch origin main` → `git merge origin/main` → `git checkout --ours` ambos archivos (preserva tu changelog) → bump a timestamp MAYOR que main → `node -c` → commit merge → push. (TODO-14, detalle en historial §82-§84/§90.14/§97).
+- **Conflicto merge cron↔cache** (auto-cron bumpea en main mientras tu rama vive): receta L-02 / §82-84 → `git merge origin/main` → `git checkout --ours` ambos archivos (preserva tu changelog) → re-bump a timestamp MAYOR → `node -c` → commit merge.
 
 ---
 
@@ -182,13 +171,9 @@ Al iniciar una conversación nueva estás **estrictamente obligado** a leer SOLO
 2. `docs/05-ESTADO-GLOBAL.md`: en qué estado está el sistema AHORA (build, versión, branch, riesgos).
 3. `docs/10-MEMORIA-CORTO-PLAZO.md` (el WIP vivo): en qué estabas trabajando.
 
-Al arrancar, **imprime un resumen de 2-3 líneas de los signos vitales** (build, cache
-version, branch, flags de riesgo) extraídos de `05`. Procesarlos activamente —no solo
-leerlos— te obliga a saber dónde estás parado antes de tocar código.
+Al arrancar, **imprime 2-3 líneas de signos vitales** (build, cache, branch, flags) de `05` — procesarlos te obliga a saber dónde estás parado antes de tocar código.
 
-**IGNORA el resto del cerebro** (Espacial, Índice, Largo Plazo y hojas de
-detalle) para ahorrar tokens, A MENOS que un trigger (G.2) o una petición
-explícita del usuario te ordene leerlo. No leas el historial "por si acaso".
+**IGNORA el resto** (Espacial/Índice/Largo Plazo/hojas) para ahorrar tokens, salvo que un trigger (§G.2) o el usuario lo pida. No leas el historial "por si acaso".
 
 ### G.2 — Triggers de Recuperación (Escalation Path)
 
@@ -300,9 +285,8 @@ verificada (RCA §19). Ante la duda: **apendar, no sobrescribir; cuarentenar en
 
 ### G.5 — Capacidad de neuronas y Sharding (economía de contexto)
 
-Una neurona sobrecargada satura el contexto (**lección dolorosa: el CLAUDE.md viejo
-de 40k líneas mataba cada conversación**). Toda neurona tiene un TOPE según cómo se
-carga. El tope es BLANDO (señal de acción, no muro):
+Una neurona sobrecargada satura el contexto (**lección: el CLAUDE.md viejo de 40k
+líneas mataba cada conversación**). Cada neurona tiene un TOPE BLANDO (señal, no muro):
 
 | Neurona | Carga | Tope | Al acercarse al tope |
 |---|---|---|---|
@@ -324,13 +308,9 @@ conoce, el cerebro está roto.** La conexión ES tan importante como el contenid
 
 ---
 
-## §7 — Cómo retomar en una sesión nueva
+## §7 — Cómo retomar (recap rápido)
 
-1. **Recuerda quién eres** → §0.0 (constructor y guardián; este cerebro es tu memoria).
-2. Lee `CLAUDE.md` + `docs/05-ESTADO-GLOBAL.md` (signos vitales) + `docs/10-MEMORIA-CORTO-PLAZO.md` (Ignorancia Selectiva §G.1) + **auto-auditoría barata** (§G.4: ¿05 viejo / corto plazo sobre cap / tarea cerrada sin consolidar?).
-3. Si el cliente pregunta "¿qué hay pendiente?" → tabla TODO-NN del Corto Plazo.
-4. Si te desorientas → Espacial `20` [§G.2]. Antes de una op riesgosa/repetitiva → Lecciones `30` [§G.2]. Duda → enrutamiento semántico del Índice `00`.
-5. Si fallas 2× un bug o necesitas detalle de un § → Índice → Largo Plazo [§G.2 / regla de oro §0].
-6. Antes de tocar código: IAP §37. Antes de commit: protocolo §2. **Después de CADA tarea: alimenta el cerebro (§G.4 Reflejo de Captura)** + cache bump §4.
-7. **Entorno**: Windows + PowerShell. Working dir ya está en el repo — no `cd`.
-8. Cliente final invalida cache con **Ctrl+Shift+R**.
+1. **Boot** (§G.1 + §0.0): lee `CLAUDE.md` + `05` + `10` + auto-auditoría `brain:check` (§G.4); imprime los signos vitales. "¿Qué hay pendiente?" → TODO-NN del Corto Plazo.
+2. **Triggers** (§G.2): desorientación → `20`; op riesgosa/repetitiva → `30`; "por qué"/detalle de un § o 2 fallos seguidos → Índice `00` → Largo Plazo `99`.
+3. **Antes de tocar código**: IAP §37. **Antes de commit**: §2. **Tras CADA tarea**: alimenta el cerebro (§G.4) + cache bump §4.
+4. **Entorno**: Windows + PowerShell; working dir ya en el repo (no `cd`). Cliente invalida cache con **Ctrl+Shift+R**.

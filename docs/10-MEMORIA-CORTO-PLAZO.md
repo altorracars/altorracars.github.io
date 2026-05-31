@@ -23,19 +23,21 @@
 > Aprobado por el cliente: alcance "visual + organización + modularización", método A (reescritura
 > preservando hooks), botones **Opción A**, composición galería+panel sticky, favorito conectado.
 
-**✅ FASE 0 + FASE 1 HECHAS Y VERIFICADAS (commiteadas, branch +5 sobre origin, SIN push):**
-- `7a33ac2` Fase 0: guard de aserción de 13 anclajes en `generate-vehicles.mjs` (falla ruidoso, no silencioso).
-- `f3884d1` Fase 1a: CSS inline (1156 líneas) → `css/home/detalle-cinematic.css` **verbatim** + `<link>` en posición de cascada.
-- `cfb143f` Fase 1b: JS inline (870 líneas, 31 fns) → **4 módulos** `js/public/detalle/{data,render,gallery,page}.js` verbatim (plain scripts, scope global compartido como simulador/home; 0 líneas perdidas verificado por multiconjunto). `detalle-vehiculo.html`: **2315 → 293 líneas**.
-- **Verificado en preview localhost** (id=38): título/precio/imagen/9 thumbs/22 ficha/8 features/12 similares OK; thumbSwitch/lightbox open-next-close/tabSwitch OK; globals share/scroll OK. Solo 403 Firebase (L-08).
-- La página quedó **funcionalmente IDÉNTICA** (compuerta estructural superada). El cuerpo AÚN se ve legacy (CSS no reescrito todavía — es Fase 2).
+**✅ FASE 0 + 1 + 2 HECHAS Y VERIFICADAS** (Fase 0/1 ya en prod vía PR #769; **Fase 2 SIN commit aún**, en `refactor/estructura`):
+- **Fase 0/1** (`7a33ac2`/`f3884d1`/`cfb143f`): guard de anclajes + de-monolitización verbatim (CSS→`detalle-cinematic.css`, JS→4 módulos `js/public/detalle/`). Página quedó funcionalmente idéntica (compuerta estructural).
+- **Fase 2 (compuerta visual, hecha esta sesión 05/31):**
+  - Task 3: `<body data-cin="on">` + `<link soft-redesign.css>` (tokens `--cin-*`).
+  - Task 4: markup Opción A — back link, `main-image-container gallery-main`, fila 4 iconos **Agendar·Preguntar·Comparar·Compartir**, pie **Guardar+Verificado**, barra sticky móvil `.dt-sticky`. **27 IDs + hooks intactos** (one-liner OK); `onclick` de share/flechas eliminados.
+  - Task 5: `css/home/detalle-cinematic.css` reescrito a cinematic (scoped `body[data-cin="on"]`, tokens, serif/Manrope, dorado, `.wa-float` oculto, lightbox/zoom/tabs preservados). **Fix tipografía**: `font-family` en `.detail-page/.dt-sticky/.lightbox/.share-toast` (especificidad 0,2,1 gana a `animaciones.css html:not(.fonts-loaded) body` 0,1,2).
+  - Task 6 (`detalle-page.js`): share/flechas→`addEventListener`; **favorito** `.dt-save` vía `favoritesManager.handleHeartClick` + label propio `.is-on` (patrón `home-carousels.js`, **NO** `.favorite-btn` porque `_updateAllButtonsForVehicle` sobreescribe textContent con glifo ♥ y borraría "Guardar"); **sticky sync** (modelo/precio/wa href); **comparar feedback** (texto/`.active` vía `vehicleComparator.has`, porque `comparador.updateDetailPageButton` depende de `?id=` que el `replaceState` canónico borra — **comparador.js NO se tocó**, spec §3.2).
+  - **Verificado** (preview localhost id=38, `node -c` OK los 4 módulos): cinematic aplica (bg #08070A, serif #F4EEDE, precio #F0C674, WA verde, Sim dorado, ink-soft); grid 1.7fr/1fr→1col móvil sin overflow; tabs/thumbs/lightbox/comparar(toggle+texto+widget)/favorito(gated→prompt login)/sticky(poblado+visible móvil) OK. Solo 403 Firebase (L-08).
+  - ⚠️ **El Service Worker servía assets viejos** (CACHE_VERSION sin bumpear): la verificación necesitó desregistrar SW + cache-bust de `<link>`. El **bump de Fase 3** + Ctrl+Shift+R lo resuelve para el cliente. (Lección candidata para `30`.)
 
-### ← RETOMAR SP-5.3 en ventana nueva (Fase 2 + 3)
-Leer el plan (`f56cb8d`) y seguir desde **Task 3**. Resumen:
-- **Fase 2 (compuerta visual)**: Task 3 `data-cin="on"` + `soft-redesign.css` · Task 4 markup cinematic del cuerpo (Opción A botones, **preservar los 27 IDs** del spec §3.1 + clases-hook `.thumbnail/.tab-btn/.tab-content/.lightbox-*`) · Task 5 reescribir `css/home/detalle-cinematic.css` a cinematic (tokens `--cin-*`, serif, dorado, NO 6 colores) · Task 6 re-cablear onclick→addEventListener + activar favorito (`.favorite-btn[data-id]`).
-- **Fase 3**: Task 7 actualizar fallback PRERENDERED en generador + `npm run generate` (27 páginas) + spot-check · Task 8 cache bump (`v20260531290000`→mayor) + ADR §140 + `20-ESPACIAL` (fila `js/public/detalle/`) + `43-UX` + `00-INDICE` + `brain:check`.
-- **Referencias de diseño**: `altorra-cars-design-system/project/redesign/Detail.jsx` (clases `dt-*`, sticky móvil) + mockups en `.superpowers/brainstorm/`.
-- **Contratos a NO romper** (spec §3): `comparador.js` (btnComparar/Text/Icon), `citas.js` (`.btn-agendar-cita`), `concierge.js` (`data-action="open-concierge-vehicle"`), `historial-visitas.js` (tag verbatim + `PRERENDERED_VEHICLE_ID`), `favorites-manager.js` (`.favorite-btn[data-id]`).
+### ← RETOMAR SP-5.3: **FASE 3** (regenerar + cache + cerebro)
+- **Task 7**: actualizar fallback PRERENDERED en `generate-vehicles.mjs` + `npm run generate` (27 páginas; requiere red/Firestore — si no corre local, el cron CI regenera cada 4h) + spot-check 2 páginas.
+- **Task 8**: **cache bump** (`v20260531290000`→mayor) en `service-worker.js` + `cache-manager.js` + **ADR §140** (`99`) + fila `00-INDICE` + `20-ESPACIAL` (filas `js/public/detalle/` + `css/home/detalle-cinematic.css`) + `43-UX` (cuerpo detalle → cinematic) + `brain:check` SANO.
+- **Commits Fase 2 pendientes** (cliente commitea): mensajes por tarea preparados en el chat de la sesión.
+- **Contratos preservados** (spec §3): `comparador.js`/`citas.js`(`.btn-agendar-cita`)/`concierge.js`(`open-concierge-vehicle`)/`historial-visitas.js`(`PRERENDERED_VEHICLE_ID`)/`favorites-manager.js` — todos intactos.
 
 ---
 

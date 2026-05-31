@@ -51,6 +51,7 @@
             loadSimilarVehicles();
             initTabs();
             initGallery();
+            syncDetailUI();
 
             // Sync browser URL to SEO-canonical path (/vehiculos/slug.html)
             // so copying the URL from the address bar gives the same link as the
@@ -136,7 +137,91 @@
         // Make shareVehicle globally available
         window.shareVehicle = shareVehicle;
 
+        // ===== SP-5.3 Fase 2: cableado de UI cinematic (share / flechas / favorito / sticky) =====
+        // Reemplaza los onclick inline eliminados del markup nuevo + activa el botón Guardar.
+        // El favorito sigue el patrón probado de js/public/home/home-carousels.js: usa el
+        // sistema REAL de favoritos (auth gate + persistencia + toast) pero gestiona su propio
+        // label/SVG, SIN la clase .favorite-btn — cuyo _updateAllButtonsForVehicle sobreescribe
+        // el textContent con un glifo ♥/♡ y borraría la etiqueta "Guardar"/"Guardado".
+        function updateSaveButton() {
+            var btnGuardar = document.getElementById('btnGuardar');
+            if (!btnGuardar || !currentVehicle) return;
+            var isOn = !!(window.favoritesManager && window.favoritesManager.has
+                && window.favoritesManager.has(String(currentVehicle.id)));
+            btnGuardar.classList.toggle('is-on', isOn);
+            btnGuardar.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+            var svg = btnGuardar.querySelector('svg');
+            if (svg) svg.setAttribute('fill', isOn ? 'currentColor' : 'none');
+            var label = btnGuardar.querySelector('.dt-save-label');
+            if (label) label.textContent = isOn ? 'Guardado' : 'Guardar';
+        }
+
+        // Comparar: render.js cablea el onclick (vehicleComparator.toggle); aquí sólo
+        // sincronizamos el feedback visual, porque comparador.updateDetailPageButton
+        // depende de ?id= en la URL y ésta desaparece tras el replaceState canónico
+        // (comparador.js está marcado como no-editable por la spec §3.2).
+        function updateCompararButton() {
+            var btn = document.getElementById('btnComparar');
+            if (!btn || !currentVehicle) return;
+            var on = !!(window.vehicleComparator && window.vehicleComparator.has
+                && window.vehicleComparator.has(String(currentVehicle.id)));
+            btn.classList.toggle('active', on);
+            var t = document.getElementById('btnCompararText');
+            if (t) t.textContent = on ? 'Agregado' : 'Comparar';
+        }
+
+        function syncDetailUI() {
+            if (!currentVehicle) return;
+            var v = currentVehicle;
+            var btnGuardar = document.getElementById('btnGuardar');
+            if (btnGuardar) btnGuardar.dataset.id = v.id;
+            updateSaveButton();
+            updateCompararButton();
+
+            // Barra sticky móvil: modelo + precio + href de WhatsApp (clona el del botón real,
+            // que renderVehicleDetail ya configuró antes de esta llamada).
+            var stickyModel = document.getElementById('dtStickyModel');
+            if (stickyModel) stickyModel.textContent = (capitalizar(v.marca || '') + ' ' + (v.modelo || '')).trim();
+            var stickyPrice = document.getElementById('dtStickyPrice');
+            if (stickyPrice) stickyPrice.textContent = formatCurrency(v.precioOferta || v.precio);
+            var stickyWa = document.getElementById('dtStickyWa');
+            var realWa = document.getElementById('btnWhatsApp');
+            if (stickyWa && realWa) stickyWa.href = realWa.getAttribute('href') || '#';
+        }
+
+        function bindDetailUI() {
+            // Share (reemplaza onclick="shareVehicle()")
+            var btnShare = document.getElementById('btnShare');
+            if (btnShare) btnShare.addEventListener('click', shareVehicle);
+
+            // Flechas del carrusel de similares (reemplaza onclick="scrollSimilarCarousel(±1)")
+            var prev = document.querySelector('.similar-carousel-wrapper .carousel-arrow.prev');
+            var next = document.querySelector('.similar-carousel-wrapper .carousel-arrow.next');
+            if (prev) prev.addEventListener('click', function () { scrollSimilarCarousel(-1); });
+            if (next) next.addEventListener('click', function () { scrollSimilarCarousel(1); });
+
+            // Botón Guardar (favorito): delega en el sistema real
+            var btnGuardar = document.getElementById('btnGuardar');
+            if (btnGuardar) {
+                btnGuardar.addEventListener('click', function () {
+                    if (!currentVehicle) return;
+                    if (window.favoritesManager && typeof window.favoritesManager.handleHeartClick === 'function') {
+                        window.favoritesManager.handleHeartClick(btnGuardar, String(currentVehicle.id));
+                        updateSaveButton();
+                    }
+                });
+            }
+
+            // Comparar: tras el toggle (onclick de render.js) refrescar el feedback visual
+            var btnComparar = document.getElementById('btnComparar');
+            if (btnComparar) btnComparar.addEventListener('click', function () { setTimeout(updateCompararButton, 0); });
+
+            // Re-sincroniza el corazón ante cambios externos (otra pestaña, login, hidratación async)
+            window.addEventListener('favoritesChanged', updateSaveButton);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            bindDetailUI();
             loadVehicleDetail().then(function() {
                 // Real-time listener: auto-update if admin modifies this vehicle
                 var vid = getVehicleIdFromURL();
@@ -155,6 +240,7 @@
                                 loadSimilarVehicles();
                                 initTabs();
                                 initGallery();
+                                syncDetailUI();
                                 showShareToast('Informacion actualizada en tiempo real');
                             }
                         });

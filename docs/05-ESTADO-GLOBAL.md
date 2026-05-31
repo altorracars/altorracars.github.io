@@ -10,9 +10,9 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 Cinematic completo (§122–§145). §140 detalle en prod (PR #771); §141–§144 commiteados+pusheados (`f0471f1`: pulido + Descripción eliminada + busqueda + marca). **§145 (fix nav Marcas + `marcas.html` cinematic) SIN commit.** **Catálogo cinematic completo** salvo 7 landings. ⏳ Validar en prod. |
-| **Cache version vigente** | `v20260531350000` (§145, SIN commit; §141–§144 `v…340000` pusheados; en prod-main aún `v…300000`/§140). |
-| **Branch activa** | `refactor/estructura` HEAD `f0471f1` (§144). **§145 en working tree SIN commit.** `git pull` + commitea §145 (mensajes en chat). Merge a `main` (§141–§145) cuando el cliente lo decida. |
+| **Build** | 🟢 **Catálogo 100% cinematic (§122–§146).** §140 detalle en prod (PR #771); §141–§145 commiteados+pusheados (`f0471f1` §141-144 + `e7379f1` §145: nav Marcas + marcas.html). **§146 (4 landings SEO `vehiculos-{suv,pickup,sedan,hatchback}.html`) SIN commit.** Solo quedan 3 redirects invisibles (intencional). ⏳ Validar en prod. |
+| **Cache version vigente** | `v20260531360000` (§146, SIN commit; §141–§145 `v…350000` commiteados+pusheados en `refactor/estructura`; prod-`main` aún `v…300000`/§140). |
+| **Branch activa** | `refactor/estructura` HEAD `e7379f1` (§145, = `origin`, sincronizada). **§146 en working tree SIN commit.** Commitea §146 (mensajes en chat). Merge a `main` (§141–§146) cuando el cliente lo decida. |
 | **Producción (`main`)** | `origin/main` = `ae1bc7e` (PR #771) = SP-5.3 completo (Fases 0–3) + §139. **Detalle ahora CINEMATIC en prod.** ⏳ Validar Ctrl+Shift+R (E2E real, L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 

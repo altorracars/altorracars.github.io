@@ -115,6 +115,30 @@ function generatePage(template, v, slug) {
 
     let html = template;
 
+    // Guard anti-regresión (SP-5.3): el generador hace .replace() por string literal
+    // y FALLA EN SILENCIO si un anclaje no existe. Si un rediseño del template borra
+    // un anclaje, queremos un error RUIDOSO, no 27 páginas con SEO roto.
+    const REQUIRED_ANCHORS = [
+        '<meta charset="UTF-8">',
+        '<meta name="robots" content="index, follow">',
+        '<title>Detalle de Vehículo | ALTORRA CARS</title>',
+        'id="og-url" content="https://altorracars.github.io/detalle-vehiculo.html"',
+        'id="og-title"',
+        'id="og-description"',
+        'id="og-image"',
+        'id="tw-title"',
+        'id="tw-description"',
+        'id="tw-image"',
+        '</head>',
+        '<div id="header-placeholder"></div>',
+        '<script src="js/core/historial-visitas.js"></script>',
+    ];
+    for (const anchor of REQUIRED_ANCHORS) {
+        if (!template.includes(anchor)) {
+            throw new Error(`[generate] ANCLAJE FALTANTE en detalle-vehiculo.html: ${anchor}\n  → El rediseño rompió un punto de inyección. Revisa el template antes de generar.`);
+        }
+    }
+
     // 1. Ensure <base href="/"> exists so relative paths work from /vehiculos/ subdir
     //    (template already includes it, but keep this as a safety check)
     if (!html.includes('<base href="/">')) {

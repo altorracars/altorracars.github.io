@@ -32,6 +32,9 @@ desktop.ini
 *.swo
 *~
 
+# Brainstorm visual companion (superpowers) — local, NO versionar
+.superpowers/
+
 # Build outputs locales
 .cache/
 .parcel-cache/

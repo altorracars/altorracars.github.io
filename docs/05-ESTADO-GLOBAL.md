@@ -12,8 +12,8 @@
 |---|---|
 | **Build** | 🟢 Cinematic completo (§122–§137) + recomendaciones f1 (§138) + footer fix (§139). **WIP: SP-5.3** detalle-vehiculo rediseño+de-monolitización — **Fase 0+1 hechas y verificadas** (CSS+JS extraídos a módulos, página idéntica), **Fase 2 (cinematic) + 3 (regenerar) PENDIENTES**. Ver `10` §WIP. |
 | **Cache version vigente** | `v20260531290000` (§139). **SP-5.3 bumpea en Fase 3** (aún no). |
-| **Branch activa** | `refactor/estructura` — **+5 sobre `origin/refactor/estructura` SIN PUSH** (§139 footer `9468948` + SP-5.3: spec `b2a6bc0`, plan `f56cb8d`, Fase0 `7a33ac2`, Fase1a `f3884d1`, Fase1b `cfb143f`). |
-| **Producción (`main`)** | `origin/main` hasta `cabe72d` (cinematic + recomendaciones f1 + comparador CTA). §139 + SP-5.3 **NO en producción** (esperan push del cliente). |
+| **Branch activa** | `refactor/estructura` — **sincronizada con `origin` y con `origin/main`** (0 pendientes; cliente pusheó + mergeó). HEAD `d8b45cd`. |
+| **Producción (`main`)** | `origin/main` = `ab8a093` (PR #769) contiene **§139 footer + SP-5.3 Fase 0+1** (de-monolitización detalle). **Detalle aún se ve LEGACY en prod** (cuerpo sin reescribir — Fase 2 pendiente); funcionalidad intacta. Validar Ctrl+Shift+R. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

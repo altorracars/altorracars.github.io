@@ -183,10 +183,13 @@ body[data-cin="on"] .info-sidebar {
     min-width: 0;
 }
 body[data-cin="on"] .info-card {
-    background: linear-gradient(180deg, var(--cin-bg-elev), #100d16);
-    border: 1px solid var(--cin-line);
+    background: linear-gradient(180deg, rgba(26, 22, 34, 0.72), rgba(16, 13, 22, 0.74));
+    backdrop-filter: blur(18px) saturate(1.25);
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    border: 1px solid rgba(244, 238, 222, 0.12);
     border-radius: 20px;
-    padding: clamp(16px, 1.6vw, 22px);
+    padding: clamp(18px, 1.8vw, 24px);
+    box-shadow: 0 28px 64px -38px rgba(0, 0, 0, 0.92), inset 0 1px 0 rgba(244, 238, 222, 0.07);
 }
 
 body[data-cin="on"] .vehicle-header { margin-bottom: 14px; }
@@ -229,11 +232,12 @@ body[data-cin="on"] .vehicle-subtitle {
 
 /* Precio */
 body[data-cin="on"] .price-box {
-    background: rgba(212, 168, 90, 0.08);
-    border: 1px solid rgba(212, 168, 90, 0.22);
+    background: linear-gradient(135deg, rgba(212, 168, 90, 0.14), rgba(212, 168, 90, 0.05));
+    border: 1px solid rgba(212, 168, 90, 0.26);
     border-radius: 14px;
     padding: 14px 16px;
     margin: 14px 0;
+    box-shadow: inset 0 1px 0 rgba(240, 198, 116, 0.14);
 }
 body[data-cin="on"] .price-label {
     font-size: 10px;
@@ -448,8 +452,19 @@ body[data-cin="on"] .section-title {
     font-weight: 400;
     font-size: clamp(22px, 2.4vw, 30px);
     color: var(--cin-ink);
-    margin: 0 0 18px;
+    margin: 0 0 20px;
+    padding-bottom: 14px;
     letter-spacing: -0.01em;
+    position: relative;
+}
+body[data-cin="on"] .section-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 48px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cin-gold-hot), transparent);
 }
 
 /* ===== Ficha técnica (inyectada por detalle-render.js) ===== */
@@ -459,10 +474,17 @@ body[data-cin="on"] .ficha-table {
     gap: clamp(12px, 1.6vw, 18px);
 }
 body[data-cin="on"] .ficha-group {
-    background: rgba(244, 238, 222, 0.03);
-    border: 1px solid var(--cin-line);
-    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(244, 238, 222, 0.05), rgba(244, 238, 222, 0.02));
+    border: 1px solid rgba(244, 238, 222, 0.10);
+    border-radius: 16px;
     overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(244, 238, 222, 0.05);
+    transition: border-color .4s var(--cin-ease), box-shadow .4s var(--cin-ease);
+}
+/* FIX (§141): neutraliza el glow dorado de dark-theme.css `.ficha-group:hover` — la ficha NO es enlace */
+body[data-cin="on"] .ficha-group:hover {
+    border-color: rgba(244, 238, 222, 0.16);
+    box-shadow: inset 0 1px 0 rgba(244, 238, 222, 0.06);
 }
 body[data-cin="on"] .ficha-group-title {
     font-family: var(--cin-sans);
@@ -507,10 +529,11 @@ body[data-cin="on"] .features-grid {
     gap: clamp(12px, 1.6vw, 18px);
 }
 body[data-cin="on"] .feature-category {
-    background: rgba(244, 238, 222, 0.03);
-    border: 1px solid var(--cin-line);
-    border-radius: 14px;
-    padding: 16px;
+    background: linear-gradient(180deg, rgba(244, 238, 222, 0.05), rgba(244, 238, 222, 0.02));
+    border: 1px solid rgba(244, 238, 222, 0.10);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: inset 0 1px 0 rgba(244, 238, 222, 0.05);
 }
 body[data-cin="on"] .feature-category-title {
     font-family: var(--cin-sans);
@@ -529,29 +552,61 @@ body[data-cin="on"] .feature-list {
 body[data-cin="on"] .feature-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 13px;
+    gap: 11px;
+    /* FIX (§141): style.css `.feature-item{background:white}` (otro componente) tapaba el texto → forzar transparente */
+    background: transparent;
+    font-size: 13.5px;
     color: var(--cin-ink-soft);
+    padding: 8px 2px;
+    border-bottom: 1px solid rgba(244, 238, 222, 0.06);
+    transition: color .25s var(--cin-ease);
 }
+body[data-cin="on"] .feature-list .feature-item:last-child { border-bottom: none; }
+body[data-cin="on"] .feature-item:hover { color: var(--cin-ink); }
 body[data-cin="on"] .feature-item::before {
     content: '';
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
-    background: var(--cin-gold);
+    background: var(--cin-gold-hot);
+    box-shadow: 0 0 8px rgba(240, 198, 116, 0.5);
     flex-shrink: 0;
 }
 
 /* ===== Descripción ===== */
 body[data-cin="on"] .description-box {
-    background: rgba(244, 238, 222, 0.03);
-    border: 1px solid var(--cin-line);
-    border-radius: 14px;
-    padding: 20px;
-    line-height: 1.75;
-    font-size: 14px;
+    background: linear-gradient(180deg, rgba(26, 22, 34, 0.60), rgba(16, 13, 22, 0.62));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(244, 238, 222, 0.10);
+    border-radius: 16px;
+    padding: clamp(20px, 2.4vw, 32px);
+    box-shadow: 0 20px 48px -36px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(244, 238, 222, 0.05);
+    font-size: 15px;
+    line-height: 1.85;
     color: var(--cin-ink-soft);
-    white-space: pre-line;
+    max-width: 78ch;
+}
+/* Líneas estructuradas por detalle-render.js (resalta "Etiqueta:") — look editorial, no máquina de escribir (§141) */
+body[data-cin="on"] .description-box .desc-line {
+    margin: 0 0 13px;
+    padding-left: 16px;
+    position: relative;
+}
+body[data-cin="on"] .description-box .desc-line:last-child { margin-bottom: 0; }
+body[data-cin="on"] .description-box .desc-line::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.7em;
+    width: 7px;
+    height: 1px;
+    background: var(--cin-gold);
+}
+body[data-cin="on"] .description-box .desc-key {
+    color: var(--cin-gold-hot);
+    font-weight: 600;
+    letter-spacing: .01em;
 }
 
 /* ===== Vehículos similares (cards del render global, restyle cinematic) ===== */

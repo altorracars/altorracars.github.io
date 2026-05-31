@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 Cinematic completo (§122–§139). **SP-5.3 `detalle-vehiculo`: Fases 0–3 HECHAS y verificadas** (cinematic + de-monolitización: 4 módulos `js/public/detalle/` + `detalle-cinematic.css`, botones Opción A, 27 páginas regeneradas — §140). Ver `10`. |
-| **Cache version vigente** | `v20260531300000` (§140, bumpeado en Fase 3 — aún sin merge a `main`). |
-| **Branch activa** | `refactor/estructura` HEAD `10605da` (**Fase 2 commiteada**). **Fase 3 SIN commit** (generador + cache bump + 45 páginas regeneradas + cerebro = 58 archivos en working tree). Cliente commitea (mensajes en chat). Sin merge a `main` aún. |
-| **Producción (`main`)** | `origin/main` = `ab8a093` (PR #769) = §139 + SP-5.3 Fase 0+1. **Detalle aún LEGACY en prod** hasta mergear Fase 2/3 (incluye cache bump). Tras merge: validar Ctrl+Shift+R. |
+| **Build** | 🟢 Cinematic completo (§122–§141). **SP-5.3 detalle EN PRODUCCIÓN** (PR #771, §140) + **§141 pulido post-validación SIN commit** (3 fixes: glow hover ficha / fondo blanco características / descripción editorial + glass info-card/descripción). ⏳ Validar prod tras mergear §141 (Ctrl+Shift+R). |
+| **Cache version vigente** | `v20260531310000` (§141, SIN commit/merge aún; §140 `v…300000` ya en prod PR #771). |
+| **Branch activa** | `refactor/estructura`: §140 en `main` (PR #771). **§141 (CSS+JS+cerebro) en working tree SIN commit.** Sincroniza local (`git pull`) + commitea §141 (mensajes en chat). |
+| **Producción (`main`)** | `origin/main` = `ae1bc7e` (PR #771) = SP-5.3 completo (Fases 0–3) + §139. **Detalle ahora CINEMATIC en prod.** ⏳ Validar Ctrl+Shift+R (E2E real, L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

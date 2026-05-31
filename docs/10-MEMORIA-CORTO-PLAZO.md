@@ -16,12 +16,12 @@
 
 ---
 
-## 🔧 SP-5.3 — CERRADO (detalle-vehiculo cinematic + de-monolitización) · pendiente commit+merge
+## 🔧 SP-5.3 — EN PRODUCCIÓN (detalle-vehiculo cinematic + de-monolitización, PR #771) · pendiente validar prod
 
 **Completo y verificado** → consolidado en **ADR §140** (`99` + `00-INDICE`); `20-ESPACIAL` (carpeta `js/public/detalle/` + `detalle-cinematic.css`) + `43-UX` (Ronda 5) actualizados; cache bump `v20260531300000`. Spec `b2a6bc0`, plan `f56cb8d`.
 - `detalle-vehiculo.html` → cinematic + de-monolitizado: 4 módulos `js/public/detalle/{data,render,gallery,page}.js` + `css/home/detalle-cinematic.css`, `<body data-cin>`, botones **Opción A**, favorito/comparar/sticky cableados. **27 IDs + hooks intactos**. 27 `vehiculos/*` regeneradas. Verificado preview local (id=38, `node -c` OK). El **por qué/cómo** → ADR §140.
-- ⏳ **Pendiente del cliente**: Fase 2 ya commiteada (`10605da`); falta commitear **Fase 3** (generador + cache bump + 45 páginas regeneradas + cerebro — mensajes en chat) + mergear `refactor/estructura` → `main`. Tras merge → validar en prod con **Ctrl+Shift+R**.
-- 📝 **Lección candidata para `30`**: el Service Worker sirve assets viejos hasta el bump → verificación local exige desregistrar SW + cache-bust de los `<link>` (o el cliente hace Ctrl+Shift+R).
+- ✅ **Commiteado + mergeado a prod** (Fase 2 `10605da` + Fase 3 `86681a6` → PR #771, `origin/main ae1bc7e`). ⏳ Falta: **validar en prod con Ctrl+Shift+R** (E2E real) + `git pull` local (rama 6 commits detrás de `origin/main`).
+- 🔧 **§141 pulido (post-validación del cliente, SIN commit aún)**: fix glow dorado hover ficha + fix fondo blanco características + descripción editorial (`.desc-key` dorado) + **glass** (info-card/descripción) + acentos cinematic. CSS+JS, **sin regen**. Cache `v20260531310000`. Lecciones L-20 (ampliada) + **L-21** (CSS legacy se filtra si no fijas `background`/`:hover`).
 - 🔮 **SP-5.3.x futuros** (cuerpo aún legacy): `busqueda.html`, `marca(s).html`, 18 `marcas/*`, 7 landing `vehiculos-*.html`.
 
 ---
@@ -30,7 +30,8 @@
 
 Todo consolidado en ADRs (`99` + `00-INDICE`): cinematic punta a punta (§122–§137), recomendaciones f1 (§138), footer fix (§139), **detalle-vehiculo §140**. Cuerpo cinematic en 11 root + detalle + 27 generadas + chrome global 100%.
 
-### Pendiente de validar en PRODUCCIÓN (Ctrl+Shift+R) — tras el próximo push
+### Pendiente de validar en PRODUCCIÓN (Ctrl+Shift+R)
+- **SP-5.3 detalle (§140, recién desplegado PR #771)**: abrir un vehículo → cinematic (botones Opción A sin cortes, dorado, galería+panel sticky, tabs, similares); comparar/guardar/compartir; barra sticky en móvil; + spot-check directo de 1-2 `vehiculos/*.html`.
 - Recomendaciones (§138): ver 2-3 fichas → index muestra "Recomendados" **semejantes**.
 - Comparador flotante (no choca con QuickTools ⊞) + perfil/favoritos cinematic.
 - (Comparador empty-state, simulador y footer ya validados en localhost — L-20.)

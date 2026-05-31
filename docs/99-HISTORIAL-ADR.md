@@ -42506,3 +42506,32 @@ Index, tras ver 2-3 vehículos: "Recomendados / Los que te podrían gustar" mues
 
 ### 138.6 Pendiente (fase 2)
 Popularidad global (contador views + reglas), custom image destacados, real-time switch. Lección → L-19.
+
+## 139. ADR-139 — Footer cinematic: matar el gris fantasma `#808080` + auditoría de cobertura cinematic
+
+Cliente (sesión 2026-05-30 B): *"seria bueno a cinematic que mas falta?"* — tras detectar en QA que el footer mostraba un gris frío. Aprobó armonizar a cinematic y preguntó qué más queda legacy.
+
+### 139.1 Causa raíz (RCA §19, verificada leyendo código + computado en preview)
+`css/dark-theme.css:708-710` define `body .footer-bottom { border-top:1px solid #2a2a2a; color:#808080; }` (especificidad 0-1-1). El footer cinematic (`alt-footer`, inyectado por `components.js` en TODAS las páginas legacy) heredaba ese `#808080` en el **contenedor** `.footer-bottom`/`.footer-bottom__row`. **Matiz importante**: los textos hijos visibles (`.footer-copy`=`rgb(184,184,192)`, `.alt-footer-bottom-link`, `.footer-legal span`=`rgb(138,138,149)`) YA traían color cinematic propio de `chrome-redesign.css` → el `#808080` era **fantasma/invisible** (solo vivía en contenedores sin texto directo). El bridge previo vencía el `border-top` pero NO el `color`.
+
+### 139.2 Solución estructural
+En `css/home/chrome-bridge.css` (bloque FOOTER, carga ÚLTIMA tras chrome-redesign.css → gana el cascade con `.alt-footer .footer-bottom` 0-2-0 > `body .footer-bottom` 0-1-1, SIN `!important`): añadir `color: var(--ink-text-muted)` a `.alt-footer .footer-bottom` y a su variante `[data-theme="dark"]`. Remapea el gris frío al crema cálido cinematic. El borde ya estaba en `rgba(212,175,55,0.15)` (dorado).
+
+### 139.3 No-regresión
+Cero IDs/clases renombrados (§17.4) — solo se AÑADE una propiedad `color` a 1 selector existente. Textos visibles del footer SIN cambio (verificado: copy/links/separador idénticos antes y después). `dark-theme.css` INTACTO (no se toca el legacy; se vence por cascade). `node -c` N/A (CSS).
+
+### 139.4 Tests E2E (preview localhost con cache-bust — L-20)
+Verificado en `simulador-credito.html` y `nosotros.html` (2 páginas legacy): `.footer-bottom` y `.footer-bottom__row` pasan de `rgb(128,128,128)` → `rgb(184,184,192)`; `anyGrey #808080` = **0**; borde superior `rgba(212,175,55,0.15)`; textos visibles sin regresión. (Cliente revalida en prod con Ctrl+Shift+R.)
+
+### 139.5 Anti-patterns evitados
+Verificar antes de "arreglar" (RCA §19): se confirmó por computado que el gris era fantasma, no un texto ilegible — se documentó honestamente en vez de vender un fix cosmético inexistente. No se tocó `dark-theme.css` (límite de guardián: vencer por cascade > editar legacy de alto alcance).
+
+### 139.6 Auditoría "¿qué más falta cinematic?" (cobertura REAL al 2026-05-30, no el inventario viejo de 43-UX R0)
+**Chrome (header+footer)**: ✅ unificado cinematic en TODAS las páginas (SP-5.1 §126/§127 + este §139 cierra el footer).
+**CUERPO cinematic (root)**: index, 404, comparar, contacto, cookies, favoritos, nosotros, perfil, privacidad, resenas, terminos (11).
+**CUERPO aún legacy (root, 9)**: `busqueda.html`, `detalle-vehiculo.html`, `marca.html`, `marcas.html`, `simulador-credito.html`*, `vehiculos-{camionetas,hatchback,nuevos,pickup,sedan,suv,usados}.html` (7 landing de categoría). (*simulador: el CUERPO no carga soft-redesign pero el simulador SÍ está armonizado a cinematic vía tokens `--sim-*`→cin en §136 — su "legacy(body)" es solo que no usa la hoja soft, no que se vea legacy.)
+**CUERPO legacy (generadas, 45)**: `vehiculos/*.html` (27) + `marcas/*.html` (18) — las genera `scripts/generate-vehicles.mjs`; migrar su cuerpo a cinematic = editar el template del script + regenerar (NO archivo por archivo).
+**Veredicto**: lo más visible (chrome global + páginas de mayor tráfico) ya es cinematic. Lo que falta es CUERPO de catálogo/detalle/landing — candidato a un SP-5.3 dedicado (especialmente `detalle-vehiculo.html` + el template generador, por volumen e impacto SEO). Detalle de inventario por página → lóbulo `43-UX`.
+
+### 139.7 Doctrina aplicada + cache bump
+RCA §19 (verificar el gris real antes de tocar) · IAP §37 (footer = alto blast radius, se auditó cascade completo) · §17.4 (cambio aditivo, cero renombres) · §3.7 límite de guardián (vencer por cascade, no editar dark-theme legacy) · L-20 (validación preview con cache-bust). Cache bump `v20260531280000` → `v20260531290000`.

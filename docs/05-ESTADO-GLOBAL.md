@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-05-30) |
 |---|---|
-| **Build** | 🟢 Rediseño cinematic COMPLETO punta a punta (§122–§137) + SP-4 recomendaciones fase 1 (§138) — **TODO mergeado a `origin/main` = producción** (verificado: HEAD local `d62f058` es ancestro de origin/main). Pendiente: SP-4 fase 2 diferida. |
-| **Cache version vigente** | `v20260531280000` (comparador CTA "Explorar vehículos" + sync main) |
-| **Branch activa** | `refactor/estructura` — **71 commits DETRÁS de `origin/main`** (auto-merge PRs del CI: vehicle pages 4h + assets `multimedia/optimized/` + cache bumps). HEAD es ancestro → `git merge origin/main` = fast-forward limpio. ⚠️ Consolidación sin commitear: `docs/10` (poda) + `docs/30` (M-07). |
-| **Producción (`main`)** | `origin/main` contiene TODO hasta §138 (cinematic completo + recomendaciones fase 1, auto-deploy Pages). **Falta validar en vivo** (Ctrl+Shift+R): comparador/simulador/recomendaciones. |
+| **Build** | 🟢 Rediseño cinematic COMPLETO punta a punta (§122–§137) + SP-4 recomendaciones fase 1 (§138) + comparador CTA "Explorar vehículos" (`cabe72d`) — **TODO en `origin/main` = producción** (verificado vía `fetch`: `cabe72d` es ancestro de origin/main). Pendiente: SP-4 fase 2 diferida. |
+| **Cache version vigente** | `v20260531290000` (§139 footer cinematic — gris fantasma `#808080` eliminado) |
+| **Branch activa** | `refactor/estructura` — **+1 sobre `origin` (sin commitear): §139 footer cinematic** (`chrome-bridge.css` + cache bump + docs). Último pusheado: `cabe72d`. |
+| **Producción (`main`)** | `origin/main` contiene TODO hasta `cabe72d` (cinematic completo + recomendaciones fase 1 + comparador CTA, auto-deploy Pages). **Falta validar en vivo** (Ctrl+Shift+R): recomendaciones/comparador flotante/perfil. (Comparador empty-state + simulador ya validados en localhost — L-20.) |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

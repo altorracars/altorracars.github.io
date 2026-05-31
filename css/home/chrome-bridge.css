@@ -86,9 +86,16 @@
 }
 
 /* ───── FOOTER · vencer body .footer-bottom (dark-theme 0-1-1) ──
-   .alt-footer .footer-bottom (0-2-0) > body .footer-bottom. */
+   .alt-footer .footer-bottom (0-2-0) > body .footer-bottom.
+   dark-theme.css:709-710 setea `border-top:#2a2a2a` Y `color:#808080`
+   (gris frío). El bridge vencía el borde pero dejaba el #808080 colgado
+   como color heredado en el contenedor (los textos hijos —.footer-copy,
+   .alt-footer-bottom-link, spans— ya lo sobrescriben con tokens cinematic,
+   así que es fantasma/invisible; lo remapeamos igual para que el bridge
+   cumpla su propósito completo y nada futuro herede el gris). ADR §139. */
 .alt-footer .footer-bottom {
   border-top: 1px solid var(--surface-stroke);
+  color: var(--ink-text-muted);
 }
 [data-theme="dark"] .alt-footer .footer-bottom {
   border-top-color: rgba(212, 175, 55, 0.15);

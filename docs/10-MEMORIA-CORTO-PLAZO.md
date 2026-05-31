@@ -39,6 +39,17 @@
      superficies cinematic (morado `21,18,26` / negro `8,7,10` / dorado). El único gris `128,128,128`
      está en el **footer GLOBAL** (`footer-legal`/`footer-bottom`) — si molesta, es tarea de footer, no del simulador.
      Re-confirmar con el cliente QUÉ gris vio antes de tocar.
+### ✅ CERRADO: footer cinematic (§139) — gris fantasma `#808080` eliminado (sesión 2026-05-30 B)
+- Causa: `dark-theme.css:710 body .footer-bottom{color:#808080}` heredado en contenedor del footer cinematic.
+  Era **fantasma/invisible** (textos hijos ya eran cinematic). Fix: `chrome-bridge.css` → `.alt-footer .footer-bottom{color:var(--ink-text-muted)}` (vence por cascade, sin tocar legacy). Verificado preview cache-bust (sim+nosotros): `128,128,128`→`184,184,192`, anyGrey=0. **SIN commitear aún.**
+
+### 📊 "¿Qué más falta cinematic?" — inventario REAL (al 2026-05-30, reemplaza el viejo de 43-UX R0)
+- **Chrome (header+footer)**: ✅ 100% cinematic en todo el sitio (§126/§127 + §139 cierra footer).
+- **Cuerpo cinematic (root, 11)**: index, 404, comparar, contacto, cookies, favoritos, nosotros, perfil, privacidad, resenas, terminos. (+ simulador armonizado vía tokens §136 aunque no use la hoja soft.)
+- **Cuerpo aún legacy (root, ~9)** → candidato **SP-5.3**: `busqueda.html`, `detalle-vehiculo.html` (⭐ alto tráfico+SEO), `marca.html`, `marcas.html`, 7 landing `vehiculos-*.html`.
+- **Cuerpo legacy generadas (45)**: `vehiculos/*.html` (27) + `marcas/*.html` (18) → migrar = editar TEMPLATE de `scripts/generate-vehicles.mjs` + regenerar (NO archivo por archivo).
+- **Recomendación**: si se ataca, priorizar `detalle-vehiculo.html` + el template generador (volumen + SEO). Detalle por página → lóbulo `43-UX`.
+
 3. **Diferido sin urgencia**: SP-4 **fase 2** (popularidad global = contador `vehiculos/{id}.views` en Firestore + reglas; custom image upload destacados; real-time switch sesión). SP-5 polish fino. Auditorías `44-SEO`/`45-PERFORMANCE`/`48-ACCESIBILIDAD` cuando se pidan.
 
 ### Patrón clave de la sesión (SP-5.2)

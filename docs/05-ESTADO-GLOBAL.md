@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 Cinematic completo (§122–§137) + recomendaciones f1 (§138) + footer fix (§139). **WIP: SP-5.3** detalle-vehiculo rediseño+de-monolitización — **Fase 0+1 hechas y verificadas** (CSS+JS extraídos a módulos, página idéntica), **Fase 2 (cinematic) + 3 (regenerar) PENDIENTES**. Ver `10` §WIP. |
-| **Cache version vigente** | `v20260531290000` (§139). **SP-5.3 bumpea en Fase 3** (aún no). |
-| **Branch activa** | `refactor/estructura` — **sincronizada con `origin` y con `origin/main`** (0 pendientes; cliente pusheó + mergeó). HEAD `d8b45cd`. |
-| **Producción (`main`)** | `origin/main` = `ab8a093` (PR #769) contiene **§139 footer + SP-5.3 Fase 0+1** (de-monolitización detalle). **Detalle aún se ve LEGACY en prod** (cuerpo sin reescribir — Fase 2 pendiente); funcionalidad intacta. Validar Ctrl+Shift+R. |
+| **Build** | 🟢 Cinematic completo (§122–§139). **SP-5.3 `detalle-vehiculo`: Fases 0–3 HECHAS y verificadas** (cinematic + de-monolitización: 4 módulos `js/public/detalle/` + `detalle-cinematic.css`, botones Opción A, 27 páginas regeneradas — §140). Ver `10`. |
+| **Cache version vigente** | `v20260531300000` (§140, bumpeado en Fase 3 — aún sin merge a `main`). |
+| **Branch activa** | `refactor/estructura` HEAD `10605da` (**Fase 2 commiteada**). **Fase 3 SIN commit** (generador + cache bump + 45 páginas regeneradas + cerebro = 58 archivos en working tree). Cliente commitea (mensajes en chat). Sin merge a `main` aún. |
+| **Producción (`main`)** | `origin/main` = `ab8a093` (PR #769) = §139 + SP-5.3 Fase 0+1. **Detalle aún LEGACY en prod** hasta mergear Fase 2/3 (incluye cache bump). Tras merge: validar Ctrl+Shift+R. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

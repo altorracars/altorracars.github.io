@@ -42535,3 +42535,31 @@ Verificar antes de "arreglar" (RCA §19): se confirmó por computado que el gris
 
 ### 139.7 Doctrina aplicada + cache bump
 RCA §19 (verificar el gris real antes de tocar) · IAP §37 (footer = alto blast radius, se auditó cascade completo) · §17.4 (cambio aditivo, cero renombres) · §3.7 límite de guardián (vencer por cascade, no editar dark-theme legacy) · L-20 (validación preview con cache-bust). Cache bump `v20260531280000` → `v20260531290000`.
+
+## 140. ADR-140 — SP-5.3: `detalle-vehiculo` cinematic + de-monolitización (4 módulos JS + 1 CSS)
+
+Cliente (brainstorm 2026-05-30): *"detalle vehiculo ademas de una mejora en tema es una mejora en organizacion y en todo, la interfaz es vieja fea, hay iconos enlaces o botones de acciones que se cortan o superponen. Se requiere mejora total."* Alcance aprobado: "visual + organización + modularización", método A (reescritura preservando hooks), botones **Opción A**. Spec `b2a6bc0`, plan `f56cb8d` (8 tasks / 4 fases).
+
+### 140.1 Causa raíz (RCA §19)
+`detalle-vehiculo.html` era un monolito de **2315 líneas**: `<style>` inline (~1150) + markup legacy + `<script>` inline (~870, ~31 fns con TODA la lógica). Tres problemas reales (captura del cliente): (a) los 4 botones de texto largo se truncaban en el sidebar de 380px ("COMPAR…"/"AGENDA…"); (b) 6 colores chillones (verde/azul/morado/cyan/ámbar) rompían la identidad dorada; (c) cuerpo 100% legacy (Poppins + style.css/dark-theme) mientras el chrome ya era cinematic → "se siente otro sitio". Era además la última gran violación de §119 ("0 sueltos, modular"). El generador clona este template → las 27 `vehiculos/*` heredaban todo.
+
+### 140.2 Solución estructural (3 fases, 2 compuertas)
+- **Fase 0** (`7a33ac2`): guard de aserción de 13 anclajes en `generate-vehicles.mjs` — el `.replace()` por string literal fallaba SILENCIOSO; ahora lanza ruidoso si un rediseño borra un punto de inyección.
+- **Fase 1** (`f3884d1`/`cfb143f`, compuerta estructural): CSS inline → `css/home/detalle-cinematic.css` VERBATIM; JS inline → **4 módulos** `js/public/detalle/{data,render,gallery,page}.js` VERBATIM (plain scripts, scope global compartido como simulador/home; estado `currentVehicle`/`currentImages`/flags como globales en `detalle-data.js`). Página quedó funcionalmente IDÉNTICA → template 2315 → 293 líneas.
+- **Fase 2** (compuerta visual): `<body data-cin="on">` + `soft-redesign.css`; markup a la composición aprobada (galería 1.7fr + panel sticky 1fr · tabs · similares · lightbox) con botones **Opción A** (WhatsApp verde full → Simular dorado full → fila 4 iconos Agendar·Preguntar·Comparar·Compartir → pie Guardar+Verificado) + barra sticky móvil `.dt-sticky`; `detalle-cinematic.css` reescrito a cinematic (scoped `body[data-cin="on"]`, tokens `--cin-*`, serif Instrument Serif + Manrope, paleta dorada — sin los 6 colores). Wiring (`detalle-page.js`): onclick→addEventListener (share/flechas), favorito, sticky sync, comparar feedback.
+- **Fase 3**: fallback PRERENDERED del generador repuntado a `detalle-page.js` + `npm run generate` (27 páginas + 18 marcas + sitemap) + cache bump.
+
+### 140.3 No-regresión (§17.4)
+Los **27 IDs** del spec §3.1 + clases-hook intactos (verificado por one-liner): `.main-image-container`/`.gallery-section`/`.thumbnail` (galería JS), `.tab-btn[data-tab]`/`.tab-content` (tabs), `.btn-agendar-cita` (citas.js), `data-action="open-concierge-vehicle"` (concierge.js), `#btnComparar`/`#btnCompararText`/`#btnCompararIcon` (comparador.js), `<script src="historial-visitas.js">` verbatim + `PRERENDERED_VEHICLE_ID`. `comparador.js`/`citas.js`/`concierge.js`/`historial-visitas.js`/`favorites-manager.js` NO tocados. `node -c` OK en los 4 módulos + el generador.
+
+### 140.4 Tests (preview localhost id=38, L-20 cache-bust; screenshots imposibles por 403 Firebase L-08 → verificación por computado + snapshot)
+Cinematic aplica (bg #08070A, título serif #F4EEDE, precio #F0C674, WA verde, Sim dorado, labels ink-soft). Grid 1.7fr/1fr → 1 col móvil (375px) sin overflow. Funcional: tabs ✓, thumbnails (imagen + contador) ✓, lightbox abrir/cerrar ✓, Comparar (toggle + "Agregado" + widget) ✓, Guardar (gated → prompt login sin sesión) ✓, sticky poblado + visible móvil ✓. 27 páginas generadas: title real + canonical + data-cin + 4 módulos + gallery-main + PRERENDERED antes de historial-visitas + 2 JSON-LD. Solo 403 Firebase localhost (L-08).
+
+### 140.5 Anti-patterns evitados (§17/§19/§35/§37)
+§17: sin `transition: all`, animar solo transform/opacity, backdrop-filter solo en la barra sticky estructural; `.wa-float` oculto. §19: leí los 4 módulos + comparador/favorites-manager/render ANTES de tocar (no adiviné). §37 IAP: `comparador.js` marcado intocable (spec §3.2) → su bug de feedback se resolvió en mi propio módulo, sin editar cross-página. 2 decisiones con evidencia (Desafío Crítico §G.4): (1) el favorito **NO** usa `.favorite-btn` literal — `favorites-manager._updateAllButtonsForVehicle` sobreescribe `textContent` con un glifo ♥ y borraría la etiqueta "Guardar"; repliqué el patrón probado de `home-carousels.js` (clase propia + `handleHeartClick`). (2) Comparar: su `updateDetailPageButton` lee `?id=` que el `replaceState` canónico elimina → sincronizo texto/estado desde `detalle-page.js` vía `vehicleComparator.has`.
+
+### 140.6 Archivos
+**Modificados**: `detalle-vehiculo.html`, `css/home/detalle-cinematic.css`, `js/public/detalle/detalle-page.js`, `scripts/generate-vehicles.mjs`, `service-worker.js` + `js/core/cache-manager.js`, 27 `vehiculos/*.html` + 18 `marcas/*.html` + `sitemap.xml` (regenerados). **INTACTOS**: los otros 3 módulos detalle (data/render/gallery), comparador/citas/concierge/historial-visitas/favorites-manager, `css/dark-theme.css`, `marca(s).html`.
+
+### 140.7 Doctrina + cache bump
+§17.4 (cero renombres, 27 IDs intactos) · §19 (leer antes de tocar) · §37 (IAP, comparador intocable) · §119 (de-monolitización: última gran violación cerrada) · §G.4 Desafío Crítico (favorito/comparar) · L-08 (403 localhost) · L-20 (preview cache-bust). Cache bump `v20260531290000` → `v20260531300000`. ⚠️ El Service Worker sirve assets viejos hasta el bump → la verificación local necesitó desregistrar SW + cache-bust; cliente invalida con **Ctrl+Shift+R**.

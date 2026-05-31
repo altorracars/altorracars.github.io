@@ -1,0 +1,505 @@
+/* ============================================================
+   ALTORRA CARS · BÚSQUEDA / CATÁLOGO — CSS page-specific cinematic (SP-5.3.b, §143)
+   Carga: <link> tras performance-fixes.css en busqueda.html, con <body data-cin="on">
+   + soft-redesign.css (que aporta los tokens --cin-*). Todo scopeado bajo
+   body[data-cin="on"] con especificidad ≥ legacy (style.css/dark-theme/filtros) y
+   propiedades explícitas (background/color/border/:hover) — lección L-21: al migrar
+   un cuerpo legacy a cinematic hay que fijar esas props, no solo `color`.
+   Contratos intactos: NO se renombra ningún id/clase-hook; renderVehicles + filtros
+   + performSearch siguen igual. Solo es re-skin.
+   ============================================================ */
+
+/* ===== Base ===== */
+body[data-cin="on"] {
+    background: var(--cin-bg);
+    color: var(--cin-ink);
+}
+/* Manrope robusto en todo el cuerpo del catálogo (gana a animaciones.css
+   html:not(.fonts-loaded) body 0,1,2 → contenedores 0,2,1). Títulos serif aparte. */
+body[data-cin="on"] .brand-hero,
+body[data-cin="on"] .search-advanced-section,
+body[data-cin="on"] .search-results-section {
+    font-family: var(--cin-sans);
+}
+body[data-cin="on"] .search-advanced-section,
+body[data-cin="on"] .search-results-section {
+    background: var(--cin-bg);
+}
+body[data-cin="on"] .search-results-section { padding-bottom: clamp(48px, 7vh, 96px); }
+
+/* ===== Hero ===== */
+body[data-cin="on"] .brand-hero {
+    position: relative;
+    min-height: clamp(300px, 44vh, 460px);
+    overflow: hidden;
+}
+body[data-cin="on"] .brand-hero-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+/* Velo cinematic para legibilidad + fundido a fondo */
+body[data-cin="on"] .brand-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(8, 7, 10, 0.30) 0%, rgba(8, 7, 10, 0.55) 55%, var(--cin-bg) 100%);
+    pointer-events: none;
+}
+body[data-cin="on"] .bsq-hero-content {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 clamp(24px, 5vw, 72px) clamp(26px, 5vh, 56px);
+}
+body[data-cin="on"] .bsq-hero-eyebrow {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.36em;
+    text-transform: uppercase;
+    color: var(--cin-gold);
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+body[data-cin="on"] .bsq-hero-title {
+    font-family: var(--cin-display);
+    font-weight: 400;
+    font-size: clamp(34px, 5vw, 64px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    color: var(--cin-ink);
+    margin: 0 0 8px;
+}
+body[data-cin="on"] .bsq-hero-sub {
+    font-size: clamp(14px, 1.4vw, 16px);
+    color: var(--cin-ink-soft);
+    margin: 0;
+    max-width: 520px;
+    line-height: 1.5;
+}
+
+/* ===== Sección filtros ===== */
+body[data-cin="on"] .search-advanced-section {
+    padding: clamp(20px, 3vw, 36px) 0;
+}
+body[data-cin="on"] .search-advanced-section .container,
+body[data-cin="on"] .search-results-section .container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding-left: clamp(16px, 4vw, 48px);
+    padding-right: clamp(16px, 4vw, 48px);
+}
+
+/* Botón mostrar/ocultar filtros (override del inline legacy dorado) */
+body[data-cin="on"] .toggle-filters-btn {
+    background: linear-gradient(135deg, rgba(212, 168, 90, 0.14), rgba(212, 168, 90, 0.06));
+    border: 1px solid rgba(212, 168, 90, 0.28);
+    color: var(--cin-gold-hot);
+    border-radius: 12px;
+    box-shadow: none;
+    font-family: var(--cin-sans);
+    font-weight: 600;
+    transition: background .25s var(--cin-ease), border-color .25s var(--cin-ease), transform .25s var(--cin-ease);
+}
+body[data-cin="on"] .toggle-filters-btn:hover {
+    background: rgba(212, 168, 90, 0.18);
+    border-color: rgba(212, 168, 90, 0.45);
+    transform: translateY(-1px);
+    box-shadow: none;
+}
+
+/* Formulario (la animación de colapso vive en el <style> inline; aquí solo el skin) */
+body[data-cin="on"] .advanced-search-form {
+    background: linear-gradient(180deg, rgba(26, 22, 34, 0.55), rgba(16, 13, 22, 0.55));
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid var(--cin-line);
+    border-radius: 18px;
+    padding: clamp(18px, 2.4vw, 28px);
+    box-shadow: 0 24px 60px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(244, 238, 222, 0.06);
+}
+body[data-cin="on"] .search-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: clamp(14px, 1.8vw, 20px);
+}
+body[data-cin="on"] .search-form-grid .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+body[data-cin="on"] .search-form-grid .form-group > label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cin-ink-faint);
+    font-weight: 600;
+}
+/* Selects + inputs cinematic */
+body[data-cin="on"] .advanced-search-form select,
+body[data-cin="on"] .advanced-search-form input[type="number"],
+body[data-cin="on"] .advanced-search-form input[type="text"] {
+    width: 100%;
+    background: rgba(244, 238, 222, 0.04);
+    border: 1px solid var(--cin-line);
+    border-radius: 10px;
+    padding: 11px 13px;
+    color: var(--cin-ink);
+    font-family: var(--cin-sans);
+    font-size: 14px;
+    transition: border-color .2s var(--cin-ease), background .2s var(--cin-ease);
+    -webkit-appearance: none;
+    appearance: none;
+}
+body[data-cin="on"] .advanced-search-form select:focus,
+body[data-cin="on"] .advanced-search-form input:focus {
+    outline: none;
+    border-color: rgba(212, 168, 90, 0.5);
+    background: rgba(212, 168, 90, 0.06);
+}
+body[data-cin="on"] .advanced-search-form select option {
+    background: #15121A;
+    color: var(--cin-ink);
+}
+body[data-cin="on"] .advanced-search-form input::placeholder {
+    color: var(--cin-ink-faint);
+}
+/* Caret dorado para los selects */
+body[data-cin="on"] .advanced-search-form select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23D4A85A' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 34px;
+}
+/* Checkboxes */
+body[data-cin="on"] .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+body[data-cin="on"] .advanced-search-form .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--cin-ink-soft);
+    cursor: pointer;
+}
+body[data-cin="on"] .checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--cin-gold);
+    cursor: pointer;
+}
+
+/* Acciones del formulario */
+body[data-cin="on"] .search-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: clamp(16px, 2vw, 22px);
+}
+body[data-cin="on"] .search-actions button {
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-family: var(--cin-sans);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform .25s var(--cin-ease), box-shadow .25s var(--cin-ease), background .25s var(--cin-ease), border-color .25s var(--cin-ease);
+}
+body[data-cin="on"] .btn-search-submit {
+    background: linear-gradient(135deg, var(--cin-gold-hot), var(--cin-gold) 55%, var(--cin-gold-deep));
+    color: #1a1208;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(212, 168, 90, 0.22);
+}
+body[data-cin="on"] .btn-search-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(212, 168, 90, 0.32);
+}
+body[data-cin="on"] .btn-search-clear,
+body[data-cin="on"] .btn-search-save {
+    background: rgba(244, 238, 222, 0.05);
+    border-color: var(--cin-line);
+    color: var(--cin-ink-soft);
+}
+body[data-cin="on"] .btn-search-clear:hover,
+body[data-cin="on"] .btn-search-save:hover {
+    background: rgba(244, 238, 222, 0.09);
+    border-color: rgba(244, 238, 222, 0.2);
+    color: var(--cin-ink);
+}
+
+/* ===== Cabecera de resultados ===== */
+body[data-cin="on"] .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: clamp(20px, 3vw, 32px) 0 clamp(16px, 2vw, 24px);
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--cin-line);
+}
+body[data-cin="on"] .results-info h2 {
+    font-family: var(--cin-display);
+    font-weight: 400;
+    font-size: clamp(22px, 2.6vw, 32px);
+    color: var(--cin-ink);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+body[data-cin="on"] .results-info h2 #resultsCount { color: var(--cin-gold-hot); }
+body[data-cin="on"] .results-sort {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+body[data-cin="on"] .results-sort label {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cin-ink-faint);
+}
+body[data-cin="on"] .sort-select {
+    background: rgba(244, 238, 222, 0.04);
+    border: 1px solid var(--cin-line);
+    border-radius: 10px;
+    padding: 9px 32px 9px 13px;
+    color: var(--cin-ink);
+    font-family: var(--cin-sans);
+    font-size: 13.5px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23D4A85A' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 11px center;
+}
+body[data-cin="on"] .sort-select:focus { outline: none; border-color: rgba(212, 168, 90, 0.5); }
+body[data-cin="on"] .sort-select option { background: #15121A; color: var(--cin-ink); }
+
+/* Banner de término de búsqueda (override del inline legacy) */
+body[data-cin="on"] .search-term-banner {
+    background: rgba(212, 168, 90, 0.08);
+    border: 1px solid rgba(212, 168, 90, 0.22);
+    border-radius: 12px;
+    color: var(--cin-ink-soft);
+}
+body[data-cin="on"] .search-term-banner strong { color: var(--cin-gold-hot); }
+body[data-cin="on"] .search-term-clear { color: var(--cin-ink-faint); }
+body[data-cin="on"] .search-term-clear:hover { color: var(--cin-gold-hot); }
+
+/* ===== Grid de tarjetas ===== */
+body[data-cin="on"] .search-results-section .vehicles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: clamp(16px, 2vw, 26px);
+}
+
+/* Tarjeta cinematic (renderVehicles → .vehicle-card; mismo lenguaje que el detalle) */
+body[data-cin="on"] .vehicle-card {
+    background: linear-gradient(180deg, var(--cin-bg-elev), #100d16);
+    border: 1px solid var(--cin-line);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color .3s var(--cin-ease), transform .3s var(--cin-ease), box-shadow .3s var(--cin-ease);
+}
+body[data-cin="on"] .vehicle-card:hover {
+    border-color: rgba(212, 168, 90, 0.35);
+    transform: translateY(-4px);
+    box-shadow: 0 30px 60px -38px rgba(0, 0, 0, 0.85);
+}
+body[data-cin="on"] .vehicle-card .vehicle-image {
+    position: relative;
+    aspect-ratio: 16 / 11;
+    overflow: hidden;
+    background: #15121A;
+}
+body[data-cin="on"] .vehicle-card .vehicle-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .5s var(--cin-ease);
+}
+body[data-cin="on"] .vehicle-card:hover .vehicle-img { transform: scale(1.05); }
+body[data-cin="on"] .vehicle-card .img-skeleton {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #1a1622, #0d0b12);
+}
+body[data-cin="on"] .vehicle-card .vehicle-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+}
+body[data-cin="on"] .vehicle-card .favorite-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(8, 7, 10, 0.6);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 17px;
+    line-height: 1;
+    transition: color .2s var(--cin-ease), background .2s var(--cin-ease);
+}
+body[data-cin="on"] .vehicle-card .favorite-btn:hover { background: rgba(8, 7, 10, 0.85); }
+body[data-cin="on"] .vehicle-card .favorite-btn.active { color: var(--cin-gold-hot); }
+body[data-cin="on"] .vehicle-card .vehicle-badges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    z-index: 2;
+    max-width: calc(100% - 60px);
+}
+body[data-cin="on"] .vehicle-card .badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(212, 168, 90, 0.18);
+    color: var(--cin-gold-hot);
+    border: 1px solid rgba(212, 168, 90, 0.35);
+    backdrop-filter: blur(4px);
+}
+body[data-cin="on"] .vehicle-card .btn-compare {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(8, 7, 10, 0.6);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink-soft);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color .2s var(--cin-ease), background .2s var(--cin-ease), border-color .2s var(--cin-ease);
+}
+body[data-cin="on"] .vehicle-card .btn-compare:hover { background: rgba(8, 7, 10, 0.85); color: var(--cin-ink); }
+body[data-cin="on"] .vehicle-card .btn-compare.active {
+    color: var(--cin-gold-hot);
+    border-color: rgba(212, 168, 90, 0.5);
+    background: rgba(212, 168, 90, 0.12);
+}
+body[data-cin="on"] .vehicle-card .vehicle-info { padding: 16px 18px 18px; }
+body[data-cin="on"] .vehicle-card .vehicle-title {
+    font-family: var(--cin-sans);
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--cin-ink);
+    margin: 0 0 7px;
+    line-height: 1.25;
+}
+body[data-cin="on"] .vehicle-card .vehicle-specs {
+    font-size: 12.5px;
+    color: var(--cin-ink-soft);
+    margin: 0 0 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+body[data-cin="on"] .vehicle-card .vehicle-footer { margin: 0; }
+body[data-cin="on"] .vehicle-card .vehicle-price,
+body[data-cin="on"] .vehicle-card .vehicle-price-offer {
+    font-family: var(--cin-sans);
+    font-weight: 700;
+    font-size: 19px;
+    color: var(--cin-gold-hot);
+    margin: 0;
+}
+body[data-cin="on"] .vehicle-card .vehicle-price-original {
+    font-size: 13px;
+    color: var(--cin-ink-faint);
+    text-decoration: line-through;
+    display: block;
+    margin-bottom: 1px;
+}
+
+/* Estado "sin resultados" del render global */
+body[data-cin="on"] .vehicles-grid .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--cin-ink-soft);
+}
+body[data-cin="on"] .vehicles-grid .no-results-icon { color: var(--cin-gold-deep); }
+
+/* ===== Paginación ===== */
+body[data-cin="on"] #pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: clamp(28px, 4vw, 44px);
+}
+body[data-cin="on"] #pagination button,
+body[data-cin="on"] #pagination a {
+    min-width: 42px;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: rgba(244, 238, 222, 0.04);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink-soft);
+    font-family: var(--cin-sans);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: background .2s var(--cin-ease), border-color .2s var(--cin-ease), color .2s var(--cin-ease);
+}
+body[data-cin="on"] #pagination button:hover,
+body[data-cin="on"] #pagination a:hover {
+    background: rgba(212, 168, 90, 0.1);
+    border-color: rgba(212, 168, 90, 0.35);
+    color: var(--cin-ink);
+}
+body[data-cin="on"] #pagination button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+body[data-cin="on"] #pagination .active,
+body[data-cin="on"] #pagination button.active,
+body[data-cin="on"] #pagination a.active {
+    background: linear-gradient(135deg, var(--cin-gold-hot), var(--cin-gold-deep));
+    border-color: transparent;
+    color: #1a1208;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+    body[data-cin="on"] .search-form-grid { grid-template-columns: 1fr 1fr; }
+    body[data-cin="on"] .results-header { flex-direction: column; align-items: flex-start; }
+    body[data-cin="on"] .search-actions button { flex: 1 1 auto; }
+}
+@media (max-width: 420px) {
+    body[data-cin="on"] .search-form-grid { grid-template-columns: 1fr; }
+}

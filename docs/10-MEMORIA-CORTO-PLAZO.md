@@ -21,10 +21,10 @@
 **Completo y verificado** → consolidado en **ADR §140** (`99` + `00-INDICE`); `20-ESPACIAL` (carpeta `js/public/detalle/` + `detalle-cinematic.css`) + `43-UX` (Ronda 5) actualizados; cache bump `v20260531300000`. Spec `b2a6bc0`, plan `f56cb8d`.
 - `detalle-vehiculo.html` → cinematic + de-monolitizado: 4 módulos `js/public/detalle/{data,render,gallery,page}.js` + `css/home/detalle-cinematic.css`, `<body data-cin>`, botones **Opción A**, favorito/comparar/sticky cableados. **27 IDs + hooks intactos**. 27 `vehiculos/*` regeneradas. Verificado preview local (id=38, `node -c` OK). El **por qué/cómo** → ADR §140.
 - ✅ **Commiteado + mergeado a prod** (Fase 2 `10605da` + Fase 3 `86681a6` → PR #771, `origin/main ae1bc7e`). ⏳ Falta: **validar en prod con Ctrl+Shift+R** (E2E real) + `git pull` local (rama 6 commits detrás de `origin/main`).
-- ✅ **§141–§144 cerrados + commiteados+pusheados** (`f0471f1`): §141 pulido detalle, §142 Descripción ELIMINADA (datos dormidos; `admin-desc-gen.js` huérfano-borrable), §143 `busqueda.html`, §144 `marca.html`+18 `marcas/*`. Detalle → ADRs + lecciones **L-20/L-21** (`30`).
-- 🔧 **§145 ⏳ SIN commit**: (1) **fix nav** header "Marcas" → `marcas.html` (antes arrastraba al carrusel del index; corregido en `snippets/header.html` global + `index.html` inline). (2) **`marcas.html` (índice) cinematic** (tokens `--cin-*` + Instrument Serif/Manrope + 18 tarjetas de marca) vía `css/home/marcas-cinematic.css` + `data-cin`. Sin regen. Cache `v20260531350000`. ⚠️ Validar en prod.
-- ⏳ **Pendiente cliente**: commitea §145 (mensajes en chat) + `git pull` + valida en prod (detalle/busqueda/marca/marcas + que el nav "Marcas" abra `marcas.html`).
-- 🔮 **SP-5.3.x futuros**: 7 landings `vehiculos-*.html` (redirects). **Catálogo cinematic completo.**
+- ✅ **§141–§145 cerrados + commiteados+pusheados**: §141 pulido detalle, §142 Descripción ELIMINADA (datos dormidos; `admin-desc-gen.js` huérfano-borrable), §143 `busqueda.html`, §144 `marca.html`+18 `marcas/*` (`f0471f1`), §145 fix nav "Marcas"→`marcas.html` + `marcas.html` (índice) cinematic (`e7379f1`). Detalle → ADRs + lecciones **L-20/L-21** (`30`).
+- 🔧 **§146 ⏳ SIN commit** (cierre del catálogo): **4 landings SEO** `vehiculos-{suv,pickup,sedan,hatchback}.html` cinematic — son **clon estructural de `marca.html`** → **REUSO `marca-cinematic.css`** (DRY, cero CSS nuevo) + data-cin. Los **3 redirects** (usados/nuevos/camionetas) INTACTOS (no se ven). Estáticas, sin regen. (§19: verifiqué que mi supuesto previo "7 landings = redirects" era FALSO — 4 son landings reales indexables.) Cache `v20260531360000`. ⚠️ Validar en prod (Ctrl+Shift+R).
+- ⏳ **Pendiente cliente**: commitea §146 (mensajes en chat) + valida en prod las 4 landings (Ctrl+Shift+R).
+- ✅ **Catálogo 100% cinematic** (§122 index + §140 detalle + §143 busqueda + §144 marca + §145 marcas + §146 landings). Solo quedan los 3 redirects invisibles (intencionalmente legacy). **No quedan páginas pendientes de elevar.**
 
 ---
 
@@ -37,7 +37,7 @@ Todo consolidado en ADRs (`99` + `00-INDICE`): cinematic punta a punta (§122–
 - Recomendaciones (§138): ver 2-3 fichas → index muestra "Recomendados" **semejantes**.
 - Comparador flotante (no choca con QuickTools ⊞) + perfil/favoritos cinematic.
 - (Comparador empty-state, simulador y footer ya validados en localhost — L-20.)
-- **Cuerpo aún legacy tras SP-5.3**: `busqueda.html`, `marca.html`, `marcas.html`, 7 landing `vehiculos-*.html` (futuros SP-5.3.x).
+- **Cuerpo cinematic COMPLETO** (§143 busqueda + §144 marca + §145 marcas + §146 4 landings SEO). Único legacy restante = 3 redirects invisibles (usados/nuevos/camionetas, intencional). Validar en prod las 4 landings nuevas (`vehiculos-{suv,pickup,sedan,hatchback}.html`).
 
 3. **Diferido sin urgencia**: SP-4 **fase 2** (popularidad global = contador `vehiculos/{id}.views` + reglas; custom image destacados; real-time switch). Auditorías `44-SEO`/`45-PERFORMANCE`/`48-ACCESIBILIDAD` cuando se pidan.
 

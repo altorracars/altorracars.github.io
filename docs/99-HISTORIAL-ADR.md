@@ -42659,3 +42659,32 @@ Verificado en preview (`marcas.html`): **header Marcas href = `marcas.html`** (f
 
 ### 145.4 Archivos + cache
 **Nuevo**: `css/home/marcas-cinematic.css`. **Modificados**: `marcas.html` (data-cin + links), `snippets/header.html` + `index.html` (nav Marcas → marcas.html), `service-worker.js`+`cache-manager.js`. **INTACTO**: `renderBrands`. Cache bump `v20260531340000` → `v20260531350000`. **Pendiente SP-5.3.x**: 7 landings `vehiculos-*.html`.
+
+---
+
+## 146. ADR-146 — Landings SEO por categoría cinematic (SP-5.3.e · cierre del catálogo)
+
+Cliente: *"AVANCEMOS CON LO PENDIENTE"* (tras §145; lo pendiente eran las landings `vehiculos-*.html`).
+
+### 146.1 Causa raíz / contexto (RCA §19 — corrección de un supuesto previo)
+En el cierre de §145 yo había anotado "7 landings `vehiculos-*.html` (redirects)". **Era un supuesto sin verificar.** Al leer los 7 archivos (doctrina §19, "no asumas") se reveló que son **dos clases distintas**:
+- **3 redirects puros** (no se ven nunca, `meta refresh 0s` + `noindex`): `vehiculos-usados.html`→`busqueda.html?tipo=usado`, `vehiculos-nuevos.html`→`busqueda.html?tipo=nuevo`, `vehiculos-camionetas.html`→`vehiculos-pickup.html`. Body = solo "Redirigiendo…".
+- **4 landings SEO REALES e indexables** (`<meta robots="index,follow">`, OG/Twitter, title/description propios): `vehiculos-suv.html`, `vehiculos-pickup.html`, `vehiculos-sedan.html`, `vehiculos-hatchback.html`. Estructura de body **idéntica a `marca.html`**: `.brand-hero` (siempre visible, imagen `categories/*.jpg`) + `.catalog-section > .catalog-layout` (sidebar filtros + `.vehicles-grid#vehiclesGrid` + `#pagination`), mismos scripts (`render.js`/`database.js`/`main.js`/comparador), filtro fijo `currentFilters={categoria:'suv'|…}`. Eran las ÚNICAS páginas del catálogo aún en legacy (Poppins/dark+dorado).
+
+### 146.2 Solución estructural (DRY — reuso, cero CSS nuevo)
+Como las 4 landings son un **clon estructural de `marca.html`**, se **REUSA `css/home/marca-cinematic.css`** (ya probado en marca + 18 `marcas/*`) en vez de duplicar un 3er stylesheet de catálogo. Por landing, 2 ediciones aditivas: (1) insertar 2 `<link>` (`soft-redesign.css` + `marca-cinematic.css`) tras `performance-fixes.css`; (2) `<body>` → `<body data-cin="on">`. Patrón replicado **exacto** del de `marca.html` (mismo orden de links). Verificado que `marca-cinematic.css` es seguro para este subconjunto: línea 10 fija `background:var(--cin-bg)` en `body[data-cin]`; `.brand-hero` (l.23-40) **no toca `display`** (las landings tienen el hero estático siempre visible — a diferencia de marca.html que lo revela por JS) ni depende del reveal; las reglas `.brand-header` (l.43-67) simplemente no matchean (las landings no tienen ese bloque) → inocuo, sin hueco de layout.
+
+### 146.3 No-regresión
+**Cero JS tocado** (loadVehicles/filtros/renderVehicles/comparador intactos). **Cero ID/clase renombrada** (§17.4) — solo se añadió el atributo `data-cin` y 2 links. Los **3 redirects quedaron INTACTOS** (no se tocan: no se ven, y meterles CSS sería inútil). Páginas **estáticas** (NO las genera `generate-vehicles.mjs`, que solo emite `vehiculos/*` y `marcas/*`) → **sin regen**. Cada `<head>` quedó idéntico salvo la imagen de preload propia (SUV/PICKUP/SEDAN/HATCHBACK.jpg).
+
+### 146.4 Tests E2E
+Verificación estática: las 4 landings tienen ahora 3 hits (`soft-redesign.css` + `marca-cinematic.css` + `data-cin="on"`); los 3 redirects 0 hits (intactos). Render visual idéntico a `marca.html`/`marcas/*` (mismo CSS, misma estructura) ya validado en §144. ⏳ Validación en prod (Ctrl+Shift+R) pendiente del cliente — el preview local sigue con glitch `innerWidth:0` + 403 Firebase (L-08).
+
+### 146.5 Anti-patterns evitados
+DRY: NO se creó un 4º CSS de catálogo duplicando hero/sidebar/cards (§143 busqueda + §144 marca ya duplicaban `.vehicle-card`; aquí se frena la duplicación reutilizando). NO se tocaron los redirects "por simetría" (serían cambios inútiles). NO se asumió "son redirects" (§19): se leyó cada archivo → se descubrió que 4 son landings reales. NO se regeneró (no aplica; estáticas).
+
+### 146.6 Archivos modificados / INTACTOS
+**Modificados** (4): `vehiculos-suv.html`, `vehiculos-pickup.html`, `vehiculos-sedan.html`, `vehiculos-hatchback.html` (2 ediciones c/u) + `service-worker.js` + `js/core/cache-manager.js`. **INTACTOS**: `vehiculos-usados.html`, `vehiculos-nuevos.html`, `vehiculos-camionetas.html` (redirects), `css/home/marca-cinematic.css` (reuso sin tocar), todo el JS.
+
+### 146.7 Doctrina + cache
+§19 (verificar leyendo, no asumir — corrigió mi propio supuesto de §145), §17.4 (aditivo, sin renombrar), L-21 (override por especificidad), DRY (reuso de stylesheet). Cache bump `v20260531350000` → `v20260531360000`. **Catálogo cinematic 100% COMPLETO** (index §122 + detalle §140 + busqueda §143 + marca §144 + marcas §145 + 4 landings §146); solo quedan los 3 redirects (invisibles, intencionalmente legacy).

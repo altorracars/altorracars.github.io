@@ -10,9 +10,9 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 Cinematic completo (§122–§144). §140 detalle en prod (PR #771). **§141/§142/§143 commiteados+pusheados** (`8686ff3`: pulido detalle + Descripción eliminada + busqueda). **§144 `marca.html` + 18 `marcas/*` cinematic SIN commit.** ⏳ Validar en prod. |
-| **Cache version vigente** | `v20260531340000` (§144, SIN commit; §141–§143 `v…330000` pusheados; en prod-main aún `v…300000`/§140). |
-| **Branch activa** | `refactor/estructura` HEAD `8686ff3` (§143). **§144 en working tree SIN commit.** `git pull` + commitea §144 (mensajes en chat). Merge a `main` (§141–§144) cuando el cliente lo decida. |
+| **Build** | 🟢 Cinematic completo (§122–§145). §140 detalle en prod (PR #771); §141–§144 commiteados+pusheados (`f0471f1`: pulido + Descripción eliminada + busqueda + marca). **§145 (fix nav Marcas + `marcas.html` cinematic) SIN commit.** **Catálogo cinematic completo** salvo 7 landings. ⏳ Validar en prod. |
+| **Cache version vigente** | `v20260531350000` (§145, SIN commit; §141–§144 `v…340000` pusheados; en prod-main aún `v…300000`/§140). |
+| **Branch activa** | `refactor/estructura` HEAD `f0471f1` (§144). **§145 en working tree SIN commit.** `git pull` + commitea §145 (mensajes en chat). Merge a `main` (§141–§145) cuando el cliente lo decida. |
 | **Producción (`main`)** | `origin/main` = `ae1bc7e` (PR #771) = SP-5.3 completo (Fases 0–3) + §139. **Detalle ahora CINEMATIC en prod.** ⏳ Validar Ctrl+Shift+R (E2E real, L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 

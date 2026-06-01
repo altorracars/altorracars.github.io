@@ -233,6 +233,8 @@
 | §145 | Fix nav header "Marcas"→`marcas.html` (snippet + index; antes al carrusel) + `marcas.html` (índice) cinematic (tokens/serif/Manrope, 18 tarjetas de marca) · L-21 | 42647 |
 | §146 | 4 landings SEO por categoría (`vehiculos-{suv,pickup,sedan,hatchback}.html`) cinematic (SP-5.3.e): clon estructural de marca.html → REUSO `marca-cinematic.css` (DRY), data-cin + soft-redesign; 3 redirects (usados/nuevos/camionetas) INTACTOS; estáticas, sin regen. **Catálogo 100% cinematic** | 42665 |
 | §147 | A11y quick wins WCAG (cierre parcial lóbulo §48): A11Y-05 :focus-visible global + A11Y-06 prefers-reduced-motion (soft-redesign) + A11Y-02 h1 sr-only en 4 landings + A11Y-01 aria-label en 50 controles de filtro (marca/4 landings/busqueda). Aditivo, ids/names/JS intactos; 18 marcas/* vía cron. Aplazados A11Y-03/04 | 42694 |
+| §148 | Validación post-launch (node -c JS prod limpio + checker refs: 1 enlace roto real arreglado simulador→busqueda) + A11Y-03 contraste `--cin-ink-faint` 0.32→0.50 (WCAG AA) + deuda técnica TODO-09..13 verificada/preservada (§17.4, sin acción segura). Queda solo A11Y-04 | 42724 |
+| §149 | A11Y-04 skip-link "Saltar al contenido" (WCAG 2.4.1, **cierra lóbulo §48 = 6/6**): `.skip-link` (style+base-redesign) + enlace en snippet header/index + `ensureMainLandmark()` en components.js inserta `#main` tras el header en TODAS las páginas (DRY, sin tocar 20 páginas, sin clobberear ids). Aditivo, verificado §19 (0 deps de hermano-del-header) | 42752 |
 
 ---
 

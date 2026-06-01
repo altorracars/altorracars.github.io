@@ -87,12 +87,18 @@ es portable → candidato a skill; si es del proyecto → al cerebro. (No duplic
 cliente con justificación (qué resolvería, por qué es portable) → (3) **el cliente DECIDE** →
 (4) si aprueba, leo la skill `skill-creator` y la creo según sus parámetros (SKILL.md con
 frontmatter `name`+`description` "pushy" para el trigger, progressive disclosure, `references/`
-para el detalle) en `skills/<nombre>/` → (5) la **registro** en el lóbulo relevante (sección
+para el detalle; **⚠️ `description` ≤ 1024 caracteres PARSEADOS** — lo exige el uploader de
+skills, verificar el largo antes de instalar) en `skills/<nombre>/` → (5) la **registro** en el lóbulo relevante (sección
 "Skills consultadas") + en `00-INDICE` (ruta del dominio).
 
 **Skills creadas así**:
 - **`accessibility-audit`** (2026-05-31) — framework WCAG 2.2 AA. Nació del hueco en la auditoría
   a11y (lóbulo §48): no existía skill de *compliance* (`impeccable` es solo creación de diseño).
+  Descripción **optimizada manualmente** contra 20 queries (10 trigger / 10 near-miss) con
+  exclusiones explícitas para evitar sobre-disparo. ⚠️ **Gotcha**: el loop automático
+  `skill-creator/scripts/run_loop.py` (optimización de descripción) usa `claude -p` headless,
+  que dio **`401 Invalid authentication credentials`** en esta sesión → no corre sin el CLI
+  `claude` autenticado. Fallback = optimización manual (válida per el propio skill-creator).
 
 ---
 

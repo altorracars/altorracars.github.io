@@ -1,16 +1,18 @@
 ---
 name: accessibility-audit
 description: >-
-  Audit a website, web app, or UI component for accessibility (WCAG 2.1 / 2.2 level AA)
-  by READING THE CODE — color contrast, keyboard navigation, focus visibility, ARIA,
-  form labels, headings, alt text, landmarks/skip-links, reduced-motion, and language.
-  Use this whenever the user wants to audit, check, review, or improve accessibility /
-  a11y / WCAG compliance / screen-reader support / keyboard access / color contrast /
-  focus indicators / ARIA, or asks "is this accessible?" — even if they never say the
-  word "WCAG". Use it PROACTIVELY right after a visual redesign or before shipping a UI,
-  because redesigns routinely introduce contrast and focus regressions. Produces a
-  severity-ranked findings report with file locations, the WCAG criterion, and the fix —
-  plus an explicit list of what PASSES so nothing gets re-flagged later.
+  Audit an existing website, web app, or component for WCAG 2.1/2.2 AA accessibility by
+  reading its code — color-contrast ratios, keyboard navigation, focus visibility, ARIA,
+  form labels, headings, alt text, landmarks/skip-links, reduced-motion, language. Use
+  whenever the user wants to audit, check, review, or assess the accessibility / a11y /
+  WCAG compliance of existing UI — including reports that a screen-reader or keyboard user
+  can't use something, whether specific colors or design tokens pass contrast, or "is this
+  accessible?" — even if they never say "WCAG". Use PROACTIVELY after a redesign or before
+  shipping, since redesigns routinely break contrast and focus. Produces a severity-ranked
+  report (location + WCAG criterion + fix) plus what already passes. This EVALUATES
+  accessibility — NOT building a11y features (e.g. a high-contrast toggle), writing alt-text
+  content, editing photo contrast, restyling focus rings for looks, translating copy, or
+  Lighthouse/perf work.
 ---
 
 # Accessibility Audit (WCAG 2.2 AA)

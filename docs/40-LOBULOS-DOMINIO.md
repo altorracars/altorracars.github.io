@@ -26,7 +26,7 @@
 | **45** | Performance | "audita performance", "Core Web Vitals", "LCP/CLS/FID" | 🟢 vacío | Métricas reales (Lighthouse), bottlenecks. Complementa doctrina §17. |
 | **46** | Escalabilidad | "audita escalabilidad", "arquitectura", "modernización código" | 🟢 vacío | Anti-deuda técnica, patrones, refactor estructural. |
 | **47** | Copywriting | "audita copy", "voz", "tono", "headlines", "CTAs" | 🟢 vacío | Tono Altorra, microcopy, headlines, CTAs, mensajes de error. |
-| **48** | Accesibilidad (a11y) | "audita a11y", "WCAG", "lectores de pantalla", "teclado" | 🟢 vacío | ARIA, contraste, navegación teclado, alt texts, foco visible. |
+| **48** | Accesibilidad (a11y) | "audita a11y", "WCAG", "lectores de pantalla", "teclado" | 🟠 **activo** (R inicial 2026-05-31) | ARIA, contraste, navegación teclado, alt texts, foco visible. Hallazgos en `48-ACCESIBILIDAD.md`. |
 
 **Categorías futuras**: cualquier dominio nuevo que el cliente pida análisis
 (ej. analytics/49, marketing/50, devops/51) se agrega aquí + se crea el

@@ -16,15 +16,15 @@
 
 ---
 
-## 🔧 SP-5.3 — EN PRODUCCIÓN (detalle-vehiculo cinematic + de-monolitización, PR #771) · pendiente validar prod
+## ✅ SP-5.3 — CATÁLOGO 100% CINEMATIC EN PRODUCCIÓN (§140–§146, PRs #771–#777) · solo pendiente QA visual
 
 **Completo y verificado** → consolidado en **ADR §140** (`99` + `00-INDICE`); `20-ESPACIAL` (carpeta `js/public/detalle/` + `detalle-cinematic.css`) + `43-UX` (Ronda 5) actualizados; cache bump `v20260531300000`. Spec `b2a6bc0`, plan `f56cb8d`.
 - `detalle-vehiculo.html` → cinematic + de-monolitizado: 4 módulos `js/public/detalle/{data,render,gallery,page}.js` + `css/home/detalle-cinematic.css`, `<body data-cin>`, botones **Opción A**, favorito/comparar/sticky cableados. **27 IDs + hooks intactos**. 27 `vehiculos/*` regeneradas. Verificado preview local (id=38, `node -c` OK). El **por qué/cómo** → ADR §140.
-- ✅ **Commiteado + mergeado a prod** (Fase 2 `10605da` + Fase 3 `86681a6` → PR #771, `origin/main ae1bc7e`). ⏳ Falta: **validar en prod con Ctrl+Shift+R** (E2E real) + `git pull` local (rama 6 commits detrás de `origin/main`).
-- ✅ **§141–§145 cerrados + commiteados+pusheados**: §141 pulido detalle, §142 Descripción ELIMINADA (datos dormidos; `admin-desc-gen.js` huérfano-borrable), §143 `busqueda.html`, §144 `marca.html`+18 `marcas/*` (`f0471f1`), §145 fix nav "Marcas"→`marcas.html` + `marcas.html` (índice) cinematic (`e7379f1`). Detalle → ADRs + lecciones **L-20/L-21** (`30`).
-- 🔧 **§146 ⏳ SIN commit** (cierre del catálogo): **4 landings SEO** `vehiculos-{suv,pickup,sedan,hatchback}.html` cinematic — son **clon estructural de `marca.html`** → **REUSO `marca-cinematic.css`** (DRY, cero CSS nuevo) + data-cin. Los **3 redirects** (usados/nuevos/camionetas) INTACTOS (no se ven). Estáticas, sin regen. (§19: verifiqué que mi supuesto previo "7 landings = redirects" era FALSO — 4 son landings reales indexables.) Cache `v20260531360000`. ⚠️ Validar en prod (Ctrl+Shift+R).
-- ⏳ **Pendiente cliente**: commitea §146 (mensajes en chat) + valida en prod las 4 landings (Ctrl+Shift+R).
-- ✅ **Catálogo 100% cinematic** (§122 index + §140 detalle + §143 busqueda + §144 marca + §145 marcas + §146 landings). Solo quedan los 3 redirects invisibles (intencionalmente legacy). **No quedan páginas pendientes de elevar.**
+- ✅ **§140 commiteado + mergeado a prod** (Fase 2 `10605da` + Fase 3 `86681a6` → PR #771). Fue el primero de la cadena #771–#777 (§141–§146 siguieron, ver abajo). Rama local detrás de `origin/main` solo en merge commits → `git pull` al retomar.
+- ✅ **TODO §141–§146 commiteado + MERGEADO a `main` (PRODUCCIÓN)** vía PRs #771–#777 (verificado `git log origin/main` 2026-05-31 17:54): §141 pulido detalle, §142 Descripción ELIMINADA (datos dormidos; `admin-desc-gen.js` huérfano-borrable), §143 `busqueda.html`, §144 `marca.html`+18 `marcas/*`, §145 fix nav "Marcas"→`marcas.html` + `marcas.html`, §146 4 landings SEO `vehiculos-{suv,pickup,sedan,hatchback}.html` (REUSO `marca-cinematic.css`, DRY). **`origin/main` = `3f31484` (PR#777), cache `v20260531360000`.** Detalle → ADRs + **L-20/L-21** (`30`).
+- ✅ **Catálogo 100% cinematic EN PRODUCCIÓN** (§122 index + §140 detalle + §143 busqueda + §144 marca + §145 marcas + §146 landings). Solo 3 redirects invisibles quedan legacy (intencional). **No quedan páginas pendientes de elevar.**
+- ✅ **Auditoría regresión post-deploy PASÓ** (ver bitácora abajo): sin regresiones. ⚠️ 1 flag a11y no bloqueante (`--cin-ink-faint` sub-AA, heredado §122).
+- ⏳ **Único pendiente cliente**: **QA visual en prod** (Ctrl+Shift+R) de detalle/busqueda/marca/marcas/4 landings + nav "Marcas". Opcional housekeeping: `git rm js/admin/admin-desc-gen.js` (huérfano §142) + sincronizar rama local (`git pull`, va detrás de `origin/main` solo en merge commits).
 
 ---
 
@@ -79,4 +79,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera — se vacía al consolidar)
 
-- *(vacía — sesión 2026-05-30 consolidada en ADRs §131–§138 + lecciones L-17/L-18/L-19 + M-06/M-07; todo commiteado hasta `d62f058`)*
+- **2026-05-31 · Auditoría regresión PRE-MERGE SP-5.3 (§140–§146)**: ✅ **PASÓ — sin regresiones, safe to merge a `main`**. Verificado: links CSS (12/12 existen, 0 404), fix nav §145 (0 `index.html#marcas` en todo el sitio incl. generadas), orphan `admin-desc-gen.js` (sin refs vivas, solo docs — borrable con `git rm`), variantes hero landings (§95/§97 OK; HATCHBACK 1280/1920 faltan pero NO se referencian), `node -c` (11 JS OK), cache match (SW=MGR `v…360000`). ⚠️ **1 flag a11y NO bloqueante** (heredado del index §122 — ya en prod, NO es regresión): `--cin-ink-faint` rgba(…,0.32) ≈ **2.55:1** sobre `--cin-bg #08070A` → sub-AA; usado 41× en 7 CSS cinematic. → semilla para lóbulo `48-ACCESIBILIDAD` (subir a ~0.5 ⇒ ~4:1) cuando se pida auditoría a11y.

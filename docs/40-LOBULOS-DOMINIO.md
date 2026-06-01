@@ -56,7 +56,8 @@ para lóbulos de dominio. No reutilizar.
    - 🏗️ **Escalabilidad** → análisis directo + experiencia de §119.
    - ✍️ **Copywriting** → `copywriting`, `copy-editing`, `email-sequence`,
      `cold-email`, `marketing-psychology`, `ad-creative`.
-   - ♿ **Accesibilidad** → `impeccable` + análisis directo.
+   - ♿ **Accesibilidad** → skill **`accessibility-audit`** (CREADA — framework WCAG 2.2 AA) +
+     análisis directo. (`impeccable` = creación/rediseño de UI, NO compliance.)
 2. **Segundo**: si hay skill aplicable, invocarla vía tool `Skill` (`skill:
    "name"`). La skill da el FRAMEWORK analítico — qué revisar, en qué orden,
    con qué criterios.
@@ -70,6 +71,28 @@ para lóbulos de dominio. No reutilizar.
 (findings proyecto-específicos) → análisis cada vez más profundo y más
 rápido, sin re-investigar lo aprendido. El cerebro acumula know-how
 estratégico, no solo bugs históricos.
+
+---
+
+## 🌱 Reflejo de Sugerencia de Skills (neurogénesis de skills, no solo de neuronas)
+
+Acordado con el cliente (2026-05-31). Las skills REPOTENCIAN al cerebro y a Claude con
+capacidad reusable. Distinto de crear un lóbulo: aquí proponemos crear una **skill**.
+
+**Regla de oro (la frontera)**: **Skill** = capacidad/framework GENERAL y PORTABLE (sirve en
+*cualquier* proyecto). **Neurona/lóbulo** = conocimiento **Altorra-específico**. Si lo aprendido
+es portable → candidato a skill; si es del proyecto → al cerebro. (No duplicar uno en el otro.)
+
+**Flujo**: (1) detecto un hueco de capacidad reusable mientras trabajo → (2) lo **SUGIERO** al
+cliente con justificación (qué resolvería, por qué es portable) → (3) **el cliente DECIDE** →
+(4) si aprueba, leo la skill `skill-creator` y la creo según sus parámetros (SKILL.md con
+frontmatter `name`+`description` "pushy" para el trigger, progressive disclosure, `references/`
+para el detalle) en `skills/<nombre>/` → (5) la **registro** en el lóbulo relevante (sección
+"Skills consultadas") + en `00-INDICE` (ruta del dominio).
+
+**Skills creadas así**:
+- **`accessibility-audit`** (2026-05-31) — framework WCAG 2.2 AA. Nació del hueco en la auditoría
+  a11y (lóbulo §48): no existía skill de *compliance* (`impeccable` es solo creación de diseño).
 
 ---
 

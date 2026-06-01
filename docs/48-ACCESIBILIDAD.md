@@ -12,8 +12,10 @@
   *compliance* WCAG. → Para auditorías a11y conviene **WCAG 2.2 AA directo** (conocimiento
   pre-entrenado). `impeccable` aporta sus "design laws" (color OKLCH, contraste, motion ease-out,
   bans de slop) como complemento de criterio visual, no como checklist de accesibilidad.
-  **Recomendación futura**: para este lóbulo, ir directo a WCAG; usar `impeccable` solo si se
-  va a *rediseñar* un componente (no para evaluarlo).
+  **Recomendación futura**: usar la skill **`accessibility-audit`** (CREADA 2026-05-31 en
+  `skills/accessibility-audit/` — encapsula el framework WCAG 2.2 AA: criterios verify-in-code,
+  fórmula de contraste, rúbrica de severidad, recetas grep, falsos positivos comunes). Nació del
+  hueco detectado en esta auditoría. `impeccable` solo si se va a *rediseñar* un componente.
 
 ## Hallazgos
 

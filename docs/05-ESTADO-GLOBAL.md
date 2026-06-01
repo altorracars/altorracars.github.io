@@ -10,9 +10,9 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 **Catálogo 100% cinematic en prod (§122–§146).** + Lóbulo §48 + skill `accessibility-audit` + **§147 a11y commiteados**. **§148 (validación post-launch + A11Y-03 contraste + fix enlace roto) SIN commit.** Único pendiente a11y: **A11Y-04 skip-link**. ⏳ QA visual prod. |
-| **Cache version vigente** | `v20260601000000` (§148, **SIN commit**); §147 `v…370000` commiteado; prod-`main` ≤ §146. SW = cache-manager (match ✅). |
-| **Branch activa** | `refactor/estructura` (§140–§146 en `main`). **§148 en working tree SIN commit** (§147 + skill ya commiteados). `git pull` para sync con `origin/main`. |
+| **Build** | 🟢 **Catálogo 100% cinematic en prod (§122–§146)** + Lóbulo §48 + skill + §147 + **§148 commiteados** (`eb44b99`). **§149 (A11Y-04 skip-link) SIN commit.** **Lóbulo §48 CERRADO (6/6).** → Sitio **sin pendientes de código**. ⏳ QA visual prod. |
+| **Cache version vigente** | `v20260601120000` (§149, **SIN commit**); §148 `v…000000` committeado (`eb44b99`); prod-`main` ≤ §146. SW = cache-manager (match ✅). |
+| **Branch activa** | `refactor/estructura` (§140–§146 en `main`). **§149 en working tree SIN commit** (§148+§147+skill commiteados). `git pull` para sync con `origin/main`. |
 | **Producción (`main`)** | `origin/main` = `3f31484` (PR#777) = **catálogo 100% cinematic** (§140 detalle + §141 pulido + §142 sin-desc + §143 busqueda + §144 marca + §145 marcas/nav + §146 landings). Sin regresiones (auditoría). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 

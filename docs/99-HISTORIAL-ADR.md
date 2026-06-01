@@ -42745,4 +42745,33 @@ JS de **producción 100% limpio** (`node -c`, 0 errores). El único `SyntaxError
 **Modificados**: `simulador-credito.html` + `admin.html` (enlace roto), `css/home/cinematic.css` + `css/home/soft-redesign.css` (A11Y-03), `service-worker.js` + `js/core/cache-manager.js` (cache). **INTACTOS**: toda la deuda técnica (verificada, preservada), todo el JS de prod, el design-system de referencia (corrupción fuera de scope, flaggeada).
 
 ### 148.7 Doctrina + cache
-§19 (verificar, no asumir — atrapó los falsos positivos del checker), §17.4 (preservar dead-CSS retrocompat), §37 (IAP). Cache bump `v20260531370000` → `v20260601000000`. Lóbulo §48: **A11Y-03 → RESUELTO**; queda **A11Y-04 (skip-link)** = único pendiente sustantivo (sweep aditivo de landmark `#main` en ~todas las páginas + skip link global). Diferidos por input externo: `/cartagena.html` (contenido), CSAT/transferencias (tráfico), test con AT real.
+§19 (verificar, no asumir — atrapó los falsos positivos del checker), §17.4 (preservar dead-CSS retrocompat), §37 (IAP). Cache bump `v20260531370000` → `v20260601000000`. Lóbulo §48: **A11Y-03 → RESUELTO**; **A11Y-04 → RESUELTO en §149**. Diferidos por input externo: `/cartagena.html` (contenido), CSAT/transferencias (tráfico), test con AT real.
+
+---
+
+## 149. ADR-149 — A11Y-04: skip-link "Saltar al contenido" (cierre del lóbulo §48)
+
+Cliente aprobó cerrar A11Y-04 (último pendiente sustantivo de a11y), garantizando cero regresión.
+
+### 149.1 Causa raíz
+WCAG 2.4.1 (Bypass Blocks, nivel A): el sitio no tenía enlace "saltar al contenido", obligando a usuarios de teclado a tabular toda la nav en cada página. Además ~la mitad de las páginas no tenía landmark de destino (`#main`).
+
+### 149.2 Solución estructural (DRY — evita ~20 ediciones por-página)
+- **CSS `.skip-link`**: oculto fuera de pantalla (`transform: translateY(-150%)`, NO `top` → §17.2), visible al foco (`:focus → translateY(0)`), `prefers-reduced-motion` respetado. En `style.css` (cubre las 64 páginas con header inyectado) + `base-redesign.css` (para el index, que no carga style.css).
+- **Enlace declarativo**: primer elemento focusable en `snippets/header.html` (header global → 64 páginas) + en el header inline de `index.html`.
+- **Landmark `#main` universal vía JS**: `ensureMainLandmark()` en `components.js` inserta `<div id="main" tabindex="-1">` justo tras el header (`#header-placeholder` inyectado **o** `#header` inline del index) en TODAS las páginas. **Un solo punto cubre 64 páginas + index + las 45 generadas (runtime), sin tocar su markup ni regenerar.** No clobberea ids existentes (comparar conserva `#compare-root`; el ancla se inserta como hermano). Inserción ÚNICA en DOMContentLoaded — NO es MutationObserver (§3.5).
+
+### 149.3 No-regresión
+100% aditivo (CSS nuevo + 1 enlace + 1 `<div>` insertado por JS). **Verificado §19 que insertar `#main` tras el header es seguro**: CERO selectores CSS hermano-adyacente del header (`chrome-bridge.css` solo estiliza `#header-placeholder` mismo) + CERO JS dependiente de `header.nextElementSibling` (los `getElementById('header')` son para sticky/cache). `node -c components.js` OK. El markup de las ~20 páginas de contenido NO se tocó (el `#main` es runtime).
+
+### 149.4 Tests E2E
+`node -c` ✓. Auditoría de hermanos del header (CSS + JS) → 0 dependencias. ⏳ Validación teclado real en prod: Tab → skip-link dorado aparece arriba-izquierda → Enter → foco salta la nav al contenido. Las 45 generadas heredan `#main` en runtime (sin regen).
+
+### 149.5 Anti-patterns evitados
+NO se hicieron ~20 ediciones por-página de `id="main"` (DRY: 1 función en components.js). NO se clobbereó ningún id (comparar intacto). NO se animó `top` (transform, §17.2). NO MutationObserver (§3.5: inserción única). reduced-motion respetado. §17.4 (sin renombrar nada; todo aditivo).
+
+### 149.6 Archivos modificados / INTACTOS
+**Modificados**: `css/style.css` + `css/home/base-redesign.css` (`.skip-link`), `snippets/header.html` + `index.html` (enlace), `js/core/components.js` (`ensureMainLandmark`). **INTACTO**: el markup de las ~20 páginas de contenido (el `#main` se inyecta en runtime), todo lo demás. Cache bump propio `v20260601120000` (§148 quedó committeado aparte en `eb44b99` con `v…000000`, así que §149 necesita versión MAYOR para invalidar sus assets nuevos).
+
+### 149.7 Doctrina + cache
+§17.2 (transform, no animar layout), §3.5 (sin observer), §19 (verifiqué los hermanos del header antes de insertar), WCAG 2.4.1. Cache bump `v20260601000000` (§148) → `v20260601120000` (§149). **Lóbulo §48: las 6 findings (A11Y-01…06) RESUELTAS.** Quedan solo pendientes que requieren herramienta/dispositivo real: test con lector de pantalla, target-size móvil (2.5.8), orden de foco del lightbox/comparador.

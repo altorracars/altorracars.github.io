@@ -82,7 +82,9 @@ código (§19), no en navegador (L-08 impide E2E real en localhost).
 
 **A11Y-03** ✅ **RESUELTO en §148** (2026-06-01): `--cin-ink-faint` `rgba(…,0.32)`→`0.50` en `cinematic.css` + `soft-redesign.css` → ≈4.7:1 sobre `--cin-bg`, pasa WCAG AA 1.4.3. Aprobado por el cliente (cambio transversal al texto tenue).
 
-**APLAZADO**: **A11Y-04** (skip-link) — único pendiente sustantivo de a11y. Requiere landmark `#main` en ~todas las páginas (la mitad no lo tiene) + skip link en el header global + `.sr-only-focusable`. Sweep aditivo multi-página.
+**A11Y-04** ✅ **RESUELTO en §149** (2026-06-01): `.skip-link` (`style.css` + `base-redesign.css`) + enlace en `snippets/header.html` (64 páginas) + header inline del index + **`ensureMainLandmark()` en `components.js`** que inserta `<div id="main" tabindex="-1">` tras el header en TODAS las páginas (DRY — sin tocar el markup de ~20 páginas, sin clobberear ids como `#compare-root`; las 45 generadas heredan en runtime). Verificado §19: 0 dependencias del hermano-adyacente del header. `transform` no `top` (§17.2), sin observer (§3.5), reduced-motion OK.
+
+✅ **LÓBULO §48: las 6 findings (A11Y-01…06) RESUELTAS.** Quedan solo pendientes que requieren herramienta/dispositivo real (ver abajo): lector de pantalla, target-size móvil, orden de foco lightbox/comparador.
 
 ## Excepciones / decisiones específicas Altorra
 - **A11Y-03 (ink-faint) NO es regresión de SP-5.3**: nace con el diseño del index (§122), ya

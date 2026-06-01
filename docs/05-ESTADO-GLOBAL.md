@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 **Catálogo 100% cinematic (§122–§146).** §140 detalle en prod (PR #771); §141–§145 commiteados+pusheados (`f0471f1` §141-144 + `e7379f1` §145: nav Marcas + marcas.html). **§146 (4 landings SEO `vehiculos-{suv,pickup,sedan,hatchback}.html`) SIN commit.** Solo quedan 3 redirects invisibles (intencional). ⏳ Validar en prod. |
-| **Cache version vigente** | `v20260531360000` (§146, SIN commit; §141–§145 `v…350000` commiteados+pusheados en `refactor/estructura`; prod-`main` aún `v…300000`/§140). |
-| **Branch activa** | `refactor/estructura` HEAD `e7379f1` (§145, = `origin`, sincronizada). **§146 en working tree SIN commit.** Commitea §146 (mensajes en chat). Merge a `main` (§141–§146) cuando el cliente lo decida. |
-| **Producción (`main`)** | `origin/main` = `ae1bc7e` (PR #771) = SP-5.3 completo (Fases 0–3) + §139. **Detalle ahora CINEMATIC en prod.** ⏳ Validar Ctrl+Shift+R (E2E real, L-08). |
+| **Build** | 🟢 **Catálogo 100% cinematic EN PRODUCCIÓN (§122–§146).** Todo §140–§146 mergeado a `main` vía **PRs #771–#777** (`3f31484`/§146, 2026-05-31 17:54). Auditoría regresión post-deploy **PASÓ** (sin regresiones; detalle en `10`). Solo 3 redirects invisibles quedan legacy. ⏳ Solo falta QA visual prod. |
+| **Cache version vigente** | `v20260531360000` (§146) — **YA desplegada en `main`** (`origin/main`=`3f31484`). SW = cache-manager (match ✅). |
+| **Branch activa** | `refactor/estructura` HEAD `2b519b5` (§146) = `origin/refactor`. **Todo mergeado a `main`** (PR#777). Rama detrás de `origin/main` solo en merge commits → `git pull`/sync opcional al retomar. |
+| **Producción (`main`)** | `origin/main` = `3f31484` (PR#777) = **catálogo 100% cinematic** (§140 detalle + §141 pulido + §142 sin-desc + §143 busqueda + §144 marca + §145 marcas/nav + §146 landings). Sin regresiones (auditoría). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

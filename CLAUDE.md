@@ -277,6 +277,7 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   lóbulo hijo creado/actualizado + skills consultadas registradas en él? Si falta
   cualquiera, vuelve y hazlo ANTES de pasar a la siguiente. Decir "ya casi" sin
   alimentar el cerebro = el próximo "tú" sin memoria sufre re-investigando lo aprendido.
+- **Reflejo de Sugerencia de Skills (§40)**: si aprendes una capacidad/framework REUSABLE y PORTABLE (sirve en cualquier proyecto, NO Altorra-específico → eso va al cerebro), SUGIERE crear una skill vía `skill-creator`; el cliente decide. Skill = capacidad general; neurona/lóbulo = conocimiento Altorra. Flujo + registro en `40-LOBULOS`.
 
 **🛡️ Límite de guardián (cuidado ante todo)**: los reflejos ENRIQUECEN, nunca
 borran a la ligera. Eliminar o reescribir conocimiento histórico exige certeza

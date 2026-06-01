@@ -10,9 +10,9 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 **Catálogo 100% cinematic EN PRODUCCIÓN (§122–§146).** Todo §140–§146 mergeado a `main` vía **PRs #771–#777** (`3f31484`/§146, 2026-05-31 17:54). Auditoría regresión post-deploy **PASÓ** (sin regresiones; detalle en `10`). Solo 3 redirects invisibles quedan legacy. ⏳ Solo falta QA visual prod. |
-| **Cache version vigente** | `v20260531360000` (§146) — **YA desplegada en `main`** (`origin/main`=`3f31484`). SW = cache-manager (match ✅). |
-| **Branch activa** | `refactor/estructura` HEAD `2b519b5` (§146) = `origin/refactor`. **Todo mergeado a `main`** (PR#777). Rama detrás de `origin/main` solo en merge commits → `git pull`/sync opcional al retomar. |
+| **Build** | 🟢 **Catálogo 100% cinematic en prod (§122–§146, PRs #771–#777).** + Lóbulo `48-ACCESIBILIDAD` (auditoría WCAG) + **§147 a11y quick wins (A11Y-01/02/05/06) SIN commit**. Regresión post-deploy PASÓ. ⏳ QA visual prod. |
+| **Cache version vigente** | `v20260531370000` (§147 a11y, **SIN commit**); prod-`main` = `v…360000` (§146). SW = cache-manager (match ✅). |
+| **Branch activa** | `refactor/estructura` (§140–§146 mergeados a `main`, PR#777). **§147 (a11y) en working tree SIN commit.** `git pull` para sync con `origin/main` (merge commits). |
 | **Producción (`main`)** | `origin/main` = `3f31484` (PR#777) = **catálogo 100% cinematic** (§140 detalle + §141 pulido + §142 sin-desc + §143 busqueda + §144 marca + §145 marcas/nav + §146 landings). Sin regresiones (auditoría). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 

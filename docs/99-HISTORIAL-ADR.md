@@ -42718,3 +42718,31 @@ NO se rompió markup por "réplica exacta" (aditivo puro). NO se corrió el gene
 
 ### 147.7 Doctrina + cache
 §19 (leí el markup real antes de tocar — descubrí la inconsistencia entre archivos), §17.4 (aditivo), §37 (IAP). Cache bump `v20260531360000` → `v20260531370000`. Lóbulo `48-ACCESIBILIDAD`: A11Y-01/02/05/06 → **RESUELTOS**; quedan A11Y-03 (token) + A11Y-04 (skip-link) + pendientes de Ronda inicial (test con AT real, target-size).
+
+---
+
+## 148. ADR-148 — Validación post-launch + cierre de pendientes seguros (A11Y-03 + enlace roto)
+
+Cliente: *"validemos y hagamos todo lo que está pendiente menos lo del dominio/Cloudflare"* + *"Decisión 1 (contraste) aprobada, Decisión 2 (deuda técnica) aprobada únicamente garantizando que no se rompa nada"*.
+
+### 148.1 Causa raíz / contexto
+Barrido de validación estática del sitio (lo verificable sin prod, dado L-08): `node -c` de todo el JS público + checker propio de referencias locales rotas (`href`/`src`/`srcset`, honrando `<base href>`). Más cierre de los pendientes accionables sin presupuesto.
+
+### 148.2 Solución estructural
+- **Enlace roto (real)**: `simulador-credito.html` redirigía a `catalogo.html` (inexistente; el catálogo es `busqueda.html`) en el fallback de "rechazar términos" sin vehículo/referrer → `window.location.href = 'busqueda.html'`. + placeholder de ejemplo en `admin.html` (`catalogo.html?tipo=nuevo` → `busqueda.html?tipo=nuevo`, evita que un admin copie un destino roto).
+- **A11Y-03** (cierre lóbulo §48): `--cin-ink-faint` `rgba(…,0.32)` → `0.50` en **ambas** definiciones (`cinematic.css` index + `soft-redesign.css` catálogo). Pasa de ≈2.5:1 a **≈4.7:1** sobre `--cin-bg` → cumple WCAG AA 1.4.3. Aprobado por el cliente (cambio sutil pero transversal al texto tenue de todo el sitio).
+
+### 148.3 No-regresión
+JS de **producción 100% limpio** (`node -c`, 0 errores). El único `SyntaxError` está en `altorra-cars-design-system/project/redesign/data.js` (mock corrupto del design-system de referencia — **NO shippeado**, 0 páginas de prod lo cargan; fuera de scope). Referencias: 0 rotas reales en prod (las 1255+ "rotas" del 1er pase fueron **falsos positivos** del checker por no honrar `<base href="/">` de las páginas generadas + la inyección de snippets; corregido → quedó 1 real, ya arreglada). A11Y-03 = solo cambio de valor de token, sin tocar estructura.
+
+### 148.4 Tests E2E
+`node -c` ✓ (todo prod). Checker de refs ✓ (0 rotas reales tras corregir el checker para `<base>` + verificar destinos en raíz). A11Y-03: contraste recalculado a mano (0.50 ⇒ ≈4.7:1 ≥ 4.5:1 AA). ⏳ QA visual del texto tenue en prod (Ctrl+Shift+R) pendiente del cliente.
+
+### 148.5 Anti-patterns evitados
+**Deuda técnica TODO-09..13 verificada, NO tocada** (garantía "no se rompa nada"): TODO-11 ya estaba resuelto (funciones muertas ya no existen — 0 refs reales); TODO-10 preservada por **§17.4** (CSS de tabla oculta, retrocompat intencional); TODO-09 (cambios funcionales admin), TODO-12 (`transition:all`, "alto riesgo" per §109), TODO-13 (ya mitigado) → **sin acción segura+valiosa**. "Verificar y no tocar > tocar y rezar." NO se removió CSS/JS sin probar inercia (§19). NO se corrió el generador (evita diffs de fecha).
+
+### 148.6 Archivos modificados / INTACTOS
+**Modificados**: `simulador-credito.html` + `admin.html` (enlace roto), `css/home/cinematic.css` + `css/home/soft-redesign.css` (A11Y-03), `service-worker.js` + `js/core/cache-manager.js` (cache). **INTACTOS**: toda la deuda técnica (verificada, preservada), todo el JS de prod, el design-system de referencia (corrupción fuera de scope, flaggeada).
+
+### 148.7 Doctrina + cache
+§19 (verificar, no asumir — atrapó los falsos positivos del checker), §17.4 (preservar dead-CSS retrocompat), §37 (IAP). Cache bump `v20260531370000` → `v20260601000000`. Lóbulo §48: **A11Y-03 → RESUELTO**; queda **A11Y-04 (skip-link)** = único pendiente sustantivo (sweep aditivo de landmark `#main` en ~todas las páginas + skip link global). Diferidos por input externo: `/cartagena.html` (contenido), CSAT/transferencias (tráfico), test con AT real.

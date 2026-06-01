@@ -11,7 +11,7 @@
   --cin-bg-elev:   #15121A;
   --cin-ink:       #F4EEDE;
   --cin-ink-soft:  rgba(244,238,222,0.62);
-  --cin-ink-faint: rgba(244,238,222,0.32);
+  --cin-ink-faint: rgba(244,238,222,0.50); /* A11Y-03 (§148): 0.32→0.50 ≈4.7:1 sobre --cin-bg, pasa WCAG AA 1.4.3 (antes 2.5:1) */
   --cin-gold:      #D4A85A;
   --cin-gold-hot:  #F0C674;
   --cin-gold-deep: #8a6a2c;

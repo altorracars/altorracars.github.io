@@ -80,7 +80,9 @@ código (§19), no en navegador (L-08 impide E2E real en localhost).
 - **A11Y-05** ✅ → `body[data-cin="on"] :focus-visible { outline: 2px solid var(--cin-gold-hot) }` en `soft-redesign.css` (cubre TODO el catálogo, no solo el index).
 - **A11Y-06** ✅ → `@media (prefers-reduced-motion: reduce)` en `soft-redesign.css`.
 
-**APLAZADOS** (requieren decisión, no incluidos): **A11Y-03** (subir `--cin-ink-faint` ~0.32→0.5 — token transversal de 41 usos, afecta también el index) + **A11Y-04** (skip-link — requiere añadir landmark `#main` + estilo focus del enlace).
+**A11Y-03** ✅ **RESUELTO en §148** (2026-06-01): `--cin-ink-faint` `rgba(…,0.32)`→`0.50` en `cinematic.css` + `soft-redesign.css` → ≈4.7:1 sobre `--cin-bg`, pasa WCAG AA 1.4.3. Aprobado por el cliente (cambio transversal al texto tenue).
+
+**APLAZADO**: **A11Y-04** (skip-link) — único pendiente sustantivo de a11y. Requiere landmark `#main` en ~todas las páginas (la mitad no lo tiene) + skip link en el header global + `.sr-only-focusable`. Sweep aditivo multi-página.
 
 ## Excepciones / decisiones específicas Altorra
 - **A11Y-03 (ink-faint) NO es regresión de SP-5.3**: nace con el diseño del index (§122), ya

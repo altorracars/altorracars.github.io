@@ -757,3 +757,27 @@
   border-radius: 18px;
 }
 .brn-single-empty p { font-size: 14px; color: var(--cin-ink-soft); margin: 0 0 14px; }
+
+/* ===== A11Y §48 — Foco visible consistente (WCAG 2.4.7) =====
+   base-redesign.css define :focus-visible global pero NO carga en
+   busqueda/marca/marcas/landings/detalle (solo el index). Esto lo cubre
+   en todas las páginas que cargan soft-redesign.css. */
+body[data-cin="on"] :focus-visible {
+  outline: 2px solid var(--cin-gold-hot);
+  outline-offset: 2px;
+}
+
+/* ===== A11Y §48 — prefers-reduced-motion en el catálogo cinematic (WCAG 2.3.3) =====
+   cinematic.css/chrome-redesign ya lo respetan; los CSS per-page
+   (marca/busqueda/marcas/detalle-cinematic) no. Neutraliza animaciones
+   y transiciones para usuarios con sensibilidad al movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-cin="on"] *,
+  body[data-cin="on"] *::before,
+  body[data-cin="on"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

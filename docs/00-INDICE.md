@@ -231,6 +231,7 @@
 | §144 | `marca.html` (template) cinematic (SP-5.3.c): hero/brand-header serif + sidebar filtros glass + tarjetas cinematic; 18 `marcas/*` regeneradas; JS intacto · L-21 | 42629 |
 | §145 | Fix nav header "Marcas"→`marcas.html` (snippet + index; antes al carrusel) + `marcas.html` (índice) cinematic (tokens/serif/Manrope, 18 tarjetas de marca) · L-21 | 42647 |
 | §146 | 4 landings SEO por categoría (`vehiculos-{suv,pickup,sedan,hatchback}.html`) cinematic (SP-5.3.e): clon estructural de marca.html → REUSO `marca-cinematic.css` (DRY), data-cin + soft-redesign; 3 redirects (usados/nuevos/camionetas) INTACTOS; estáticas, sin regen. **Catálogo 100% cinematic** | 42665 |
+| §147 | A11y quick wins WCAG (cierre parcial lóbulo §48): A11Y-05 :focus-visible global + A11Y-06 prefers-reduced-motion (soft-redesign) + A11Y-02 h1 sr-only en 4 landings + A11Y-01 aria-label en 50 controles de filtro (marca/4 landings/busqueda). Aditivo, ids/names/JS intactos; 18 marcas/* vía cron. Aplazados A11Y-03/04 | 42694 |
 
 ---
 

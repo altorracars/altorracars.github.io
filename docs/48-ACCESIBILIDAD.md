@@ -71,6 +71,15 @@ código (§19), no en navegador (L-08 impide E2E real en localhost).
 - `#page-loader` con `role="status"` + `aria-label`. ✅
 - CSS legacy NO elimina outlines de foco globalmente (links/botones mantienen foco visible). ✅
 
+### 2026-05-31 · Fixes aplicados (ADR §147)
+**RESUELTOS** (batch aprobado por el cliente):
+- **A11Y-01** ✅ → `aria-label` en los **50 controles** de filtro (selects + inputs precio/año/km) de `marca.html` + 4 landings + `busqueda.html`. Se eligió `aria-label` sobre `for=` por **markup inconsistente entre archivos** (suv usa `class="filter-label"`, hatchback minificado, orden de atributos dispar) → uniforme y 100% aditivo; `id`/`name`/JS intactos. Las **18 `marcas/*` heredan vía cron regen** (el generador usa `new Date()` → no se corrió a mano para no meter diffs de fecha).
+- **A11Y-02** ✅ → `<h1 class="sr-only">{Categoría} Usados en Cartagena</h1>` en las 4 landings.
+- **A11Y-05** ✅ → `body[data-cin="on"] :focus-visible { outline: 2px solid var(--cin-gold-hot) }` en `soft-redesign.css` (cubre TODO el catálogo, no solo el index).
+- **A11Y-06** ✅ → `@media (prefers-reduced-motion: reduce)` en `soft-redesign.css`.
+
+**APLAZADOS** (requieren decisión, no incluidos): **A11Y-03** (subir `--cin-ink-faint` ~0.32→0.5 — token transversal de 41 usos, afecta también el index) + **A11Y-04** (skip-link — requiere añadir landmark `#main` + estilo focus del enlace).
+
 ## Excepciones / decisiones específicas Altorra
 - **A11Y-03 (ink-faint) NO es regresión de SP-5.3**: nace con el diseño del index (§122), ya
   desplegado. Se documenta aquí pero su fix es transversal al sistema cinematic, no del catálogo.

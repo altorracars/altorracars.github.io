@@ -42688,3 +42688,33 @@ DRY: NO se creó un 4º CSS de catálogo duplicando hero/sidebar/cards (§143 bu
 
 ### 146.7 Doctrina + cache
 §19 (verificar leyendo, no asumir — corrigió mi propio supuesto de §145), §17.4 (aditivo, sin renombrar), L-21 (override por especificidad), DRY (reuso de stylesheet). Cache bump `v20260531350000` → `v20260531360000`. **Catálogo cinematic 100% COMPLETO** (index §122 + detalle §140 + busqueda §143 + marca §144 + marcas §145 + 4 landings §146); solo quedan los 3 redirects (invisibles, intencionalmente legacy).
+
+---
+
+## 147. ADR-147 — Accesibilidad: quick wins WCAG (cierre parcial del lóbulo §48)
+
+Cliente: tras la auditoría a11y (lóbulo `48-ACCESIBILIDAD`) aprobó el batch *"A11Y-01/02/05/06"*.
+
+### 147.1 Causa raíz / contexto
+Hallazgos verificados en la Ronda inicial del lóbulo `48-ACCESIBILIDAD` (auditoría WCAG 2.2 AA del catálogo cinematic en prod). Este ADR resuelve 4 de los 6: A11Y-01 (filtros sin etiqueta programática, 1.3.1/4.1.2), A11Y-02 (landings sin `<h1>`, 1.3.1/2.4.6), A11Y-05 (foco débil en campos, 2.4.7), A11Y-06 (sin `prefers-reduced-motion` en CSS per-page, 2.3.3). Aplazados: A11Y-03 (token `--cin-ink-faint` transversal, requiere decisión de valor) y A11Y-04 (skip-link, requiere landmark `#main`).
+
+### 147.2 Solución estructural
+- **A11Y-05** (foco visible): 1 regla en `css/home/soft-redesign.css` → `body[data-cin="on"] :focus-visible { outline: 2px solid var(--cin-gold-hot); outline-offset: 2px }`. Cubre TODO el catálogo (busqueda/marca/marcas/landings/detalle) que carga soft-redesign pero NO base-redesign (donde vivía el `:focus-visible` global, solo en index).
+- **A11Y-06** (reduced-motion): bloque `@media (prefers-reduced-motion: reduce)` en `soft-redesign.css` que neutraliza animation/transition en `body[data-cin] *`. cinematic.css/chrome ya lo tenían; esto cubre los CSS per-page.
+- **A11Y-02** (h1): `<h1 class="sr-only">{Categoría} Usados en Cartagena | ALTORRA CARS</h1>` insertado tras `#header-placeholder` en las 4 landings (sr-only → cero impacto visual, suma a11y + SEO). `.sr-only` ya existía (§90).
+- **A11Y-01** (etiquetas de filtro): se añadió **`aria-label`** a cada `<select>` y a los `<input>` de precio/año/km en `marca.html` + 4 landings + `busqueda.html` (50 controles). Se eligió `aria-label` sobre `for=` por **markup inconsistente entre archivos** (suv usa `class="filter-label"`, hatchback minificado, indentaciones y orden de atributos dispares) → `aria-label` es uniforme y 100% aditivo. El sort dropdown ya tenía `for="sortBy"` (intacto).
+
+### 147.3 No-regresión
+**100% aditivo**: solo se insertó `aria-label="…"` / `<h1 sr-only>` / reglas CSS nuevas. **CERO `id`/`name`/`class` renombrado o removido** (§17.4) — verificado por grep que `id="tipoSelect"` etc. coexisten con el nuevo `aria-label` y que los `name=` (que usan `loadVehicles`/filtros) siguen intactos. **CERO JS tocado**. Los `<select>`/`<input>` conservan exactamente sus selectores.
+
+### 147.4 Tests E2E
+Verificado por grep: 55 `aria-label` en los 6 forms (8 filtros/landing + page-loader; busqueda 10 + extras); `id`+`aria-label` coexisten; los 4 `<h1 sr-only>` presentes; reglas CSS balanceadas en soft-redesign. (El "7 vs 9" de hatchback fue artefacto líneas-vs-matches por su markup minificado, no labels faltantes.) ⏳ Validación con lector de pantalla real pendiente (L-08, prod).
+
+### 147.5 Anti-patterns evitados
+NO se rompió markup por "réplica exacta" (aditivo puro). NO se corrió el generador (`generate-vehicles.mjs` usa `new Date()` → metería diffs de fecha en ~45 archivos + depende de red): las **18 `marcas/*` heredan los `aria-label` vía cron regen** (cada 4h en main, mecanismo canónico). NO se forzó `for=` sobre markup inconsistente (habría requerido tocar labels dispares con riesgo). NO se aplicaron A11Y-03/04 sin decisión (token transversal / landmark).
+
+### 147.6 Archivos modificados / INTACTOS
+**Modificados**: `css/home/soft-redesign.css` (A11Y-05+06), `marca.html` + `vehiculos-{suv,pickup,sedan,hatchback}.html` + `busqueda.html` (A11Y-01 + A11Y-02 en landings), `service-worker.js` + `js/core/cache-manager.js`. **INTACTOS**: todo el JS, los 3 redirects, las 18 `marcas/*` (heredan por cron). **Pendiente propagación**: 18 `marcas/*` (cron) — temporal, no regresión.
+
+### 147.7 Doctrina + cache
+§19 (leí el markup real antes de tocar — descubrí la inconsistencia entre archivos), §17.4 (aditivo), §37 (IAP). Cache bump `v20260531360000` → `v20260531370000`. Lóbulo `48-ACCESIBILIDAD`: A11Y-01/02/05/06 → **RESUELTOS**; quedan A11Y-03 (token) + A11Y-04 (skip-link) + pendientes de Ronda inicial (test con AT real, target-size).

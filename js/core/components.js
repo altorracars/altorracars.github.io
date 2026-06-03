@@ -885,27 +885,6 @@ if (document.readyState === 'loading') {
 } else {
     loadAllComponents();
 }
-
-// A11Y-04 (§149): garantiza un landmark de foco #main justo tras el header en TODAS las
-// páginas (el #header-placeholder inyectado O el <header id="header"> inline del index),
-// como destino del skip-link "Saltar al contenido" (WCAG 2.4.1 Bypass Blocks). Inserción
-// ÚNICA en DOMContentLoaded — NO es MutationObserver (§3.5). No clobberea ids existentes
-// (p.ej. comparar conserva #compare-root: el ancla se inserta como hermano previo).
-function ensureMainLandmark() {
-    if (document.getElementById('main')) return;
-    var ref = document.getElementById('header-placeholder') || document.getElementById('header');
-    if (!ref) return;
-    var anchor = document.createElement('div');
-    anchor.id = 'main';
-    anchor.setAttribute('tabindex', '-1');
-    ref.insertAdjacentElement('afterend', anchor);
-}
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', ensureMainLandmark);
-} else {
-    ensureMainLandmark();
-}
-
 // Utility: force-close the mobile menu and all dropdowns.
 // Resets body scroll lock so the page is always interactive after navigation.
 function forceCloseAllMenus() {

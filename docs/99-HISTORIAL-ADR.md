@@ -42775,3 +42775,34 @@ NO se hicieron ~20 ediciones por-página de `id="main"` (DRY: 1 función en comp
 
 ### 149.7 Doctrina + cache
 §17.2 (transform, no animar layout), §3.5 (sin observer), §19 (verifiqué los hermanos del header antes de insertar), WCAG 2.4.1. Cache bump `v20260601000000` (§148) → `v20260601120000` (§149). **Lóbulo §48: las 6 findings (A11Y-01…06) RESUELTAS.** Quedan solo pendientes que requieren herramienta/dispositivo real: test con lector de pantalla, target-size móvil (2.5.8), orden de foco del lightbox/comparador.
+
+---
+
+## 150. ADR-150 — Consistencia de diseño global (de-blue → near-black) + skip-link removido + QuickTools fijo + dropdown cross-page
+
+Cliente (QA en prod): *"un azul que no sé de dónde lo sacaste"*, tarjetas/botones *"más oscuros, negros como el index, no grises"*, skip-link *"inútil, no aparece, quítalo"*, *"el botón de herramientas debe estar siempre visible"*, dropdown *"Vehículos roto + no abre en otras páginas"*. Mandato: *"tema general para toda la página, eliminar de raíz lo viejo que no concuerde con el index."*
+
+### 150.1 Causa raíz (RCA §19)
+- **"Azul"**: TODA la paleta cinematic era **FRÍA/índigo** (canal B dominante): tokens `--cin-bg-elev #15121A`/`--cin-bg-soft #0E0C10` + valores fríos **HARDCODEADOS dispersos** (`#100d16` en 4 gradientes de tarjeta; `rgba(26,22,34)`+`rgba(16,13,22)` en paneles de filtro de busqueda/detalle/marca; `#15121A` en ~10 sitios: opciones de select, thumbs comparar, panel del dropdown `rgba(28,26,32)`). En el index el púrpura quedaba OCULTO tras imágenes a sangre completa (`.cin-card`); en el catálogo se veía en cuerpos de tarjeta + filtros. **Misma paleta, distinta visibilidad.**
+- **Skip-link (§149)**: no aparecía + cliente lo halló inútil. **QuickTools**: `quicktools.js initScrollBehavior` ocultaba el dock al bajar. **Dropdown**: wiring vivía SOLO en `home-chrome.js` (solo carga en index); `components.js` dispara `altorra:chrome:ready` pero home-chrome NO se carga en el catálogo → no abría. Layout además roto en index (CSS aparentemente correcto, no reproducible leyendo código).
+
+### 150.2 Solución estructural (3 sub-pasos)
+- **De-blue → near-black cálido (GLOBAL)**: (§150) índigo→cálido; (§150.b, tras feedback "negras como el index") oscurecido a **near-black**: `#15121A→#1A1613→#0D0B09`, stops `#100d16→#0A0806`, paneles filtro `rgba(26,22,34)→rgba(14,11,9)`/`(16,13,22)→rgba(9,7,5)`, `--cin-bg-soft→#0A0908`, panel dropdown `rgba(28,26,32)→rgba(13,11,9,.95)`. En `cinematic.css`+`soft-redesign.css` (tokens) + 6 CSS per-page. **`--cin-bg #08070A` (el "negro" de referencia del index) INTACTO.**
+- **Skip-link REMOVIDO** (revierte §149 completo). **A11Y-04 → descartado por cliente** (lóbulo §48 ahora **5/6**).
+- **QuickTools SIEMPRE visible**: `initScrollBehavior` → no-op.
+- **Dropdown abre cross-page**: CSS puro `.nav-dd-wrap:hover/:focus-within > .nav-dd-pro { display:block }` + chevron flip → funciona en TODAS las páginas sin JS extra, coexiste con el JS del index.
+
+### 150.3 No-regresión
+Cambios de COLOR puros (hex/rgba, replace_all) + 1 regla CSS hover + 1 JS no-op + reverts aditivos del skip-link. Cero estructura/ids/clases. `node -c` OK. Verificado por grep: 0 valores fríos restantes. `--cin-bg` intacto.
+
+### 150.4 Tests / validación
+⚠️ **Paleta GLOBAL no verificable por el agente (L-08)** → QA visual del cliente. §150+§150.b YA commiteados (cliente: "se ven mejor"). **PENDIENTE validar**: superficies negras como el index, QuickTools no se oculta, dropdown abre en catálogo. **Layout del dropdown del index: SIN diagnosticar** (CSS correcto leyendo código → pedir screenshot fresco al cliente).
+
+### 150.5 Anti-patterns evitados
+NO se cargó home-chrome.js en 20 páginas (CSS hover puro = DRY). NO se tocó `--cin-bg`. NO se adivinó el layout del dropdown (se pide screenshot, §19). NO se mantuvo el skip-link por dogma a11y (decisión de producto).
+
+### 150.6 Archivos (acumulado §150/b/c)
+`css/home/{cinematic,soft-redesign,busqueda-cinematic,detalle-cinematic,marca-cinematic,marcas-cinematic,comparar-cinematic,chrome-redesign,base-redesign}.css`, `css/style.css`, `index.html`, `snippets/header.html`, `js/core/components.js`, `js/public/home/quicktools.js`, `service-worker.js`, `js/core/cache-manager.js`.
+
+### 150.7 Doctrina + cache
+§19, §17.4, L-21, de-blue de raíz. Cache `v…130000`(§150)→`v…140000`(§150.b)→`v…150000`(§150.c). **§150+§150.b COMMITEADOS; §150.c SIN commit.** ⏳ PENDIENTE (handoff): validación visual cliente + diagnóstico del layout del dropdown (screenshot).

@@ -11,6 +11,11 @@
 
 ## 🎯 Foco actual
 
+> ⚡ **HANDOFF a ventana nueva (2026-06-01, contexto saturado) — BLOQUE DE DISEÑO §150 EN CURSO:**
+> Tras QA en prod, el cliente pidió **unificar el catálogo con el index** ("tema general, eliminar lo viejo de raíz"). Hecho (ADR §150 en `99`): **(1) de-blue→near-black** — la paleta cinematic era índigo FRÍA (token `--cin-bg-elev` + valores hardcodeados `#100d16`/`rgba(26,22,34)`/`#15121A`); calentada y luego **oscurecida a `#0D0B09`** (el cliente las quería "negras como el index"); **`--cin-bg #08070A` (negro de referencia) INTACTO**. **(2) Skip-link §149 REMOVIDO** (A11Y-04 descartado por el cliente → lóbulo §48 ahora **5/6**). **(3) QuickTools dock SIEMPRE visible** (`quicktools.js initScrollBehavior`→no-op). **(4) Dropdown "Vehículos" abre por HOVER CSS en todas las páginas** (antes el wiring solo vivía en `home-chrome.js`=index).
+> **GIT**: §150 (`80f4abb`) + §150.b commiteados+desplegados (cliente: "se ven mejor"). **§150.c SIN commit** → 4 archivos: `css/home/chrome-redesign.css`, `service-worker.js`, `js/core/cache-manager.js`, `docs/10-MEMORIA-CORTO-PLAZO.md`. Cache vigente `v20260601150000`.
+> **PRÓXIMOS PASOS (ventana nueva)**: (a) cliente commitea §150.c + valida en prod (Ctrl+Shift+R): ¿superficies negras como el index?, ¿QuickTools no se oculta?, ¿dropdown abre en el catálogo (hover "Vehículos")? (b) **Layout del dropdown del index posiblemente aún roto** — el CSS se ve correcto leyendo código, NO reproducible sin render (L-08) → **pedir screenshot fresco del dropdown abierto** y diagnosticar el render. (c) Si todo OK, bloque §150 cerrado. Detalle → ADR §150 (`99`) + L-22 (`30`).
+
 > **Pizarra podada al cierre de sesión 2026-05-31** (handoff a ventana nueva). El detalle histórico
 > vive en los ADRs **§122–§140** (`99` + `00-INDICE`). Aquí solo el estado vivo.
 

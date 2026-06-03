@@ -204,6 +204,12 @@
 - **Receta**: por cada clase-hook reusada, enumera en preview qué reglas legacy la tocan (`Array.from(document.styleSheets)…el.matches(sel)`) y fija EXPLÍCITAMENTE `background` + estados `:hover/:active` en tu regla cinematic, con especificidad ≥ la legacy (`body[data-cin="on"] .x:hover` 0,3,1 > `body .x:hover` 0,2,1).
 - **Aplica a**: los SP-5.3.x restantes (busqueda/marca/marcas/landings) reusan clases-hook del catálogo → mismo riesgo.
 
+### L-22 · Paleta cinematic oscura era FRÍA (índigo); el cliente la quería NEGRA cálida como el index (§150)
+- **Disparador**: el cliente reporta "un azul que no sé de dónde sale" en el catálogo / "no se ve como el index, son negras no grises". Tarjetas/filtros/dropdowns con tinte índigo.
+- **Causa**: toda la paleta cinematic tenía el canal AZUL dominante: tokens `--cin-bg-elev #15121A` (rgb 21,18,**26**) / `--cin-bg-soft #0E0C10`, + valores fríos **HARDCODEADOS dispersos** (`#100d16` en 4 gradientes de tarjeta; `rgba(26,22,34)`+`rgba(16,13,22)` en paneles de filtro busqueda/detalle/marca; `#15121A` repetido en ~10 sitios: select options, thumbs comparar, panel del dropdown `rgba(28,26,32)`). En el index el púrpura quedaba OCULTO tras imágenes a sangre completa (`.cin-card`); en el catálogo (cuerpos de tarjeta + filtros) se veía. **Misma paleta, distinta visibilidad** → el cliente cree "el index está bien, el catálogo no".
+- **Receta**: (1) de-bluing NO es cambiar 1 token — **grep TODOS los fríos hardcodeados** (`#15121A|#100d16|rgba\(26, ?22, ?34|rgba\(16, ?13, ?22|rgba\(28,26,32`) en `css/home/*`, no solo la definición. (2) El "negro de referencia" del cliente = `--cin-bg #08070A` → las superficies elevadas deben ser **near-black CÁLIDO** (`#0D0B09`, R≥G≥B), NO gris (`#1A1613` se sintió "gris/no negro"). (3) **`--cin-bg` (page bg) NO tocar** — es el negro que el cliente aprueba. (4) `rgba(15,15,25,…)` de baja opacidad (sombras/hovers) son imperceptibles → dejar.
+- **Bonus (dropdown cross-page)**: si un componente del header "no abre en otras páginas", causa típica = su wiring JS vive en `home-chrome.js` (solo carga en index). Fix robusto = **abrirlo por hover/focus con CSS puro** (`.nav-dd-wrap:hover > .nav-dd-pro{display:block}`), NO cargar el JS en 20 páginas.
+
 ---
 
 > Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve

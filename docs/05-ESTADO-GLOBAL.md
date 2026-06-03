@@ -10,9 +10,9 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 Catálogo cinematic + a11y en prod. **BLOQUE DE DISEÑO §150 COMPLETO**: de-blue→near-black + skip-link removido + QuickTools fijo + dropdown cross-page + **§150.d FIX layout dropdown** (panel 120px→580px, fix `.nav-dd-pro{max-width:none}` vs `*{max-width:100%}` global, render-verificado) + **§150.e** quitado enlace DUPLICADO "Camionetas" (=Pickup) del dropdown. §150→**§150.d** commiteados (§150.d=`85972ab`, en rama); **§150.e SIN commit**. Lóbulo §48 → 5/6 (A11Y-04 descartado). Ver ADR §150 + L-23. |
-| **Cache version vigente** | **`v20260602130000`** (§150.e, **SIN commit**); §150.d `v…602120000` commiteado (`85972ab`); §150.c + previos desplegados. SW = cache-manager (match ✅). |
-| **Branch activa** | `refactor/estructura` — §140→§150.c commiteados (cliente mergea por PR a `main`; ojo conflicto cron↔cache L-02). **§150.e en working tree SIN commit** (código: `index.html` + `snippets/header.html` + SW + cache-manager; + docs); §150.d commiteado (`85972ab`). |
+| **Build** | 🟢 Catálogo cinematic + a11y en prod. **BLOQUE §150 (consistencia de diseño) COMPLETO**: near-black + skip-link removido + QuickTools fijo + dropdown cross-page (§150.d fix layout 120→580px) + §150.e/**§150.f dropdown depurado** (quitado "Camionetas" duplicado + columna "Por condición": Nuevos/Usados enviaban a `?tipo=` que busqueda IGNORA; filtro nuevo/usado YA existe en panel "Tipo de Vehículo"; dropdown ahora = "Por categoría" + CTA "Ver todos"). §150→**§150.e** commiteados (`56bd195`); **§150.f SIN commit**. Lóbulo §48 → 5/6. Ver ADR §150 + L-23/L-24. |
+| **Cache version vigente** | **`v20260602140000`** (§150.f, **SIN commit**); §150.e `v…602130000` commiteado (`56bd195`); previos desplegados. SW = cache-manager (match ✅). |
+| **Branch activa** | `refactor/estructura` — §140→§150.e commiteados (cliente mergea por PR a `main`; ojo conflicto cron↔cache L-02). **§150.f en working tree SIN commit** (código: `index.html` + `snippets/header.html` + `chrome-redesign.css` + SW + cache-manager; + docs); §150.d/§150.e commiteados (`85972ab`/`56bd195`). |
 | **Producción (`main`)** | `origin/main` = `8da557a` = catálogo 100% cinematic (§140–§146) + §149/§150/§150.b/§150.c. Sin regresiones. Rama local diverge (adelante). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 

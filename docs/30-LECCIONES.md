@@ -216,6 +216,13 @@
 - **Receta**: NO toques el reset global (lo consumen incontables elementos → regresión masiva). Añade `max-width:none` SCOPED al componente (`.nav-dd-pro{max-width:none}`). Vence al `*` por especificidad (0,1,0 > 0,0,0) y el `*` **no** es `!important`. Verifica `getComputedStyle(el).maxWidth==='none'` + el `width` real tras el fix.
 - **Meta (por qué importaba el render)**: este bug es **invisible leyendo un solo CSS** — nace del cruce `chrome-redesign.css` (width 580) × `style.css` (reset global). Solo se ve en la **cascada renderizada**. Reproducir por render local (L-20) + medir geometría con `getBoundingClientRect`/`getComputedStyle` (NO screenshot — timeouts por listeners en tiempo real) lo cazó en minutos. Lección: para "layout roto pero el código se ve bien", **renderiza y mide**, no releas el archivo.
 
+### L-24 · Un enlace `?param=` solo filtra si la página destino LEE el param — y el filtro puede YA existir con otro nombre
+- **Disparador**: un enlace de nav/dropdown apunta a `pagina.html?x=y` para "pre-filtrar", pero la página ignora el param y muestra todo (§150.f: el dropdown enviaba a `busqueda.html?tipo=nuevo`/`?tipo=usado` y salían los 27).
+- **Causa**: `busqueda.html` **NO lee `?tipo=`** (ningún `URLSearchParams` lo consume; los únicos usos leen `id`/`v` en detalle/comparar). El query param viaja pero nadie lo aplica. **Antes de enlazar con `?param=`, verifica que el destino lo lea** (grep `URLSearchParams`/`location.search` en su JS, o render + inspecciona el control).
+- **El filtro puede YA existir**: el cliente pidió "agregar el filtro nuevo/usado si no existe" — pero **ya existía** como `<select name="tipo">` "Tipo de Vehículo" (`#tipoSelect`, opciones `["", "nuevo", "usado"]`; `database.js` filtra `v.tipo===filters.tipo`). Antes de AGREGAR una capacidad, **verifica si ya está** (a veces con otra etiqueta).
+- **Modelo de datos Altorra (no confundir)**: `vehicle.tipo` = **condición** (nuevo/usado; badge en `render.js getBadge`), `vehicle.categoria` = **carrocería** (suv/sedan/pickup/hatchback). En `busqueda.html` son dos selects distintos: "Tipo de Vehículo" (`tipo`) ≠ "Categoría" (`categoria`).
+- **Decisión**: en vez de cablear `?tipo=` (esfuerzo + casi no hay autos "nuevo" en un negocio de usados), se eligió **eliminar los enlaces rotos** y dejar el filtrado en el panel (que ya funciona). Menos código, menos superficie de bug.
+
 ---
 
 > Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve

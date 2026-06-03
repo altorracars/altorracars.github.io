@@ -42805,7 +42805,7 @@ NO se cargó home-chrome.js en 20 páginas (CSS hover puro = DRY). NO se tocó `
 `css/home/{cinematic,soft-redesign,busqueda-cinematic,detalle-cinematic,marca-cinematic,marcas-cinematic,comparar-cinematic,chrome-redesign,base-redesign}.css`, `css/style.css`, `index.html`, `snippets/header.html`, `js/core/components.js`, `js/public/home/quicktools.js`, `service-worker.js`, `js/core/cache-manager.js`.
 
 ### 150.7 Doctrina + cache
-§19, §17.4, L-21, L-23, L-24, de-blue de raíz. Cache `v…130000`(§150)→`v…140000`(§150.b)→`v…601150000`(§150.c)→`v…602120000`(§150.d)→`v…602130000`(§150.e)→**`v20260602140000`(§150.f)**. **§150→§150.e COMMITEADOS** (§150.e=`56bd195`; §150.d=`85972ab`; §150.c=`40605a1`). **§150.f SIN commit** (working tree).
+§19, §17.4, L-21, L-23, L-24, de-blue de raíz. Cache `v…130000`(§150)→`v…140000`(§150.b)→`v…601150000`(§150.c)→`v…602120000`(§150.d)→`v…602130000`(§150.e)→**`v20260602140000`(§150.f)**. **§150→§150.f COMMITEADOS + desplegados a `main`** (PR#785/#786; §150.f=`264e9e3`, §150.e=`56bd195`, §150.d=`85972ab`). **§151 mergeado a `main`** (PR#787, `9f8d861`). **§152/§153 en working tree** (gobernanza + script, brain-only, sin commit).
 
 ### 150.d — FIX layout del dropdown "Vehículos" (post-handoff, 2026-06-02)
 El handoff dejó el layout del dropdown "posiblemente roto, CSS aparentemente correcto, no reproducible leyendo código". Se **reprodujo por render local** (preview `http-server` :8080) — capacidad nueva que vuelve diagnosticables los bugs de cascada que no se ven en un solo archivo.
@@ -42849,3 +42849,34 @@ El cliente trajo una propuesta externa para potenciar el cerebro: proactividad o
 
 ### 151.4 Doctrina + meta
 Cero cache bump (no cambia el sitio). Meta-aprendizaje → **M-08** (`30`). Aplicó §G.4 **Reflejo de Desafío Crítico**: cuestionar propuestas con EVIDENCIA, proteger topes + no-fragmentación por encima de "más features". Una propuesta que ignora la arquitectura existente y usa métricas inventadas es ruido, por bien intencionada que sea.
+
+## 152. ADR-152 — Reflejo de Auto-auditoría PRE-CIERRE de sesión (cerrar el hueco proactivo)
+El cliente señaló (correctamente) un hueco que mi propia Autocrítica NO había captado: los reflejos §G.4 cubrían **arranque** (Auto-auditoría: `brain:check` al boot) y **cierre de TAREA** (Reflejo de Cierre: consolidar esa tarea), pero **faltaba un barrido HOLÍSTICO y PROACTIVO de TODO el cerebro antes de cerrar la SESIÓN**. Síntoma de esta misma sesión: los docs derivaron stale ("§150.f SIN commit" tras commits/merges del cliente entre turnos) y solo se corrigió porque el cliente PIDIÓ la auditoría — no por reflejo propio.
+
+### 152.1 Causa raíz
+Cobertura de reflejos scoped a (a) inicio y (b) por-tarea. Nada disparaba una revisión integral "antes de irnos": frescura vs git real, nada huérfano, todo organizado/documentado/consolidado. El estado vivo (`05`/`10`) puede divergir de git entre turnos (el cliente commitea/mergea por su lado).
+
+### 152.2 Solución (doctrina, net-neutral)
+Extendido el **Reflejo de Auto-auditoría** de "(arranque)" a **"(arranque Y pre-cierre de sesión)"** en `CLAUDE.md §G.4` (5→5 líneas; CLAUDE.md sigue 318/320). Ahora, **antes de cerrar la sesión o quedar idle — PROACTIVO, sin que el cliente lo pida** — barrido holístico: `brain:check` (huérfanas/caps/desync) + **frescura vs git real** (commit/branch/cache) + nada stale + todo consolidado → la próxima sesión hereda un cerebro impecable. Disparadores prácticos: deliverable entregado sin próximo paso inmediato, o señales de cierre del usuario ("ok/listo/gracias").
+
+### 152.3 No-regresión + meta
+Complementa (NO reemplaza) el Reflejo de Cierre por-tarea. No es contador de turnos (eso se rechazó en §151) — es por EVENTO de cierre/wrap-up, no por métrica. Cero cache bump (brain-only). Meta → **M-09** (`30 §Meta`): la Autocrítica debe vigilar también la COBERTURA de los propios reflejos, no solo los errores de ejecución.
+
+## 153. ADR-153 — Por qué la Autocrítica es reactiva + automatización de frescura en brain:check (determinismo > doctrina)
+El cliente preguntó por qué mi Autocrítica no disparó SOLA las mejoras §151/§152 (tuvo que pedírmelas). RCA honesto de mi propia cognición — no excusa.
+
+### 153.1 Causa raíz (por qué no fui proactivo)
+1. **Todos los reflejos de auto-mejora están GATILLADOS por una condición, y un hueco no tiene gatillo**: Autocrítica dispara ante un ERROR visible; un doc stale / reflejo faltante es un **silencio**, no una falla → no hay post-mortem de un no-evento. Desafío Crítico dispara contra una regla que EXISTE; una regla AUSENTE no es cuestionable. Ambos ciegos a la ausencia.
+2. **Optimizo la tarea de enfrente; no cambio de altitud solo** — el "paso atrás a revisar el marco completo" no se auto-inicia; lo forzó el cliente cada vez con una meta-pregunta.
+3. **Confié en mi último estado escrito en vez de verificar vs git** — §19 ("verifica, no asumas") NO aplicado a la frescura del propio cerebro.
+4. **Raíz profunda: más doctrina NO arregla un problema de atención.** Apilar reflejos = más texto compitiendo por la misma atención finita, fiable solo según mi disciplina ese turno. **El componente no-fiable soy yo; el script no** (por eso existe brain-check).
+
+### 153.2 Solución (la automatización real)
+**Lo verificable mecánicamente va al LINTER que FALLA, no a un reflejo que debo recordar.** Extendido `scripts/brain-check.mjs` con la sección **(4) Frescura docs↔realidad** (determinista, READ-ONLY):
+- **4a** `service-worker.js` CACHE_VERSION == `cache-manager.js` APP_VERSION (HARD — caza errores de §4).
+- **4b** `05` "Cache version vigente" == SW real (HARD — caza `05` stale, la clase EXACTA que nos pasó).
+- **4c** sha de `origin/main` en `05` vs git real (SOFT info — `main` deriva por cron/PRs, no es falla dura).
+Validado **corriéndolo** (no leyéndolo): cazó su propio bug (un finder tomaba la línea Branch en vez de Producción) y en vivo detectó que `origin/main` ya había avanzado `1044bfe→9f8d861` (PR#787 mergeó §151). El determinismo encontró 2 cosas que mi lectura no.
+
+### 153.3 Doctrina + límite honesto
+Principio: **un linter que falla > un reflejo recordado**, para todo lo chequeable. Techo honesto: detectar un hueco NOVEDOSO no anticipado (como el pre-cierre §152) NO es automatizable — surge de perspectiva externa (el cliente, o un "yo" fresco). Mitigación: convertir cada hueco hallado en (a) check determinista si es chequeable, o (b) reflejo saliente si es juicio. Cero cache bump. Meta → **M-10**.

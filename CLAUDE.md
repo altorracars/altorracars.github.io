@@ -249,11 +249,11 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   (2) extrae sus lecciones a `30`, (3) actualiza `05` si cambió el estado, (4) recorta
   `10` dejando SOLO el foco vivo + pendientes abiertos. ⛔ Nunca volcar a `99` sin
   convertir en ADR (eso es basura, no consolidación).
-- **Reflejo de Auto-auditoría (arranque)**: tras leer CLAUDE.md + `05` + Corto Plazo,
-  corre **`npm run brain:check`** (linter: detecta neuronas huérfanas, saturación de
-  caps y desync del índice — le quita a tu disciplina el trabajo de verificar). Si
-  reporta problemas (o si `05` está viejo / hay tarea cerrada sin consolidar),
-  arréglalos ANTES de empezar la tarea nueva.
+- **Reflejo de Auto-auditoría (arranque Y pre-cierre de sesión)**: corre **`npm run brain:check`**
+  (linter: huérfanas, caps, desync del índice). **Al ARRANCAR** (tras leer CLAUDE.md+`05`+`10`): si
+  reporta problemas o `05`/`10` están viejos / hay tarea sin consolidar, arréglalos ANTES de la tarea.
+  **Antes de CERRAR la sesión o quedar idle — PROACTIVO, sin que el usuario lo pida**: barrido holístico de
+  TODO el cerebro (brain:check + **frescura vs git real** commit/branch/cache + nada huérfano/stale, todo organizado/documentado/consolidado) → que la próxima sesión herede un cerebro impecable.
 - **Reflejo de Auto-mejora**: llena VACÍOS. Si detectas fricción (re-investigaste
   algo ya sabido, faltó un índice o lección), MEJORA el cerebro ahí mismo: crea lo
   que faltaba.

@@ -4,16 +4,18 @@
 // ===========================================================
 // Mitiga la "fatiga de mantenimiento" del LLM (un script NO se vuelve perezoso).
 // READ-ONLY: reporta problemas, no modifica nada. Lo corre el Reflejo de
-// Auto-auditoría (CLAUDE.md §G.4) al arrancar / antes de consolidar.
+// Auto-auditoría (CLAUDE.md §G.4) al arrancar Y antes de cerrar la sesión (§152).
 //
 //   node scripts/brain-check.mjs    (o: npm run brain:check)
 //
 // Chequea: (1) neuronas huérfanas, (2) saturación de capacidad (§G.5),
-//          (3) desync del índice 00-INDICE → 99-HISTORIAL (fragilidad del offset).
+//          (3) desync del índice 00-INDICE → 99-HISTORIAL (fragilidad del offset),
+//          (4) frescura docs↔realidad: cache SW==cache-manager, 05 vigente==SW, origin/main (§153).
 // ===========================================================
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'docs');
@@ -75,6 +77,39 @@ for (const row of indice) {
   if (!/^##\s/.test(target)) { warn(`§${sec} → línea ${ln} NO es un header (desync)`); desync++; }
 }
 if (checked && !desync) ok(`${checked} entradas del índice apuntan a headers válidos`);
+
+// 4) Frescura: docs vs realidad de archivos/git. Mueve la clase de error "doc stale"
+//    de un reflejo que debo RECORDAR a un check determinista (§153). El script no se distrae.
+console.log('\n4) Frescura (docs ↔ realidad de archivos/git):');
+const swPath = join(ROOT, 'service-worker.js');
+const cmPath = join(ROOT, 'js/core/cache-manager.js');
+const swVer = existsSync(swPath) ? (read(swPath).match(/CACHE_VERSION\s*=\s*'v?(\d{14})'/) || [])[1] : null;
+const cmVer = existsSync(cmPath) ? (read(cmPath).match(/APP_VERSION\s*=\s*'v?(\d{14})'/) || [])[1] : null;
+// 4a) service-worker.js CACHE_VERSION == cache-manager.js APP_VERSION (§4)
+if (swVer && cmVer) {
+  if (swVer === cmVer) ok(`cache SW == cache-manager (v${swVer})`);
+  else warn(`cache DESYNC: SW=v${swVer} ≠ cache-manager=v${cmVer} → bumpear AMBOS (§4)`);
+} else warn('no pude parsear CACHE_VERSION/APP_VERSION (¿cambió el formato?)');
+// 4b) 05-ESTADO-GLOBAL "Cache version vigente" == SW real
+const estadoPath = join(DOCS, '05-ESTADO-GLOBAL.md');
+const estado = existsSync(estadoPath) ? read(estadoPath) : '';
+const vigLine = estado.split('\n').find((l) => /Cache version vigente/i.test(l)) || '';
+const vig = (vigLine.match(/v(\d{14})/) || [])[1];
+if (swVer && vig) {
+  if (vig === swVer) ok(`05 cache vigente == SW (v${swVer})`);
+  else warn(`05 STALE: declara cache vigente v${vig} pero SW=v${swVer} → actualizar 05`);
+} else if (swVer && !vig) warn('05 no declara una "Cache version vigente vYYYYMMDDHHMMSS" parseable');
+// 4c) origin/main mencionado en 05 vs git real (SOFT: una ref local sin fetch daría falso positivo)
+try {
+  const realMain = execSync('git rev-parse --short origin/main', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  // Match el patrón de asignación "origin/main = <sha>" en cualquier parte de 05 (robusto
+  // a que otras filas mencionen "origin/main"/"Producción" sin asignar sha).
+  const claimed = (estado.match(/origin\/main`?\s*=\s*\*{0,2}`?([0-9a-f]{7,40})/) || [])[1];
+  if (realMain && claimed) {
+    if (realMain.startsWith(claimed) || claimed.startsWith(realMain)) ok(`05 origin/main (${claimed}) == git (${realMain})`);
+    else console.log(`  ℹ️  05 dice origin/main=${claimed} pero git=${realMain} → verificar (¿05 stale o ref local sin fetch?)`);
+  } else if (!claimed) console.log('  ℹ️  05 sin sha de origin/main parseable (check omitido)');
+} catch { console.log('  ℹ️  origin/main no disponible (sin remoto/fetch) — check de sha omitido'); }
 
 console.log(`\n${problems === 0 ? '✅ CEREBRO SANO' : '⚠️  ' + problems + ' problema(s) — revisar antes de avanzar'}\n`);
 process.exit(problems ? 1 : 0);

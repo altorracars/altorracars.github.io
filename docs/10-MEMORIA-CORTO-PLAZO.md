@@ -6,6 +6,10 @@
 >
 > **Es la pizarra, no el archivo.** Al cerrar una tarea: consolidar a ADR (`99`) +
 > fila en `00-INDICE`, extraer lecciones a `30`, y PODAR esto al foco vivo (GC §G.4).
+>
+> **Convención de handoff (relevo a ventana nueva)**: el "Foco actual" debe incluir
+> **🚫 Callejones sin salida** — qué se probó que FALLÓ y NO reintentar, con el porqué.
+> Le ahorra al próximo "tú" repetir errores ya descartados (relevo curado > `/compact`).
 
 ---
 

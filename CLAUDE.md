@@ -73,7 +73,7 @@ Ejemplo: para entender §61 RBAC → índice dice línea 26879 →
 - **Hosting**: GitHub Pages (`altorracars.github.io`). Deploy: push a `main` → auto-deploy. CI genera páginas de vehículos cada 4h desde Firestore (`scripts/generate-vehicles.mjs`).
 - **Project ID**: `altorra-cars`. Auth domain `altorra-cars.firebaseapp.com`.
 - **Apps namespaced** (§23.10 + §25.12): `altorra-admin` vs `altorra-public` aíslan sesiones; + una default app alias para internals del SDK.
-- **Áreas**: sitio público (index, busqueda, detalle-vehiculo, marcas, etc.), panel admin (`admin.html` SPA), bot ALTOR Hub (cliente `js/concierge.js` + admin `js/admin-concierge.js`).
+- **Áreas**: sitio público (index, busqueda, detalle-vehiculo, marcas, etc.), panel admin (`admin.html` SPA), bot ALTOR Hub (cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`).
 - **Costo recurrente**: ~$2-5 USD/mes (solo LLM Anthropic Haiku 4.5; resto Firebase free tier).
 - **Secrets YA configurados** (NO re-preguntar ni reconfigurar): `EMAIL_USER`, `EMAIL_PASS`, `GITHUB_PAT`, `LLM_API_KEY`, `TELEGRAM_BOT_TOKEN`.
 - **Deploys MANUALES** (nunca automáticos): `firebase deploy --only firestore:rules` / `database` / `storage` / `functions`. Un cambio en reglas del repo NO se aplica solo.

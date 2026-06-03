@@ -42880,3 +42880,19 @@ Validado **corriéndolo** (no leyéndolo): cazó su propio bug (un finder tomaba
 
 ### 153.3 Doctrina + límite honesto
 Principio: **un linter que falla > un reflejo recordado**, para todo lo chequeable. Techo honesto: detectar un hueco NOVEDOSO no anticipado (como el pre-cierre §152) NO es automatizable — surge de perspectiva externa (el cliente, o un "yo" fresco). Mitigación: convertir cada hueco hallado en (a) check determinista si es chequeable, o (b) reflejo saliente si es juicio. Cero cache bump. Meta → **M-10**.
+
+## 154. ADR-154 — Chequeo AVANZADO del cerebro (referencias cruzadas) + auditoría integral: 0 huecos estructurales
+El cliente pidió un chequeo avanzado de TODO el cerebro para cazar/corregir cualquier hueco oculto. Aplicación directa de §153 (lo verificable → linter): en vez de leer 42k líneas a mano, se EXTENDIÓ `brain:check`.
+
+### 154.1 Nuevos checks deterministas (sección 5 + refuerzo de 3)
+- **3 reforzado**: el offset de cada `§NN` ahora valida que apunte al header CORRECTO (`## NN.`), no solo a "un header" (caza drift que apuntaría a OTRO ADR).
+- **5a** todo ADR `## NN.` de 99 tiene fila `§NN` en 00-INDICE (decisión sin índice = hueco).
+- **5b** toda ref `L-NN`/`M-NN` del cerebro resuelve a `### L-NN`/`### M-NN` en 30 (lección colgante = hueco).
+- **5c** hojas `docs/*.md` referenciadas en CLAUDE.md existen (excluye el placeholder `NN-NOMBRE.md` de la doctrina).
+- **5d** rutas `js/` PLANAS en neuronas vivas = stale post-§119 (todo js/ es modular).
+
+### 154.2 Resultado de la auditoría (tranquilizador)
+**0 huecos estructurales**: 151 ADRs todos indexados, 34 refs L-/M- todas resuelven, 13 hojas existen, offsets correctos, cache consistente. Único hallazgo REAL (semántico — lo cazó el spot-check dirigido + ahora 5d lo blinda): **CLAUDE.md §1 tenía rutas PLANAS stale** (`js/concierge.js`/`js/admin-concierge.js`) sobrevivientes del pre-§119 → corregidas a modulares (`js/concierge/concierge.js`, `js/admin/admin-concierge.js`). `40-LOBULOS`/`48`/`20-ESPACIAL` verificados frescos (§48 = 5/6 consistente).
+
+### 154.3 Límite + doctrina
+El linter cubre la clase ESTRUCTURAL/referencial (determinista, para SIEMPRE). La clase SEMÁNTICA (contradicción de prosa, descripción stale) sigue siendo juicio — mitigada por spot-checks dirigidos. Validado corriéndolo: 5c cazó su propio falso positivo (el placeholder), 5d validó tras el fix de §1. Cero cache bump. Aplica M-10.

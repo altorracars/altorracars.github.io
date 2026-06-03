@@ -75,6 +75,9 @@ for (const row of indice) {
   const target = hist[ln - 1] || '';
   checked++;
   if (!/^##\s/.test(target)) { warn(`§${sec} → línea ${ln} NO es un header (desync)`); desync++; }
+  else if (/^\d+$/.test(sec.split('.')[0]) && !new RegExp(`^##\\s+${sec.split('.')[0]}[.\\s]`).test(target)) {
+    warn(`§${sec} → línea ${ln} apunta a OTRO § ("${target.replace(/^##\s*/, '').slice(0, 28)}…") → offset drift`); desync++;
+  }
 }
 if (checked && !desync) ok(`${checked} entradas del índice apuntan a headers válidos`);
 
@@ -110,6 +113,45 @@ try {
     else console.log(`  ℹ️  05 dice origin/main=${claimed} pero git=${realMain} → verificar (¿05 stale o ref local sin fetch?)`);
   } else if (!claimed) console.log('  ℹ️  05 sin sha de origin/main parseable (check omitido)');
 } catch { console.log('  ℹ️  origin/main no disponible (sin remoto/fetch) — check de sha omitido'); }
+
+// 5) Integridad de referencias cruzadas — huecos ocultos en TODO el cerebro (§154).
+//    Determinista: ADRs sin índice, lecciones/meta colgantes, hojas referenciadas inexistentes.
+console.log('\n5) Referencias cruzadas (huecos en el cerebro):');
+const histText = read(join(DOCS, '99-HISTORIAL-ADR.md'));
+const indiceText = read(join(DOCS, '00-INDICE.md'));
+const leccionesText = read(join(DOCS, '30-LECCIONES.md'));
+const espacialPath = join(DOCS, '20-MEMORIA-ESPACIAL.md');
+const cortoPath = join(DOCS, '10-MEMORIA-CORTO-PLAZO.md');
+// 5a) Todo ADR "## NN." de 99 debe tener fila "| §NN |" en 00-INDICE (decisión sin índice = hueco)
+const adrNums = new Set([...histText.matchAll(/^##\s+(\d+)\./gm)].map((m) => m[1]));
+const idxNums = new Set([...indiceText.matchAll(/^\|\s*§(\d+)\b/gm)].map((m) => m[1]));
+const missingIdx = [...adrNums].filter((n) => !idxNums.has(n)).sort((a, b) => +a - +b);
+if (!adrNums.size) warn('no detecté ADRs "## NN." en 99 (¿cambió el formato?)');
+else if (!missingIdx.length) ok(`${adrNums.size} ADRs de 99 indexados en 00`);
+else warn(`${missingIdx.length} ADR(s) de 99 SIN fila en 00-INDICE: §${missingIdx.join(', §')}`);
+// 5b) Referencias L-/M- en todo el cerebro deben estar definidas (### L-NN/M-NN) en 30
+const defined = new Set([...leccionesText.matchAll(/^###\s+([LM]-\d{2})\b/gm)].map((m) => m[1]));
+const allBrain = [claude, indiceText, estado, leccionesText, histText,
+  existsSync(cortoPath) ? read(cortoPath) : '',
+  existsSync(espacialPath) ? read(espacialPath) : ''].join('\n');
+const referenced = new Set([...allBrain.matchAll(/\b([LM]-\d{2})\b/g)].map((m) => m[1]));
+const dangling = [...referenced].filter((r) => !defined.has(r)).sort();
+if (!dangling.length) ok(`refs L-/M- (${referenced.size} usadas / ${defined.size} def) todas resuelven en 30`);
+else warn(`refs L-/M- COLGANTES (sin def en 30): ${dangling.join(', ')} → definir o corregir`);
+// 5c) Hojas docs/*.md referenciadas en CLAUDE.md deben existir
+const refDocs = new Set([...claude.matchAll(/docs\/([\w-]+\.md)/g)].map((m) => m[1]));
+const PLACEHOLDER = /^NN-|NOMBRE/; // ej. docs/NN-NOMBRE.md = plantilla de neurogénesis (§G.4/§G.5), no archivo real
+const missingDocs = [...refDocs].filter((f) => !PLACEHOLDER.test(f) && !existsSync(join(DOCS, f)));
+if (!missingDocs.length) ok(`hojas docs/*.md referenciadas en CLAUDE.md (${refDocs.size}) existen`);
+else warn(`hojas referenciadas en CLAUDE.md INEXISTENTES: ${missingDocs.join(', ')}`);
+// 5d) Rutas js/ PLANAS (sin subcarpeta) en neuronas vivas = stale post-§119 (todo js/ es modular)
+const liveForPaths = { 'CLAUDE.md': claude, '05': estado,
+  '10': existsSync(cortoPath) ? read(cortoPath) : '', '20': existsSync(espacialPath) ? read(espacialPath) : '' };
+const flatRefs = [];
+for (const [name, txt] of Object.entries(liveForPaths))
+  for (const mm of txt.matchAll(/\bjs\/[^/\s`)*]+\.m?js\b/g)) flatRefs.push(`${name}:${mm[0]}`);
+if (!flatRefs.length) ok('sin rutas js/ planas en neuronas vivas (todo modular post-§119)');
+else warn(`rutas js/ PLANAS (stale post-§119): ${flatRefs.join(', ')} → usar ruta modular`);
 
 console.log(`\n${problems === 0 ? '✅ CEREBRO SANO' : '⚠️  ' + problems + ' problema(s) — revisar antes de avanzar'}\n`);
 process.exit(problems ? 1 : 0);

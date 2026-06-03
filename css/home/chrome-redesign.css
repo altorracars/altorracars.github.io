@@ -207,6 +207,12 @@
 
 .nav-dd-wrap { position: relative; }
 .nav-dd-wrap::after { content:""; position: absolute; top: 100%; left: 0; right: 0; height: 16px; }
+/* §150.c: el mega-dropdown abre por HOVER/focus en TODAS las páginas (antes el wiring vivía
+   solo en home-chrome.js = index → no abría en el catálogo). CSS puro, funciona en todas y
+   coexiste con el JS del index (ambos coinciden: muestran al hover, ocultan al salir). */
+.nav-dd-wrap:hover > .nav-dd-pro,
+.nav-dd-wrap:focus-within > .nav-dd-pro { display: block; }
+.nav-dd-wrap:hover .nav-chev { transform: rotate(180deg); }
 .nav-link.open { color: var(--gold-300); background: rgba(212,175,55,0.08); }
 .nav-chev { display: inline-flex; transition: transform var(--dur-3) var(--ease-spring); }
 .nav-chev.flip { transform: rotate(180deg); }
@@ -214,7 +220,7 @@
   position: absolute; top: calc(100% + 14px); left: -8px;
   padding: 14px;
   border-radius: 18px;
-  background: rgba(28,26,32,0.92) !important;
+  background: rgba(13,11,9,0.95) !important;
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid rgba(255,255,255,0.1);

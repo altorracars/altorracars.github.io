@@ -269,27 +269,9 @@
     // Under reduced-motion: no hide/show on scroll (static dock).
     // ============================================================
     function initScrollBehavior(wrap) {
-        if (reducedMotion) return; // static, always visible
-
-        var lastY = window.scrollY;
-        var raf = null;
-
-        function onScroll() {
-            if (raf) return;
-            raf = window.requestAnimationFrame(function () {
-                var y = window.scrollY;
-                var dy = y - lastY;
-                if (dy > 6 && y > 400) {
-                    wrap.classList.add('is-hidden');
-                } else if (dy < -6) {
-                    wrap.classList.remove('is-hidden');
-                }
-                lastY = y;
-                raf = null;
-            });
-        }
-
-        window.addEventListener('scroll', onScroll, { passive: true });
+        // §150: el dock de QuickTools queda SIEMPRE visible (decisión del cliente).
+        // Se eliminó el hide-on-scroll (antes ocultaba al bajar >6px pasado y>400).
+        return;
     }
 
     // ============================================================

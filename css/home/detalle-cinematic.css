@@ -183,7 +183,7 @@ body[data-cin="on"] .info-sidebar {
     min-width: 0;
 }
 body[data-cin="on"] .info-card {
-    background: linear-gradient(180deg, rgba(26, 22, 18, 0.72), rgba(18, 15, 11, 0.74));
+    background: linear-gradient(180deg, rgba(14, 11, 9, 0.72), rgba(9, 7, 5, 0.74));
     backdrop-filter: blur(18px) saturate(1.25);
     -webkit-backdrop-filter: blur(18px) saturate(1.25);
     border: 1px solid rgba(244, 238, 222, 0.12);
@@ -598,7 +598,7 @@ body[data-cin="on"] .similar-section .vehicle-card {
     min-width: 280px;
     max-width: 280px;
     scroll-snap-align: start;
-    background: linear-gradient(180deg, var(--cin-bg-elev), #120F0B);
+    background: linear-gradient(180deg, var(--cin-bg-elev), #0A0806);
     border: 1px solid var(--cin-line);
     border-radius: 16px;
     overflow: hidden;
@@ -613,7 +613,7 @@ body[data-cin="on"] .similar-section .vehicle-image {
     position: relative;
     aspect-ratio: 16 / 11;
     overflow: hidden;
-    background: #1A1613;
+    background: #0D0B09;
 }
 body[data-cin="on"] .similar-section .vehicle-img {
     width: 100%;

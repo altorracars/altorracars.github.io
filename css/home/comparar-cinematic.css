@@ -74,7 +74,7 @@
   position: relative;
   aspect-ratio: 16/10;
   background-size: cover; background-position: center;
-  background-color: #1A1613;
+  background-color: #0D0B09;
 }
 .cmp-slot-remove {
   position: absolute; top: 12px; right: 12px;
@@ -230,7 +230,7 @@
   transition: background 240ms, border-color 240ms;
 }
 .cmp-picker-item:hover { background: rgba(212,168,90,0.10); border-color: rgba(212,168,90,0.3); }
-.cmp-picker-thumb { width: 56px; height: 40px; border-radius: 8px; flex-shrink: 0; background-size: cover; background-position: center; background-color: #1A1613; }
+.cmp-picker-thumb { width: 56px; height: 40px; border-radius: 8px; flex-shrink: 0; background-size: cover; background-position: center; background-color: #0D0B09; }
 .cmp-picker-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cmp-picker-brand { font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--cin-ink-soft); font-weight: 600; }
 .cmp-picker-model { font-size: 13px; }

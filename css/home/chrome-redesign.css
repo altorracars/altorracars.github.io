@@ -483,7 +483,7 @@
 .comparador-widget {
   position: fixed; bottom: 96px; left: 24px; right: auto; top: auto; /* +72px para librar el QuickTools dock (.qt-wrap) que vive en bottom:24px left:24px (§137) */
   width: 300px; max-width: calc(100vw - 48px);
-  background: var(--cin-bg-elev, #1A1613);
+  background: var(--cin-bg-elev, #0D0B09);
   border: 1px solid rgba(244,238,222,0.12);
   border-radius: 16px;
   box-shadow: 0 24px 60px -20px rgba(0,0,0,0.75);

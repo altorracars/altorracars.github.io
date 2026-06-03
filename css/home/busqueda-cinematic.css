@@ -115,7 +115,7 @@ body[data-cin="on"] .toggle-filters-btn:hover {
 
 /* Formulario (la animación de colapso vive en el <style> inline; aquí solo el skin) */
 body[data-cin="on"] .advanced-search-form {
-    background: linear-gradient(180deg, rgba(26, 22, 18, 0.55), rgba(18, 15, 11, 0.55));
+    background: linear-gradient(180deg, rgba(14, 11, 9, 0.55), rgba(9, 7, 5, 0.55));
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid var(--cin-line);
@@ -163,7 +163,7 @@ body[data-cin="on"] .advanced-search-form input:focus {
     background: rgba(212, 168, 90, 0.06);
 }
 body[data-cin="on"] .advanced-search-form select option {
-    background: #1A1613;
+    background: #0D0B09;
     color: var(--cin-ink);
 }
 body[data-cin="on"] .advanced-search-form input::placeholder {
@@ -284,7 +284,7 @@ body[data-cin="on"] .sort-select {
     background-position: right 11px center;
 }
 body[data-cin="on"] .sort-select:focus { outline: none; border-color: rgba(212, 168, 90, 0.5); }
-body[data-cin="on"] .sort-select option { background: #1A1613; color: var(--cin-ink); }
+body[data-cin="on"] .sort-select option { background: #0D0B09; color: var(--cin-ink); }
 
 /* Banner de término de búsqueda (override del inline legacy) */
 body[data-cin="on"] .search-term-banner {
@@ -306,7 +306,7 @@ body[data-cin="on"] .search-results-section .vehicles-grid {
 
 /* Tarjeta cinematic (renderVehicles → .vehicle-card; mismo lenguaje que el detalle) */
 body[data-cin="on"] .vehicle-card {
-    background: linear-gradient(180deg, var(--cin-bg-elev), #120F0B);
+    background: linear-gradient(180deg, var(--cin-bg-elev), #0A0806);
     border: 1px solid var(--cin-line);
     border-radius: 16px;
     overflow: hidden;
@@ -322,7 +322,7 @@ body[data-cin="on"] .vehicle-card .vehicle-image {
     position: relative;
     aspect-ratio: 16 / 11;
     overflow: hidden;
-    background: #1A1613;
+    background: #0D0B09;
 }
 body[data-cin="on"] .vehicle-card .vehicle-img {
     width: 100%;

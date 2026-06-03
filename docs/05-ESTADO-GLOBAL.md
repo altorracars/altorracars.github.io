@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 **Catálogo 100% cinematic en prod (§122–§146)** + Lóbulo §48 + skill + §147 + **§148 commiteados** (`eb44b99`). **§149 (A11Y-04 skip-link) SIN commit.** **Lóbulo §48 CERRADO (6/6).** → Sitio **sin pendientes de código**. ⏳ QA visual prod. |
-| **Cache version vigente** | `v20260601120000` (§149, **SIN commit**); §148 `v…000000` committeado (`eb44b99`); prod-`main` ≤ §146. SW = cache-manager (match ✅). |
-| **Branch activa** | `refactor/estructura` (§140–§146 en `main`). **§149 en working tree SIN commit** (§148+§147+skill commiteados). `git pull` para sync con `origin/main`. |
-| **Producción (`main`)** | `origin/main` = `3f31484` (PR#777) = **catálogo 100% cinematic** (§140 detalle + §141 pulido + §142 sin-desc + §143 busqueda + §144 marca + §145 marcas/nav + §146 landings). Sin regresiones (auditoría). ⏳ QA visual Ctrl+Shift+R (L-08). |
+| **Build** | 🟢 Catálogo cinematic + a11y en prod. **BLOQUE DE DISEÑO §150 COMPLETO**: de-blue→near-black + skip-link removido + QuickTools fijo + dropdown cross-page + **§150.d FIX layout dropdown** (panel colapsaba a 120px por `*{max-width:100%}` global; fix `.nav-dd-pro{max-width:none}`, **verificado por render local**: 580px ✅). §150→§150.c commiteados+desplegados; **§150.d SIN commit**. Lóbulo §48 → 5/6 (A11Y-04 descartado). Ver ADR §150 (incl. §150.d) + L-22. |
+| **Cache version vigente** | **`v20260602120000`** (§150.d, **SIN commit**); §150.c `v…601150000` + previos commiteados+desplegados. SW = cache-manager (match ✅). |
+| **Branch activa** | `refactor/estructura` — §140→§150.c commiteados (cliente mergea por PR a `main`; ojo conflicto cron↔cache L-02). **§150.d en working tree SIN commit** (5 archivos: `chrome-redesign.css` + SW + cache-manager + docs). |
+| **Producción (`main`)** | `origin/main` = `8da557a` = catálogo 100% cinematic (§140–§146) + §149/§150/§150.b/§150.c. Sin regresiones. Rama local diverge (adelante). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

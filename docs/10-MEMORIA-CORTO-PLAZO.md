@@ -11,6 +11,12 @@
 
 ## 🎯 Foco actual
 
+> ⚡ **BLOQUE DE DISEÑO §150 — DROPDOWN LAYOUT RESUELTO (§150.d, 2026-06-02):**
+> El bloque §150 (unificar catálogo con index, pedido por el cliente) está **completo**: (1) de-blue→**near-black** `#0D0B09` (`--cin-bg #08070A` intacto), (2) skip-link §149 removido (A11Y-04 descartado → §48 = 5/6), (3) QuickTools dock siempre visible, (4) dropdown "Vehículos" abre por HOVER CSS en todas las páginas. Detalle → ADR §150 en `99`.
+> **§150.d (esta sesión) — FIX del layout del dropdown que quedaba pendiente de diagnóstico**: causa raíz hallada por **render local** (preview http-server, ya disponible) + verificada en código: la regla universal `* { max-width:100% }` de `style.css:6450` acotaba el `width:580px` de `.nav-dd` a su containing-block (`.nav-dd-wrap` position:relative ≈120px = ancho del trigger) → el panel colapsaba a 120px y la grilla 2-col (~316px) se desbordaba del panel near-black. **Fix:** `.nav-dd-pro { max-width:none }` en `chrome-redesign.css` (vence al `*` por especificidad 0,1,0; `*` no es !important). **Verificado renderizando**: 120px→**580px**, grilla 2×263px, contenido dentro del panel, sin overflow de viewport; mega-dropdown es **desktop-only** (`nav.alt-nav-links` display:none en móvil → cero regresión móvil). Pura CSS, markup/JS intactos. → L-22 en `30`.
+> **GIT**: §150/§150.b/**§150.c YA commiteados+desplegados** (`80f4abb`/`8ca0a6c`/`40605a1`; docs en `5aa3bc9`). **§150.d en working tree SIN commit** → 5 archivos: `css/home/chrome-redesign.css`, `service-worker.js`, `js/core/cache-manager.js`, + docs (`10`/`05`/`99`/`00`/`30`). Cache `v20260601150000`→**`v20260602120000`**.
+> **PRÓXIMOS PASOS**: (a) cliente commitea §150.d (mensaje listo abajo) + Ctrl+Shift+R en prod para confirmar el dropdown abierto a 580px. (b) Con eso **bloque §150 CERRADO** — sitio sin pendientes de código (resta input externo: contenido /cartagena, tráfico CSAT). (c) Rama `refactor/estructura` diverge de `origin/main` (`8da557a`) → el cliente mergea por PR (ojo conflicto cron↔cache L-02).
+
 > **Pizarra podada al cierre de sesión 2026-05-31** (handoff a ventana nueva). El detalle histórico
 > vive en los ADRs **§122–§140** (`99` + `00-INDICE`). Aquí solo el estado vivo.
 

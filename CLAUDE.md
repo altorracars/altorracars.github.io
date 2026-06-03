@@ -73,7 +73,7 @@ Ejemplo: para entender §61 RBAC → índice dice línea 26879 →
 - **Hosting**: GitHub Pages (`altorracars.github.io`). Deploy: push a `main` → auto-deploy. CI genera páginas de vehículos cada 4h desde Firestore (`scripts/generate-vehicles.mjs`).
 - **Project ID**: `altorra-cars`. Auth domain `altorra-cars.firebaseapp.com`.
 - **Apps namespaced** (§23.10 + §25.12): `altorra-admin` vs `altorra-public` aíslan sesiones; + una default app alias para internals del SDK.
-- **Áreas**: sitio público (index, busqueda, detalle-vehiculo, marcas, etc.), panel admin (`admin.html` SPA), bot ALTOR Hub (cliente `js/concierge.js` + admin `js/admin-concierge.js`).
+- **Áreas**: sitio público (index, busqueda, detalle-vehiculo, marcas, etc.), panel admin (`admin.html` SPA), bot ALTOR Hub (cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`).
 - **Costo recurrente**: ~$2-5 USD/mes (solo LLM Anthropic Haiku 4.5; resto Firebase free tier).
 - **Secrets YA configurados** (NO re-preguntar ni reconfigurar): `EMAIL_USER`, `EMAIL_PASS`, `GITHUB_PAT`, `LLM_API_KEY`, `TELEGRAM_BOT_TOKEN`.
 - **Deploys MANUALES** (nunca automáticos): `firebase deploy --only firestore:rules` / `database` / `storage` / `functions`. Un cambio en reglas del repo NO se aplica solo.
@@ -249,11 +249,11 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   (2) extrae sus lecciones a `30`, (3) actualiza `05` si cambió el estado, (4) recorta
   `10` dejando SOLO el foco vivo + pendientes abiertos. ⛔ Nunca volcar a `99` sin
   convertir en ADR (eso es basura, no consolidación).
-- **Reflejo de Auto-auditoría (arranque)**: tras leer CLAUDE.md + `05` + Corto Plazo,
-  corre **`npm run brain:check`** (linter: detecta neuronas huérfanas, saturación de
-  caps y desync del índice — le quita a tu disciplina el trabajo de verificar). Si
-  reporta problemas (o si `05` está viejo / hay tarea cerrada sin consolidar),
-  arréglalos ANTES de empezar la tarea nueva.
+- **Reflejo de Auto-auditoría (arranque Y pre-cierre de sesión)**: corre **`npm run brain:check`**
+  (linter: huérfanas, caps, desync del índice). **Al ARRANCAR** (tras leer CLAUDE.md+`05`+`10`): si
+  reporta problemas o `05`/`10` están viejos / hay tarea sin consolidar, arréglalos ANTES de la tarea.
+  **Antes de CERRAR la sesión o quedar idle — PROACTIVO, sin que el usuario lo pida**: barrido holístico de
+  TODO el cerebro (brain:check + **frescura vs git real** commit/branch/cache + nada huérfano/stale, todo organizado/documentado/consolidado) → que la próxima sesión herede un cerebro impecable.
 - **Reflejo de Auto-mejora**: llena VACÍOS. Si detectas fricción (re-investigaste
   algo ya sabido, faltó un índice o lección), MEJORA el cerebro ahí mismo: crea lo
   que faltaba.

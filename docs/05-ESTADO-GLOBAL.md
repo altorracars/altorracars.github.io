@@ -8,12 +8,12 @@
 > branch, build o al detectar/resolver un riesgo. **Tope ~25 líneas (§G.5)** — es un
 > tablero, no una bitácora.
 
-| Señal | Valor (al 2026-05-31) |
+| Señal | Valor (al 2026-06-02) |
 |---|---|
-| **Build** | 🟢 Catálogo cinematic + a11y en prod. **BLOQUE §150 (consistencia de diseño) COMPLETO**: near-black + skip-link removido + QuickTools fijo + dropdown cross-page (§150.d fix layout 120→580px) + §150.e/**§150.f dropdown depurado** (quitado "Camionetas" duplicado + columna "Por condición": Nuevos/Usados enviaban a `?tipo=` que busqueda IGNORA; filtro nuevo/usado YA existe en panel "Tipo de Vehículo"; dropdown ahora = "Por categoría" + CTA "Ver todos"). §150→**§150.e** commiteados (`56bd195`); **§150.f SIN commit**. Lóbulo §48 → 5/6. Ver ADR §150 + L-23/L-24. |
-| **Cache version vigente** | **`v20260602140000`** (§150.f, **SIN commit**); §150.e `v…602130000` commiteado (`56bd195`); previos desplegados. SW = cache-manager (match ✅). |
-| **Branch activa** | `refactor/estructura` — §140→§150.e commiteados (cliente mergea por PR a `main`; ojo conflicto cron↔cache L-02). **§150.f en working tree SIN commit** (código: `index.html` + `snippets/header.html` + `chrome-redesign.css` + SW + cache-manager; + docs); §150.d/§150.e commiteados (`85972ab`/`56bd195`). |
-| **Producción (`main`)** | `origin/main` = `8da557a` = catálogo 100% cinematic (§140–§146) + §149/§150/§150.b/§150.c. Sin regresiones. Rama local diverge (adelante). ⏳ QA visual Ctrl+Shift+R (L-08). |
+| **Build** | 🟢 Catálogo cinematic + a11y **en producción**. **BLOQUE §150 COMPLETO y DESPLEGADO**: near-black + skip-link removido + QuickTools fijo + dropdown cross-page (§150.d fix layout 120→580px) + §150.e/§150.f **dropdown depurado** (`busqueda.html` ignora `?tipo=` pero el filtro nuevo/usado YA existe en panel "Tipo de Vehículo"; ahora "Por categoría" + CTA "Ver todos"). **§140–§151 en `main`** (incl. cerebro V5-lean §151); **§152–§154** en working tree (reflejo pre-cierre + `brain:check` ahora valida frescura + referencias cruzadas; auditoría integral = **0 huecos estructurales**, fix rutas planas §1). Lóbulo §48 → 5/6. Ver ADR §150–§154 + L-23/L-24. |
+| **Cache version vigente** | **`v20260602140000`** (§150.f) — commiteada + en `main`. SW = cache-manager (match ✅, lo valida `brain:check §4a`). §151–§153 brain-only (no tocan cache). ⚠️ `main` puede tener cache mayor por cron → L-02 al sincronizar. |
+| **Branch activa** | `refactor/estructura` — **working tree = §152 + §153 SIN commit** (gobernanza + `scripts/brain-check.mjs`, brain-only). Lo demás (§140–§151) ya en `main` (último PR#787). `origin/main` avanza por cron/PRs (el sha de Producción es snapshot). |
+| **Producción (`main`)** | `origin/main` = **`9f8d861`** (PR #787) = catálogo cinematic (§140–§146) + §149–§151 (dropdown depurado + cerebro V5-lean) LIVE. Sin regresiones. ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

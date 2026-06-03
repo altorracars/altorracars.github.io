@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-05-31) |
 |---|---|
-| **Build** | 🟢 Catálogo cinematic + a11y (§122–§149) en prod. **BLOQUE DE DISEÑO §150 EN CURSO** (post-QA): de-blue→**near-black** + skip-link removido + QuickTools fijo + dropdown cross-page. §150/§150.b commiteados+desplegados; **§150.c SIN commit**. Lóbulo §48 → **5/6** (A11Y-04 descartado por cliente). ⏳ Validación visual + layout dropdown (screenshot). Ver ADR §150 + handoff en `10`. |
-| **Cache version vigente** | `v20260601150000` (§150.c, **SIN commit**); §150.b `v…140000` + §150 `v…130000` + §149 `v…120000` commiteados+desplegados. SW = cache-manager (match ✅). |
-| **Branch activa** | `refactor/estructura` — §140–§150.b commiteados (cliente mergea por PR a `main`). **§150.c en working tree SIN commit** (4 archivos: `chrome-redesign.css` + SW + cache-manager + `10`). |
-| **Producción (`main`)** | `origin/main` = `3f31484` (PR#777) = **catálogo 100% cinematic** (§140 detalle + §141 pulido + §142 sin-desc + §143 busqueda + §144 marca + §145 marcas/nav + §146 landings). Sin regresiones (auditoría). ⏳ QA visual Ctrl+Shift+R (L-08). |
+| **Build** | 🟢 Catálogo cinematic + a11y en prod. **BLOQUE DE DISEÑO §150 COMPLETO**: de-blue→near-black + skip-link removido + QuickTools fijo + dropdown cross-page + **§150.d FIX layout dropdown** (panel colapsaba a 120px por `*{max-width:100%}` global; fix `.nav-dd-pro{max-width:none}`, **verificado por render local**: 580px ✅). §150→§150.c commiteados+desplegados; **§150.d SIN commit**. Lóbulo §48 → 5/6 (A11Y-04 descartado). Ver ADR §150 (incl. §150.d) + L-22. |
+| **Cache version vigente** | **`v20260602120000`** (§150.d, **SIN commit**); §150.c `v…601150000` + previos commiteados+desplegados. SW = cache-manager (match ✅). |
+| **Branch activa** | `refactor/estructura` — §140→§150.c commiteados (cliente mergea por PR a `main`; ojo conflicto cron↔cache L-02). **§150.d en working tree SIN commit** (5 archivos: `chrome-redesign.css` + SW + cache-manager + docs). |
+| **Producción (`main`)** | `origin/main` = `8da557a` = catálogo 100% cinematic (§140–§146) + §149/§150/§150.b/§150.c. Sin regresiones. Rama local diverge (adelante). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

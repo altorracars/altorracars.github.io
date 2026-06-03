@@ -218,6 +218,12 @@
 .nav-chev.flip { transform: rotate(180deg); }
 .nav-dd-pro {
   position: absolute; top: calc(100% + 14px); left: -8px;
+  /* §150.d — el panel colapsaba a ~120px: la regla universal * { max-width:100% }
+     de style.css (L6450) acotaba el width:580px de .nav-dd a su containing-block
+     (.nav-dd-wrap position:relative ≈ ancho del trigger ~120px) → la grilla 2-col
+     (~316px) se desbordaba del panel. .nav-dd-pro (0,1,0) vence al * (0,0,0, sin
+     !important). Verificado por render local: 120px → 580px. */
+  max-width: none;
   padding: 14px;
   border-radius: 18px;
   background: rgba(13,11,9,0.95) !important;

@@ -4,8 +4,8 @@
 
 :root {
   --cin-bg:        #08070A;
-  --cin-bg-soft:   #100D0A;
-  --cin-bg-elev:   #1A1613;
+  --cin-bg-soft:   #0A0908;
+  --cin-bg-elev:   #0D0B09;
   --cin-ink:       #F4EEDE;
   --cin-ink-soft:  rgba(244,238,222,0.62);
   --cin-ink-faint: rgba(244,238,222,0.50); /* A11Y-03 (§148): 0.32→0.50 ≈4.7:1 sobre --cin-bg, pasa WCAG AA 1.4.3 (antes 2.5:1) */

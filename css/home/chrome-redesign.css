@@ -235,7 +235,10 @@
   animation: nav-dd-in 0.22s cubic-bezier(.2,.8,.3,1) both;
 }
 @keyframes nav-dd-in { from { opacity: 0; transform: translateY(-8px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
-.nav-dd { width: 580px; }
+.nav-dd { width: 300px; } /* §150.f single-column: se eliminó la columna "Por condición"; el max-width:none de .nav-dd-pro (§150.d) sigue venciendo al *{max-width:100%} global de style.css */
+/* §150.f — "Ver todos los vehículos": CTA full-width al pie del dropdown (label izq + flecha der, dorado) */
+.nav-dd-all { justify-content: space-between; color: var(--gold-300); font-weight: 700; }
+.nav-dd-all .nav-dd-arrow { opacity: 1; transform: none; }
 .nav-dd-sm { width: 240px; padding: 8px !important; display: flex; flex-direction: column; gap: 2px; }
 .nav-dd-divider { height: 1px; margin: 6px 4px; background: rgba(255,255,255,0.08); }
 .nav-dd-arrow { opacity: 0; transform: translateX(-4px); transition: all var(--dur-2); color: var(--gold-400); }

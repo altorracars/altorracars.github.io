@@ -10,10 +10,10 @@
 
 | Señal | Valor (al 2026-06-02) |
 |---|---|
-| **Build** | 🟢 Catálogo cinematic + a11y **en producción**. **BLOQUE §150 COMPLETO y DESPLEGADO**: near-black + skip-link removido + QuickTools fijo + dropdown cross-page (§150.d fix layout 120→580px) + §150.e/§150.f **dropdown depurado** (`busqueda.html` ignora `?tipo=` pero el filtro nuevo/usado YA existe en panel "Tipo de Vehículo"; ahora "Por categoría" + CTA "Ver todos"). **§140–§151 en `main`** (incl. cerebro V5-lean §151); **§152–§154** en working tree (reflejo pre-cierre + `brain:check` ahora valida frescura + referencias cruzadas; auditoría integral = **0 huecos estructurales**, fix rutas planas §1). Lóbulo §48 → 5/6. Ver ADR §150–§154 + L-23/L-24. |
-| **Cache version vigente** | **`v20260602140000`** (§150.f) — commiteada + en `main`. SW = cache-manager (match ✅, lo valida `brain:check §4a`). §151–§153 brain-only (no tocan cache). ⚠️ `main` puede tener cache mayor por cron → L-02 al sincronizar. |
-| **Branch activa** | `refactor/estructura` — **working tree = §152 + §153 SIN commit** (gobernanza + `scripts/brain-check.mjs`, brain-only). Lo demás (§140–§151) ya en `main` (último PR#787). `origin/main` avanza por cron/PRs (el sha de Producción es snapshot). |
-| **Producción (`main`)** | `origin/main` = **`9f8d861`** (PR #787) = catálogo cinematic (§140–§146) + §149–§151 (dropdown depurado + cerebro V5-lean) LIVE. Sin regresiones. ⏳ QA visual Ctrl+Shift+R (L-08). |
+| **Build** | 🟢 Catálogo cinematic + a11y **en producción**. Bloque §150 (dropdown depurado §150.d–f) + cerebro V5-lean/tooling §151–§154 **COMPLETOS y commiteados** (HEAD `6cc0055`; `brain:check` valida frescura + refs cruzadas = **0 huecos estructurales**). **🏗️ PRÓXIMO (sesión nueva): RECONSTRUCCIÓN DEL CRM** con skill `crm-architect` — ver handoff en `10`. Lóbulo §48 → 5/6. Ver ADR §150–§154. |
+| **Cache version vigente** | **`v20260602140000`** (§150.f) — desplegada en `main`. SW = cache-manager (match ✅, lo valida `brain:check §4a`). §151–§154 + skill CRM brain-only (no tocan cache). |
+| **Branch activa** | `refactor/estructura` — **working tree LIMPIO, todo commiteado** (§150–§154 + skill `crm-architect`, HEAD `6cc0055`). §150–§154 ya en `main`; la skill `crm-architect` (`6cc0055`) + los docs de ESTE handoff son lo único local (commitéalos). `origin/main` avanza por cron/PRs (sha → `git`, no se pinea). |
+| **Producción (`main`)** | `origin/main` = **catálogo cinematic + dropdown depurado (§150) + cerebro V5-lean/tooling (§151–§154)** LIVE. Sin regresiones. El sha exacto avanza por cron/PRs (no se pinea aquí → `git`). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos

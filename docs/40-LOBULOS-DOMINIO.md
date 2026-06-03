@@ -99,6 +99,11 @@ skills, verificar el largo antes de instalar) en `skills/<nombre>/` → (5) la *
   `skill-creator/scripts/run_loop.py` (optimización de descripción) usa `claude -p` headless,
   que dio **`401 Invalid authentication credentials`** en esta sesión → no corre sin el CLI
   `claude` autenticado. Fallback = optimización manual (válida per el propio skill-creator).
+- **`crm-architect`** (añadida por el CLIENTE 2026-06-02, commit `6cc0055`) — framework para CONSTRUIR/reconstruir
+  CRMs sobre Firebase + Firestore + Cloud Functions, con vertical `automotive-dealership` (concesionario) +
+  RBAC + Ley 1581. Es el framework de la **reconstrucción del CRM de Altorra** (Foco/handoff en `10`). Trae
+  templates + scaffold en `skills/crm-architect/`. NO es lóbulo (capacidad portable); el conocimiento
+  Altorra-específico del CRM (schema real, módulos, decisiones) irá a `20-ESPACIAL` + ADRs a medida que se construya.
 
 ---
 

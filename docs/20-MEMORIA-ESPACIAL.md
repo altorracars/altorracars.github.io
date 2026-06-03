@@ -21,6 +21,7 @@
 | Roadmap de migración (dominio, Cloudflare Pages, Vite, email pro) | `docs/PLAN-MIGRACION-ALTORRA.md` |
 | Cómo activar el LLM del bot ALTOR (Windows) | `docs/SETUP-LLM.md` |
 | Plan original de cirugía del ALTOR Hub | `docs/altor-hub-cirugia-execution-plan.md` |
+| **CRM** (leads, clientes, citas, pipeline, postventa) — actual + reconstrucción | `admin.html` (SPA) + `js/admin/admin-crm.js` + `js/admin/admin-crm-tabs.js` + `js/core/comm-schema.js`; colecciones `solicitudes`/`clientes`(+subcols)/`mensajes`/`usuarios`; RBAC §61. **Reconstrucción** → skill `crm-architect` (handoff en `10`, kickoff ADR §155). |
 | Historia/decisión de un subsistema (§NN) | `docs/00-INDICE.md` → `docs/99-HISTORIAL-ADR.md` |
 
 ---

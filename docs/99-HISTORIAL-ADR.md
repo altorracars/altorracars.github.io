@@ -42896,3 +42896,10 @@ El cliente pidió un chequeo avanzado de TODO el cerebro para cazar/corregir cua
 
 ### 154.3 Límite + doctrina
 El linter cubre la clase ESTRUCTURAL/referencial (determinista, para SIEMPRE). La clase SEMÁNTICA (contradicción de prosa, descripción stale) sigue siendo juicio — mitigada por spot-checks dirigidos. Validado corriéndolo: 5c cazó su propio falso positivo (el placeholder), 5d validó tras el fix de §1. Cero cache bump. Aplica M-10.
+
+## 155. ADR-155 — Kickoff: reconstrucción del CRM + skill `crm-architect` registrada
+El cliente añadió la skill `crm-architect` (commit `6cc0055`) y abrirá una sesión nueva en contexto limpio para reconstruir el CRM de Altorra. Esta entrada marca el ARRANQUE — sin decisiones de diseño aún (esas saldrán como ADRs por sprint en la sesión nueva).
+- **Skill `crm-architect`**: build CRM sobre Firebase + Firestore + Cloud Functions, vertical `automotive-dealership` (concesionario), RBAC + Ley 1581, con templates (`firestore.rules`/`schema.types.ts`/functions) + scaffold scripts. Calza el stack EXACTO de Altorra. Registrada en `40` (NO es lóbulo: capacidad portable; el know-how Altorra-específico irá a `20`/ADRs a medida que se construya).
+- **CRM actual (punto de partida)**: `admin.html` (SPA) + `js/admin/admin-crm.js` + `js/admin/admin-crm-tabs.js` + `js/core/comm-schema.js`; colecciones `solicitudes`/`clientes`(+subcols crmNotes/cotizaciones/postventa)/`mensajes`/`usuarios`; RBAC dinámico §61. Orientación en `20-ESPACIAL`.
+- **Handoff**: plan de arranque en `10` Foco — invocar `crm-architect` + `brainstorming` (definir alcance) → auditar CRM actual vs framework → `writing-plans` → ADRs por sprint.
+- Cero cache bump (brain-only). Próximos ADRs (§156+) documentarán las decisiones reales de la reconstrucción.

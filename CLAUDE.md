@@ -179,10 +179,10 @@ Al arrancar, **imprime 2-3 líneas de signos vitales** (build, cache, branch, fl
 
 Cuando se dispara un trigger, leer el nodo correspondiente deja de ser opcional:
 
-- **🔴 Trigger de Error**: si fallas **2 veces** corrigiendo el mismo bug,
-  estás OBLIGADO a DETENERTE y leer el **Largo Plazo** (`docs/00-INDICE.md` →
-  tramo de `docs/99-HISTORIAL-ADR.md`) buscando el § del subsistema o un bug
-  análogo, ANTES de intentar una 3ª solución. Prohibido adivinar (doctrina RCA §19).
+- **🔴 Trigger de Error / Saturación**: si fallas **2 veces** corrigiendo el mismo bug,
+  estás OBLIGADO a DETENERTE y leer el **Largo Plazo** (`docs/00-INDICE.md` → tramo de
+  `docs/99-HISTORIAL-ADR.md`) buscando el § o un bug análogo ANTES de la 3ª solución (prohibido adivinar, RCA §19).
+  Y si detectas **loops circulares o contexto saturado** (atención degradada): igual DETENTE, consolida `10` (con sus 🚫 callejones sin salida) y ofrece un **relevo curado** (sesión nueva > `/compact` para lógica compleja). Medir por SÍNTOMA, no por contador de turnos.
 - **🟡 Trigger de Desorientación**: si dudas de DÓNDE vive un componente, una
   ruta, un flujo de datos o cómo interactúan los módulos, estás OBLIGADO a
   consultar la **Memoria Espacial** (`docs/20-MEMORIA-ESPACIAL.md`) antes de tocar nada.

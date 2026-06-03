@@ -42828,3 +42828,24 @@ Cliente (QA en prod `busqueda.html?tipo=nuevo`): *"Nuevos y usados fallan, enví
 - **150.f.3 Solución (Opción A, aprobada por el cliente):** eliminada la columna "Por condición" entera del mega-dropdown. Queda **1 columna "Por categoría"** (SUV/Sedán/Pickup/Hatchback) + **CTA full-width "Ver todos los vehículos"→`busqueda.html`** (`.nav-dd-all`: dorado `--gold-300`, `space-between`, flecha visible). En `index.html` + `snippets/header.html`. Panel `.nav-dd` `580px`→`300px` single-column en `chrome-redesign.css`; `.nav-dd-pro{max-width:none}` (§150.d) sigue venciendo al `*{max-width:100%}` global. Quien quiera filtrar por condición lo hace en el panel de búsqueda (ya existe).
 - **150.f.4 No-regresión + tests:** `busqueda.html` y su JS de filtros **intactos** (no se tocó el motor); solo reestructura del dropdown + 1 width + 1 clase CSS. `node -c` OK (SW+cache-manager). **Render-verificado** (1440px): 5 enlaces (4 categorías + Ver todos), "Por condición"/Nuevos/Usados ausentes, divider OK, CTA dorado `space-between` con flecha, panel 300px, sin overflow, desktop-only (§150.d). Thumbs `NUEVOS.jpg`/`USADOS.jpg` quedan huérfanos en disco (no se borran, bajo-riesgo).
 - **150.f.5 Archivos:** `index.html`, `snippets/header.html`, `css/home/chrome-redesign.css`, `service-worker.js` + `js/core/cache-manager.js` (cache→`v20260602140000`), docs.
+
+## 151. ADR-151 — Evaluación crítica de la propuesta "Cerebro V5" (Antigravity): adoptado lean, rechazado el resto
+El cliente trajo una propuesta externa para potenciar el cerebro: proactividad obligatoria post-tarea, métrica de "Entropía de Sesión" (contador de turnos en `05` con bloqueo a los 15), sistema `HANDOFF.md` (vs `/compact`), y carpeta `docs/skills/`. Pedido: ser crítico y adoptar solo lo que REALMENTE potencia la inteligencia/soporte (skill `asesor-critico-honesto`).
+
+### 151.1 Veredicto (fundado en evidencia del repo, no opinión)
+2 buenas intuiciones, pero la propuesta (a) modelaba mi funcionamiento con pseudo-ciencia ("IQ", "entropía" por turnos), (b) **ignoraba el cerebro que ya existe**, (c) **violaba los topes anti-saturación** (regla #1: CLAUDE.md 318/320, `05` 25/25). ROI citado (+40% IQ, 60% ahorro) = inventado, no medible → descartado.
+
+### 151.2 ADOPTADO (lean, dentro de los topes)
+- **Reflejo de Saturación por SÍNTOMA** (no por contador): fundido en el §G.2 🔴 Trigger (net-neutral 4→4 líneas; CLAUDE.md sigue 318/320). Loops circulares / contexto saturado → DETENERSE, consolidar `10` y ofrecer **relevo curado** (sesión nueva > `/compact` solo para lógica compleja).
+- **Bitácora "🚫 Callejones sin salida"** en la convención de handoff de `10` (qué falló → no reintentar, con el porqué). Auto-cargado, alto valor, cero costo de router. (Era lo único genuinamente nuevo del `HANDOFF.md` propuesto.)
+
+### 151.3 RECHAZADO (con razón verificada)
+- **Contador de turnos / fila "Entropía" en `05`**: turnos ≠ saturación (un turno = 50 o 50.000 tokens; la métrica real es % de ventana de contexto). No lo puedo mantener fiable (sin contador persistente ni lectura precisa de mi llenado; Claude Code ya gestiona/auto-compacta). `05` está en tope y es "pisar, no apilar". Umbral duro "15=bloqueo" → handoffs prematuros + falsa seguridad. La detección de loops YA existía (§G.2).
+- **`HANDOFF.md` nodo nuevo**: redundante — el "Foco actual" de `10` YA es el handoff. 2 fuentes de verdad = divergencia (anti-fragmentación §G.5).
+- **`docs/skills/`**: choca con la carpeta `skills/` YA existente (~100+ skills + convención `SKILL.md` de Anthropic, verificado por Glob). Patrones positivos Altorra → `30` (o shard `31-PATRONES` al saturar, hoy 235/350); portables → `skill-creator` en `skills/` (§G.4). El ejemplo (port JSX→vanilla) ya está en L-11/L-21 + ADR §122.
+- **Inyecciones verbosas a `CLAUDE.md`**: lo habrían llevado >320 — "el CLAUDE.md de 40k líneas que mataba cada conversación" es la lección fundacional (§G.5).
+- **Proactividad obligatoria**: choca con la ejecución quirúrgica que exige el cliente; ya cubierta por `spawn_task` + §G.4 Auto-mejora. Se mantiene como reflejo de juicio (opcional, alta confianza), NO doctrina nueva.
+- **"Prohibido /compact" absoluto**: matizado — sirve para continuaciones simples; el relevo curado solo gana en lógica compleja.
+
+### 151.4 Doctrina + meta
+Cero cache bump (no cambia el sitio). Meta-aprendizaje → **M-08** (`30`). Aplicó §G.4 **Reflejo de Desafío Crítico**: cuestionar propuestas con EVIDENCIA, proteger topes + no-fragmentación por encima de "más features". Una propuesta que ignora la arquitectura existente y usa métricas inventadas es ruido, por bien intencionada que sea.

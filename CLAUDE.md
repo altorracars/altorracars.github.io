@@ -42,12 +42,12 @@ El cerebro se divide en **nodos**. Auto-cargas SOLO `CLAUDE.md` + `05` + `10` (�
 | 🗂️ **Índice sináptico** | `docs/00-INDICE.md` | ❌ on-demand | ANTES de leer el historial (offset exacto) Y para el enrutamiento semántico (síntoma → neurona). |
 | 📚 **Largo Plazo** | `docs/99-HISTORIAL-ADR.md` | ❌ on-demand | Trigger de Error / detalle histórico de un §. NUNCA completo — usa offset/limit. |
 | 🎯 **Lóbulos de Dominio** | `docs/40-LOBULOS-DOMINIO.md` | ❌ on-demand | Trigger 🔵 §G.2: registry de dominios especializados; lóbulos hijos (`41-SEGURIDAD`, `42-LEGAL`, etc.) nacen on-demand con contenido real. |
-| 🛠️ **Skills externas** | `skills/` + tool Skill | ❌ on-demand | Expertise general de terceros (anthropic-skills, superpowers, etc.). NO es neurona — recurso paralelo. Consultar PRIMERO al disparar Trigger 🔵. |
+| 🛠️ **Skills externas** | `skills/` + tool Skill | ❌ on-demand | Expertise general de terceros (anthropic-skills, superpowers, etc.). NO es neurona — recurso paralelo. Consultar PRIMERO al disparar Trigger 🔵. **Catálogo completo → `docs/skills-inventory.md`** (el repo NO es la fuente de mis skills cargadas; ver esa hoja). |
 
-**Hojas de detalle** (enlazadas desde la Memoria Espacial, no se leen directo salvo necesidad):
+**Hojas de detalle** (enlazadas desde su neurona madre, no se leen directo salvo necesidad):
 `docs/dependency-map.md` (deps JS), `docs/SITEMAP-FIX.md` (SEO/sitemap),
 `docs/PLAN-MIGRACION-ALTORRA.md` (roadmap Cloudflare), `docs/SETUP-LLM.md` (LLM bot),
-`docs/altor-hub-cirugia-execution-plan.md` (plan Hub §59).
+`docs/altor-hub-cirugia-execution-plan.md` (plan Hub §59), `docs/skills-inventory.md` (catálogo de skills, Trigger 🔵).
 
 ### 🏆 Regla de oro anti-saturación (CÓMO leer el Largo Plazo)
 

@@ -37,9 +37,18 @@ para lóbulos de dominio. No reutilizar.
 
 ## 🛠️ Recursos Externos Complementarios
 
-`skills/` (carpeta + tool Skill) es **expertise general de terceros**
-(anthropic-skills/, claude_code_skills/, superpowers/, etc.).
+`skills/` (carpeta + tool Skill) es **expertise general de terceros**.
 **NO es una neurona** — es un recurso paralelo, alimentado por el cliente.
+
+> 📖 **Catálogo completo de las skills del repo → `docs/skills-inventory.md`**
+> (~88 skills + anomalías, auditado 2026-06-03). Consúltalo al disparar Trigger 🔵
+> para saber QUÉ skill tienes para un dominio.
+>
+> ⚠️ **Estructura real**: `skills/` es **plano** (`skills/<nombre>/SKILL.md`), NO tiene
+> subcarpetas `anthropic-skills/` ni `superpowers/`. Y **el repo NO es la fuente** de
+> las skills cargadas en sesión: mi config solo habilita el plugin `superpowers` +
+> `~/.claude/skills/crm-architect`; el namespace `anthropic-skills:*` es bundle del
+> entorno. El solape de nombres es curaduría del cliente, no cableado. Detalle en la hoja.
 
 **Workflow obligatorio al disparar Trigger 🔵 (§G.2 `CLAUDE.md`)**:
 1. **Primero**: revisar qué skills están disponibles (lista en system reminders

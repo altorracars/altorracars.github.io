@@ -8,11 +8,11 @@
 > branch, build o al detectar/resolver un riesgo. **Tope ~25 líneas (§G.5)** — es un
 > tablero, no una bitácora.
 
-| Señal | Valor (al 2026-06-02) |
+| Señal | Valor (al 2026-06-03) |
 |---|---|
-| **Build** | 🟢 Catálogo cinematic + a11y **en producción**. Bloque §150 (dropdown depurado §150.d–f) + cerebro V5-lean/tooling §151–§154 **COMPLETOS y commiteados** (HEAD `6cc0055`; `brain:check` valida frescura + refs cruzadas = **0 huecos estructurales**). **🏗️ PRÓXIMO (sesión nueva): RECONSTRUCCIÓN DEL CRM** con skill `crm-architect` — ver handoff en `10`. Lóbulo §48 → 5/6. Ver ADR §150–§154. |
-| **Cache version vigente** | **`v20260602140000`** (§150.f) — desplegada en `main`. SW = cache-manager (match ✅, lo valida `brain:check §4a`). §151–§154 + skill CRM brain-only (no tocan cache). |
-| **Branch activa** | `refactor/estructura` — **working tree LIMPIO, todo commiteado** (§150–§154 + skill `crm-architect`, HEAD `6cc0055`). §150–§154 ya en `main`; la skill `crm-architect` (`6cc0055`) + los docs de ESTE handoff son lo único local (commitéalos). `origin/main` avanza por cron/PRs (sha → `git`, no se pinea). |
+| **Build** | 🟢 Catálogo cinematic + a11y **en producción**. **Cerebro ENDURECIDO (§156)**: hooks deterministas (`pre-commit` bloquea commit con cerebro roto + `SessionStart` corre `brain:check` cada sesión), Consejo Externo (neurona 15), regla verifica-no-asumas universal (§3.3+M-11), inventario+limpieza skills. **🏗️ PRÓXIMO (sesión nueva): RECONSTRUCCIÓN DEL CRM** (skill `crm-architect`; handoff en `10`). `brain:check` SANO (hooks lo blindan). Ver ADR §150–§156. |
+| **Cache version vigente** | **`v20260602140000`** (§150.f) — desplegada en `main`. SW = cache-manager (match ✅, lo valida `brain:check §4a`). §151–§156 brain-only (no tocan cache). |
+| **Branch activa** | `refactor/estructura` — **commit masivo del cerebro (§156) STAGED + validado por el pre-commit, PENDIENTE de pushear**; inventario skills + skill `crm-architect` ya commiteados (`1d0e4d5` / `6cc0055`). `origin/main` avanza por cron/PRs (sha → `git`, no se pinea). |
 | **Producción (`main`)** | `origin/main` = **catálogo cinematic + dropdown depurado (§150) + cerebro V5-lean/tooling (§151–§154)** LIVE. Sin regresiones. El sha exacto avanza por cron/PRs (no se pinea aquí → `git`). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 

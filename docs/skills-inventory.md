@@ -81,7 +81,7 @@ de mis capacidades. Implicaciones:
 | `imagegen-frontend-web` | `taste-skill-main/imagegen-frontend-web` | Generación de imágenes para front web | ✅ |
 | `imagegen-frontend-mobile` | `taste-skill-main/imagegen-frontend-mobile` | Idem mobile | ✅ |
 | `full-output-enforcement` | `taste-skill-main/output-skill` | Forzar salida completa (anti-truncado) | ✅ |
-| `canvas-design-creative` | `SKILL-canvas-design/SKILL-canvas-design.md` | Arte/posters/PDF/PNG por filosofía de diseño (⚠️ archivo NO se llama SKILL.md) | ✅🔧 |
+| `canvas-design-creative` | | Arte/posters/PDF/PNG por filosofía de diseño | ✅ |
 | `accessibility-audit` | | **Creada en Altorra** (§48): framework WCAG 2.2 AA portable | ✅ |
 
 ---
@@ -131,7 +131,7 @@ de mis capacidades. Implicaciones:
 | `onboarding-cro` | | CRO de onboarding | ✅ |
 | `signup-flow-cro` | | CRO del flujo de registro | ✅ |
 | `paywall-upgrade-cro` | | CRO de paywall/upgrade in-app | ✅ |
-| `ecommerce` | `ecommerce skills` (⚠️ espacio en el nombre) | Patrones de e-commerce | ✅🔧 |
+| `ecommerce` | | Patrones de e-commerce | ✅ |
 
 ---
 
@@ -172,15 +172,17 @@ de mis capacidades. Implicaciones:
 
 ## 🔧 Carpetas en `skills/` que NO son skills (anomalías a resolver)
 
-| Carpeta | Qué contiene | Diagnóstico | Recomendación |
-|---|---|---|---|
-| `accessibility-audit-workspace/` | solo `trigger-eval.json` | Artefacto residual del loop de eval de `skill-creator` (probando el trigger de `accessibility-audit`) | 🧹 borrar (no aporta) |
-| `SKILL-canvas-design/` | `SKILL-canvas-design.md` (name `canvas-design-creative`) | Archivo mal nombrado: el loader busca `SKILL.md` | renombrar a `canvas-design/SKILL.md` o borrar (ya disponible vía bundle) |
-| `code-modernization/` | `agents/` + `commands/` | Es un PLUGIN (comandos/agentes), no una skill | mover fuera de `skills/` o documentar como plugin |
-| `code-simplifier/` | `code-simplifier.md` | Es una def de SUBAGENTE (`model: opus`), no SKILL.md | mover a agentes o renombrar si se quiere como skill |
-| `example-plugin/` | `commands/` + `skills/example-*/` | Plantilla de ejemplo (no real) | borrar (ruido) |
-| `taste-skill-main/`, `animate-skill-main/`, `claude-skills-llm-council-main/` | bundles con sufijo `-main` | Descargas crudas de GitHub; carpeta ≠ `name` canónico | (cosmético) renombrar para que carpeta == name |
-| `ecommerce skills/` | espacio en el nombre | Rompería loaders por el espacio | renombrar a `ecommerce/` |
+> **✅ Limpieza 2026-06-03**: resueltas 4 de 7. Quedan 3 (contenido real / cosmético — ver Estado).
+
+| Carpeta | Diagnóstico | Estado |
+|---|---|---|
+| ~~`accessibility-audit-workspace/`~~ | Artefacto residual del eval de `skill-creator` (solo `trigger-eval.json`) | ✅ **BORRADA** |
+| ~~`example-plugin/`~~ | Plantilla de ejemplo (no real) | ✅ **BORRADA** |
+| ~~`ecommerce skills/`~~ | Espacio en el nombre → rompía loaders | ✅ **RENOMBRADA** → `ecommerce/` |
+| ~~`SKILL-canvas-design/`~~ | Archivo mal nombrado (loader busca `SKILL.md`) | ✅ **RENOMBRADA** → `canvas-design-creative/SKILL.md` |
+| `code-modernization/` | Es un PLUGIN (commands/agents), no una skill | ⏳ **NO tocada** — contenido real (límite de guardián: no borrar). Reclasificar si se decide. |
+| `code-simplifier/` | Def de SUBAGENTE (`model: opus`), no `SKILL.md` | ⏳ **NO tocada** — contenido real. Reubicar a agentes si se decide. |
+| `taste-skill-main/`, `animate-skill-main/`, `claude-skills-llm-council-main/` | Bundles `-main`: carpeta ≠ `name` canónico | ⏳ **cosmético** (skip: renombrarlos ensucia el commit con 100+ paths; el `name:` interno es lo que carga) |
 
 > **Nota de impacto**: como `skills/` del repo NO está cableado como fuente de mis skills,
 > estas anomalías **no degradan** mi capacidad actual — son higiene de repo + a prueba de futuro.
@@ -191,5 +193,5 @@ de mis capacidades. Implicaciones:
 
 - **~82 skills usables** (✅) tienen contraparte instalada vía `Skill` (bundle `anthropic-skills:*` + plugin `superpowers:*` + `~/.claude/skills/crm-architect`).
 - **6 repo-only** (⚠️, sin contraparte instalada): `claude-automation-recommender`, `claude-md-improver`, `session-report`, `code-simplifier`, `code-modernization`, `design-taste-frontend-v1`.
-- **7 anomalías estructurales** (🔧) listadas arriba.
+- **Anomalías**: 4/7 resueltas el 2026-06-03 (2 borradas + 2 renombradas); 3 quedan (2 = contenido real no-skill, 1 = bundles cosméticos).
 - El cerebro ahora **mapea el 100%** del contenido de `skills/` (antes solo nombraba ~12 en ejemplos + 2 creadas).

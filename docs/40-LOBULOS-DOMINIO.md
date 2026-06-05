@@ -24,7 +24,7 @@
 | **43** | UX/Diseño | "audita UX", "interfaz", "accesibilidad visual" | 🟠 **activo** (R0 2026-05-29) | Patrones de interfaz, modernización de componentes, jerarquía visual. Hallazgos en `43-UX.md`. |
 | **44** | SEO | "audita SEO", "rich snippets", "ranking", "indexación" | 🟢 vacío | Metadata, structured data, on-page, indexación. Complementa §90 historial. |
 | **45** | Performance | "audita performance", "Core Web Vitals", "LCP/CLS/FID" | 🟢 vacío | Métricas reales (Lighthouse), bottlenecks. Complementa doctrina §17. |
-| **46** | Escalabilidad | "audita escalabilidad", "arquitectura", "modernización código" | 🟢 vacío | Anti-deuda técnica, patrones, refactor estructural. |
+| **46** | Arquitectura & Escalabilidad | "audita escalabilidad", "arquitectura", "modernización código", "monolito", "desacoplar" | 🟠 **activo** (mandato arquitecto 2026-06-05) | Doctrina de arquitectura + decisiones right-sized (serverless event-driven Firebase, cero monolitos, seguridad por diseño, costo $0). Contenido en `46-ESCALABILIDAD.md`. |
 | **47** | Copywriting | "audita copy", "voz", "tono", "headlines", "CTAs" | 🟢 vacío | Tono Altorra, microcopy, headlines, CTAs, mensajes de error. |
 | **48** | Accesibilidad (a11y) | "audita a11y", "WCAG", "lectores de pantalla", "teclado" | 🟠 **activo** (R inicial 2026-05-31) | ARIA, contraste, navegación teclado, alt texts, foco visible. Hallazgos en `48-ACCESIBILIDAD.md`. |
 

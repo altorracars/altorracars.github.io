@@ -11,7 +11,7 @@
 | Señal | Valor (al 2026-06-03) |
 |---|---|
 | **Build** | 🟢 Catálogo cinematic + a11y **en producción**. **Cerebro ENDURECIDO (§156)**: hooks deterministas (`pre-commit` bloquea commit con cerebro roto + `SessionStart` corre `brain:check` cada sesión), Consejo Externo (neurona 15), regla verifica-no-asumas universal (§3.3+M-11), inventario+limpieza skills. **🏗️ PRÓXIMO (sesión nueva): RECONSTRUCCIÓN DEL CRM** (skill `crm-architect`; handoff en `10`). `brain:check` SANO (hooks lo blindan). Ver ADR §150–§156. |
-| **Cache version vigente** | **`v20260605120000`** (§157) — fix rectángulo fantasma del hero-search (backdrop-filter eliminado). SW = cache-manager (match ✅, lo valida `brain:check §4a`). PREV `v20260602140000` §150.f. ⏳ pendiente deploy + QA del cliente. |
+| **Cache version vigente** | **`v20260605120000`** (§157) — fix rectángulo negro del hero (`<footer class=cin-hero-foot>` heredaba `body footer{background}` de dark-theme → `.cin-hero-foot{background:transparent}`). SW = cache-manager (match ✅, lo valida `brain:check §4a`). PREV `v20260602140000` §150.f. ⏳ pendiente deploy + QA. |
 | **Branch activa** | `refactor/estructura` — **commit masivo del cerebro (§156) STAGED + validado por el pre-commit, PENDIENTE de pushear**; inventario skills + skill `crm-architect` ya commiteados (`1d0e4d5` / `6cc0055`). `origin/main` avanza por cron/PRs (sha → `git`, no se pinea). |
 | **Producción (`main`)** | `origin/main` = **catálogo cinematic + dropdown depurado (§150) + cerebro V5-lean/tooling (§151–§154)** LIVE. Sin regresiones. El sha exacto avanza por cron/PRs (no se pinea aquí → `git`). ⏳ QA visual Ctrl+Shift+R (L-08). |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |

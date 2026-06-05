@@ -1,5 +1,10 @@
 # Altorra Cars — Dependency Map (Mega-Plan v4 baseline)
 
+> 🛑 **STALE (verificado 2026-06-05)**: este snapshot subestima el sistema real
+> (decía 22 admin files / 52 JS / 27 functions — REAL: **79 `js/admin/` + 28 functions**;
+> `admin-inbox.js` NO existe; `mensajes` está muerta). **Para el estado actual del
+> CRM/admin usa `docs/crm-handoff.md`.** Esto se conserva como referencia histórica v4.
+
 > **Generated**: 2026-05-05 (Microfase A.3)
 > **Purpose**: snapshot of all JavaScript modules and their dependencies
 > before starting the v4 rebuild. Reference for impact analysis: when

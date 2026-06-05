@@ -47,7 +47,7 @@ El cerebro se divide en **nodos**. Auto-cargas SOLO `CLAUDE.md` + `05` + `10` (�
 
 **Hojas de detalle** (enlazadas desde su neurona madre, on-demand): `docs/dependency-map.md` (deps JS),
 `docs/SITEMAP-FIX.md` (SEO), `docs/PLAN-MIGRACION-ALTORRA.md` (Cloudflare), `docs/SETUP-LLM.md` (LLM bot),
-`docs/altor-hub-cirugia-execution-plan.md` (Hub §59), `docs/skills-inventory.md` (catálogo skills, Trigger 🔵).
+`docs/altor-hub-cirugia-execution-plan.md` (Hub §59), `docs/skills-inventory.md` (catálogo skills, Trigger 🔵), `docs/crm-handoff.md` (CRM: estado actual + plan de reconstrucción).
 
 ### 🏆 Regla de oro anti-saturación (CÓMO leer el Largo Plazo)
 

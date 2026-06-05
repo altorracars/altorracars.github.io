@@ -122,14 +122,47 @@ Otros riesgos: tocar `comm-schema.js` impacta el sitio público; deploy de regla
 
 ---
 
-## 7. [ESPERANDO DEL CLIENTE] — rellenar antes/durante la sesión nueva
-> El cliente dijo: *"te daré varias condiciones y lineamientos"* + *"cambiaremos todo"*. Aquí van sus palabras.
+## 7. CONDICIONES DEL CLIENTE (sesión rebuild · 2026-06-05) — sus palabras
 
 ### 7.1 Condiciones / lineamientos
-_(pendiente — el cliente las dictará)_
+- **"Pensar en un TODO"**: el CRM se diseña holístico, no por parches. Hoy "no tiene vida, desorganizado, sin estructura ni idea definida".
+- **Eliminar TODO el CRM actual** y lo que hay en la pestaña CRM → diseñar uno nuevo COMPLETO: "sin fallos, sin vacíos, sin pérdida de información, con el flujo correcto de ventas, clasificación, información, todo".
+- **Cero pérdida de información**: hoy se pierden comunicaciones de la web pública por falta de un filtro/clasificación correcta.
+- Apoyarse en la skill `crm-architect` + el estándar de las mejores empresas de CRM.
 
-### 7.2 Cómo ve el cliente el estado actual de la página
-_(pendiente)_
+### 7.2 Qué le DUELE del CRM actual (verificado en código)
+- **Calendario mal ubicado**: en la Bandeja hay un calendario que NO va ahí (ya existe la sección Agenda dedicada `sec-calendar`). → duplicado confirmado.
+- **Tabla y Kanban = Pipeline**: vistas redundantes, "básicamente lo mismo". → confirmado (kanban Bandeja por estado vs kanban Pipeline por score).
+- **Secciones duplicadas** que capturan leads/citas: el mismo dato aparece en ~7 lugares inconexos.
 
-### 7.3 Qué quiere el cliente para el CRM
-_(pendiente)_
+### 7.3 Qué QUIERE para el CRM nuevo
+- Que TODOS los medios de captura (lead, contacto, comunicación, PQR, pregunta, cita, venta, solicitud, **suscripción por correo, creación de cuenta**, etc.) estén CONECTADOS al CRM.
+- Flujo de ventas correcto + clasificación + 360 sin huecos.
+- Primero un ANÁLISIS COMPLETO → luego el PLAN que iniciaremos.
+
+---
+
+## 8. HALLAZGOS DEL SCAN PROFUNDO (4 agentes paralelos · 2026-06-05) — fuente de verdad del rebuild
+
+### 8.1 Censo de canales de captura (público → ¿llega al CRM?)
+- **Llegan hoy** (vía `solicitudes`, `kind` cita/solicitud/lead, `comm-schema.computeMeta`): Contacto general (`contact.js`), Vende-tu-auto + Financiación (`contact-forms.js`), Cita por vehículo (`citas.js` + reserva atómica `config/bookedSlots`), Peritaje (subtipo de contacto).
+- **Se PIERDEN / no llegan al CRM (la "hemorragia")**:
+  - **Newsletter**: `index.html:812` `<form onsubmit="return false">` → SIN handler, no persiste. ROTO.
+  - **Registro/Login de cuenta** (`auth.js` → `clientes/{uid}`): el admin NO observa `clientes`; el cliente solo aparece en CRM si crea una solicitud → lead registrado invisible.
+  - **Bot ALTOR / concierge** (`concierge.js` → `conciergeChats`/`conversations`): colección aparte; NO auto-crea lead en `solicitudes`. El CRM tradicional lo ignora.
+  - **Favoritos / vehículos vistos / búsquedas** (`clientes/{uid}` arrays): señal de intención no usada como lead.
+  - **WhatsApp / mailto / tel directos**: fugas sin registro. **Simulador de crédito** (`js/simulador/*`): alto intent, sin captura. **Reseñas**: sin form público (solo admin).
+- ⚠️ No existe un **PQR** formal hoy (entra disuelto en contacto general).
+
+### 8.2 Contrato + bug de estados
+- `comm-schema.js`: 3 `kind`, máquinas de estado por kind, `computeMeta` (priority+SLA+tags); SLA cita 30m / solicitud 2h / lead 24h.
+- ⚠️ **Bug estados legacy**: `solicitudes-watcher.js:33` filtra `completado`/`rechazado` (viejos) vs schema `completada`/`rechazada` → el cliente NUNCA ve esos cambios. `onSolicitudStatusChanged` solo emaila 4 estados.
+
+### 8.3 Duplicación admin (las 3 quejas, confirmadas)
+- 1 `solicitudes` doc se pinta en **7 UIs**: Tabla Bandeja, Kanban Bandeja (estado), Kanban Pipeline (score), Calendario Agenda, Mini-calendario Bandeja, KPI Dashboard, Stats Reportes — todas leen `AP.appointments`.
+- Calendario duplicado: `admin-appointments.js:1253` (mini en Bandeja) vs `admin-calendar.js` (sección Agenda).
+
+### 8.4 Lógica del CRM actual a CONSERVAR (no perderla en el rebuild)
+- Scoring 7-factores (`admin-crm.js:82`), NBA 10 reglas (`nba.js`), Predictive hot/stale/churn (`admin-predictive.js`), Quote PDF/amortización (`admin-quote.js`), Automation engine (`admin-automation.js`, EventBus+reglas), Postventa/NPS (`admin-postventa.js`).
+- ⚠️ Bugs a corregir: `openContactDetail` vs `openCrmDetail` (clicks de pipeline/NBA rotos); `schedulePostventa` nunca llamado desde `markAsSold`.
+- **Activos a NO romper**: puente Firestore `comm-schema.js`, bot + 28 Cloud Functions, RBAC, inventario.

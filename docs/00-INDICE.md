@@ -40,6 +40,7 @@
 | SEO / sitemap / indexación Google | `docs/SITEMAP-FIX.md` + 📚 §90 |
 | ¿Qué hay pendiente? estado del sprint | ⚡ `10-CORTO-PLAZO` (TODO-NN) |
 | Migración Cloudflare / Vite / dominio | `docs/PLAN-MIGRACION-ALTORRA.md` + TODO-01 |
+| 🚗 Reconstrucción del CRM / estado actual admin-CRM / pipeline / leads / 360° | `docs/crm-handoff.md` (scan verificado 2026-06-05 + plan + decisiones) + skill `crm-architect` + 🛰️ `15` |
 | 🔵 Audita SEGURIDAD / vulnerabilidades / Firebase rules / rutas sin auth | 🎯 `40-LOBULOS-DOMINIO` → 41-SEGURIDAD (on-demand) + Skill tool |
 | 🔵 Audita LEGAL / cookies / privacidad / GDPR / Hábeas Data | 🎯 `40-LOBULOS-DOMINIO` → 42-LEGAL (on-demand) + Skill tool |
 | 🔵 Audita UX / interfaz / componentes | 🎯 **`43-UX.md` (activo R0)** + Skill tool (`frontend-design`, `impeccable`, `redesign-existing-projects`) |

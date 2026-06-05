@@ -185,6 +185,15 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
   grid-template-columns: 1fr auto 1fr;
   align-items: end;
   gap: 32px;
+  /* FIX rectángulo negro del hero (causa raíz REAL, §157): este
+     <footer class="cin-hero-foot"> matchea la regla GLOBAL
+     `body footer { background: linear-gradient(...) }` de dark-theme.css:688
+     (pensada para el footer del SITIO), que le pintaba un rectángulo oscuro
+     de borde a borde de la fila (de "+N vehículos" a "Vende con nosotros").
+     Lo anulamos: el footer del hero es transparente. Especificidad:
+     .cin-hero-foot (0,1,0) vence a body footer (0,0,2); el border-top ya lo
+     mata style.css con !important. */
+  background: transparent;
 }
 .cin-hero-foot-l, .cin-hero-foot-r {
   font-size: 13px; line-height: 1.5;
@@ -1859,23 +1868,18 @@ body[data-cin="on"] .alt-footer-news-band { display: none !important; }
   position: relative;
   display: flex; align-items: center; gap: 10px;
   padding: 8px 8px 8px 18px;
-  /* FIX rectángulo fantasma del hero: el backdrop-filter (blur) sobre un
-     pill border-radius:999px, con ancestro .cin-hero (isolate) + .cin-hero-bg
-     (transform/will-change), pintaba el backdrop como un RECTÁNGULO que
-     ignora las esquinas → "rectángulo horizontal negro tenue detrás del
-     botón". Se elimina el blur (mismo remedio que performance-fixes.css ya
-     aplicó al buscador viejo .hero-search-inner) y se sube la opacidad del
-     fondo para conservar legibilidad sin el blur. Alineado con doctrina §3.1. */
-  background: rgba(8,7,10,0.82);
+  background: rgba(8,7,10,0.6);
   border: 1px solid rgba(244,238,222,0.10);
   border-radius: 999px;
   min-width: 420px; max-width: 620px; width: 100%;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
   transition: border-color 240ms, background 240ms;
   z-index: 5;
 }
 .hero-search:focus-within {
   border-color: rgba(212,168,90,0.55);
-  background: rgba(8,7,10,0.92);
+  background: rgba(8,7,10,0.85);
   box-shadow: 0 0 0 3px rgba(212,168,90,0.10);
 }
 .hero-search-icon {

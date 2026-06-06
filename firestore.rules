@@ -338,6 +338,13 @@ service cloud.firestore {
       allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
     }
 
+    // ========== DEALS (CRM canónico — oportunidades/embudo — Fase 3) ==========
+    match /deals/{dealId} {
+      allow read:           if isAuthenticated() || hasPermission('crm.read');
+      allow create, update: if isSuperAdmin() || hasPermission('crm.edit');
+      allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
+    }
+
     // ========== FAILED INGESTIONS (dead-letter — Fase 1) ==========
     // Cero pérdida: si la ingestión falla, el lead cae aquí. SOLO el Admin
     // SDK escribe (bypassa rules); los admins leen para resolver.

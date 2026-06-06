@@ -15,7 +15,9 @@ import { scoreLead, RATING_META, FACTOR_LABELS, FACTOR_WEIGHTS } from '../../dom
 import { classifyType, channelOf, statusMeta } from '../../domain/classify.js';
 import { computeNBA } from '../../domain/nba.js';
 import { getContact, subscribeActivities, subscribeNotes, addNote } from './contacts.data.js';
-import { getMockContact, getMockActivities, getMockNotes, addMockNote } from '../../core/mock.js';
+import { createDealFromLead } from '../deals/deals.data.js';
+import { dealFromLead } from '../../domain/pipeline.js';
+import { getMockContact, getMockActivities, getMockNotes, addMockNote, addMockDeal } from '../../core/mock.js';
 
 const TYPE_ICON = { solicitud_inbound: '📥', whatsapp: '💬', status_change: '🔁', nota: '🗒️', email: '✉️', llamada: '📞' };
 
@@ -118,6 +120,18 @@ export function mountDetailPanel(root) {
       window.open(url, '_blank', 'noopener');
     });
 
+    const canEdit = hasPermission('crm.edit');
+    const convertBtn = (canEdit && lead.status !== 'convertido')
+      ? el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['🎯 Convertir']) : null;
+    if (convertBtn) convertBtn.addEventListener('click', async () => {
+      convertBtn.disabled = true;
+      try {
+        if (store.get().mock) addMockDeal(dealFromLead(lead));
+        else await createDealFromLead(lead);
+        toast('🎯 Convertido a oportunidad', 'ok');
+      } catch (e) { toast('No se pudo convertir', 'error'); convertBtn.disabled = false; }
+    });
+
     return el('div', { class: 'detail__header' }, [
       el('div', { class: 'u-row u-grow', style: { minWidth: '0' } }, [
         el('span', { class: 'avatar', 'aria-hidden': 'true', text: initials(lead.fullName) }),
@@ -131,7 +145,7 @@ export function mountDetailPanel(root) {
           ]),
         ]),
       ]),
-      el('div', { class: 'u-row u-row--tight' }, [waBtn, close$]),
+      el('div', { class: 'u-row u-row--tight' }, [convertBtn, waBtn, close$]),
     ]);
   }
 

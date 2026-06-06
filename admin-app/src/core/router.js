@@ -4,7 +4,7 @@
 // permite deep-link vía ?lead= para abrirlo al cargar.
 // ============================================================
 
-const ROUTES = ['bandeja']; // extensible: contactos, pipeline, agenda, reportes
+const ROUTES = ['bandeja', 'pipeline']; // extensible: contactos, agenda, reportes
 
 export function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '');

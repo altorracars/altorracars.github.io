@@ -73,6 +73,14 @@
         { "fieldPath": "rating", "order": "ASCENDING" },
         { "fieldPath": "lastActivityAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "deals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "lastActivityAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

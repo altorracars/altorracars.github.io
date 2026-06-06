@@ -82,7 +82,7 @@ admin-crm.js / admin-appointments.js / admin-inbox.js → comm-schema.js
 - `solicitudes/{id}` — comms unificadas (kind: cita / solicitud / lead).
 - `mensajes/{threadId}` — threads por vehículo.
 - `clientes/{uid}` (+ subcolecciones: busquedasGuardadas, notifications, cotizaciones, postventa, crmNotes).
-- **CANÓNICO CRM nuevo (§158, LIVE)**: `contacts/{dedupKey}` (persona unificada; +subcol `crmNotes`) · `leads/{id}` (interés; `status`/`rating`/`score`/`ownerId`/`sourceDetail`/`vehicleOfInterestId`/`slaDueAt`/`contactId`) · `activities/{id}` (timeline; `relatedTo.id`==leadId) · `failedIngestions/{id}` (dead-letter). **Timestamps = strings ISO.** Índices: leads(status,createdAt) · leads(ownerId,lastActivityAt) · activities(relatedTo.id,createdAt) · contacts(rating,lastActivityAt).
+- **CANÓNICO CRM nuevo (§158/§160, LIVE)**: `contacts/{dedupKey}` (persona unificada; +subcol `crmNotes`) · `leads/{id}` (interés; `status`/`rating`/`score`/`ownerId`/`sourceDetail`/`vehicleOfInterestId`/`slaDueAt`/`contactId`/`convertedTo.dealId`) · `activities/{id}` (timeline; `relatedTo.{type,id}` — type lead|deal) · `deals/{id}` (oportunidad/embudo §160; `stageId`/`probability`/`amount`/`weightedAmount`/`status`(open|won|lost)/`contactId`/`leadId`/`vehicleId`/`ownerId`) · `failedIngestions/{id}` (dead-letter). **Timestamps = strings ISO.** Índices: leads(status,createdAt) · leads(ownerId,lastActivityAt) · activities(relatedTo.id,createdAt) · contacts(rating,lastActivityAt) · **deals(status,lastActivityAt)**.
 - `usuarios/{uid}` — perfiles admin (`rol`/`roleId`/`permissions[]`; la app nueva hidrata permisos de aquí, NO de claims). `auditLog/{id}` — acciones admin.
 - `config/{docId}` — counters, bookedSlots, automationRules, followups, messageTemplates.
 - `system/meta` — señal de invalidación de cache. `loginAttempts/{hash}` — rate limiting.
@@ -100,12 +100,15 @@ admin-app/src/
   core/      firebase · auth(lookup usuarios/{uid}) · store(reactivo) · router · theme · toast · popover · dom · mock
     design-system/  tokens(HarmonyOS VERBATIM) · crm-tokens · base · components
     layout/         shell(sidebar+topbar) · login
-  domain/    PURO sin DOM/Firestore/ALTOR: format · classify(tipo/SLA/canal) · scoring(7 factores) · nba(10 reglas)
+  domain/    PURO sin DOM/Firestore/ALTOR: format · classify(tipo/SLA/canal) · scoring(7) · nba(10) · pipeline(etapas/forecast)
   modules/
     inbox/    data(queries paginadas+realtime) | domain(colas/filtro/orden) | ui  → LA BANDEJA
     contacts/ data(contact+activities+notes)   | ui                              → Customer 360
-  styles/    shell · login · inbox · contacts
+    deals/    data(subscribe/convert/stage/won) | ui(kanban drag-drop)            → PIPELINE (Fase 3a §160)
+  styles/    shell · login · inbox · contacts · pipeline
 ```
+- **Ruteo**: `router.js` (hash `#/bandeja`,`#/pipeline`) → `main.mountRoute` monta el módulo en el outlet con **cleanup del anterior** (cancela `onSnapshot`) + cierra el 360. `shell.setActive(route)` resalta nav + título.
+- **lead → deal**: la Bandeja trabaja `leads`; "Convertir a oportunidad" crea un `deal` (Pipeline). No mezclar (L-29).
 
 - **Patrón de estado entre módulos**: la Bandeja posee los leads enriquecidos y los **espeja al `store`** (`store.set({leads})`); el panel 360 los lee de ahí (L-27).
 - **Realtime acotado**: `onSnapshot`+`limit`+`unsubscribe` al desmontar (P4/§15.R3). Cero full-scan.

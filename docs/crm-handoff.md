@@ -166,3 +166,36 @@ Otros riesgos: tocar `comm-schema.js` impacta el sitio público; deploy de regla
 - Scoring 7-factores (`admin-crm.js:82`), NBA 10 reglas (`nba.js`), Predictive hot/stale/churn (`admin-predictive.js`), Quote PDF/amortización (`admin-quote.js`), Automation engine (`admin-automation.js`, EventBus+reglas), Postventa/NPS (`admin-postventa.js`).
 - ⚠️ Bugs a corregir: `openContactDetail` vs `openCrmDetail` (clicks de pipeline/NBA rotos); `schedulePostventa` nunca llamado desde `markAsSold`.
 - **Activos a NO romper**: puente Firestore `comm-schema.js`, bot + 28 Cloud Functions, RBAC, inventario.
+
+---
+
+## 9. Mapa de INTEGRACIÓN / portal único (cutover) — pregunta del cliente 2026-06-06
+
+> **El cliente confirmó la visión**: *"al final se integrará para que sea UNA sola plataforma, a través de un mismo portal de ingreso manejaremos todas las plataformas — NO un monolito."* Esto FIJA el end-state y la dirección.
+
+### 9.1 Por qué hoy se ve "aparte"
+La app `admin-app/` (Bandeja) corre **en paralelo** al `admin.html` viejo **a propósito** (blueprint §11, *strangler/run-paralelo*): construir lo nuevo al lado de lo viejo, sin big-bang. Hoy hay **2 entradas** (admin viejo + app nueva) y **2 sesiones de login** (apps Firebase namespaced distintas). Es una FASE de transición, no el destino.
+
+### 9.2 End-state = UN portal modular (no monolito)
+Un **único shell** (el de `admin-app/`) con **un solo login**, y **módulos independientes** que cargan bajo demanda (capas datos/dominio/ui, lazy). "Portal único" ≠ monolito: es lo OPUESTO al `admin.html` de ~3.870 líneas — una sola puerta, muchos módulos desacoplados. **En el cutover el `admin.html` viejo se apaga** y la app nueva queda como la ÚNICA entrada → ahí "un mismo portal de ingreso" se cumple literalmente.
+
+### 9.3 Mapa: admin viejo → portal nuevo (qué se reemplaza/absorbe/elimina)
+| Workspace (portal nuevo) | Módulo | Reemplaza/absorbe del admin viejo | Estado |
+|---|---|---|---|
+| 📥 **CRM · Bandeja** | `inbox` | `sec-crm` tab Bandeja + tabla/kanban de `solicitudes` + **mini-calendario (se ELIMINA, era duplicado)** + las 7 vistas de captura | ✅ **LIVE** |
+| 👤 **CRM · Contactos/360** | `contacts` | `sec-crm` tab Contactos + Customer 360 | ✅ 360 live · lista 🔜 |
+| 🎯 **CRM · Pipeline** | `pipeline` | `sec-crm` tab Pipeline (hoy por score) → embudo real **drag-drop** | 🔜 Fase 3 |
+| 📅 **Agenda** | `agenda` | **`sec-calendar` (`admin-calendar.js`)** — es el MISMO calendario, el nuevo lo REEMPLAZA y unifica (1 solo, mata el mini-cal de la Bandeja) | 🔜 Fase 3 |
+| 📊 **Reportes** | `reports` | sección Reportes / KPIs | 🔜 Fase 4 |
+| 💬 **Comunicaciones** | (inbox omnicanal / bot) | bot ALTOR/`concierge`, `unmatched` — alimenta la Bandeja vía ingestión; UI propia cuando ALTOR sea confiable | 🔜 (lógica se reusa) |
+| 🚗 **Inventario** | `inventory` | vehículos, marcas, concesionarios | 🔜 migrar al portal (lógica intacta) |
+| 🌐 **Sitio público** | (banners/reseñas) | banners, reseñas | 🔜 migrar al portal |
+| ⚙️ **Configuración** | `settings` | usuarios/**RBAC**, roles, audit, templates, automation | 🔜 migrar (RBAC = login único) |
+
+### 9.4 Las dos "Agendas" (aclaración)
+NO son agendas distintas. Hoy hay **duplicación** (un dolor confirmado §8.3): (a) `sec-calendar` = la agenda real del admin viejo; (b) un **mini-calendario dentro de la Bandeja vieja** que no debería estar ahí. El portal nuevo tendrá **UNA sola Agenda** (`agenda`, hoy "Pronto") que absorbe (a) y **elimina** (b). El "Agenda · Pronto" del sidebar nuevo = ese calendario unificado, aún sin construir.
+
+### 9.5 Orden de migración (cómo se llega a un portal)
+Fase 2 (Bandeja) ✅ → Fase 3 (Pipeline + Agenda) → Fase 4 (Reportes + automatización) → **migrar Inventario / Sitio público / Comunicaciones / Configuración al shell nuevo** → **Fase 5 cutover**: paridad → apagar `admin.html` → login único. Cada pieza entra como módulo; nunca un big-bang.
+
+> **Decisión a confirmar con el cliente**: ¿el portal nuevo absorbe TAMBIÉN inventario/banners/bot/RBAC (one-portal total), o esos quedan en el admin viejo más tiempo? El cliente ya dijo "todas las plataformas en un portal" → se asume **absorción total**, mapeado arriba.

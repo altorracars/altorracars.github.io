@@ -1,6 +1,6 @@
 // ============================================================
-// Altorra CRM · Bandeja Inteligente — punto de entrada.
-// Boot → (login | app). Modo ?mock=1 = demo sin Firebase.
+// Altorra CRM — punto de entrada.
+// Boot → (login | app). App = shell + módulo por ruta. ?mock=1 = demo.
 // ============================================================
 
 import './core/design-system/tokens.css';
@@ -11,38 +11,62 @@ import './styles/shell.css';
 import './styles/login.css';
 import './styles/inbox.css';
 import './styles/contacts.css';
+import './styles/pipeline.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
 import { initAuth } from './core/auth.js';
+import { currentRoute, onRouteChange } from './core/router.js';
 import { mountShell } from './core/layout/shell.js';
 import { mountLogin } from './core/layout/login.js';
 import { mountInbox } from './modules/inbox/inbox.ui.js';
+import { mountPipeline } from './modules/deals/deals.ui.js';
 import { mountDetailPanel } from './modules/contacts/contacts.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline };
 
 let screen = null; // 'login' | 'app'
-let cleanupInbox = null;
+let shell = null;
+let cleanupModule = null;
+let mountedRoute = null;
+let offRoute = null;
+
+function mountRoute(name) {
+  if (!shell || name === mountedRoute) return;
+  if (cleanupModule) { cleanupModule(); cleanupModule = null; }
+  if (store.get().detailLeadId) store.set({ detailLeadId: null });
+  const fn = MODULES[name] || mountInbox;
+  cleanupModule = fn(shell.outlet) || null;
+  shell.setActive(name);
+  mountedRoute = name;
+}
+
+function enterApp() {
+  shell = mountShell(appRoot);
+  mountDetailPanel(shell.detailRoot);
+  mountRoute(currentRoute());
+  offRoute = onRouteChange(mountRoute);
+}
 
 function teardownApp() {
-  if (cleanupInbox) { cleanupInbox(); cleanupInbox = null; }
+  if (cleanupModule) { cleanupModule(); cleanupModule = null; }
+  if (offRoute) { offRoute(); offRoute = null; }
+  shell = null; mountedRoute = null;
 }
 
 function renderScreen(s) {
   if (!s.ready) return; // mantiene el boot-splash
   if (s.user && screen !== 'app') {
     screen = 'app';
-    const { outlet, detailRoot } = mountShell(appRoot);
-    cleanupInbox = mountInbox(outlet);
-    mountDetailPanel(detailRoot);
+    enterApp();
   } else if (!s.user && screen !== 'login') {
     teardownApp();
     screen = 'login';
-    store.set({ detailLeadId: null });
+    if (s.detailLeadId) store.set({ detailLeadId: null });
     mountLogin(appRoot);
   }
 }

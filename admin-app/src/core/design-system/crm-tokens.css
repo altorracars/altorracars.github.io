@@ -1,0 +1,40 @@
+/* ============================================================
+   ALTORRA CRM · TOKENS ADITIVOS (CRM-específicos)
+   Aditivo sobre tokens.css — nunca pisa los del sistema base.
+   Temperatura de lead, semáforo SLA, canales.
+   ============================================================ */
+
+:root {
+  /* Temperatura de lead (deriva del score 7-factores) */
+  --temp-hot:       #E8643C;   /* caliente ≥70 */
+  --temp-hot-soft:  rgba(232, 100, 60, 0.14);
+  --temp-warm:      #F2B544;   /* tibio 40-69 */
+  --temp-warm-soft: rgba(242, 181, 68, 0.16);
+  --temp-cold:      #5BA8E5;   /* frío <40 */
+  --temp-cold-soft: rgba(91, 168, 229, 0.14);
+
+  /* Semáforo SLA (cumplimiento del tiempo de respuesta) */
+  --sla-ok:    #4FBE7F;   /* holgado */
+  --sla-warn:  #F2B544;   /* por vencer */
+  --sla-late:  #E85D5D;   /* vencido */
+
+  /* Acentos de canal */
+  --ch-web:       #5BA8E5;
+  --ch-whatsapp:  #25D366;
+  --ch-bot:       #B8924A;
+  --ch-cuenta:    #8A7CFF;
+  --ch-newsletter:#4FBE7F;
+  --ch-cita:      #E8643C;
+
+  /* Layout app */
+  --sidebar-w:    256px;
+  --sidebar-w-sm: 72px;
+  --topbar-h:     60px;
+  --detail-w:     440px;
+}
+
+:root[data-theme="dark"] {
+  --temp-hot-soft:  rgba(232, 100, 60, 0.20);
+  --temp-warm-soft: rgba(242, 181, 68, 0.18);
+  --temp-cold-soft: rgba(91, 168, 229, 0.18);
+}

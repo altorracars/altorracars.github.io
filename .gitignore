@@ -1,5 +1,9 @@
 node_modules/
 dist/
+# EXCEPCIÓN: el build de la app admin CRM (admin-app/dist) SÍ se versiona —
+# GitHub Pages lo sirve en /admin-app/dist/ durante el run paralelo (Fase 2, §159).
+!admin-app/dist/
+!admin-app/dist/**
 .env
 .env.local
 

@@ -21,7 +21,8 @@
 | Roadmap de migración (dominio, Cloudflare Pages, Vite, email pro) | `docs/PLAN-MIGRACION-ALTORRA.md` |
 | Cómo activar el LLM del bot ALTOR (Windows) | `docs/SETUP-LLM.md` |
 | Plan original de cirugía del ALTOR Hub | `docs/altor-hub-cirugia-execution-plan.md` |
-| **CRM** (leads, clientes, citas, pipeline, postventa) — actual + reconstrucción | **`docs/crm-handoff.md`** = scan verificado 2026-06-05 (estado actual + plan + decisiones del cliente). En corto: `sec-crm` 3 tabs (`admin-crm.js`/`admin-crm-tabs.js`/`admin-pipeline.js`) + Customer 360 + `comm-schema.js`; colecciones `solicitudes`/`clientes`(+subcols)/`conciergeChats`/`usuarios` (`mensajes` está MUERTA); RBAC §61. **Reconstrucción** → skill `crm-architect`. |
+| **CRM VIEJO** (`admin.html`, `sec-crm`) | **`docs/crm-handoff.md`** = scan verificado 2026-06-05. `sec-crm` 3 tabs (`admin-crm.js`/`admin-crm-tabs.js`/`admin-pipeline.js`) + Customer 360 + `comm-schema.js`; lee `solicitudes`/`clientes`. **En vías de retiro** (cutover cuando la app nueva tenga paridad). RBAC §61. |
+| **CRM NUEVO** (canónico + app `admin-app/`) — §158/§159 | **Modelo canónico** (Fase 1, LIVE): `contacts`/`leads`/`activities`/`failedIngestions` poblados por `functions/src/ingestion/onSolicitudCreated.js` desde `solicitudes`. **App admin greenfield** `admin-app/` (Fase 2): Vite + Firebase modular, **Bandeja Inteligente** + Customer 360. Detalle ↓ `### 🚗 App CRM nueva`. |
 | Historia/decisión de un subsistema (§NN) | `docs/00-INDICE.md` → `docs/99-HISTORIAL-ADR.md` |
 
 ---
@@ -81,11 +82,34 @@ admin-crm.js / admin-appointments.js / admin-inbox.js → comm-schema.js
 - `solicitudes/{id}` — comms unificadas (kind: cita / solicitud / lead).
 - `mensajes/{threadId}` — threads por vehículo.
 - `clientes/{uid}` (+ subcolecciones: busquedasGuardadas, notifications, cotizaciones, postventa, crmNotes).
-- `usuarios/{uid}` — perfiles admin. `auditLog/{id}` — acciones admin.
+- **CANÓNICO CRM nuevo (§158, LIVE)**: `contacts/{dedupKey}` (persona unificada; +subcol `crmNotes`) · `leads/{id}` (interés; `status`/`rating`/`score`/`ownerId`/`sourceDetail`/`vehicleOfInterestId`/`slaDueAt`/`contactId`) · `activities/{id}` (timeline; `relatedTo.id`==leadId) · `failedIngestions/{id}` (dead-letter). **Timestamps = strings ISO.** Índices: leads(status,createdAt) · leads(ownerId,lastActivityAt) · activities(relatedTo.id,createdAt) · contacts(rating,lastActivityAt).
+- `usuarios/{uid}` — perfiles admin (`rol`/`roleId`/`permissions[]`; la app nueva hidrata permisos de aquí, NO de claims). `auditLog/{id}` — acciones admin.
 - `config/{docId}` — counters, bookedSlots, automationRules, followups, messageTemplates.
 - `system/meta` — señal de invalidación de cache. `loginAttempts/{hash}` — rate limiting.
 
 Detalle completo y subcolecciones → `docs/dependency-map.md` §Schemas.
+
+---
+
+## 🚗 App CRM nueva (`admin-app/`) — §159
+
+App admin **greenfield e independiente** del `admin.html` viejo. **Vite** (build → `admin-app/dist/`, `base:'./'`) + **Firebase modular SDK 11.3.0**, app namespaced `altorra-crm` (aísla auth). Corre en paralelo; cutover cuando tenga paridad. Modo `?mock=1` = demo sin Firebase. Arranque local: `npm run dev --prefix admin-app` (puerto 5174; Auth real NO funciona en localhost — L-08).
+
+```
+admin-app/src/
+  core/      firebase · auth(lookup usuarios/{uid}) · store(reactivo) · router · theme · toast · popover · dom · mock
+    design-system/  tokens(HarmonyOS VERBATIM) · crm-tokens · base · components
+    layout/         shell(sidebar+topbar) · login
+  domain/    PURO sin DOM/Firestore/ALTOR: format · classify(tipo/SLA/canal) · scoring(7 factores) · nba(10 reglas)
+  modules/
+    inbox/    data(queries paginadas+realtime) | domain(colas/filtro/orden) | ui  → LA BANDEJA
+    contacts/ data(contact+activities+notes)   | ui                              → Customer 360
+  styles/    shell · login · inbox · contacts
+```
+
+- **Patrón de estado entre módulos**: la Bandeja posee los leads enriquecidos y los **espeja al `store`** (`store.set({leads})`); el panel 360 los lee de ahí (L-27).
+- **Realtime acotado**: `onSnapshot`+`limit`+`unsubscribe` al desmontar (P4/§15.R3). Cero full-scan.
+- **Inteligencia DETERMINISTA** (sin ALTOR/LLM, restricción dura del cliente): score 7-factores → temperatura hot/warm/cold (≥70/≥40/<40); NBA por reglas; clasificación del canónico.
 
 ---
 

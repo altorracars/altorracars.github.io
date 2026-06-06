@@ -1,0 +1,105 @@
+/* ============================================================
+   ALTORRA CRM · BASE
+   Reset moderno + tipografía + superficie + accesibilidad.
+   ============================================================ */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+* { margin: 0; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  font-size: var(--t-body-lg);
+  line-height: var(--t-body-lg-lh);
+  color: var(--ink-text);
+  background-color: var(--surface-base);
+  background-image: var(--grad-mesh-light);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden; /* el scroll vive dentro de los paneles */
+}
+
+:root[data-theme="dark"] body { background-image: var(--grad-mesh-dark); }
+
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+
+img, svg, video { display: block; max-width: 100%; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+a { color: inherit; text-decoration: none; }
+
+ul, ol { list-style: none; padding: 0; }
+
+/* Selección */
+::selection { background: var(--gold-200); color: var(--ink-900); }
+
+/* Foco accesible (WCAG AA) */
+:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* Scrollbars sutiles */
+* { scrollbar-width: thin; scrollbar-color: var(--ink-300) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--ink-300);
+  border-radius: var(--r-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--ink-400); background-clip: content-box; }
+
+/* Boot splash (antes de que monte el JS) */
+.boot-splash {
+  position: fixed; inset: 0;
+  display: grid; place-content: center; justify-items: center; gap: var(--s-6);
+}
+.boot-splash__mark {
+  font-family: var(--font-display);
+  font-weight: 800; letter-spacing: 0.28em;
+  font-size: var(--t-subtitle); color: var(--gold-600);
+}
+.boot-splash__spinner {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid var(--surface-stroke);
+  border-top-color: var(--gold-500);
+  animation: spin var(--dur-slow) linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Utilidades de layout mínimas */
+.u-row { display: flex; align-items: center; gap: var(--s-3); }
+.u-row--tight { gap: var(--s-2); }
+.u-spread { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.u-stack { display: flex; flex-direction: column; gap: var(--s-3); }
+.u-grow { flex: 1 1 auto; min-width: 0; }
+.u-muted { color: var(--ink-text-muted); }
+.u-faint { color: var(--ink-text-faint); }
+.u-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.u-caption { font-size: var(--t-caption); line-height: var(--t-caption-lh); }
+.u-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.u-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+[hidden] { display: none !important; }
+
+/* Respeta reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -321,6 +321,14 @@ service cloud.firestore {
       allow read:           if isAuthenticated() || hasPermission('crm.read');
       allow create, update: if isSuperAdmin() || hasPermission('crm.edit');
       allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
+
+      // Notas internas del Customer 360 (Fase 2, §159). Admin-gated.
+      // Sin este match anidado, Firestore deniega la subcolección por defecto.
+      match /crmNotes/{noteId} {
+        allow read:           if isAuthenticated() || hasPermission('crm.read');
+        allow create, update: if isSuperAdmin() || hasPermission('crm.create') || hasPermission('crm.edit');
+        allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
+      }
     }
 
     // ========== ACTIVITIES (CRM canónico — timeline — Fase 1) ==========

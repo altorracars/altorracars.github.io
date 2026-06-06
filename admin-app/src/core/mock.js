@@ -85,6 +85,42 @@ const LEADS = [
     slaDueAt: hoursAgo(-2), contactId: 'email_glopa_gmail_com',
     createdAt: hoursAgo(3), lastActivityAt: hoursAgo(3), _version: 1,
   },
+  // ── Leads cerrados/convertidos (alimentan embudo, conversión, win-rate y fuentes en Reportes §165) ──
+  {
+    id: 'l11', fullName: 'Mauricio Bedoya', email: 'mbedoya@gmail.com', phone: '+573024455661',
+    source: 'facebook', sourceDetail: 'compra', vehicleOfInterestId: 'mazda-cx5-2021',
+    status: 'convertido', rating: 'hot', score: 78, ownerId: 'u_ana', ownerName: 'Ana Restrepo',
+    slaDueAt: daysAgo(9), contactId: 'email_mbedoya_gmail_com', convertedTo: { dealId: 'd6' },
+    createdAt: daysAgo(10), lastActivityAt: daysAgo(3), _version: 5,
+  },
+  {
+    id: 'l12', fullName: 'Yuliana Castaño', email: 'yulycastano@gmail.com', phone: '+573135566779',
+    source: 'whatsapp', sourceDetail: 'financiacion', vehicleOfInterestId: 'toyota-hilux-2020',
+    status: 'convertido', rating: 'hot', score: 82, ownerId: 'u_luis', ownerName: 'Luis Pérez',
+    slaDueAt: daysAgo(14), contactId: 'email_yulycastano_gmail_com', convertedTo: { dealId: 'd7' },
+    createdAt: daysAgo(15), lastActivityAt: daysAgo(5), _version: 6,
+  },
+  {
+    id: 'l13', fullName: 'Hernán Darío Loaiza', email: 'hdloaiza@gmail.com', phone: '+573017788123',
+    source: 'web', sourceDetail: 'compra', vehicleOfInterestId: 'renault-duster-2022',
+    status: 'perdido', rating: 'warm', score: 45, ownerId: 'u_ana', ownerName: 'Ana Restrepo',
+    slaDueAt: daysAgo(19), contactId: 'email_hdloaiza_gmail_com',
+    createdAt: daysAgo(20), lastActivityAt: daysAgo(8), _version: 3,
+  },
+  {
+    id: 'l14', fullName: 'Paola Andrea Suárez', email: 'pasuarez@gmail.com', phone: '+573156677001',
+    source: 'newsletter', sourceDetail: 'suscripcion', vehicleOfInterestId: null,
+    status: 'no_calificado', rating: 'cold', score: 12, ownerId: null, ownerName: null,
+    slaDueAt: daysAgo(24), contactId: 'email_pasuarez_gmail_com',
+    createdAt: daysAgo(25), lastActivityAt: daysAgo(25), _version: 2,
+  },
+  {
+    id: 'l15', fullName: 'Julián Marín', email: 'julianmarin@gmail.com', phone: '+573008811223',
+    source: 'referido', sourceDetail: 'compra', vehicleOfInterestId: 'nissan-frontier-2020',
+    status: 'convertido', rating: 'hot', score: 74, ownerId: 'u_luis', ownerName: 'Luis Pérez',
+    slaDueAt: daysAgo(21), contactId: 'email_julianmarin_gmail_com', convertedTo: { dealId: 'd8' },
+    createdAt: daysAgo(22), lastActivityAt: daysAgo(9), _version: 4,
+  },
 ];
 
 const ACTIVITIES = {
@@ -133,6 +169,10 @@ const MOCK_DEALS = [
   { id: 'd3', name: 'Andrés Felipe Cuesta · Mazda 3 2021', contactName: 'Andrés Felipe Cuesta', contactId: 'email_afcuesta_gmail_com', leadId: 'l8', vehicleId: 'mazda-3-2021', vehicleName: 'Mazda 3 2021', pipelineId: 'ventas', stageId: 'test_drive', stageName: 'Test drive', status: 'open', amount: 68000000, currency: 'COP', probability: 0.65, weightedAmount: 44200000, ownerId: 'u_ana', ownerName: 'Ana Restrepo', source: 'web', lastActivityAt: daysAgo(18), createdAt: daysAgo(20), _version: 5 },
   { id: 'd4', name: 'Roberto Gómez · Toyota Hilux 2020', contactName: 'Roberto Gómez', contactId: 'phone_573001239876', leadId: null, vehicleId: 'toyota-hilux-2020', vehicleName: 'Toyota Hilux 2020', pipelineId: 'ventas', stageId: 'negociacion', stageName: 'Negociación', status: 'open', amount: 135000000, currency: 'COP', probability: 0.80, weightedAmount: 108000000, ownerId: 'u_luis', ownerName: 'Luis Pérez', source: 'whatsapp', lastActivityAt: hoursAgo(6), createdAt: daysAgo(8), _version: 7 },
   { id: 'd5', name: 'Sandra Milena Vélez · Renault Duster 2022', contactName: 'Sandra Milena Vélez', contactId: 'email_smvelez_gmail_com', leadId: null, vehicleId: 'renault-duster-2022', vehicleName: 'Renault Duster 2022', pipelineId: 'ventas', stageId: 'nuevo', stageName: 'Nuevo', status: 'open', amount: 0, currency: 'COP', probability: 0.10, weightedAmount: 0, ownerId: null, ownerName: null, source: 'cuenta', lastActivityAt: hoursAgo(1), createdAt: hoursAgo(1), _version: 1 },
+  // ── Deals cerrados (ganados/perdidos) → win-rate, valor ganado e ingresos por fuente en Reportes §165 ──
+  { id: 'd6', name: 'Mauricio Bedoya · Mazda CX-5 2021', contactName: 'Mauricio Bedoya', contactId: 'email_mbedoya_gmail_com', leadId: 'l11', vehicleId: 'mazda-cx5-2021', vehicleName: 'Mazda CX-5 2021', pipelineId: 'ventas', stageId: 'vendido', stageName: 'Vendido', status: 'won', amount: 78000000, currency: 'COP', probability: 1, weightedAmount: 78000000, ownerId: 'u_ana', ownerName: 'Ana Restrepo', source: 'facebook', lastActivityAt: daysAgo(3), createdAt: daysAgo(10), _version: 6 },
+  { id: 'd7', name: 'Yuliana Castaño · Toyota Hilux 2020', contactName: 'Yuliana Castaño', contactId: 'email_yulycastano_gmail_com', leadId: 'l12', vehicleId: 'toyota-hilux-2020', vehicleName: 'Toyota Hilux 2020', pipelineId: 'ventas', stageId: 'vendido', stageName: 'Vendido', status: 'won', amount: 112000000, currency: 'COP', probability: 1, weightedAmount: 112000000, ownerId: 'u_luis', ownerName: 'Luis Pérez', source: 'whatsapp', lastActivityAt: daysAgo(5), createdAt: daysAgo(15), _version: 7 },
+  { id: 'd8', name: 'Julián Marín · Nissan Frontier 2020', contactName: 'Julián Marín', contactId: 'email_julianmarin_gmail_com', leadId: 'l15', vehicleId: 'nissan-frontier-2020', vehicleName: 'Nissan Frontier 2020', pipelineId: 'ventas', stageId: 'perdido', stageName: 'Perdido', status: 'lost', amount: 64000000, currency: 'COP', probability: 0, weightedAmount: 0, lostReason: 'Compró en otro lado', ownerId: 'u_luis', ownerName: 'Luis Pérez', source: 'referido', lastActivityAt: daysAgo(9), createdAt: daysAgo(22), _version: 4 },
 ];
 
 export const getMockDeals = () => MOCK_DEALS.map((d) => ({ ...d }));

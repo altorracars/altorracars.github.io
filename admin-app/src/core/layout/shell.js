@@ -12,20 +12,21 @@ import { toggleTheme } from '../theme.js';
 import { signOutUser, displayName, displayRole } from '../auth.js';
 import { initials } from '../../domain/format.js';
 
-const APP_VERSION = '0.3.0';
+const APP_VERSION = '0.4.0';
 
 const NAV = [
   { id: 'bandeja', label: 'Bandeja', icon: '📥', ready: true },
   { id: 'pipeline', label: 'Pipeline', icon: '🎯', ready: true },
   { id: 'agenda', label: 'Agenda', icon: '📅', ready: true },
+  { id: 'reportes', label: 'Reportes', icon: '📊', ready: true },
   { id: 'contactos', label: 'Contactos', icon: '👤', ready: false },
-  { id: 'reportes', label: 'Reportes', icon: '📊', ready: false },
 ];
 
 const TITLES = {
   bandeja: 'Bandeja Inteligente',
   pipeline: 'Pipeline de ventas',
   agenda: 'Agenda',
+  reportes: 'Reportes y KPIs',
 };
 
 export function mountShell(appRoot) {
@@ -48,7 +49,7 @@ export function mountShell(appRoot) {
   });
   const sidebar = el('aside', { class: 'sidebar' }, [
     brand, nav,
-    el('div', { class: 'sidebar__foot u-caption u-faint' }, [`v${APP_VERSION} · Fase 3`]),
+    el('div', { class: 'sidebar__foot u-caption u-faint' }, [`v${APP_VERSION} · Fase 4`]),
   ]);
 
   const titleH = el('h1', { class: 'topbar__h', text: TITLES.bandeja });

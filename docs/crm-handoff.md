@@ -203,4 +203,10 @@ Fase 2 (Bandeja) ✅ → Fase 3 (Pipeline + Agenda) → Fase 4 (Reportes + autom
 ### 9.6 Captura de leads — estado (cierre de la "hemorragia" §8.1)
 El cliente señaló (2026-06-06) que **la mayoría de leads NO entran por la web** (Meta FB/IG/WhatsApp, TikTok, llamadas, walk-ins, referidos — orgánicos o pauta) y hay que poder **agregarlos manualmente**.
 - ✅ **MANUAL — HECHO (§162)**: form "＋ Nuevo lead" en la Bandeja → escribe `solicitudes` → reusa la ingestión (dedup+consent). Canales externos + orgánico/pauta/campaña (para ROI). El equipo ya puede registrar y operar cualquier lead externo.
-- 🔜 **AUTO — pendiente (slice de canales)**: newsletter (form roto), registro de cuenta (`clientes/{uid}` invisible al CRM), bot ALTOR (`conciergeChats` en silo) → conectarlos al canónico vía ingestión = matar el resto de la fuga automática. WhatsApp API / Meta Lead Ads webhook = integración futura (cuando haya presupuesto/credenciales) para que ESOS también entren solos.
+- ✅ **AUTO — HECHO**: registro de cuenta (`onClienteCreated`, §163) + newsletter (`onSubscriptionCreated`, §164) → contacto. Captura automática completa (web+cuenta+newsletter).
+- ⏸️ **Bot ALTOR** (`conciergeChats` en silo) → diferido (buggy, restricción del cliente). **WhatsApp API / Meta Lead Ads webhook** = integración futura (credenciales/presupuesto) para que esos canales entren solos sin captura manual.
+
+### 9.7 Endurecimiento RBAC/seguridad pendiente (Fase 5) — surgido de la revisión adversarial §164
+La revisión multi-agente del §164 confirmó 2 puntos que son **holísticos del modelo Fase 1** (no específicos del newsletter), a resolver en Fase 5:
+- **Política de lectura del canónico**: `contacts`/`leads`/`activities`/`deals`/`subscriptions` usan `read: if isAuthenticated() || hasPermission('crm.read')` → cualquier admin (aun sin `crm.read`) lee PII. Endurecer a `hasPermission('crm.read')` en TODAS a la vez (no una sola, para no romper consistencia). Datos solo expuestos a usuarios del panel (no público).
+- **Rate-limit de forms públicos**: `solicitudes`/`citas`/`subscriptions` con `create:if true` → riesgo de spam (acotado por `maxInstances:10` en las functions). Añadir rate-limit/validación en Fase 5 (blueprint §11 R2).

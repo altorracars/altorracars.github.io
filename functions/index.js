@@ -3509,3 +3509,5 @@ exports.autoResolveIdleChats = onSchedule({
 exports.onSolicitudCreated = require('./src/ingestion/onSolicitudCreated').onSolicitudCreated;
 // ========== CRM — Canal AUTO: registro de cuenta → contacto (§163) ==========
 exports.onClienteCreated = require('./src/ingestion/onClienteCreated').onClienteCreated;
+// ========== CRM — Canal AUTO: newsletter → contacto subscriber (§164) ==========
+exports.onSubscriptionCreated = require('./src/ingestion/onSubscriptionCreated').onSubscriptionCreated;

@@ -113,6 +113,7 @@ admin-app/src/
 - **lead → deal**: la Bandeja trabaja `leads`; "Convertir a oportunidad" crea un `deal` (Pipeline). No mezclar (L-29).
 - **Agenda**: lee `activities` con `dueAt` (rango campo único → índice auto, sin compuesto, L-30); "📅 Agendar" en el 360 crea la cita. `dayKey` LOCAL (no UTC).
 - **Captura manual** (leads externos Meta/WhatsApp/TikTok/llamada/referido): el form "＋ Nuevo lead" **escribe `solicitudes`** (origen=canal) → reusa la ingestión Fase 1 (dedup+consent), NO escribe el canónico directo (L-31). Cero backend nuevo.
+- **Canales AUTO al canónico** (`functions/src/ingestion/`): `onSolicitudCreated` (web/manual → contact+lead+activity, §158) · `onClienteCreated` (registro `clientes/{uid}` → contact, §163) · `onSubscriptionCreated` (newsletter `subscriptions` → contact subscriber, §164). Todos: dedup `sanitizeContactId`, idempotentes, dead-letter `failedIngestions`. **Bot ALTOR diferido** (buggy). Colección nueva: `subscriptions/{id}` (newsletter público, create:if true).
 
 - **Patrón de estado entre módulos**: la Bandeja posee los leads enriquecidos y los **espeja al `store`** (`store.set({leads})`); el panel 360 los lee de ahí (L-27).
 - **Realtime acotado**: `onSnapshot`+`limit`+`unsubscribe` al desmontar (P4/§15.R3). Cero full-scan.

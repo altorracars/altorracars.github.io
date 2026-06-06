@@ -127,7 +127,34 @@ function clienteToContact(cliente, uid, policyVersion) {
   return { dedupKey, contactId: sanitizeContactId(dedupKey), contact };
 }
 
+/**
+ * Traduce un documento `subscriptions/{id}` (newsletter) al contacto canónico.
+ * Suscribirse SÍ es consentimiento EXPRESO de email (Ley 1581) → consent.email
+ * = consentGiven. NO crea lead (un suscriptor no es intención de compra).
+ * Lógica pura; NO toca Firestore.
+ */
+function subscriptionToContact(sub, policyVersion) {
+  const s = sub || {};
+  const email = String(s.email || '').trim().toLowerCase();
+  if (!email) throw new Error('Suscripción sin email');
+  const dedupKey = 'email:' + email;
+  const given = s.consentGiven === true;
+  const createdAt = s.createdAt || new Date().toISOString();
+  const now = new Date().toISOString();
+  const consent = {
+    email: given, whatsapp: false, calls: false,
+    askedAt: now, source: 'newsletter', policyVersion: policyVersion || 'v1',
+  };
+  const contact = {
+    fullName: 'Suscriptor', email, phone: '', type: 'lead', source: 'newsletter',
+    ownerId: null, ownerName: null, score: 0, rating: 'cold', lifecycleStage: 'subscriber',
+    tags: ['newsletter'], consent, doNotContact: !given, clienteUid: null,
+    lastActivityAt: createdAt, createdAt, updatedAt: now, _version: 1,
+  };
+  return { dedupKey, contactId: sanitizeContactId(dedupKey), contact };
+}
+
 module.exports = {
   normalizePhone, contactDedupKey, mapConsent, normalizeSolicitud,
-  sanitizeContactId, clienteToContact,
+  sanitizeContactId, clienteToContact, subscriptionToContact,
 };

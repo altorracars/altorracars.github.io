@@ -345,6 +345,15 @@ service cloud.firestore {
       allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
     }
 
+    // ========== SUBSCRIPTIONS (newsletter público — §164) ==========
+    // El form público crea (como `solicitudes`); el trigger onSubscriptionCreated
+    // ingiere al canónico. Lectura/gestión solo admin.
+    match /subscriptions/{subId} {
+      allow create: if true;
+      allow read:   if isAuthenticated() || hasPermission('crm.read');
+      allow update, delete: if isSuperAdmin() || hasPermission('crm.edit');
+    }
+
     // ========== FAILED INGESTIONS (dead-letter — Fase 1) ==========
     // Cero pérdida: si la ingestión falla, el lead cae aquí. SOLO el Admin
     // SDK escribe (bypassa rules); los admins leen para resolver.

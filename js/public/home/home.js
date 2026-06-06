@@ -89,6 +89,10 @@
                 'verificar que el markup del hero esté presente.');
         }
 
+        // ── 6.5 Newsletter → CRM (escribe `subscriptions`; la ingestión
+        //         crea el contacto subscriber). Captura que antes se perdía. ──
+        try { initNewsletter(); } catch (e) { console.warn('[home.js] initNewsletter error:', e); }
+
         // ── 7. Exponer API del orquestador ────────────────────────
         window.AltorraHome = window.AltorraHome || {};
         window.AltorraHome.orchestrator = {
@@ -112,6 +116,54 @@
                 console.warn('[home.js] initModules: quicktools.init() error:', e);
             }
         }
+    }
+
+    // ============================================================
+    // NEWSLETTER → CRM (captura que antes se perdía: el form tenía
+    // onsubmit="return false" sin handler). Escribe `subscriptions`;
+    // el trigger onSubscriptionCreated crea/vincula el contacto subscriber.
+    // Optimistic UI; offline-safe (la persistencia compat encola).
+    // ============================================================
+    function initNewsletter() {
+        var form = document.querySelector('.cin-end-news');
+        if (!form || form.__altNewsBound) return;
+        form.__altNewsBound = true;
+        var input = form.querySelector('.cin-end-news-input');
+        var row = form.querySelector('.cin-end-news-row');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var email = ((input && input.value) || '').trim().toLowerCase();
+            if (!email || email.indexOf('@') < 1 || email.lastIndexOf('.') < email.indexOf('@')) {
+                if (input) { input.setAttribute('aria-invalid', 'true'); input.focus(); }
+                return;
+            }
+            if (input) input.removeAttribute('aria-invalid');
+
+            // UI optimista: confirmación inmediata.
+            if (row) {
+                row.innerHTML = '';
+                var ok = document.createElement('div');
+                ok.className = 'cin-end-news-ok';
+                ok.setAttribute('role', 'status');
+                ok.style.cssText = 'color:var(--cin-gold,#D4A85A);font-weight:600;padding:10px 0;';
+                ok.textContent = '✓ ¡Listo! Te avisaremos primero.';
+                row.appendChild(ok);
+            }
+
+            // Persistencia en background → la ingestión crea el contacto.
+            try {
+                if (window.db && window.db.collection) {
+                    window.db.collection('subscriptions').add({
+                        email: email,
+                        source: 'newsletter',
+                        consentGiven: true,
+                        page: (location && location.pathname) || '',
+                        createdAt: new Date().toISOString()
+                    }).catch(function () { /* offline → la persistencia compat encola */ });
+                }
+            } catch (err) { /* no romper la UI por un fallo de red */ }
+        });
     }
 
     window.__altorraHomeOrchestratorMounted = true;

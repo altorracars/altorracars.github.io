@@ -3504,3 +3504,6 @@ exports.autoResolveIdleChats = onSchedule({
 
     console.log(`[autoResolveIdleChats] §87 completado: ${resolved} chats cerrados, ${errors} errores. Total candidatos en mode=live: ${candidatesSnap.size}.`);
 });
+
+// ========== CRM Fase 1 — Capa de ingestión canónica ==========
+exports.onSolicitudCreated = require('./src/ingestion/onSolicitudCreated').onSolicitudCreated;

@@ -45,8 +45,8 @@ Derivados del mandato del cliente (`46-ESCALABILIDAD §1`) y right-sized a la re
 | **P8** | **Costo $0:** quedarse en free tier; integraciones pagas "enchufables" pero diferidas. | Invertir mejor, no gastar más. |
 
 ### Lo que deliberadamente NO hacemos (anti-sobre-ingeniería)
-- ❌ Microservicios / infra propia · ❌ gRPC · ❌ GraphQL · ❌ Kafka · ❌ multi-tenant `orgs/{orgId}` (Altorra es **un solo negocio** → colecciones planas; el org-scoping sería complejidad sin valor hoy).
-- ❌ Bundler/Vite **ahora** (vanilla modular = $0, menor riesgo; reevaluable cuando haya equipo/escala — TODO-01).
+- ❌ Microservicios / infra propia · ❌ gRPC · ❌ GraphQL · ❌ Kafka · ❌ multi-tenant `orgs/{orgId}` (Altorra es **un solo negocio** → colecciones planas; el org-scoping sería complejidad sin valor hoy — confirmado por Gemini §15).
+- ✅ **Bundler (Vite) SÍ — pero SOLO para la app admin nueva** (greenfield), no para el sitio público (sigue vanilla/Compat/CDN intacto). Da tree-shaking + **cache-busting por hash** (mata el ritual manual `CACHE_VERSION` + Ctrl+Shift+R) + HMR. Decisión revisada tras el Consejo Externo (§15).
 
 ---
 
@@ -158,16 +158,41 @@ Declarados en `firestore.indexes.json` (deploy manual). Ejemplos por pantalla:
 | **Datos** | Cifrado en tránsito (HTTPS) y reposo (Firebase). Cédula/financieros = PII sensible (no loguear; cifrar a nivel campo si se requiere). |
 | **Habeas Data (Ley 1581)** | **Consentimiento previo, expreso e informado** en cada formulario público (checkbox **sin** pre-marcar + link a política, por canal). `consent{channels,purpose,askedAt,source,ip,policyVersion}` en cada contacto. Derechos acceso/rectificar/olvidar vía `dataRequests` (SLA 10 días hábiles). Toda automatización verifica `consent[canal]` y `doNotContact` antes de enviar. |
 
+### 6.1 Modelo RBAC (rediseño pensando en el futuro)
+**Base que se CONSERVA (es sólida):** 71 permisos atómicos `<recurso>.<acción>` en 8 categorías (`rbac-catalog.js`) + constructor de roles custom en el admin. **Se AÑADE** lo que falta para escalar a un equipo:
+- Permisos canónicos del CRM nuevo: `leads.*`, `deals.*`, `pipeline.*`, `activities.*`, `conversations.*`.
+- **Dimensión de alcance** (lo que hoy NO existe): `propio | equipo | todos`. Un rol no solo define QUÉ acción, sino SOBRE QUÉ registros.
+
+**Roles predefinidos (listos; se activan al crecer):**
+| Rol | Alcance | Puede |
+|---|---|---|
+| `super_admin` (CEO) | todos | Todo. Inmutable (ya existe). |
+| `gerente` | equipo | Ve/reasigna leads y deals de su equipo + reportes; sin gestión de usuarios. |
+| `asesor` | propio | CRUD sus leads/deals/actividades, lee compartidos; no reasigna/borra ajenos; no cambia `ownerId`/`score`/consentimiento. |
+| `bdc` | propio (intake) | Captura/califica leads + agenda citas + mensajería; edición limitada de deals. |
+| `viewer` | — | Solo lectura. |
+
+- **AuthZ por custom claims** (`role`, luego `teamId`): un Function lo asigna al crear/cambiar rol; el cliente refresca token. Espejo en `usuarios/{uid}` para UI/consultas. Quita el lookup de Firestore por cada regla → más rápido y escala. (`migrateLegacyUsers` ya existe.)
+- **Reglas a nivel registro:** `ownerId`/`teamId` gatean edición; field-level `unchanged('ownerId','score','consent')` para asesores.
+- **Ahora (3 personas):** activar `super_admin` (tú) + `asesor` con **visibilidad abierta** (todos ven todo) pero **propiedad ya registrada**; el filtro "cada asesor ve solo lo suyo" = toggle de config cuando crezcas. `gerente`/`bdc`/`viewer` quedan predefinidos y listos.
+
+### 6.2 Habeas Data — estado real (verificado en `privacidad.html`)
+- ✅ **Ya existe** `privacidad.html` — política **Ley 1581 sólida** (responsable, datos, finalidades, derechos, canal PQRS, SIC, cláusula de autorización). **NO está escasa.**
+- 🔧 Mejoras puntuales: (1) distinguir **consultas (10 días hábiles)** de **reclamos (15, extensible)** — hoy usa 15 para todo; (2) **versionar** la política (`policyVersion`) + refrescar fecha (vigente feb-2025); (3) opcional: retención específica + registro RNBD.
+- ⚠️ **El hueco real está en los FORMULARIOS, no en la política:** hoy el consentimiento es **tácito** ("al enviar, autorizas"); la ley exige **expreso** (checkbox sin pre-marcar). El rebuild añade el checkbox por canal y guarda `consent{channels,purpose,askedAt,source,ip,policyVersion}`. → Esto cierra el gap legal de verdad.
+- Trabajo legal detallado → lóbulo `42-LEGAL` (al ejecutarse Fase 5).
+
 > Al diseñar el archivo `firestore.rules` concreto, se abre el lóbulo `41-SEGURIDAD` con la auditoría + tests del emulador.
 
 ---
 
 ## 7. Mapa de módulos (cero monolitos)
 
-### 7.1 Frontend admin — shell ligero + módulos lazy
+### 7.1 Frontend admin — app GREENFIELD nueva (Vite + Firebase modular SDK)
+> App nueva e independiente (NO se construye dentro del `admin.html` viejo). Vite empaqueta a `dist`, se sirve en GitHub Pages en una ruta/entry-point nuevo durante el run paralelo, y reemplaza al viejo en el cutover (§11). El sitio público NO se toca. Cache-busting por hash de Vite (sin `CACHE_VERSION` manual para el admin).
 ```
-js/admin/
-  core/            shell: router, auth, state, layout, design-system, event-bus, firebase
+admin-app/src/
+  core/            shell: router, auth, state, layout, design-system, event-bus, firebase(modular SDK)
   modules/
     intake/        (datos|dominio|ui)  monitor de captura + config de fuentes/consentimiento
     inbox/         (datos|dominio|ui)  BANDEJA ÚNICA (reemplaza las 7 vistas)
@@ -224,26 +249,28 @@ El bot ALTOR (`conciergeChats`) alimenta la Bandeja vía ingestión; deja de ser
 
 | Fase | Entrega | Valor |
 |---|---|---|
-| **0 · Blueprint** *(este doc)* | Arquitectura + modelo de datos aprobados | Decidir antes de gastar |
-| **1 · Captura omnicanal + canónico** | `ingestion/` + colecciones canónicas + dedup + consentimiento + backfill de datos existentes | **Mata la hemorragia** (máximo valor) |
-| **2 · Bandeja única + 360** | Módulos `inbox` + `contacts` (paginado/indexado), reusa scoring/NBA | Una fuente de verdad operativa |
+| **0 · Blueprint** *(este doc)* | Arquitectura + modelo de datos aprobados (con Consejo Externo §15) | Decidir antes de gastar |
+| **1 · Fundación + Captura** | Scaffold de la **app admin greenfield** (Vite + Firebase modular + shell + auth + RBAC claims) · `ingestion/` + colecciones canónicas + dedup + consentimiento + **backfill** · **budget alerts + `maxInstances`** | Establece la app nueva **y mata la hemorragia** |
+| **2 · Bandeja única + 360** | Módulos `inbox` + `contacts` (paginado/indexado, `unsubscribe` disciplinado) | Una fuente de verdad operativa |
 | **3 · Pipeline + Agenda** | `pipeline` drag-drop + `agenda` unificada + fix de bugs | El embudo real |
-| **4 · Automatización + IA + Reportes** | `automation` + `scheduled` (SLA/rotting/drips/postventa) + KPIs | El trabajo pesado automatizado |
-| **5 · Endurecimiento** | `firestore.rules` deny-by-default + claims + Habeas Data + tests emulador (lóbulo `41-SEGURIDAD`) | Seguridad y escala selladas |
+| **4 · Automatización + IA + Reportes** | `automation` + `scheduled` (SLA/rotting/drips/postventa) + KPIs + **búsqueda** (§15.R1) | El trabajo pesado automatizado |
+| **5 · Endurecimiento + Cutover** | `firestore.rules` deny-by-default + claims + Habeas Data + tests emulador (lóbulo `41`) · **paridad → apagar el admin viejo** | Seguridad sellada + monolito retirado |
 
-Transversal: des-monolitizar `admin.html` y `functions/index.js` de forma progresiva (strangler). Cada fase: IAP §37 → implementar → tests → cache bump §4 → ADR + lección.
+Backend: `functions/index.js` se reescribe modular por dominio (`ingestion/`, `triggers/`…) en paralelo. Cada fase: IAP §37 → implementar → tests → ADR + lección. (Cache-busting del admin lo hace Vite; el del sitio público sigue con `CACHE_VERSION` §4.)
 
 ---
 
-## 11. Migración (strangler) y riesgos
+## 11. Migración (GREENFIELD + run paralelo) y riesgos
 
-- **Coexistencia:** lo nuevo se construye al lado; el admin viejo sigue funcionando hasta que su reemplazo esté listo. Se retira por módulo.
-- **Backfill:** Function única que ingiere `solicitudes` + `clientes` existentes al modelo canónico (idempotente, por lotes ≤500).
-- **Riesgos + mitigación:**
-  - Tocar `comm-schema.js`/puente impacta el público → la ingestión **lee** `solicitudes`, no cambia su contrato de escritura.
-  - Deploy de rules/functions es **manual** → checklist por fase.
-  - QA real solo contra el sitio live (L-08) → validar en `main` tras merge, con rollback `git revert` listo.
-  - Modelo de datos/RBAC = **caro de revertir** → 🛰️ candidato a crítica adversarial de Gemini (neurona 15) antes de fijar Fase 1.
+- **Enfoque (revisado §15):** **app admin nueva e independiente**, NO strangler dentro del monolito. Ambas apps son *vistas* sobre el mismo Firestore (la vieja lee `solicitudes` crudas; la nueva lee el canónico) → correr en paralelo es trivialmente seguro, sin sincronizar estado entre apps. Con **0 ventas**, el riesgo del cutover es mínimo.
+- **Mecánica ($0, sin dominio):** la app nueva se sirve en GitHub Pages en una **ruta/entry-point nuevo** (no subdominio — no hay dominio aún). Run paralelo unos días → paridad → se apaga el viejo `admin.html`.
+- **Backfill:** Function única que ingiere `solicitudes` + `clientes` existentes al modelo canónico (idempotente, lotes ≤500).
+- **Riesgos + mitigación (varios del Consejo Externo §15):**
+  - **Ingestión que falla = lead perdido en silencio** (justo el bug a matar) → idempotencia + retry + colección `failedIngestions` (dead-letter) + alerta. Cero pérdida.
+  - **Webhooks públicos + factura runaway** ($0→$500 en una noche si un bot inunda una Function) → **budget alerts HOY** + `maxInstances` en toda Function + rate-limit + validación de firma en webhooks.
+  - **onSnapshot sin límite = miles de lecturas** por recarga → paginación estricta + `limit` + `unsubscribe()` al cambiar de vista (regla dura, refuerza P4).
+  - **Búsqueda full-text** (Firestore no busca "Perez" parcial) → §15.R1.
+  - Sitio público intacto (la ingestión **lee** `solicitudes`, no cambia su escritura). Deploy rules/functions **manual** → checklist por fase. QA real contra live (L-08), rollback `git revert` listo.
 
 ---
 
@@ -252,7 +279,29 @@ Cubierto el bar de table-stakes: lead/contact/deal + pipeline kanban + actividad
 
 ---
 
-## 13. Preguntas abiertas para el cliente (antes de cerrar Fase 1)
-1. ¿Activamos la crítica adversarial de **Gemini** (Consejo Externo) sobre el modelo de datos/RBAC, o lo diseño solo y lo marco?
-2. Roles: ¿`super_admin` (tú) + `asesor` para los otros 2, todos viendo todo por ahora? ¿O cada asesor ve solo lo suyo desde el inicio?
-3. Consentimiento Habeas Data: ¿tienes política de tratamiento de datos publicada (o la redactamos como parte de Fase 5)?
+## 13. Decisiones del cliente (2026-06-05)
+1. ✅ **Consejo Externo Gemini: SÍ** (cliente tiene Antigravity). Crítica adversarial del modelo de datos + RBAC con **Gemini 3.1 Pro (High)** ANTES de fijar la Fase 1 (prompt autocontenido entregado aparte; anti-anclaje §15-protocolo).
+2. ✅ **RBAC: reestructurar pensando en el futuro** (§6.1) — modelo de roles + alcance + custom claims; activar `super_admin` + `asesor` ahora, resto predefinido.
+3. ✅ **Habeas Data: la política existe y es sólida** (§6.2) — se mejora (consentimiento **expreso** en formularios + versionado + SLA consultas/reclamos). No hay que escribirla de cero.
+
+## 14. Estado
+🟢 **Arquitectura ENDURECIDA con Consejo Externo (Gemini 3.1 Pro, §15).** Pendiente solo el OK final del cliente → `writing-plans` para la Fase 1 (Fundación + Captura).
+
+## 15. Consejo Externo (Gemini 3.1 Pro High) — resultado del red team
+Crítica adversarial corrida por el cliente en Antigravity (protocolo neurona 15; anti-anclaje: mi postura fijada antes y omitida del prompt). Evaluada como **peer review** (insumo, no oráculo).
+
+**Confirmó (3/5):** `1A` modelo canónico separado · `2A` colecciones planas (no multi-tenant) · `4A` custom claims. Coinciden con mi postura.
+
+**Cambió mi postura (2/5) — adoptado:**
+- **3 · Migración → GREENFIELD** (yo proponía strangler). Razón válida: el monolito (~7.500 L) no es legacy enterprise; strangler obligaría a mantener 2 routers + sincronizar auth/estado. Con 0 ventas, build limpio + run paralelo + cutover es más rápido y limpio. *Refinamiento mío:* "otra URL" → ruta nueva en GitHub Pages (no hay dominio); ambas apps son vistas del mismo Firestore → paralelo seguro.
+- **5 · Tooling → VITE (solo app admin)** (yo difería el bundler). Razón válida: tree-shaking + **cache-busting por hash** (mata el ritual `CACHE_VERSION`/Ctrl+Shift+R) + HMR. *Mi objeción de "alto blast-radius" se disuelve* al ser greenfield: Vite aplica SOLO al admin; el público sigue vanilla/Compat/CDN. Costo: paso de build en GitHub Actions (incremental, ya hay CI).
+
+**Riesgos incorporados (no los enfatizaba):**
+- **R1 · Búsqueda full-text:** Firestore no busca parcial. A escala Altorra (decenas/cientos de leads): filtro client-side sobre set paginado + prefix-queries en campos normalizados (lowercased) = $0 y suficiente. Algolia/Typesense SOLO cuando el volumen lo exija (trigger documentado, sin cap silencioso).
+- **R2 · Webhooks/billing runaway:** budget alerts + `maxInstances` + rate-limit (§11).
+- **R3 · Costos onSnapshot:** paginación + `unsubscribe` disciplinado (§11, refuerza P4).
+- **R4 · Dead-letter en ingestión:** retry + `failedIngestions` + alerta (§11).
+
+**Mejor insight estratégico (adoptado como principio rector):** a $0/0-ventas el mayor riesgo no es la escala, es **quemar tiempo en complejidad accidental para un problema no validado** → arquitectura sólida pero **alcance MVP ruthless**: Fase 1 delgada que capture leads y valide con uso real ANTES de dorar fases 4-5. (Front público = "emisor de eventos tonto"; CRM = cerebro, separados por eventos desde día 0 = justo `1A`.)
+
+**Refutado:** nada de fondo — la crítica fue sólida; solo se refinó el mecanismo de "otra URL" al contexto sin dominio.

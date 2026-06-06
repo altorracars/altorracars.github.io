@@ -3507,3 +3507,5 @@ exports.autoResolveIdleChats = onSchedule({
 
 // ========== CRM Fase 1 — Capa de ingestión canónica ==========
 exports.onSolicitudCreated = require('./src/ingestion/onSolicitudCreated').onSolicitudCreated;
+// ========== CRM — Canal AUTO: registro de cuenta → contacto (§163) ==========
+exports.onClienteCreated = require('./src/ingestion/onClienteCreated').onClienteCreated;

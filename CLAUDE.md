@@ -76,7 +76,7 @@ Ejemplo: para entender §61 RBAC → índice dice línea 26879 →
 - **Áreas**: sitio público (index, busqueda, detalle-vehiculo, marcas, etc.), panel admin (`admin.html` SPA), bot ALTOR Hub (cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`).
 - **Costo recurrente**: ~$2-5 USD/mes (solo LLM Anthropic Haiku 4.5; resto Firebase free tier).
 - **Secrets YA configurados** (NO re-preguntar ni reconfigurar): `EMAIL_USER`, `EMAIL_PASS`, `GITHUB_PAT`, `LLM_API_KEY`, `TELEGRAM_BOT_TOKEN`.
-- **Deploys MANUALES** (nunca automáticos): `firebase deploy --only firestore:rules` / `database` / `storage` / `functions`. Un cambio en reglas del repo NO se aplica solo.
+- **Deploys** (no CI, no auto): **los ejecuta Claude** vía `firebase deploy --only firestore:rules|database|storage|functions` (CLI auth `altorracarssale@` presente en la máquina del cliente). Un cambio en el repo NO se aplica solo → Claude despliega cuando un cambio lo requiere.
 
 Detalle profundo de cualquier subsistema → `docs/00-INDICE.md` + tramo correspondiente del historial.
 
@@ -104,7 +104,7 @@ Encabezado `## NN. ADR-NNN — <título>` + cita del cliente si reportó, y 7 pu
 
 - Crear commits SOLO cuando el usuario lo pida explícitamente.
 - `git add` archivos específicos (NUNCA `git add -A` / `.`).
-- **El cliente commitea** (GitHub Desktop/web): SIEMPRE entrégale el mensaje listo para copiar/pegar — **summary (título) + descripción**. Si commiteas tú: HEREDOC + footer `Co-Authored-By: Claude <noreply@anthropic.com>`.
+- **El cliente commitea** (GitHub Desktop/web): SIEMPRE entrégale el mensaje listo para copiar/pegar — **summary (título) + descripción**. ⚠️ Si dejas el árbol sucio y NO das el mensaje = **turno incompleto** (recidiva → `30` M-12). Si commiteas tú: HEREDOC + footer `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - NUNCA push sin pedido explícito. NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
 - NUNCA commitear secrets (.env, credentials.json).
 - Al cerrar un pendiente, marcar su `TODO-NN` como ✅ + link al §X. Mantén este CLAUDE.md liviano.

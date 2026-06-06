@@ -1,0 +1,12 @@
+# Dependencias (se reinstalan con `npm install`)
+node_modules/
+
+# Logs y temporales
+*.local
+*.log
+.DS_Store
+.vite/
+
+# NOTA: `dist/` NO se ignora a propósito — es el artefacto que GitHub Pages
+# sirve en `/admin-app/dist/` durante el run paralelo (sin CI de Pages, sin
+# tocar el deploy del sitio público). El deploy = commit+push de `dist/`.

@@ -16,8 +16,9 @@ import { classifyType, channelOf, statusMeta } from '../../domain/classify.js';
 import { computeNBA } from '../../domain/nba.js';
 import { getContact, subscribeActivities, subscribeNotes, addNote } from './contacts.data.js';
 import { createDealFromLead } from '../deals/deals.data.js';
+import { scheduleActivity } from '../agenda/agenda.data.js';
 import { dealFromLead } from '../../domain/pipeline.js';
-import { getMockContact, getMockActivities, getMockNotes, addMockNote, addMockDeal } from '../../core/mock.js';
+import { getMockContact, getMockActivities, getMockNotes, addMockNote, addMockDeal, addMockAgenda } from '../../core/mock.js';
 
 const TYPE_ICON = { solicitud_inbound: '📥', whatsapp: '💬', status_change: '🔁', nota: '🗒️', email: '✉️', llamada: '📞' };
 
@@ -132,6 +133,9 @@ export function mountDetailPanel(root) {
       } catch (e) { toast('No se pudo convertir', 'error'); convertBtn.disabled = false; }
     });
 
+    const agendaBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Agendar cita', title: 'Agendar cita' }, ['📅']) : null;
+    if (agendaBtn) agendaBtn.addEventListener('click', () => openScheduler(lead, agendaBtn));
+
     return el('div', { class: 'detail__header' }, [
       el('div', { class: 'u-row u-grow', style: { minWidth: '0' } }, [
         el('span', { class: 'avatar', 'aria-hidden': 'true', text: initials(lead.fullName) }),
@@ -145,7 +149,7 @@ export function mountDetailPanel(root) {
           ]),
         ]),
       ]),
-      el('div', { class: 'u-row u-row--tight' }, [convertBtn, waBtn, close$]),
+      el('div', { class: 'u-row u-row--tight' }, [convertBtn, agendaBtn, waBtn, close$]),
     ]);
   }
 
@@ -288,4 +292,39 @@ export function mountDetailPanel(root) {
   function computedScore(lead) {
     return scoreLead(lead, data.activities || [], data.contact);
   }
+}
+
+// Mini-formulario para agendar una cita (datetime-local) desde el 360.
+function openScheduler(lead, anchor) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0);
+  const defVal = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  const subj = el('input', { class: 'input', type: 'text', value: 'Cita con ' + (lead.fullName || ''), 'aria-label': 'Asunto' });
+  const when = el('input', { class: 'input', type: 'datetime-local', value: defVal, 'aria-label': 'Fecha y hora' });
+  const ok = el('button', { class: 'btn btn--gold btn--sm btn--block', type: 'button' }, ['Agendar']);
+  const form = el('div', { class: 'popover', role: 'dialog', 'aria-label': 'Agendar cita', style: { width: '260px', gap: '8px' } }, [
+    el('div', { class: 'popover__title', text: 'Agendar cita' }), subj, when, ok,
+  ]);
+  document.body.append(form);
+  const r = anchor.getBoundingClientRect();
+  form.style.top = `${Math.min(window.innerHeight - form.offsetHeight - 8, r.bottom + 6)}px`;
+  form.style.left = `${Math.max(8, r.right - form.offsetWidth)}px`;
+  setTimeout(() => when.focus(), 0);
+
+  const close = () => { form.remove(); document.removeEventListener('mousedown', onOut, true); window.removeEventListener('keydown', onKey, true); };
+  const onOut = (e) => { if (!form.contains(e.target)) close(); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  setTimeout(() => { document.addEventListener('mousedown', onOut, true); window.addEventListener('keydown', onKey, true); }, 0);
+
+  ok.addEventListener('click', async () => {
+    const iso = when.value ? new Date(when.value).toISOString() : null;
+    if (!iso) { toast('Elige fecha y hora', 'error'); return; }
+    ok.disabled = true;
+    try {
+      if (store.get().mock) addMockAgenda({ type: 'cita', subject: subj.value, dueAt: iso, relatedTo: { type: 'lead', id: lead.id, name: lead.fullName }, status: 'open' });
+      else await scheduleActivity(lead, iso, subj.value);
+      toast('📅 Cita agendada', 'ok'); close();
+    } catch (e) { toast('No se pudo agendar', 'error'); ok.disabled = false; }
+  });
 }

@@ -145,3 +145,17 @@ export function updateMockDeal(id, patch) {
   const i = MOCK_DEALS.findIndex((d) => d.id === id);
   if (i >= 0) MOCK_DEALS[i] = { ...MOCK_DEALS[i], ...patch };
 }
+
+// ── Agenda (Fase 3b): citas con dueAt ──
+const atDay = (offset, hour = 10, min = 0) => { const d = new Date(); d.setDate(d.getDate() + offset); d.setHours(hour, min, 0, 0); return d.toISOString(); };
+const MOCK_AGENDA = [
+  { id: 'ag1', type: 'cita', subject: 'Test drive Toyota Corolla', dueAt: atDay(1, 10), relatedTo: { type: 'lead', id: 'l2', name: 'Carlos Andrés Salcedo' }, status: 'open' },
+  { id: 'ag2', type: 'cita', subject: 'Visita showroom', dueAt: atDay(1, 12), relatedTo: { type: 'lead', id: 'l1', name: 'María Fernanda Gómez' }, status: 'open' },
+  { id: 'ag3', type: 'cita', subject: 'Cierre financiación', dueAt: atDay(1, 15), relatedTo: { type: 'lead', id: 'l5', name: 'Laura Valentina Ortiz' }, status: 'open' },
+  { id: 'ag4', type: 'cita', subject: 'Llamada de seguimiento', dueAt: atDay(1, 17), relatedTo: { type: 'lead', id: 'l3', name: 'Diana Ramírez' }, status: 'open' },
+  { id: 'ag5', type: 'cita', subject: 'Entrega de vehículo', dueAt: atDay(3, 9), relatedTo: { type: 'lead', id: 'l8', name: 'Andrés Felipe Cuesta' }, status: 'open' },
+  { id: 'ag6', type: 'cita', subject: 'Peritaje', dueAt: atDay(5, 11), relatedTo: { type: 'lead', id: 'l9', name: 'Catalina Ríos' }, status: 'open' },
+  { id: 'ag7', type: 'cita', subject: 'Negociación precio', dueAt: atDay(-2, 16), relatedTo: { type: 'lead', id: 'l3', name: 'Diana Ramírez' }, status: 'open' },
+];
+export const getMockAgenda = () => MOCK_AGENDA.map((e) => ({ ...e }));
+export function addMockAgenda(ev) { MOCK_AGENDA.push({ id: 'ag' + (MOCK_AGENDA.length + 1), ...ev }); }

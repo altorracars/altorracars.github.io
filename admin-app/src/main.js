@@ -12,6 +12,7 @@ import './styles/login.css';
 import './styles/inbox.css';
 import './styles/contacts.css';
 import './styles/pipeline.css';
+import './styles/agenda.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -21,13 +22,14 @@ import { mountShell } from './core/layout/shell.js';
 import { mountLogin } from './core/layout/login.js';
 import { mountInbox } from './modules/inbox/inbox.ui.js';
 import { mountPipeline } from './modules/deals/deals.ui.js';
+import { mountAgenda } from './modules/agenda/agenda.ui.js';
 import { mountDetailPanel } from './modules/contacts/contacts.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

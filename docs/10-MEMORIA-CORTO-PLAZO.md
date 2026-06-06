@@ -15,10 +15,12 @@
 
 ## 🎯 Foco actual
 
-> 🏗️ **CRM rebuild — Fase 2 (Bandeja+360) DESPLEGADA + Fase 3a (Pipeline) CONSTRUIDA** (2026-06-06). App admin **greenfield** `admin-app/` (Vite + Firebase modular `altorra-crm`): **portal único modular** que reemplazará al `admin.html` viejo (mapa de integración/cutover → `crm-handoff.md §9`). Inteligencia **determinista, SIN ALTOR/LLM**. Capas datos/dominio/ui, HarmonyOS verbatim, realtime acotado. Arquitectura → `20-ESPACIAL §CRM-app`.
->   - **Fase 2** (Bandeja Inteligente + Customer 360 + dominio scoring7/NBA10/classify, ADR §159): ✅ **DESPLEGADA** a `main` → `/admin-app/dist/` + `crmNotes` LIVE. Verificada `?mock=1` (cazó 2 bugs, L-27/28).
->   - **Fase 3a** (Pipeline: embudo drag-drop sobre **`deals`**, lead→oportunidad estilo Salesforce; forecast Σ monto×prob; ADR §160): ✅ construida+verificada (`?mock=1`, 50 módulos, **0 bugs**: render/mover-etapa/ganado/convertir-desde-Bandeja/monto-inline/ruteo). ⏳ **Pendiente: deploy** `firestore:rules,indexes` (colección `deals` + índice) + commit/merge del `dist/` a `main` + E2E live.
-> **Próximo**: **Fase 3b — Agenda unificada** (un solo calendario; elimina el mini-cal duplicado) → Fase 4 (Reportes) → migrar Inventario/Comunicaciones/Config al portal → **cutover** (apagar `admin.html`). Roadmap completo → `crm-handoff.md §9.5`.
+> 🏗️ **CRM rebuild — Fases 2 + 3a + 3b DESPLEGADAS** (2026-06-06). **Portal único modular** `admin-app/` (Vite + Firebase modular `altorra-crm`) que reemplazará al `admin.html` viejo (mapa de integración/cutover → `crm-handoff.md §9`). 3 superficies LIVE en `/admin-app/dist/`. Inteligencia **determinista, SIN ALTOR/LLM**. Capas datos/dominio/ui, HarmonyOS verbatim, realtime acotado. Arquitectura → `20-ESPACIAL §CRM-app`. **Auto-deploy por fase autorizado** (memoria `feedback-auto-deploy-crm`).
+>   - **Fase 2** — Bandeja Inteligente + Customer 360 (scoring7/NBA10/classify), ADR §159. ✅ LIVE (`crmNotes`). Cazó 2 bugs (L-27/28).
+>   - **Fase 3a** — Pipeline: embudo drag-drop sobre **`deals`** (lead→oportunidad, forecast Σ monto×prob), ADR §160. ✅ LIVE (`1e154c2`; reglas+índice `deals`). 0 bugs.
+>   - **Fase 3b** — **Agenda unificada** (vista mes, `dayKey` local, "📅 Agendar" desde 360 → `activities.dueAt`), ADR §161. ✅ verificada `?mock=1` (54 módulos, 0 bugs). Sin deploy de rules/indexes (índice campo único auto).
+> **⏳ Único pendiente**: **E2E live** — `https://altorracars.github.io/admin-app/dist/` + login admin + recorrer Bandeja/Pipeline/Agenda con datos reales (L-08).
+> **Próximo**: **Fase 4 (Reportes/KPIs)** **o** slice de **canales** (newsletter/cuenta/bot → canónico) → luego migrar Inventario/Comunicaciones/Config al portal → **cutover** (apagar `admin.html`). Roadmap → `crm-handoff.md §9.5`.
 >
 > **🚫 Callejones sin salida (NO reintentar)**:
 > (a) **NO implementar custom claims ahora** — verifiqué (4 agentes) que el backend NO los setea y las reglas Fase 1 usan lookup `usuarios/{uid}`; la app replica ESE modelo (auth modular + hidratación de `permissions[]`). Claims = Fase 5 endurecimiento (blueprint maestro §10, ADR §159.3). Hacerlo ahora = redeploy + riesgo al admin viejo, contra MVP-ruthless.

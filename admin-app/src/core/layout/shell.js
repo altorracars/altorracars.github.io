@@ -17,14 +17,15 @@ const APP_VERSION = '0.3.0';
 const NAV = [
   { id: 'bandeja', label: 'Bandeja', icon: '📥', ready: true },
   { id: 'pipeline', label: 'Pipeline', icon: '🎯', ready: true },
+  { id: 'agenda', label: 'Agenda', icon: '📅', ready: true },
   { id: 'contactos', label: 'Contactos', icon: '👤', ready: false },
-  { id: 'agenda', label: 'Agenda', icon: '📅', ready: false },
   { id: 'reportes', label: 'Reportes', icon: '📊', ready: false },
 ];
 
 const TITLES = {
   bandeja: 'Bandeja Inteligente',
   pipeline: 'Pipeline de ventas',
+  agenda: 'Agenda',
 };
 
 export function mountShell(appRoot) {

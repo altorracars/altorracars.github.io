@@ -100,15 +100,17 @@ admin-app/src/
   core/      firebase · auth(lookup usuarios/{uid}) · store(reactivo) · router · theme · toast · popover · dom · mock
     design-system/  tokens(HarmonyOS VERBATIM) · crm-tokens · base · components
     layout/         shell(sidebar+topbar) · login
-  domain/    PURO sin DOM/Firestore/ALTOR: format · classify(tipo/SLA/canal) · scoring(7) · nba(10) · pipeline(etapas/forecast)
+  domain/    PURO sin DOM/Firestore/ALTOR: format · classify · scoring(7) · nba(10) · pipeline(etapas/forecast) · agenda(grilla mes)
   modules/
     inbox/    data(queries paginadas+realtime) | domain(colas/filtro/orden) | ui  → LA BANDEJA
-    contacts/ data(contact+activities+notes)   | ui                              → Customer 360
-    deals/    data(subscribe/convert/stage/won) | ui(kanban drag-drop)            → PIPELINE (Fase 3a §160)
-  styles/    shell · login · inbox · contacts · pipeline
+    contacts/ data(contact+activities+notes)   | ui(+Convertir,+Agendar)         → Customer 360
+    deals/    data(subscribe/convert/stage/won) | ui(kanban drag-drop)            → PIPELINE (§160)
+    agenda/   data(subscribeRange/schedule)     | ui(vista mes)                   → AGENDA (§161)
+  styles/    shell · login · inbox · contacts · pipeline · agenda
 ```
-- **Ruteo**: `router.js` (hash `#/bandeja`,`#/pipeline`) → `main.mountRoute` monta el módulo en el outlet con **cleanup del anterior** (cancela `onSnapshot`) + cierra el 360. `shell.setActive(route)` resalta nav + título.
+- **Ruteo**: `router.js` (hash `#/bandeja`,`#/pipeline`,`#/agenda`) → `main.mountRoute` monta el módulo en el outlet con **cleanup del anterior** (cancela `onSnapshot`) + cierra el 360. `shell.setActive(route)` resalta nav + título.
 - **lead → deal**: la Bandeja trabaja `leads`; "Convertir a oportunidad" crea un `deal` (Pipeline). No mezclar (L-29).
+- **Agenda**: lee `activities` con `dueAt` (rango campo único → índice auto, sin compuesto, L-30); "📅 Agendar" en el 360 crea la cita. `dayKey` LOCAL (no UTC).
 
 - **Patrón de estado entre módulos**: la Bandeja posee los leads enriquecidos y los **espeja al `store`** (`store.set({leads})`); el panel 360 los lee de ahí (L-27).
 - **Realtime acotado**: `onSnapshot`+`limit`+`unsubscribe` al desmontar (P4/§15.R3). Cero full-scan.

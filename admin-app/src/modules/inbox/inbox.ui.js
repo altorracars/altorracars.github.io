@@ -19,6 +19,7 @@ import {
   subscribeLeads, loadMoreLeads, fetchTeam, assignLead, setLeadStatus, logActivity,
 } from './inbox.data.js';
 import { createDealFromLead } from '../deals/deals.data.js';
+import { openNewLeadForm } from '../capture/new-lead.js';
 import { dealFromLead } from '../../domain/pipeline.js';
 import { getMockLeads, getMockTeam, addMockDeal } from '../../core/mock.js';
 
@@ -54,7 +55,9 @@ export function mountInbox(root) {
     el('input', { type: 'search', placeholder: 'Buscar nombre, correo, teléfono…', autocomplete: 'off' }),
   ]);
   const elFilters = el('div', { class: 'inbox__filters' });
-  const elToolbar = el('div', { class: 'inbox__toolbar' }, [elSearch, elFilters]);
+  const elNewBtn = canEdit ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', style: { marginLeft: 'auto' } }, ['＋ Nuevo lead']) : null;
+  if (elNewBtn) elNewBtn.addEventListener('click', () => openNewLeadForm());
+  const elToolbar = el('div', { class: 'inbox__toolbar' }, [elSearch, elFilters, elNewBtn]);
   const elList = el('div', { class: 'inbox__list', role: 'list', tabindex: '-1' });
   const section = el('section', { class: 'inbox' }, [elQueues, elToolbar, elList]);
   clear(root);
@@ -318,6 +321,8 @@ export function mountInbox(root) {
       ui.loading = false; ui.hasMore = false;
       syncLeads();
       render();
+      ui.dirtyHandler = () => { ui.leads = enrichAll(getMockLeads()); syncLeads(); render(); };
+      window.addEventListener('altorra:leads-dirty', ui.dirtyHandler);
       return;
     }
     fetchTeam().catch(() => {});
@@ -348,6 +353,7 @@ export function mountInbox(root) {
   return function cleanup() {
     if (ui.sub && ui.sub.unsubscribe) ui.sub.unsubscribe();
     ui.sub = null;
+    if (ui.dirtyHandler) { window.removeEventListener('altorra:leads-dirty', ui.dirtyHandler); ui.dirtyHandler = null; }
   };
 }
 

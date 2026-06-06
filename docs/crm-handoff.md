@@ -199,3 +199,8 @@ NO son agendas distintas. Hoy hay **duplicación** (un dolor confirmado §8.3): 
 Fase 2 (Bandeja) ✅ → Fase 3 (Pipeline + Agenda) → Fase 4 (Reportes + automatización) → **migrar Inventario / Sitio público / Comunicaciones / Configuración al shell nuevo** → **Fase 5 cutover**: paridad → apagar `admin.html` → login único. Cada pieza entra como módulo; nunca un big-bang.
 
 > **Decisión a confirmar con el cliente**: ¿el portal nuevo absorbe TAMBIÉN inventario/banners/bot/RBAC (one-portal total), o esos quedan en el admin viejo más tiempo? El cliente ya dijo "todas las plataformas en un portal" → se asume **absorción total**, mapeado arriba.
+
+### 9.6 Captura de leads — estado (cierre de la "hemorragia" §8.1)
+El cliente señaló (2026-06-06) que **la mayoría de leads NO entran por la web** (Meta FB/IG/WhatsApp, TikTok, llamadas, walk-ins, referidos — orgánicos o pauta) y hay que poder **agregarlos manualmente**.
+- ✅ **MANUAL — HECHO (§162)**: form "＋ Nuevo lead" en la Bandeja → escribe `solicitudes` → reusa la ingestión (dedup+consent). Canales externos + orgánico/pauta/campaña (para ROI). El equipo ya puede registrar y operar cualquier lead externo.
+- 🔜 **AUTO — pendiente (slice de canales)**: newsletter (form roto), registro de cuenta (`clientes/{uid}` invisible al CRM), bot ALTOR (`conciergeChats` en silo) → conectarlos al canónico vía ingestión = matar el resto de la fuga automática. WhatsApp API / Meta Lead Ads webhook = integración futura (cuando haya presupuesto/credenciales) para que ESOS también entren solos.

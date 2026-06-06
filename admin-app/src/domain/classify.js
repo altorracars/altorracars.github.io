@@ -35,26 +35,62 @@ export function isHighIntent(lead) {
   return HIGH_INTENT.some((k) => sd.includes(k)) || !!lead.vehicleOfInterestId;
 }
 
-// ── Canal de captura ──
+// ── Canal de captura (web + externos manuales) ──
 const CHANNEL_META = {
-  whatsapp:   { label: 'WhatsApp',   icon: '🟢', varName: '--ch-whatsapp' },
-  bot:        { label: 'ALTOR Bot',  icon: '🤖', varName: '--ch-bot' },
-  cuenta:     { label: 'Cuenta',     icon: '👤', varName: '--ch-cuenta' },
-  newsletter: { label: 'Newsletter', icon: '✉️', varName: '--ch-newsletter' },
-  cita:       { label: 'Cita web',   icon: '📅', varName: '--ch-cita' },
-  web:        { label: 'Web',        icon: '🌐', varName: '--ch-web' },
+  whatsapp:    { label: 'WhatsApp',    icon: '🟢' },
+  facebook:    { label: 'Facebook',    icon: '📘' },
+  instagram:   { label: 'Instagram',   icon: '📸' },
+  tiktok:      { label: 'TikTok',      icon: '🎵' },
+  marketplace: { label: 'Marketplace', icon: '🛒' },
+  llamada:     { label: 'Llamada',     icon: '📞' },
+  presencial:  { label: 'Presencial',  icon: '🏬' },
+  referido:    { label: 'Referido',    icon: '🤝' },
+  bot:         { label: 'ALTOR Bot',   icon: '🤖' },
+  cuenta:      { label: 'Cuenta',      icon: '👤' },
+  newsletter:  { label: 'Newsletter',  icon: '✉️' },
+  cita:        { label: 'Cita web',    icon: '📅' },
+  web:         { label: 'Web',         icon: '🌐' },
 };
 
 export function channelOf(lead) {
   const src = String(lead.source || '').toLowerCase();
   let key = 'web';
-  if (src.includes('whatsapp') || src.includes('wa')) key = 'whatsapp';
+  if (src.includes('whatsapp') || src.includes('wsp') || src.includes('wa.me')) key = 'whatsapp';
+  else if (src.includes('facebook') || src.includes('meta') || src === 'fb') key = 'facebook';
+  else if (src.includes('instagram') || src === 'ig') key = 'instagram';
+  else if (src.includes('tiktok') || src === 'tt') key = 'tiktok';
+  else if (src.includes('marketplace') || src.includes('mercadolibre') || src.includes('tucarro')) key = 'marketplace';
+  else if (src.includes('llamada') || src.includes('telefono') || src.includes('teléfono') || src.includes('call')) key = 'llamada';
+  else if (src.includes('presencial') || src.includes('walk') || src.includes('showroom') || src.includes('local')) key = 'presencial';
+  else if (src.includes('referido') || src.includes('referral') || src.includes('recomendado')) key = 'referido';
   else if (src.includes('bot') || src.includes('concierge') || src.includes('altor')) key = 'bot';
   else if (src.includes('cuenta') || src.includes('registro') || src.includes('account') || src.includes('signup')) key = 'cuenta';
   else if (src.includes('news') || src.includes('subscri') || src.includes('suscri')) key = 'newsletter';
   else if (src.includes('cita')) key = 'cita';
   return { key, ...CHANNEL_META[key] };
 }
+
+// Canales seleccionables en el formulario de captura manual (orden de uso real).
+export const MANUAL_CHANNELS = [
+  { id: 'whatsapp', label: 'WhatsApp', icon: '🟢' },
+  { id: 'facebook', label: 'Facebook (Meta)', icon: '📘' },
+  { id: 'instagram', label: 'Instagram', icon: '📸' },
+  { id: 'tiktok', label: 'TikTok', icon: '🎵' },
+  { id: 'marketplace', label: 'Marketplace', icon: '🛒' },
+  { id: 'llamada', label: 'Llamada', icon: '📞' },
+  { id: 'presencial', label: 'Presencial / Showroom', icon: '🏬' },
+  { id: 'referido', label: 'Referido', icon: '🤝' },
+  { id: 'web', label: 'Web (otro)', icon: '🌐' },
+];
+
+export const INTEREST_TYPES = [
+  { id: 'compra', label: 'Compra' },
+  { id: 'financiacion', label: 'Financiación' },
+  { id: 'cita', label: 'Cita / Test drive' },
+  { id: 'consignacion_venta', label: 'Vende su carro' },
+  { id: 'peritaje', label: 'Peritaje' },
+  { id: 'consulta', label: 'Consulta general' },
+];
 
 // ── SLA (speed-to-lead). Default por tipo si no vino slaDueAt. ──
 const SLA_MS_BY_TYPE = {

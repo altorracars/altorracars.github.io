@@ -212,6 +212,12 @@
 - **Corrección**: §3.3 generalizada a "evidencia antes de afirmar CUALQUIER hecho" + gate (citar evidencia del turno o decir "no verificado"). Per M-10, lo verificable (huérfanas/frescura/caps) ya vive en `brain:check`; el git/SessionStart hook lo hará automático.
 - **Principio**: el ALCANCE de una doctrina es tan importante como la doctrina misma. Y doctrina sola no basta (M-10) → la red dura es el determinismo (linter + hooks); la doctrina es el respaldo.
 
+### M-12 · SIEMPRE entregar summary+descripción de commit al dejar el árbol sucio (recidiva 2026-06-05)
+- **Defecto**: el cliente commitea en GitHub Desktop; §2 dice "SIEMPRE entrégale el mensaje listo" — pero REPETIDAMENTE cerré turnos con docs/código modificados diciendo "commitéalo cuando quieras" SIN el mensaje. El cliente lo señaló molesto ("SIEMPRE OLVIDAS").
+- **Causa**: tratar el mensaje de commit como paso opcional/posterior, no como parte obligatoria de TODO turno que ensucia el árbol. Familia de M-03 ("lo documento después").
+- **Corrección (regla dura)**: si al cerrar un turno `git status` no está limpio (código o docs), el turno NO está completo hasta entregar **summary + descripción** listos para pegar. Parte del Reflejo de Cierre §G.4.
+- **Principio**: el cliente NO redacta mensajes de commit — se los doy SIEMPRE. Cambio sin su mensaje = trabajo a medias para él.
+
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots)
 - **Disparador**: querer ver/validar una página en vivo sin desplegar a producción (mejora, pulido visual, QA de CSS).
 - **Receta**: `.claude/launch.json` con `npx -y http-server <RUTA-ABSOLUTA-del-repo> -p 8080 -c-1 --silent`. ⚠️ **La ruta DEBE ser absoluta** — con `.` el server sirvió desde un cwd equivocado y devolvía **404 a todo** (con `/` dando un directory-listing engañoso de 200). Verificar con `curl -o NUL -w "%{http_code}"` ANTES de abrir.

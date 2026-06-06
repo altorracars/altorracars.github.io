@@ -93,7 +93,7 @@ Detalle completo y subcolecciones → `docs/dependency-map.md` §Schemas.
 
 - Apps namespaced: `altorra-admin` vs `altorra-public` aíslan sesiones (+ default app para internals del SDK).
 - Firebase Compat SDK v11.3.0 desde CDN (NO modular).
-- Deploys de reglas/functions son **MANUALES**: `firebase deploy --only firestore:rules|database|storage|functions`. Un cambio en el repo NO se aplica solo.
+- Deploys de reglas/functions: **los ejecuta Claude** (no CI) vía `firebase deploy --only firestore:rules|database|storage|functions` (CLI auth `altorracarssale@` en la máquina). Un cambio en el repo NO se aplica solo. (Fase 1 CRM desplegada así 2026-06-05.)
 - `<picture>` srcset: verifica FÍSICAMENTE que las variants existan en `multimedia/optimized/` (el optimizer NO hace upscaling — lección §95/§96/§97).
 
 ---

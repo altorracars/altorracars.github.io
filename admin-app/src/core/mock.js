@@ -124,3 +124,24 @@ export function addMockNote(contactId, note) {
   if (!NOTES[contactId]) NOTES[contactId] = [];
   NOTES[contactId].unshift({ id: 'n' + Date.now(), ...note });
 }
+
+// ── Deals (Pipeline, Fase 3) ──
+let DEAL_SEQ = 100;
+const MOCK_DEALS = [
+  { id: 'd1', name: 'Diana Ramírez · Chevrolet Tracker 2023', contactName: 'Diana Ramírez', contactId: 'email_diana_r_hotmail_com', leadId: 'l3', vehicleId: 'chevrolet-tracker-2023', vehicleName: 'Chevrolet Tracker 2023', pipelineId: 'ventas', stageId: 'contactado', stageName: 'Contactado', status: 'open', amount: 82000000, currency: 'COP', probability: 0.20, weightedAmount: 16400000, ownerId: 'u_ana', ownerName: 'Ana Restrepo', source: 'web', lastActivityAt: hoursAgo(2), createdAt: hoursAgo(5), _version: 2 },
+  { id: 'd2', name: 'Laura Valentina Ortiz · Kia Sportage 2022', contactName: 'Laura Valentina Ortiz', contactId: 'email_lauraortiz_gmail_com', leadId: 'l5', vehicleId: 'kia-sportage-2022', vehicleName: 'Kia Sportage 2022', pipelineId: 'ventas', stageId: 'cita_agendada', stageName: 'Cita agendada', status: 'open', amount: 95000000, currency: 'COP', probability: 0.35, weightedAmount: 33250000, ownerId: 'u_luis', ownerName: 'Luis Pérez', source: 'bot', lastActivityAt: hoursAgo(20), createdAt: daysAgo(1), _version: 3 },
+  { id: 'd3', name: 'Andrés Felipe Cuesta · Mazda 3 2021', contactName: 'Andrés Felipe Cuesta', contactId: 'email_afcuesta_gmail_com', leadId: 'l8', vehicleId: 'mazda-3-2021', vehicleName: 'Mazda 3 2021', pipelineId: 'ventas', stageId: 'test_drive', stageName: 'Test drive', status: 'open', amount: 68000000, currency: 'COP', probability: 0.65, weightedAmount: 44200000, ownerId: 'u_ana', ownerName: 'Ana Restrepo', source: 'web', lastActivityAt: daysAgo(18), createdAt: daysAgo(20), _version: 5 },
+  { id: 'd4', name: 'Roberto Gómez · Toyota Hilux 2020', contactName: 'Roberto Gómez', contactId: 'phone_573001239876', leadId: null, vehicleId: 'toyota-hilux-2020', vehicleName: 'Toyota Hilux 2020', pipelineId: 'ventas', stageId: 'negociacion', stageName: 'Negociación', status: 'open', amount: 135000000, currency: 'COP', probability: 0.80, weightedAmount: 108000000, ownerId: 'u_luis', ownerName: 'Luis Pérez', source: 'whatsapp', lastActivityAt: hoursAgo(6), createdAt: daysAgo(8), _version: 7 },
+  { id: 'd5', name: 'Sandra Milena Vélez · Renault Duster 2022', contactName: 'Sandra Milena Vélez', contactId: 'email_smvelez_gmail_com', leadId: null, vehicleId: 'renault-duster-2022', vehicleName: 'Renault Duster 2022', pipelineId: 'ventas', stageId: 'nuevo', stageName: 'Nuevo', status: 'open', amount: 0, currency: 'COP', probability: 0.10, weightedAmount: 0, ownerId: null, ownerName: null, source: 'cuenta', lastActivityAt: hoursAgo(1), createdAt: hoursAgo(1), _version: 1 },
+];
+
+export const getMockDeals = () => MOCK_DEALS.map((d) => ({ ...d }));
+export function addMockDeal(deal) {
+  const id = 'd' + (++DEAL_SEQ);
+  MOCK_DEALS.unshift({ id, ...deal });
+  return id;
+}
+export function updateMockDeal(id, patch) {
+  const i = MOCK_DEALS.findIndex((d) => d.id === id);
+  if (i >= 0) MOCK_DEALS[i] = { ...MOCK_DEALS[i], ...patch };
+}

@@ -280,6 +280,13 @@
 - **Receta**: para layout/estructura/estado usa **`preview_snapshot`** (árbol a11y) + **`preview_eval`** leyendo `getComputedStyle`/`getBoundingClientRect`/conteos del DOM — texto, determinista, sin depender del rasterizado. Reserva el screenshot para una foto final (y si se cuelga, no insistas: el snapshot YA prueba que renderiza). Refuerza **L-20/L-23** ("renderiza y MIDE, no screenshot"). El resize a un preset puede corromper las métricas de emulación (vi `innerWidth:2`) → usa `width/height` explícitos.
 - **Meta**: la verificación basada en texto cazó 2 bugs reales esta sesión (grid colapsado + panel vacío) SIN un solo screenshot legible → es la herramienta primaria, no el plan B.
 
+### L-29 · CRM: lead ≠ deal (oportunidad) + drag-drop SIEMPRE con alternativa accesible
+- **Disparador**: construir un Pipeline/embudo de ventas (CRM Fase 3, §160).
+- **Modelo (patrón de los líderes)**: la **Bandeja trabaja `leads`** (interés entrante, triage); cuando un lead se califica se **convierte en `deal`/oportunidad** (colección aparte) que vive en el **Pipeline**. NO mezclar ambos en una colección con un campo `stage` — leads (pre-venta) y deals (venta activa) tienen ciclos distintos. La conversión marca `lead.status='convertido'`+`convertedTo.dealId` (cero pérdida de rastro). Es aditivo (colección nueva) = bajo riesgo de revertir.
+- **A11y del kanban**: el drag-drop HTML5 **no es accesible por teclado**. SIEMPRE acompañarlo de una alternativa (menú "Mover a etapa" por botón/popover) — misma ruta de código (`updateStage`), verificable sin simular DnD. WCAG + testeable.
+- **Forecast**: ponderado = Σ(monto × probabilidad de la etapa), aritmética pura en el dominio (sin ML). Verificable a mano en `?mock=1` (cazó que el recálculo de probabilidad al mover etapa estuviera bien: 35%→80% sobre $95M = +$42,75M).
+- **Meta**: routing multi-sección = montar/desmontar módulos en el outlet con **cleanup del anterior** (cancela `onSnapshot`) + cerrar overlays (360) al cambiar de sección. En modo mock, un store compartido (`MOCK_DEALS`) hace que la conversión desde la Bandeja persista al navegar al Pipeline.
+
 ---
 
 > Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve

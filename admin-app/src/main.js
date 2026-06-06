@@ -13,6 +13,7 @@ import './styles/inbox.css';
 import './styles/contacts.css';
 import './styles/pipeline.css';
 import './styles/agenda.css';
+import './styles/capture.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';

@@ -106,11 +106,13 @@ admin-app/src/
     contacts/ data(contact+activities+notes)   | ui(+Convertir,+Agendar)         → Customer 360
     deals/    data(subscribe/convert/stage/won) | ui(kanban drag-drop)            → PIPELINE (§160)
     agenda/   data(subscribeRange/schedule)     | ui(vista mes)                   → AGENDA (§161)
-  styles/    shell · login · inbox · contacts · pipeline · agenda
+    capture/  data(createManualLead)            | new-lead(form modal)            → CAPTURA MANUAL (§162)
+  styles/    shell · login · inbox · contacts · pipeline · agenda · capture
 ```
 - **Ruteo**: `router.js` (hash `#/bandeja`,`#/pipeline`,`#/agenda`) → `main.mountRoute` monta el módulo en el outlet con **cleanup del anterior** (cancela `onSnapshot`) + cierra el 360. `shell.setActive(route)` resalta nav + título.
 - **lead → deal**: la Bandeja trabaja `leads`; "Convertir a oportunidad" crea un `deal` (Pipeline). No mezclar (L-29).
 - **Agenda**: lee `activities` con `dueAt` (rango campo único → índice auto, sin compuesto, L-30); "📅 Agendar" en el 360 crea la cita. `dayKey` LOCAL (no UTC).
+- **Captura manual** (leads externos Meta/WhatsApp/TikTok/llamada/referido): el form "＋ Nuevo lead" **escribe `solicitudes`** (origen=canal) → reusa la ingestión Fase 1 (dedup+consent), NO escribe el canónico directo (L-31). Cero backend nuevo.
 
 - **Patrón de estado entre módulos**: la Bandeja posee los leads enriquecidos y los **espeja al `store`** (`store.set({leads})`); el panel 360 los lee de ahí (L-27).
 - **Realtime acotado**: `onSnapshot`+`limit`+`unsubscribe` al desmontar (P4/§15.R3). Cero full-scan.

@@ -1,0 +1,39 @@
+/* ============================================================
+   CAPTURA MANUAL — modal "Nuevo lead".
+   ============================================================ */
+
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 8500;
+  display: grid; place-items: center; padding: var(--s-4);
+  background: rgba(8, 7, 10, 0.5);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  animation: scrim-in var(--dur-2) var(--ease-fluent);
+  overflow-y: auto;
+}
+
+.modal {
+  width: 100%; max-width: 440px;
+  background: var(--surface-card); border: 1px solid var(--surface-stroke-hi);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-64);
+  padding: var(--s-6); margin: auto;
+  animation: detail-in var(--dur-3) var(--ease-fluent-decel);
+}
+.modal__head { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s-4); }
+.modal__title { font-family: var(--font-display); font-size: var(--t-title-sm); }
+
+.nl-form { display: flex; flex-direction: column; gap: var(--s-3); }
+.nl-row { display: flex; gap: var(--s-3); }
+.nl-row > .field { flex: 1 1 0; min-width: 0; }
+.nl-consent {
+  display: flex; align-items: flex-start; gap: var(--s-2);
+  padding: var(--s-2) var(--s-3); border-radius: var(--r-sm);
+  background: var(--gold-50); border: 1px solid var(--gold-200); cursor: pointer;
+}
+:root[data-theme="dark"] .nl-consent { background: rgba(184,146,74,0.12); border-color: var(--gold-800); }
+.nl-consent input { margin-top: 2px; accent-color: var(--gold-600); width: 16px; height: 16px; flex: 0 0 auto; }
+.nl-actions { display: flex; justify-content: flex-end; gap: var(--s-2); margin-top: var(--s-2); }
+
+@media (max-width: 480px) {
+  .nl-row { flex-direction: column; gap: var(--s-3); }
+  .modal { padding: var(--s-4); }
+}

@@ -159,3 +159,30 @@ const MOCK_AGENDA = [
 ];
 export const getMockAgenda = () => MOCK_AGENDA.map((e) => ({ ...e }));
 export function addMockAgenda(ev) { MOCK_AGENDA.push({ id: 'ag' + (MOCK_AGENDA.length + 1), ...ev }); }
+
+// ── Captura manual (Fase: leads externos) ──
+let LEAD_SEQ = 100;
+export function addMockLead(d) {
+  const id = 'lm' + (++LEAD_SEQ);
+  const now = new Date().toISOString();
+  const digits = (d.telefono || '').replace(/\D/g, '');
+  const pref = (d.prefijoPais || '+57').replace(/\D/g, '');
+  const phone = digits ? '+' + (digits.startsWith(pref) ? digits : pref + digits) : '';
+  const email = (d.email || '').trim().toLowerCase();
+  const lead = {
+    id,
+    fullName: d.nombre || 'Sin nombre',
+    email,
+    phone,
+    source: d.canal || 'manual',
+    sourceDetail: d.interes || 'consulta',
+    vehicleOfInterestId: d.vehiculoId || null,
+    status: 'nuevo', rating: 'cold', score: 0, ownerId: null, ownerName: null,
+    slaDueAt: null,
+    contactId: email ? 'email_' + email.replace(/[^a-z0-9]/gi, '_') : 'phone_' + digits,
+    tags: ['manual', d.trafico, d.campana].filter(Boolean),
+    createdAt: now, lastActivityAt: now, _version: 1,
+  };
+  LEADS.unshift(lead);
+  return id;
+}

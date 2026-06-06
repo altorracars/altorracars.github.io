@@ -90,4 +90,44 @@ function normalizeSolicitud(sol, solId, policyVersion) {
   return { dedupKey, contact, lead, activity };
 }
 
-module.exports = { normalizePhone, contactDedupKey, mapConsent, normalizeSolicitud };
+/**
+ * ID de documento de contacto determinístico desde una dedupKey
+ * (misma sanitización que usa onSolicitudCreated → mismo contacto).
+ */
+function sanitizeContactId(dedupKey) {
+  return String(dedupKey || '').replace(/[^a-z0-9]/gi, '_').slice(0, 480);
+}
+
+/**
+ * Traduce un documento `clientes/{uid}` (registro de cuenta pública) al
+ * contacto canónico. NO crea lead (registrarse ≠ intención de compra).
+ * Consentimiento CONSERVADOR: registrarse no es consentimiento EXPRESO de
+ * marketing (Ley 1581) → consent.email=false; el asesor lo gestiona. El
+ * contacto sí queda contactable manualmente (doNotContact=false).
+ * Lógica pura; NO toca Firestore.
+ */
+function clienteToContact(cliente, uid, policyVersion) {
+  const c = cliente || {};
+  const email = String(c.email || '').trim().toLowerCase();
+  const phone = normalizePhone(c.telefono, c.prefijo);
+  const dedupKey = email ? 'email:' + email : (phone ? 'phone:' + phone : 'uid:' + uid);
+  const createdAt = c.creadoEn || new Date().toISOString();
+  const now = new Date().toISOString();
+  const consent = {
+    email: false, whatsapp: false, calls: false,
+    askedAt: now, source: 'cuenta', policyVersion: policyVersion || 'v1',
+  };
+  const contact = {
+    fullName: String(c.nombre || '').trim() || 'Sin nombre',
+    email, phone, type: 'cliente', source: 'cuenta',
+    ownerId: null, ownerName: null, score: 0, rating: 'cold', lifecycleStage: 'registered',
+    tags: ['cuenta'], consent, doNotContact: false, clienteUid: uid,
+    lastActivityAt: createdAt, createdAt, updatedAt: now, _version: 1,
+  };
+  return { dedupKey, contactId: sanitizeContactId(dedupKey), contact };
+}
+
+module.exports = {
+  normalizePhone, contactDedupKey, mapConsent, normalizeSolicitud,
+  sanitizeContactId, clienteToContact,
+};

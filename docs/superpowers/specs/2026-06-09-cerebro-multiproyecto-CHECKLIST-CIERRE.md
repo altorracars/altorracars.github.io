@@ -52,10 +52,10 @@
 - [ ] (Opcional) Linter de capa skill: escanea `~/.claude/skills/*/SKILL.md` por `docs/NN-`/nombres propios. · ⏳ inmobiliaria sin `docs/skills-inventory.md` (check #6 omitido) — crear si se quiere catálogo.
 
 ## 🚩 MANDATO 3 — Comité de VALIDACIÓN FINAL (gate de cierre — bloquea declarar "completo")
-- [ ] Convocar `comite-expertos` #2 **contra el inventario del Mandato 1** como línea base.
-- [ ] Certificar cada dimensión (criterio del cliente): **sin huérfanos** · **sin vacíos** · **sin pérdida de memoria** (neurona-por-neurona vs inventario) · **riesgo de saturación OK** (gate de boot) · **lectura fluida por los 3 proyectos** · **sin cruce de información entre proyectos** (línea roja INSTANCE) · **riesgos no estimados** revisados (voz adversarial).
-- [ ] Resolver las **7 preguntas abiertas** (plan v5) con DECISIÓN del cliente (no solo recomendación).
-- [ ] **Sign-off documentado** → ADR de cierre en `99` + actualizar este checklist a 100% → **"MACRO-TAREA CERRADA Y CERTIFICADA"**.
+- [x] Convocado `comite-expertos` #2 (Mandato 3, **11 agentes**) contra el inventario del Mandato 1 — crudo → `research-archive/2026-06-09-mandato3-validacion-final-deliberacion.json`.
+- [x] Dimensiones certificadas EN DISCO: cero-pérdida ✅ · aislamiento INSTANCE ✅ · saturación/boot ✅ · lectura fluida ✅ · riesgos no estimados ✅. (Veredicto inicial **NO_CERTIFICA** por 2 bloqueantes → resueltos+verificados con grep.)
+- [~] 7 preguntas abiertas: resueltas/diferidas por §171 (Q6b documento-copiado, Q-namespace por slug, secrets→nodo-config) o tracked como opcionales en §172.4; cliente ratificó el rumbo (2026-06-09).
+- [x] **Sign-off → ADR §172 en `99`** + este checklist actualizado. **CERTIFICADO** (alcance §171, cars; cura aterrizada+verificada en §G.4; Opción C diferida; propagación a bersaglio/inmob = follow-up). ⚠️ NO se declara "100% de la visión original": el KERNEL compartido fue **descopado** por §171 (sobreingeniería), no completado.
 
 ---
 

@@ -18,7 +18,7 @@
 
 ## ⚠️ Flags de riesgo activos
 - ⚠️ **E2E SP-1 requiere deploy a `main`** (L-08: Auth/Firebase bloquea localhost por referrer; única E2E real es contra `altorracars.github.io`). **Recipe**: merge → esperar ~1-2 min GitHub Pages → Ctrl+Shift+R → checklist. **Rollback ready**: `git revert <sha>` + push devuelve el diseño viejo en ~1 min. Riesgo aceptado: ventana de minutos con cinematic visible mientras se valida.
-- 🔒 **Blindaje** (`41-SEGURIDAD`, ADR §169): SEC-03 (tope costo) + SEC-04 (candado Telegram) **LIVE ✅** (deploy functions 2026-06-08). **App Check anti-spam monitor LIVE** (site key registrada; observar % Verified → enforce) + **SEC-01** RBAC-read (Opción A vía Gemini; pre-seed+OK antes de deploy). Legal `42-LEGAL` (gate abogado). · 🧠 **Cerebro multi-proyecto** decidido (ADR §170 + spec) → sesión nueva. · cron↔cache = patrón conocido (L-02).
+- 🔒 **Blindaje** (`41-SEGURIDAD`, ADR §169): SEC-03 (tope costo) + SEC-04 (candado Telegram) **LIVE ✅** (deploy functions 2026-06-08). **App Check anti-spam monitor LIVE** (site key registrada; observar % Verified → enforce) + **SEC-01** RBAC-read (Opción A vía Gemini; pre-seed+OK antes de deploy). Legal `42-LEGAL` (gate abogado). · 🧠 **Cerebro multi-proyecto**: ADR §170 **ENMENDADO por §171** (comité×3+Gemini convergentes pausan el sync P2P) → economía local (destilar nodo 10) + Opción C (template/generator) diferida a Cloudflare; falencia de cierre curada (deliberación capturada). Veredicto → spec `…comite-revalidacion-paso1-VEREDICTO`. · cron↔cache = patrón conocido (L-02).
 
 ## 🧩 Sub-sistemas (resumen)
 `js/` modular ✅ · **rediseño index cinematic vanilla** (`css/home/*` + `js/public/home/*`) ✅ · cerebro autónomo ✅ · SEO ✅ · bot/RBAC/Hub estables ✅

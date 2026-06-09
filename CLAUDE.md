@@ -219,7 +219,7 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   generes o descubras se escribe en su neurona ANTES de cerrar la tarea. Bug /
   causa-raíz / lección → `30-LECCIONES`. Cambio de arquitectura → `20-ESPACIAL`.
   WIP / estado → `10-CORTO-PLAZO`. Decisión cerrada → `99-HISTORIAL` (ADR §NN) +
-  fila en `00-INDICE`. **Deliberación** (comité / consejo externo Gemini / workflow de agentes — cara de reproducir) → CRUDO a `research-archive/` + SÍNTESIS (adoptado / refutado-y-por-qué / **callejones probados**) ANTES de cerrar: el sacrificio de investigación de los agentes ES conocimiento; perderlo = el próximo "tú" re-investiga.
+  fila en `00-INDICE`. **Deliberación** (comité / consejo externo Gemini / workflow de agentes — cara de reproducir) → CRUDO al `archiveDir` del manifest + SÍNTESIS (adoptado / refutado-y-por-qué / **callejones probados**) ANTES de cerrar: el sacrificio de investigación de los agentes ES conocimiento; perderlo = el próximo "tú" re-investiga.
 - **Reflejo de Neurogénesis (crear neurona nueva)**: si un conocimiento reutilizable
   NO encaja en ninguna neurona Y es una categoría que crecerá (no un caso aislado),
   CREA `docs/NN-NOMBRE.md`. Al nacer una neurona DEBES, en el mismo acto: (1) fila

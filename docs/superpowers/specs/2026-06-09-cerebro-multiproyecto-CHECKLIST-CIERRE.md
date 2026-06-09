@@ -1,5 +1,7 @@
 # ✅ CHECKLIST DE CIERRE — Cerebro Multi-Proyecto (definición de "TERMINADO")
 
+> 🛑 **PARCIALMENTE SUPERSEDED por ADR §171 (2026-06-09).** Los ítems de **PASO 1 (extraer KERNEL), brain:diff/pull y PASO 4 (propagar)** quedan **DEROGADOS** (sync P2P pausado). El rumbo vigente (economía local + Opción C diferida) está en `2026-06-09-comite-revalidacion-paso1-VEREDICTO.md`. Siguen vigentes: la cura de la falencia (✅), el destilado del nodo 10, y el **Mandato 3 (comité validación final)** como gate de cierre.
+
 > **Qué es**: la lista tickeable de TODO lo que falta para declarar el macro-proyecto **CERRADO Y CERTIFICADO**.
 > Cada ítem tiene su **criterio de aceptación verificable**. Marca `[x]` al cumplirlo + el commit/evidencia.
 > Detalle de cómo hacer cada paso → `2026-06-09-cerebro-multiproyecto-HANDOFF-ESTADO.md §E`. Arquitectura → plan v5.

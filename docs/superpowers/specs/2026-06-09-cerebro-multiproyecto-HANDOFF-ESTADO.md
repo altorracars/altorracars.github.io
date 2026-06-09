@@ -1,5 +1,7 @@
 # 🧭 HANDOFF / ESTADO DE EJECUCIÓN — Cerebro Multi-Proyecto (ADR §170)
 
+> 🛑 **PARCIALMENTE SUPERSEDED por ADR §171 (2026-06-09).** La revalidación (comité ×3 + Gemini convergentes) **PAUSÓ** el "PASO 1 = extraer KERNEL" y el sync P2P. **Rumbo vigente → `2026-06-09-comite-revalidacion-paso1-VEREDICTO.md` + ADR §171.** Este handoff sigue siendo válido como **contexto histórico** (Mandatos 1-2, PASO 0/2, inventario), pero el plan de PASO 1-4 está **derogado**: nuevo rumbo = economía local (destilar nodo 10) + Opción C (template/generator) diferida a Cloudflare. NO ejecutes el PASO 1 de §E.
+
 > **Propósito**: este documento existe para que el **próximo Claude (contexto al 0%, sin memoria)** retome el
 > macro-proyecto del cerebro multi-proyecto **sin perder NADA** — como si nunca se hubiera cerrado la sesión.
 > Es la **fuente de verdad operativa** del estado. Léelo COMPLETO al retomar (es on-demand, no auto-carga).

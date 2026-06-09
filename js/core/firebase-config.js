@@ -70,7 +70,11 @@
             // Critical: Auth + Firestore needed for login
             return Promise.all([
                 loadScript(CDN_BASE + '/firebase-auth-compat.js'),
-                loadScript(CDN_BASE + '/firebase-firestore-compat.js')
+                loadScript(CDN_BASE + '/firebase-firestore-compat.js'),
+                // App Check (SEC-02) — carga NO-BLOQUEANTE: si este CDN falla, el sitio
+                // sigue funcionando (auth/firestore son los críticos); el guard
+                // if(firebase.appCheck) de abajo simplemente no activa App Check.
+                loadScript(CDN_BASE + '/firebase-app-check-compat.js').catch(function(){ return null; })
             ]);
         })
         .then(function() {
@@ -131,6 +135,17 @@
             } catch (e) {
                 firebase.initializeApp(FIREBASE_CONFIG);
             }
+
+            // App Check (SEC-02, ADR §169) — anti-abuso/anti-spam. MODO MONITOR:
+            // el cliente ADJUNTA tokens reCAPTCHA v3, pero el enforcement se prende
+            // por recurso en la consola (Unenforced al inicio → nada se rechaza).
+            // Se activa sobre la app namespaced (la que usan window.db/auth/storage),
+            // NO la [DEFAULT] — confirmado con docs Firebase: compat acepta `appCheck(app)`.
+            try {
+                if (firebase.appCheck) {
+                    firebase.appCheck(app).activate('6Lfz8BQtAAAAAILjn8GbHFT8u6dpg5rFvg5hGZzS', true);
+                }
+            } catch (e) { console.warn('[AppCheck] no activado:', e); }
 
             var db = firebase.firestore(app);
             var auth = firebase.auth(app);

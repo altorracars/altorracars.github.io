@@ -152,10 +152,11 @@ arreglo del gate-teatro de boot YA, y gatear la cirugía del KERNEL detrás de O
 4. **PAUSAR el sync sincronizado del KERNEL (Opción A).** Aceptar divergencia menor de gobernanza (más barata que el acople forzado).
 5. **Largo plazo (cuando exista el build step de Cloudflare): Opción C** template/generator unidireccional, git-committed, copia-de-disco. **NO junctions, NO P2P de hashes.**
 
-**⚠️ Esto ENMIENDA el ADR §170** (que decidió "núcleo compartido 4-capas + `brain:diff` sincronizado"): el sync sincronizado se DIFIERE a favor de template/generator unidireccional + economía local primero. **Requiere ratificación del cliente + ADR de enmienda** antes de reescribir plan/handoff.
+**⚠️ Esto ENMIENDA el ADR §170** (que decidió "núcleo compartido 4-capas + `brain:diff` sincronizado"): el sync sincronizado se DIFIERE a favor de template/generator unidireccional + economía local primero. ~~Requiere ratificación del cliente + ADR de enmienda antes de reescribir plan/handoff.~~ **✅ RATIFICADO** (cliente 2026-06-09: *"continuemos bajo tu recomendación…"* + patrón de delegación documentado) + **ADR §171 escrito** + **Mandato 3 certificó (§172)**.
 
 ---
 
-> **Estado de decisiones (actualizado tras Gemini):** ✅ contrato del hook (re-inyecta) · ✅ desacoplar (comité+Gemini) ·
-> ✅ 2ª opinión Gemini (convergente) · ✅ topología (template/generator, no P2P, no junctions) · ⏳ **ratificación del
-> cliente de la enmienda a §170** · ⏳ techo único de boot (ORDER 1) · ⏳ baseline del harness (medir, no bloquea).
+> **Estado de decisiones (actualizado tras Mandato 3 / §172):** ✅ contrato del hook (re-inyecta) · ✅ desacoplar (comité+Gemini) ·
+> ✅ 2ª opinión Gemini (convergente) · ✅ topología (template/generator, no P2P, no junctions) · ✅ **ratificación del cliente** (2026-06-09) ·
+> ✅ **CERTIFICADO (Mandato 3, §172)** — cura aterrizada+verificada en §G.4 · ⏳ techo de boot (opcional, ORDER 1) · ⏳ baseline del harness (no bloquea) ·
+> ⏳ propagar reflejo §G.4 a bersaglio/inmobiliaria (follow-up tracked).

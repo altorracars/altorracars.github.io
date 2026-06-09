@@ -230,7 +230,7 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   generes o descubras se escribe en su neurona ANTES de cerrar la tarea. Bug /
   causa-raíz / lección → `30-LECCIONES`. Cambio de arquitectura → `20-ESPACIAL`.
   WIP / estado → `10-CORTO-PLAZO`. Decisión cerrada → `99-HISTORIAL` (ADR §NN) +
-  fila en `00-INDICE`.
+  fila en `00-INDICE`. **Deliberación** (comité / consejo externo Gemini / workflow de agentes — cara de reproducir) → CRUDO a `research-archive/` + SÍNTESIS (adoptado / refutado-y-por-qué / **callejones probados**) ANTES de cerrar: el sacrificio de investigación de los agentes ES conocimiento; perderlo = el próximo "tú" re-investiga.
 - **Reflejo de Neurogénesis (crear neurona nueva)**: si un conocimiento reutilizable
   NO encaja en ninguna neurona Y es una categoría que crecerá (no un caso aislado),
   CREA `docs/NN-NOMBRE.md`. Al nacer una neurona DEBES, en el mismo acto: (1) fila
@@ -274,7 +274,7 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   cerrada hasta verificar **concretamente**: ¿`10` refleja el progreso (TODO-NN)? ·
   ¿`05` actualizado si cambió la salud? · ¿decisión cerrada → ADR §NN en `99` + fila en
   `00`? · ¿lección reutilizable → `30` con disparador? · ¿cambio de comportamiento →
-  cache bumpeado §4? · ¿`npm run brain:check` SANO? · ¿si fue auditoría especializada,
+  cache bumpeado §4? · ¿`npm run brain:check` SANO? · **¿hubo deliberación (comité/Gemini/workflow)? → CRUDO + SÍNTESIS enlazados, o la tarea está INCOMPLETA** (auto-detección: ✅ con deliberación NO capturada = NO cerrada) · ¿si fue auditoría especializada,
   lóbulo hijo creado/actualizado + skills consultadas registradas en él? Si falta
   cualquiera, vuelve y hazlo ANTES de pasar a la siguiente. Decir "ya casi" sin
   alimentar el cerebro = el próximo "tú" sin memoria sufre re-investigando lo aprendido.

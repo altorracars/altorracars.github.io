@@ -7,7 +7,8 @@
     "lint": "bunx biome lint --write",
     "format": "bunx biome format --write",
     "generate": "node scripts/generate-vehicles.mjs",
-    "brain:check": "node scripts/brain-check.mjs"
+    "brain:check": "node scripts/brain-check.mjs",
+    "brain:diff": "node scripts/brain-diff.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

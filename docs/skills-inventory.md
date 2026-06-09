@@ -199,3 +199,4 @@ de mis capacidades. Implicaciones:
 - **6 repo-only** (⚠️, sin contraparte instalada): `claude-automation-recommender`, `claude-md-improver`, `session-report`, `code-simplifier`, `code-modernization`, `design-taste-frontend-v1`.
 - **Anomalías**: 4/7 resueltas el 2026-06-03 (2 borradas + 2 renombradas); 3 quedan (2 = contenido real no-skill, 1 = bundles cosméticos).
 - El cerebro ahora **mapea el 100%** del contenido de `skills/` (antes solo nombraba ~12 en ejemplos + 2 creadas).
+| `auditoria-cerebro` (2026-06-09) | 🔬 Auditoría Nivel-2 del cerebro (sondas falsables: fidelidad/frescura/retrieval-drill/MEMORY.md; cierra con GC pareado + deepAudit). Nace del comité v6 (ADR §173 cars). Byte-idéntica ×3. |

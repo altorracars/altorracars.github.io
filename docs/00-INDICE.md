@@ -40,8 +40,8 @@
 | SEO / sitemap / indexación Google | `docs/SITEMAP-FIX.md` + 📚 §90 |
 | ¿Qué hay pendiente? estado del sprint | ⚡ `10-CORTO-PLAZO` (TODO-NN) |
 | Migración Cloudflare / Vite / dominio | `docs/PLAN-MIGRACION-ALTORRA.md` + TODO-01 |
-| 🚗 Reconstrucción del CRM / estado actual admin-CRM / pipeline / leads / 360° | `docs/crm-handoff.md` (scan verificado 2026-06-05 + plan + decisiones) + skill `crm-architect` + 🛰️ `15` |
-| 🔵 Audita SEGURIDAD / vulnerabilidades / Firebase rules / rutas sin auth / blindaje | 🎯 **`41-SEGURIDAD.md` (activo — 9 hallazgos + plan de blindaje, ADR §169)** + Skill `arquitecto-software` |
+| 🚗 Reconstrucción del CRM / estado actual admin-CRM / pipeline / leads / 360° | `docs/crm-handoff.md` (stub → bóveda privada `../brain-private/`, ADR §174) + skill `crm-architect` + 🛰️ `15` |
+| 🔵 Audita SEGURIDAD / vulnerabilidades / Firebase rules / rutas sin auth / blindaje | 🎯 **`41-SEGURIDAD.md` (stub → bóveda privada, ADR §174; 9 hallazgos + blindaje)** + Skill `arquitecto-software` |
 | 🔵 Audita LEGAL / privacidad / Hábeas Data / términos / garantía / RUNT / SOAT | 🎯 **`42-LEGAL.md` (activo — vehículos CO, ADR §169)** + Skill **`legal-colombia`** (gate: jurisdicción Colombia, fuentes `.gov.co`, NUNCA publicar sin abogado) |
 | 🔵 Audita UX / interfaz / componentes | 🎯 **`43-UX.md` (activo R0)** + Skill tool (`frontend-design`, `impeccable`, `redesign-existing-projects`) |
 | 🔵 Audita SEO / rich snippets / structured data | 🎯 `40-LOBULOS-DOMINIO` → 44-SEO (on-demand) + Skill tool (`seo-audit`, `ai-seo`, `schema-markup`) + 📚 §90 |
@@ -53,7 +53,7 @@
 | 🛰️ Decisión fuerte / cara de revertir / fork 50-50 → ¿2ª opinión? | 🛰️ `docs/15-CONSEJO-EXTERNO.md` (Antigravity/Gemini: cuándo + qué modelo) |
 | 🌱 Crear / sugerir una SKILL nueva (capacidad portable) | 🎯 `40-LOBULOS-DOMINIO` §Reflejo de Sugerencia de Skills + Skill `skill-creator` |
 | 🧠 Mejora ×3 / "monta el comité" / pulir o criticar una respuesta dada / 2ª opinión | Skill **`comite-expertos`** (expertos dinámicos por tema · 3 niveles · 4ª voz Gemini/`15`) |
-| 🧠 Cerebro MULTI-PROYECTO / cerebro auto-evaluable / "el linter dice SANO pero…" / plan de mejora vigente | **VIGENTE: comité v6** `docs/superpowers/specs/2026-06-09-comite-v6-cerebro-autoevaluable-VEREDICTO.md` (decisión + checklist A-U) · ADR §171/§172 + veredicto revalidación `…-comite-revalidacion-paso1-VEREDICTO.md` · **deliberación CRUDA + 45 hallazgos** `docs/superpowers/research-archive/` · históricos (superseded §171): relevo `…-HANDOFF-ESTADO.md` + `…-CHECKLIST-CIERRE.md` · plan v5 (archivo `…-plan-mejora-cerebro-v4-comite.md`) · inventario `…-inventario-preservacion-cerebros.md` · ADR §170 |
+| 🧠 Cerebro MULTI-PROYECTO / cerebro auto-evaluable / "el linter dice SANO pero…" / plan de mejora vigente | **VIGENTE: comité v6** `docs/superpowers/specs/2026-06-09-comite-v6-cerebro-autoevaluable-VEREDICTO.md` (decisión + checklist A-U) · ADR §171/§172 + veredicto revalidación `…-comite-revalidacion-paso1-VEREDICTO.md` · **deliberación CRUDA + 45 hallazgos** → bóveda privada (`archiveDir` del manifest; stub en `docs/superpowers/research-archive/`) · históricos (superseded §171): relevo `…-HANDOFF-ESTADO.md` + `…-CHECKLIST-CIERRE.md` · plan v5 (archivo `…-plan-mejora-cerebro-v4-comite.md`) · inventario `…-inventario-preservacion-cerebros.md` · ADR §170 |
 | El "por qué" de una decisión / detalle de un § | tabla "§ → línea" abajo → 📚 `99-HISTORIAL-ADR.md` |
 
 ---
@@ -264,6 +264,7 @@
 | §171 | **ENMIENDA a §170**: revalidación comité×3 + Gemini (convergentes) PAUSA el sync P2P del KERNEL → economía LOCAL primero (destilar 10) + Opción C template/generator diferida a Cloudflare. "PASO 1 extraer KERNEL" SUPERSEDED. Veredicto → `…-comite-revalidacion-paso1-VEREDICTO.md` | 43048 |
 | §172 | **Mandato 3 (validación FINAL) → CERTIFICADO**: comité 11 agentes verificó en disco; NO_CERTIFICA → 2 bloqueantes (cura NO aterrizada en §G.4 = sobre-declaración recursiva de §171.7 + README stale) → RESUELTOS+verificados (grep) → CERTIFICADO (cars; Opción C diferida; propagar reflejo a bersaglio/inmob = follow-up). Meta-lección: verificar la cura en la capa que el boot lee, con evidencia. | 43060 |
 | §173 | **Comité v6 — cerebro auto-evaluable** (16 agentes, 45 hallazgos): cura del "SANO-teatro" = evaluación 2 NIVELES (gates hardcodeados + skill `auditoria-cerebro`/retrieval-drill/deepAudit) + GC dos palancas con trinquete + TODO-NN ledger único + captura-en-ORIGEN + brain-diff gateado por template 1.1.0. Checklist A-U → `specs/2026-06-09-comite-v6-…VEREDICTO.md`. Ítem C (exposición pública) = decisión cliente+Gemini. | 43072 |
+| §174 | **Bóveda privada brain-private** (ítem C, Gemini adoptado/refutado): RED/AMBER → repo hermano privado (NO submódulo — rompe Pages; NO purga de historial — riesgo residual documentado); stubs públicos + archiveDir ×3 → bóveda; cliente crea remote privado + push | 43109 |
 
 ---
 

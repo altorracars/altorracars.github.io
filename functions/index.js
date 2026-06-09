@@ -1,6 +1,7 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentWritten, onDocumentCreated, onDocumentUpdated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { setGlobalOptions } = require('firebase-functions/v2');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
@@ -8,6 +9,12 @@ const nodemailer = require('nodemailer');
 admin.initializeApp();
 
 const db = admin.firestore();
+
+// SEC-03 (ADR §169) — tope global de instancias concurrentes para TODA function
+// (las que ya declaran maxInstances lo sobreescriben; NO se fija region global para
+// no alterar la region por-funcion). Corta el escalado runaway + agotamiento de
+// Gmail SMTP si se inunda un trigger publico (ej. onNewSolicitud por create:if true).
+setGlobalOptions({ maxInstances: 10 });
 
 // ========== SECRETS ==========
 // Set with: firebase functions:secrets:set GITHUB_PAT
@@ -22,6 +29,12 @@ const emailPass = defineSecret('EMAIL_PASS');
 //   firebase functions:secrets:set TELEGRAM_BOT_TOKEN
 // Si NO está seteado, las funciones Telegram skip silente (best-effort).
 const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN');
+
+// SEC-04 (ADR §169) — secret_token del webhook de Telegram. Mientras NO este
+// seteado, linkTelegramChat se comporta igual que antes (sin enforcement); una vez
+// seteado + re-registrado el webhook (setupTelegramWebhook), se exige el header.
+//   firebase functions:secrets:set TELEGRAM_WEBHOOK_SECRET
+const telegramWebhookSecret = defineSecret('TELEGRAM_WEBHOOK_SECRET');
 
 // FASE 3 — LLM secret para el Cerebro Altorra AI (ALTOR bot)
 // Set with: firebase functions:secrets:set LLM_API_KEY
@@ -2038,10 +2051,17 @@ const { onRequest } = require('firebase-functions/v2/https');
  */
 exports.linkTelegramChat = onRequest({
     cors: false,
-    secrets: [telegramBotToken]
+    secrets: [telegramBotToken, telegramWebhookSecret]
 }, async (req, res) => {
     if (req.method !== 'POST') {
         res.status(405).send('POST only');
+        return;
+    }
+    // SEC-04 — verificar firma de Telegram. Si el secret esta configurado, exigir el
+    // header X-Telegram-Bot-Api-Secret-Token; si no, comportarse como antes (no romper).
+    const WEBHOOK_SECRET = telegramWebhookSecret.value();
+    if (WEBHOOK_SECRET && req.get('X-Telegram-Bot-Api-Secret-Token') !== WEBHOOK_SECRET) {
+        res.status(403).send('forbidden');
         return;
     }
     const TOKEN = telegramBotToken.value();
@@ -2435,7 +2455,7 @@ exports.onChatTransferred = onDocumentUpdated({
 // ═══════════════════════════════════════════════════════════════════
 exports.setupTelegramWebhook = onCall({
     region: 'us-central1',
-    secrets: [telegramBotToken]
+    secrets: [telegramBotToken, telegramWebhookSecret]
 }, async (req) => {
     if (!req.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
@@ -2454,13 +2474,15 @@ exports.setupTelegramWebhook = onCall({
     // URL pública de linkTelegramChat
     const webhookUrl = 'https://us-central1-altorra-cars.cloudfunctions.net/linkTelegramChat';
     try {
+        // SEC-04 — registrar el webhook con secret_token si esta configurado, para
+        // que Telegram firme cada update y linkTelegramChat pueda verificarlo.
+        const WEBHOOK_SECRET = telegramWebhookSecret.value();
+        const setWebhookBody = { url: webhookUrl, allowed_updates: ['message'] };
+        if (WEBHOOK_SECRET) setWebhookBody.secret_token = WEBHOOK_SECRET;
         const resp = await fetch('https://api.telegram.org/bot' + TOKEN + '/setWebhook', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                url: webhookUrl,
-                allowed_updates: ['message']
-            })
+            body: JSON.stringify(setWebhookBody)
         });
         const data = await resp.json();
         if (!data.ok) {

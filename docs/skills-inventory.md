@@ -109,6 +109,7 @@ de mis capacidades. Implicaciones:
 | `ad-creative` | | Creatividades/variaciones de anuncios | ✅ |
 | `cold-email` | | Cold email B2B + secuencias | ✅ |
 | `email-sequence` | | Secuencias de email lifecycle/warm | ✅ |
+| `sales-enablement` | | Material de habilitación de ventas (decks, one-pagers, battlecards) | ✅ |
 | `social-content` | | Contenido para redes | ✅ |
 | `marketing-ideas` | | Ideación de marketing | ✅ |
 | `marketing-psychology` | | Palancas psicológicas de marketing | ✅ |

@@ -43105,3 +43105,33 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
   (gotcha #2 corregido) · manifest (caps trinquete). INTACTOS: 20/30/40-48/99 previos, js/css/functions.
 - **173.7 Doctrina**: §3.3 (todo verificado en disco), §G.4 captura (crudo+síntesis ANTES de cerrar — dogfood),
   Trigger 🔵 + 🛰️ (ítem C → cliente+Gemini). SIN cache bump (cero cambio de comportamiento del sitio).
+
+## 174. ADR-174 — Bóveda privada `brain-private`: cura de la exposición pública (ítem C, comité v6)
+
+> Cliente trajo la 2ª opinión de Gemini (2026-06-09) y delegó: "haz todo lo que creas pertinente".
+> **Deliberación:** crudo Gemini + triage → `research-archive/2026-06-09-gemini-exposicion-publica-respuesta.md`
+> (en el archiveDir/bóveda) · prompt usado → `specs/2026-06-09-gemini-exposicion-publica-prompt.md`.
+
+- **174.1 Causa raíz**: los 3 cerebros se sirven como URLs públicas vía GitHub Pages — hallazgos de
+  seguridad ABIERTOS con archivo:línea (41-SEGURIDAD ×2, plan F6), planes de negocio (crm-handoff,
+  PENDIENTES) y 1.5MB de deliberaciones (research-archive) eran indexables/crawleables. Punto ciego
+  cazado por el peer-review del comité v6 (ningún experto lo vio).
+- **174.2 Solución (Gemini adoptado/refutado, protocolo §15)**: **repo privado HERMANO**
+  `../brain-private/` (NO submódulo — Pages clásico falla el build con submódulo privado + invariante
+  §C.5; NO purga de historial hoy — destruye la garantía cero-pérdida + rompe el cron + lo crawleado
+  ya se fue: riesgo RESIDUAL aceptado y documentado). Criterio RED/AMBER/GREEN de Gemini ADOPTADO
+  íntegro. Movidos: cars 41-SEGURIDAD + crm-handoff + 6 crudos del archive; bersaglio 41-SEGURIDAD +
+  PENDIENTES-Y-HALLAZGOS + plan F6. Stubs públicos con puntero (routing intacto, linter verde).
+  `archiveDir` de los 3 manifests → bóveda. Vault git-init local (`3f133ac`); el cliente crea el repo
+  PRIVADO en GitHub y pushea (instrucciones en el README de la bóveda).
+- **174.3 No-regresión**: cero código de app tocado; brain:check SANO ×3 (check #7 valida la bóveda
+  cuando está clonada; en máquina sin bóveda → info, no falso-rojo); GitHub Pages intacto.
+- **174.4 Tests**: Test-Path archiveDir ×3 = True · check #7 "archiveDir íntegro (7 crudos indexados)" ·
+  grep de stubs → todos apuntan a la bóveda.
+- **174.5 Anti-patterns evitados**: submódulo-rompe-Pages (refutado con docs), purga-de-historial
+  destructiva (refutado por invariante), redacción-en-historial-público (refutado por Gemini mismo).
+- **174.6 Archivos**: stubs (41×2, crm-handoff, PENDIENTES, f6, archive README ×3) · manifests ×3
+  (archiveDir) · bóveda (14 archivos + READMEs). INTACTOS: todo el código de los 3 sitios.
+- **174.7 Doctrina**: §G.4 captura cita archiveDir · regla nueva: hallazgos de seguridad NUNCA en HEAD
+  público (RED → bóveda; el criterio vive en el README de la bóveda). AMBER restante (specs CRM viejos,
+  41-MERCADO inmobiliaria) = cola tracked en TODO-20. SIN cache bump.

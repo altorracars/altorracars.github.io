@@ -12,7 +12,7 @@
 
 ## ⚠️ Flags de riesgo activos
 - 🔒 **Blindaje** (estado canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor LIVE (observar→enforce) · SEC-01 RBAC-read pendiente (pre-seed+OK) · Legal `42` (gate abogado).
-- 🌐 **Exposición pública SIN decidir** (comité v6, ítem C): 41-SEGURIDAD/research-archive/crm-handoff son URLs públicas vía GitHub Pages → decisión cliente + Gemini ANTES de archivar más hallazgos sensibles.
+- 🔐 **Exposición pública RESUELTA** (ADR §174, Gemini adoptado/refutado): RED/AMBER → **bóveda `../brain-private/`** (41/crm-handoff/archive = stubs públicos); ⏳ cliente crea el repo privado en GitHub + push; riesgo residual = historial git viejo (purga diferida).
 - ⚠️ **E2E del CRM requiere `main`** (L-08: Auth bloquea localhost) — receta: merge → 1-2 min → Ctrl+Shift+R.
 - cron↔cache = patrón conocido (L-02).
 

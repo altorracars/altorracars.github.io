@@ -1,3 +1,4 @@
+<!-- brain-template-version: 1.1.0 -->
 # CLAUDE.md — Altorra Cars · 🧠 Tronco Encefálico (Router Neuronal)
 
 > **Este archivo se auto-carga en CADA sesión.** Es el enrutador central del

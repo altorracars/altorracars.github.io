@@ -15,6 +15,7 @@ import './styles/pipeline.css';
 import './styles/agenda.css';
 import './styles/capture.css';
 import './styles/reportes.css';
+import './styles/contactos.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -26,13 +27,14 @@ import { mountInbox } from './modules/inbox/inbox.ui.js';
 import { mountPipeline } from './modules/deals/deals.ui.js';
 import { mountAgenda } from './modules/agenda/agenda.ui.js';
 import { mountReportes } from './modules/reportes/reportes.ui.js';
+import { mountContactos } from './modules/contacts/contacts.list.js';
 import { mountDetailPanel } from './modules/contacts/contacts.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

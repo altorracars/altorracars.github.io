@@ -12,14 +12,14 @@ import { toggleTheme } from '../theme.js';
 import { signOutUser, displayName, displayRole } from '../auth.js';
 import { initials } from '../../domain/format.js';
 
-const APP_VERSION = '0.4.0';
+const APP_VERSION = '0.4.1';
 
 const NAV = [
   { id: 'bandeja', label: 'Bandeja', icon: '📥', ready: true },
   { id: 'pipeline', label: 'Pipeline', icon: '🎯', ready: true },
   { id: 'agenda', label: 'Agenda', icon: '📅', ready: true },
   { id: 'reportes', label: 'Reportes', icon: '📊', ready: true },
-  { id: 'contactos', label: 'Contactos', icon: '👤', ready: false },
+  { id: 'contactos', label: 'Contactos', icon: '👤', ready: true },
 ];
 
 const TITLES = {
@@ -27,6 +27,7 @@ const TITLES = {
   pipeline: 'Pipeline de ventas',
   agenda: 'Agenda',
   reportes: 'Reportes y KPIs',
+  contactos: 'Contactos',
 };
 
 export function mountShell(appRoot) {

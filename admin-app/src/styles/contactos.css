@@ -1,0 +1,56 @@
+/* ============================================================
+   CONTACTOS — directorio de personas. Cierra el núcleo del CRM.
+   Tokens HarmonyOS verbatim, sin hex hardcodeado.
+   ============================================================ */
+
+.contactos { display: flex; flex-direction: column; width: 100%; min-width: 0; height: 100%; }
+
+.contactos__toolbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
+  padding: var(--s-3) var(--s-6);
+  border-bottom: 1px solid var(--surface-stroke);
+}
+.contactos__toolbar .search { flex: 1 1 240px; max-width: 380px; }
+.contactos__chips { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.contactos__count { white-space: nowrap; }
+
+.contactos__list {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--s-2);
+  padding: var(--s-4) var(--s-6) var(--s-8);
+}
+
+.contact-row {
+  display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: var(--s-3);
+  width: 100%; text-align: left;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-card); border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-2); cursor: pointer;
+  transition: box-shadow var(--dur-2) var(--ease-fluent), transform var(--dur-1) var(--ease-fluent);
+}
+.contact-row:hover { box-shadow: var(--shadow-8); }
+.contact-row:focus-visible { box-shadow: var(--shadow-8); }
+.contact-row:active { transform: scale(0.995); }
+/* Fila sin ficha (suscriptor): informativa, no interactiva. */
+.contact-row--nolead { cursor: default; }
+.contact-row--nolead:hover { box-shadow: var(--shadow-2); }
+
+.contact-row__main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.contact-row__name { font-weight: 700; font-size: var(--t-body); }
+.contact-row__sub { }
+.contact-row__tags { display: block; }
+.contact-row__badges { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; justify-content: flex-end; }
+.contact-row__time { white-space: nowrap; }
+
+@media (max-width: 720px) {
+  /* avatar | datos en fila 1; badges y "último contacto" fluyen en filas propias (sin hacks de margen). */
+  .contact-row { grid-template-columns: auto 1fr; row-gap: var(--s-2); }
+  .contact-row__main { grid-column: 2; }
+  .contact-row__badges { grid-column: 1 / -1; justify-content: flex-start; }
+  .contact-row__time { grid-column: 1 / -1; justify-self: end; }
+}
+@media (max-width: 560px) {
+  .contactos__toolbar { padding-left: var(--s-4); padding-right: var(--s-4); }
+  .contactos__list { padding-left: var(--s-4); padding-right: var(--s-4); }
+  .contactos__toolbar .search { max-width: none; }
+}

@@ -8,6 +8,7 @@
 // ============================================================
 
 import { initializeApp } from 'firebase/app';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -25,5 +26,13 @@ export const FIREBASE_CONFIG = {
 export const APP_NAME = 'altorra-crm';
 
 export const app = initializeApp(FIREBASE_CONFIG, APP_NAME);
+
+// App Check (SEC-02, ADR §169) — anti-abuso, modo MONITOR (Unenforced en consola).
+// Mismo site key reCAPTCHA v3 que el sitio compat (misma web app / projectId).
+export const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6Lfz8BQtAAAAAILjn8GbHFT8u6dpg5rFvg5hGZzS'),
+  isTokenAutoRefreshEnabled: true,
+});
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);

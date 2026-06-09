@@ -104,8 +104,8 @@ Encabezado `## NN. ADR-NNN — <título>` + cita del cliente si reportó, y 7 pu
 
 - Crear commits SOLO cuando el usuario lo pida explícitamente.
 - `git add` archivos específicos (NUNCA `git add -A` / `.`).
-- **El cliente commitea** (GitHub Desktop/web): SIEMPRE entrégale el mensaje listo para copiar/pegar — **summary (título) + descripción**. ⚠️ Si dejas el árbol sucio y NO das el mensaje = **turno incompleto** (recidiva → `30` M-12). Si commiteas tú: HEREDOC + footer `Co-Authored-By: Claude <noreply@anthropic.com>`.
-- NUNCA push sin pedido explícito. NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
+- **Claude commitea** (HEREDOC + footer `Co-Authored-By: Claude <noreply@anthropic.com>`); el **push y el merge a `main` los hace SIEMPRE el cliente** (preferencia 2026-06-08). Igual entrégale el mensaje (summary + descripción). ⚠️ Árbol sucio sin mensaje = **turno incompleto** (M-12).
+- NUNCA hago **push ni merge** (los hace el cliente). NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
 - NUNCA commitear secrets (.env, credentials.json).
 - Al cerrar un pendiente, marcar su `TODO-NN` como ✅ + link al §X. Mantén este CLAUDE.md liviano.
 

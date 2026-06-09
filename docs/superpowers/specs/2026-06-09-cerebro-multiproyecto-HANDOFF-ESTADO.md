@@ -156,9 +156,10 @@ voz adversarial de **riesgos no estimados**. La macro-tarea NO está cerrada has
 
 1. **Commits con mensaje multilínea**: el sandbox de PowerShell **bloquea** here-strings con muchos `/` (falso positivo "Remove-Item
    on '/'"). **Solución**: escribir el mensaje a un archivo temp (tool Write) y `git commit -F <archivo>`. Siempre.
-2. **Hook de seguridad bloquea Write de archivos con `execSync`/`child_process`**: por eso el linter canónico **eliminó toda
-   dependencia de child_process** (quitó el check git-origin, que era solo informativo). Si necesitas correr git desde node, espera
-   bloqueo del Write — preferí lógica sin exec.
+2. **~~Hook de seguridad bloquea Write con `execSync`~~ — CORREGIDO (comité v6, 2026-06-09)**: verificado `.claude/settings.json` —
+   solo configura el hook de SessionStart; NO existe un veto configurado que bloquee Write (lo observado fue una intervención
+   advisory del harness, no un gate). La decisión sin-child_process del linter SE MANTIENE, pero por su razón real:
+   **portabilidad + byte-identidad ×3 + sin timeout de boot**, no por un bloqueo inexistente. (Eco en `30` L-35.)
 3. **Propagación byte-idéntica del KERNEL**: usar **`Copy-Item` (PowerShell)**, NO el tool Write (Copy-Item evita el hook de
    seguridad y garantiza bytes idénticos; verificar con `Get-FileHash`).
 4. **autocrlf=true** en los 3 repos: `git add` tira warnings `LF will be replaced by CRLF` — es esperado. Para `brain:diff` por hash,

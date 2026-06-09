@@ -43068,3 +43068,40 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 - **172.5 DIFERIDO (correctamente aparcado, NO deuda de cierre)**: Opción C (template/generator) → build step de Cloudflare (§3.7, bloqueado por presupuesto del dominio); sync P2P (Opción A) → pausado §171; baseline del harness → medir cuando se optimice (el cerebro es fracción del harness).
 - **172.6 CERTIFICACIÓN**: cumplidos y verificados los 2 bloqueantes, se satisface la condición explícita del comité ("resueltos, certifica"). **Cerebro multi-proyecto (alcance §171-enmendado) = CERTIFICADO** para cars — cero-pérdida, aislamiento, lectura fluida y boot sostenible probados en disco — con las reservas/opcionales y el follow-up de propagación arriba, y Opción C diferida. No-regresión: cero código de app tocado; 3 repos brain:check SANO; SIN cache bump.
 - **172.7 Meta-lección (`30 §Meta`)**: declarar un reflejo "añadido a §G.4" sin un `grep` que lo pruebe ES la falencia recursiva (presencia vendida como fidelidad, M-10). **Regla**: la cura de una falencia se verifica EN LA CAPA QUE EL BOOT LEE (CLAUDE.md/§G), no en el historial on-demand; con evidencia (grep/conteo), no con la palabra del ADR. Un comité de validación final que puede decir NO y bloquear su propio cierre es el único que vale.
+
+## 173. ADR-173 — Comité v6: cerebro auto-evaluable con lazo cerrado real (los 7 puntos del cliente)
+
+> Cliente (2026-06-09): "siempre que se valida el cerebro dice que está sano… deja en evidencia que NO hay
+> criterio de evaluación y mejora… se requiere que sea herramienta inteligente en todo sentido". 7 puntos:
+> anti-saturación · examen holístico · criterio de evaluación · checklists · cierre/handoff completo ·
+> auto-detección de repos nuevos · auto-detección de skills. Ratificó: "haz todo lo que creas pertinente… confío".
+> **Deliberación:** `research-archive/2026-06-09-comite-v6-deliberacion.json` (16 agentes, 2.31M tok) +
+> tabla de 45 hallazgos `research-archive/2026-06-09-comite-v6-hallazgos.md` · SÍNTESIS+checklist A-U →
+> `specs/2026-06-09-comite-v6-cerebro-autoevaluable-VEREDICTO.md`.
+
+- **173.1 Causa raíz (verificada en código)**: `brain-check.mjs` = 6 checks SOLO estructurales → "SANO" mide
+  estructura, no verdad. Lo semántico (fidelidad/frescura/función) no es linteable (§171). Evidencia del teatro:
+  cars BOOT 43.855c (139% del objetivo) y bersaglio 50.885c (162%) imprimían "✅ CEREBRO SANO"; App Check con
+  3 estados contradictorios entre 05/10/41; §4 mandaba a buscar la cache al nodo equivocado.
+- **173.2 Solución estructural (decisión v6.1)**: evaluación de **2 NIVELES** — Nivel-1 linter con gates de
+  severidad HARDCODEADA (sin matriz configurable en manifest = anti-green-tuning; nuevos: SSoT inter-nodo,
+  consolidado-aún-en-10, BFS huérfanas 2º orden con regex recursiva, integridad research-archive, ancla de
+  deliberación, peer-hash kernel, fechas-stale, pre-shard 90%, schema del manifest, quiet-boot) + Nivel-2
+  auditoría profunda (skill portable `auditoria-cerebro`: sondas falsables SIN puntaje, retrieval-drill,
+  MEMORY.md, diff-vs-anterior; disparo determinista `deepAudit` cada ~12 ADRs). GC de DOS palancas con
+  trinquete de caps. TODO-NN = ledger único; checklists DENTRO del spec. Captura-en-ORIGEN + `[HONOR]`
+  explícito. brain-diff manual para repos nuevos, GATEADO por template 1.1.0. "SANO" = estructura íntegra +
+  auditoría semántica vigente.
+- **173.3 No-regresión**: cero código de app tocado; doctrinas §G intactas (NO se extrajo §G — callejón §171);
+  GC = mudanza con puntero (cero pérdida); linter v1.1 probado en los 3 repos antes de propagar.
+- **173.4 Tests**: brain:check SANO post-GC en cars; números frescos con HEADs en el VEREDICTO §0; biyección
+  pendiente de los ítems restantes vía checklist (cada uno con criterio de aceptación verificable).
+- **173.5 Anti-patterns evitados**: M-10 (matriz classification = gate auto-degradable, REFUTADA), 4º ledger
+  de estado (causa raíz del bug App-Check ×3), score LLM no reproducible, "ritual periódico" sin ejecutor,
+  regex 5c para BFS (no ve subdirectorios — verificado), `.brain-state.json` (rompería read-only + L-02).
+- **173.6 Archivos**: VEREDICTO+checklist (specs/) · crudo+hallazgos (research-archive/) · CLAUDE.md (§2 ADR
+  compacto + §3.6/3.7 trim + §4 cache→05 + regla PROPIEDAD G.3 + regla ADMISIÓN G.4) · 05 re-sellado · 10
+  GC'd (≤8k) · 00-INDICE (orden §165-§172 + cifras + ruta v6) · 41 (App Check estado único) · HANDOFF
+  (gotcha #2 corregido) · manifest (caps trinquete). INTACTOS: 20/30/40-48/99 previos, js/css/functions.
+- **173.7 Doctrina**: §3.3 (todo verificado en disco), §G.4 captura (crudo+síntesis ANTES de cerrar — dogfood),
+  Trigger 🔵 + 🛰️ (ítem C → cliente+Gemini). SIN cache bump (cero cambio de comportamiento del sitio).

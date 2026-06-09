@@ -63,14 +63,10 @@
 - Auth anónimo del público (`auth.js signInAnonymously`) es **intencional** (favoritos/historial atados a uid privado) — por eso `isAuthenticated()` en Storage incluye anónimos (raíz de SEC-07).
 
 ## 🚀 Runbook de despliegue (P0 escrito en código ✅, gated por OK + consola)
-**Estado**: SEC-03 (tope) + SEC-04 (candado Telegram) **escritos en `functions/index.js`** (revisión adversarial = **OK**, `node -c` OK; **inofensivos hasta activarse**). **NO desplegado.**
+**Estado (2026-06-08)**: SEC-03 (tope) + SEC-04 (candado Telegram) **DESPLEGADOS ✅ y EN VIVO** (`firebase deploy --only functions`, 28 funciones OK; revisión adversarial OK + `node -c` OK). `TELEGRAM_WEBHOOK_SECRET` seteado (v1) + webhook re-registrado con `secret_token` (`getWebhookInfo`: 0 errores, 0 pendientes). **Falta**: App Check (espera site key del cliente) + SEC-01 (Opción A; pre-seed + OK).
 
-- **SEC-03 maxInstances** → `firebase deploy --only functions` (Claude). Aditivo; las funciones con `maxInstances` propio lo conservan; **sin cambio de region**. Tope global 10 (per-función puede subirse si alguna lo necesita).
-- **SEC-04 candado Telegram — ORDEN OBLIGATORIO** (si no, se rompe el alta de Telegram):
-  1. `firebase functions:secrets:set TELEGRAM_WEBHOOK_SECRET` (valor aleatorio).
-  2. `firebase deploy --only functions` (linkTelegramChat + setupTelegramWebhook).
-  3. Desde el admin, correr **setupTelegramWebhook** (re-registra el webhook con `secret_token`).
-  > El código exige el header solo si el secret está seteado → el secret NO debe quedar "vivo" en la función antes del paso 3.
+- **SEC-03 maxInstances** ✅ HECHO — `firebase deploy --only functions`. Aditivo; las funciones con `maxInstances` propio lo conservan; **sin cambio de region**. Tope global 10 (per-función puede subirse si alguna lo necesita).
+- **SEC-04 candado Telegram** ✅ HECHO — orden ejecutado: (1) `firebase functions:secrets:set TELEGRAM_WEBHOOK_SECRET` (aleatorio, v1); (2) `firebase deploy --only functions`; (3) webhook re-registrado vía Telegram API (`setWebhook` con `secret_token` = el secret, URL `…cloudfunctions.net/linkTelegramChat`). Alertas existentes (`sendTelegramAlert`) intactas (no pasan por el webhook).
 - **SEC-02 App Check (anti-spam) — necesita 1 paso del cliente en consola**:
   - **Init points (modo monitor)**: `js/core/firebase-config.js:132` (app [DEFAULT], compat — activate canónico) + cargar `firebase-app-check-compat.js` en el `Promise.all` crítico (~L71-74); `admin-app/src/core/firebase.js:27` (modular, `initializeAppCheck`). **Mismo SITE KEY** (misma web app). `firebase-messaging-sw.js` queda **INTACTO** (reCAPTCHA v3 no corre en Service Worker; no toca Firestore/Storage). El bot ALTOR (`js/concierge`,`js/ai`) reusa `window.db` → cubierto por el activate del compat.
   - **Consola (cliente)**: Firebase → App Check → web app `1:235148219730:web:…` → proveedor **reCAPTCHA v3** (NO Enterprise = $0) → copiar **SITE KEY** → dominios `altorracars.github.io` + `localhost` → dejar TODOS los recursos en **Unenforced** (monitor).

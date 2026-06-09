@@ -18,7 +18,7 @@
 
 ## ⚠️ Flags de riesgo activos
 - ⚠️ **E2E SP-1 requiere deploy a `main`** (L-08: Auth/Firebase bloquea localhost por referrer; única E2E real es contra `altorracars.github.io`). **Recipe**: merge → esperar ~1-2 min GitHub Pages → Ctrl+Shift+R → checklist. **Rollback ready**: `git revert <sha>` + push devuelve el diseño viejo en ~1 min. Riesgo aceptado: ventana de minutos con cinematic visible mientras se valida.
-- 🔒 **Blindaje pre-lanzamiento DISEÑADO, NADA desplegado** (`41-SEGURIDAD`, ADR §169: 9 hallazgos; SEC-01 RBAC-read = **Decisión Fuerte** → Gemini/§15 + OK antes de deploy). Legal: `42-LEGAL` (gate abogado, LEGAL-01..06). · Conflicto cron↔cache = patrón conocido (`git merge origin/main`, L-02).
+- 🔒 **Blindaje** (`41-SEGURIDAD`, ADR §169): SEC-03 (tope costo) + SEC-04 (candado Telegram) **LIVE ✅** (deploy functions 2026-06-08). Falta **App Check** (espera site key consola) + **SEC-01** RBAC-read (Opción A resuelta vía Gemini; pre-seed+OK antes de deploy). Legal `42-LEGAL` (gate abogado). · cron↔cache = patrón conocido (L-02).
 
 ## 🧩 Sub-sistemas (resumen)
 `js/` modular ✅ · **rediseño index cinematic vanilla** (`css/home/*` + `js/public/home/*`) ✅ · cerebro autónomo ✅ · SEO ✅ · bot/RBAC/Hub estables ✅

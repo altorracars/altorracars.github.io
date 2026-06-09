@@ -7,7 +7,7 @@
 |---|---|
 | **Build** | 🟢 Sitio cinematic + a11y en producción. **CRM portal `admin-app/` NÚCLEO COMPLETO** (5 superficies LIVE, §158-§166; falta E2E live). Cerebro: §167-§172 cerrados; **plan VIGENTE = comité v6** (→ `10` foco + checklist A-U). |
 | **Cache version vigente** | **`v20260608231721`** (§169 App Check monitor). SW == cache-manager ✅. Ctrl+Shift+R la 1ª vez. |
-| **Branch activa** | `refactor/estructura`. ⚠️ Commits de cerebro locales SIN push (los pushea el cliente); `main` avanza por cron cada 4h → "en sync" caduca solo. Flujo git: **Claude commitea; push/merge = SIEMPRE el cliente** (2026-06-08). Deploys firebase = Claude (§1). |
+| **Branch activa** | `refactor/estructura` — pusheada ✓ (2026-06-09, incl. comité v6). `main` avanza por cron cada 4h. Flujo git: **Claude commitea; push/merge = el cliente** (push delegado puntualmente con autorización, como hoy). Deploys firebase = Claude (§1). |
 | **Producción (`main`)** | Catálogo cinematic + CRM núcleo (§157-§166) + **App Check monitor LIVE** (`dc5ebca`). ⏳ QA visual Ctrl+Shift+R (L-08). |
 
 ## ⚠️ Flags de riesgo activos

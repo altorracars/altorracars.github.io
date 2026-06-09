@@ -45,11 +45,11 @@
 - [ ] Doctrina §G.5 (caps) actualizada a chars en el texto (el linter ya lo hace; falta la prosa). **Aceptación**: §G.5 menciona chars + manifest.
 
 ## ⏳ Skills (§R6 — ortogonal, se puede hacer en paralelo)
-- [ ] `arquitecto-software` desacoplado: el bloque hardcodeado "En el proyecto Bersaglio" sale del global → al cerebro del proyecto. **Aceptación**: el SKILL.md global no menciona rutas `docs/NN-` de un repo.
-- [ ] `comite-expertos` parametrizado (quita `docs/15`, "Daniel", paths `skills/*` inexistentes).
-- [ ] `legal-colombia` parametrizado (ruta `docs/42` por proyecto; la jurisdicción CO se queda).
-- [ ] Inventario de la **capa global** de skills (`~/.claude/skills`: hoy `skills-inventory` dice 1, son **7**) + manifest reinstalable (no es git-tracked). **Aceptación**: inventario actualizado + manifest.
-- [ ] (Opcional) Linter de capa skill: escanea `~/.claude/skills/*/SKILL.md` por `docs/NN-`/nombres propios.
+- [x] `arquitecto-software` desacoplado (2026-06-09): bloque "En el proyecto Bersaglio" → domain-neutral ("consulta el cerebro del proyecto activo"). SKILL.md sin rutas `docs/NN-` de un repo. ✅
+- [x] `comite-expertos` parametrizado: fuera "Daniel"→cliente + paths `skills/*` inexistentes. ✅
+- [x] `legal-colombia` parametrizado: ruta `docs/42` generalizada + ref `§3.7` corregida (en cars es Cloudflare); jurisdicción CO se queda. ✅
+- [x] **Durabilidad por VERSIONADO**: las 4 skills portables ahora viven git-trackeadas en `skills/` de los 3 repos (byte-idénticas), no solo en `~/.claude/skills`. Inventario cars actualizado. Commits: cars `db346c2` · bersaglio `3bca0c0` · inmobiliaria `9916aa6`. *(El "manifest reinstalable" = el propio `skills/` versionado; install manual = copiar repo→`~/.claude/skills`.)*
+- [ ] (Opcional) Linter de capa skill: escanea `~/.claude/skills/*/SKILL.md` por `docs/NN-`/nombres propios. · ⏳ inmobiliaria sin `docs/skills-inventory.md` (check #6 omitido) — crear si se quiere catálogo.
 
 ## 🚩 MANDATO 3 — Comité de VALIDACIÓN FINAL (gate de cierre — bloquea declarar "completo")
 - [ ] Convocar `comite-expertos` #2 **contra el inventario del Mandato 1** como línea base.

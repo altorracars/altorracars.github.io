@@ -24,7 +24,11 @@ const warn = (m) => { console.log('  ⚠️  ' + m); problems++; };
 const ok = (m) => console.log('  ✅ ' + m);
 const read = (p) => readFileSync(p, 'utf-8');
 
-console.log('\n🧠 BRAIN-CHECK — integridad del cerebro neuronal\n');
+// --boot: arranque LIVIANO — NO lee 99-HISTORIAL (~43k líneas) (plan v5 §6.7). default/--full: todo
+// (lo corre el pre-commit y el `npm run brain:check` manual). El SessionStart usa --boot.
+const BOOT = process.argv.includes('--boot');
+
+console.log(`\n🧠 BRAIN-CHECK${BOOT ? ' --boot (liviano)' : ''} — integridad del cerebro neuronal\n`);
 
 // Topes §G.5. lines = doctrina histórica (compat); chars = UNIDAD REAL de boot/contexto
 // (PRE-PASO-0 del plan multi-proyecto v5 §6.1: el cap de líneas es "teatro" — el nodo 10
@@ -86,23 +90,28 @@ if (bootChars > Math.round(BOOT_CHARS_TARGET * 1.1))
   console.log(`  ↗  BOOT always-on = ${bootChars}c (~${bootTok} tok) vs objetivo ${BOOT_CHARS_TARGET}c (~9k tok) → DESTILAR (nodo 10 primero)`);
 else ok(`BOOT always-on = ${bootChars}c (~${bootTok} tok) ≤ objetivo ${BOOT_CHARS_TARGET}c`);
 
-// 3) Desync del índice: cada "| §X | tema | N |" debe apuntar a un header "## " del historial
+// 3) Desync del índice: cada "| §X | tema | N |" debe apuntar a un header "## " del historial.
+//    LEE el 99-HISTORIAL (~43k líneas) → solo en --full (omitido en --boot, plan v5 §6.7).
 console.log('\n3) Desync índice 00-INDICE → 99-HISTORIAL (fragilidad offset):');
-const indice = read(join(DOCS, '00-INDICE.md')).split('\n');
-const hist = read(join(DOCS, '99-HISTORIAL-ADR.md')).split('\n');
-let checked = 0, desync = 0;
-for (const row of indice) {
-  const m = row.match(/^\|\s*§([\w.]+)\s*\|.*\|\s*(\d+)\s*\|\s*$/);
-  if (!m) continue;
-  const sec = m[1], ln = parseInt(m[2], 10);
-  const target = hist[ln - 1] || '';
-  checked++;
-  if (!/^##\s/.test(target)) { warn(`§${sec} → línea ${ln} NO es un header (desync)`); desync++; }
-  else if (/^\d+$/.test(sec.split('.')[0]) && !new RegExp(`^##\\s+${sec.split('.')[0]}[.\\s]`).test(target)) {
-    warn(`§${sec} → línea ${ln} apunta a OTRO § ("${target.replace(/^##\s*/, '').slice(0, 28)}…") → offset drift`); desync++;
+if (!BOOT) {
+  const indice = read(join(DOCS, '00-INDICE.md')).split('\n');
+  const hist = read(join(DOCS, '99-HISTORIAL-ADR.md')).split('\n');
+  let checked = 0, desync = 0;
+  for (const row of indice) {
+    const m = row.match(/^\|\s*§([\w.]+)\s*\|.*\|\s*(\d+)\s*\|\s*$/);
+    if (!m) continue;
+    const sec = m[1], ln = parseInt(m[2], 10);
+    const target = hist[ln - 1] || '';
+    checked++;
+    if (!/^##\s/.test(target)) { warn(`§${sec} → línea ${ln} NO es un header (desync)`); desync++; }
+    else if (/^\d+$/.test(sec.split('.')[0]) && !new RegExp(`^##\\s+${sec.split('.')[0]}[.\\s]`).test(target)) {
+      warn(`§${sec} → línea ${ln} apunta a OTRO § ("${target.replace(/^##\s*/, '').slice(0, 28)}…") → offset drift`); desync++;
+    }
   }
+  if (checked && !desync) ok(`${checked} entradas del índice apuntan a headers válidos`);
+} else {
+  console.log('  ⏭️  omitido en --boot (lee 99-HISTORIAL ~43k L) → corre en pre-commit / npm run brain:check');
 }
-if (checked && !desync) ok(`${checked} entradas del índice apuntan a headers válidos`);
 
 // 4) Frescura: docs vs realidad de archivos/git. Mueve la clase de error "doc stale"
 //    de un reflejo que debo RECORDAR a un check determinista (§153). El script no se distrae.
@@ -140,27 +149,32 @@ try {
 // 5) Integridad de referencias cruzadas — huecos ocultos en TODO el cerebro (§154).
 //    Determinista: ADRs sin índice, lecciones/meta colgantes, hojas referenciadas inexistentes.
 console.log('\n5) Referencias cruzadas (huecos en el cerebro):');
-const histText = read(join(DOCS, '99-HISTORIAL-ADR.md'));
-const indiceText = read(join(DOCS, '00-INDICE.md'));
-const leccionesText = read(join(DOCS, '30-LECCIONES.md'));
 const espacialPath = join(DOCS, '20-MEMORIA-ESPACIAL.md');
 const cortoPath = join(DOCS, '10-MEMORIA-CORTO-PLAZO.md');
-// 5a) Todo ADR "## NN." de 99 debe tener fila "| §NN |" en 00-INDICE (decisión sin índice = hueco)
-const adrNums = new Set([...histText.matchAll(/^##\s+(\d+)\./gm)].map((m) => m[1]));
-const idxNums = new Set([...indiceText.matchAll(/^\|\s*§(\d+)\b/gm)].map((m) => m[1]));
-const missingIdx = [...adrNums].filter((n) => !idxNums.has(n)).sort((a, b) => +a - +b);
-if (!adrNums.size) warn('no detecté ADRs "## NN." en 99 (¿cambió el formato?)');
-else if (!missingIdx.length) ok(`${adrNums.size} ADRs de 99 indexados en 00`);
-else warn(`${missingIdx.length} ADR(s) de 99 SIN fila en 00-INDICE: §${missingIdx.join(', §')}`);
-// 5b) Referencias L-/M- en todo el cerebro deben estar definidas (### L-NN/M-NN) en 30
-const defined = new Set([...leccionesText.matchAll(/^###\s+([LM]-\d{2})\b/gm)].map((m) => m[1]));
-const allBrain = [claude, indiceText, estado, leccionesText, histText,
-  existsSync(cortoPath) ? read(cortoPath) : '',
-  existsSync(espacialPath) ? read(espacialPath) : ''].join('\n');
-const referenced = new Set([...allBrain.matchAll(/\b([LM]-\d{2})\b/g)].map((m) => m[1]));
-const dangling = [...referenced].filter((r) => !defined.has(r)).sort();
-if (!dangling.length) ok(`refs L-/M- (${referenced.size} usadas / ${defined.size} def) todas resuelven en 30`);
-else warn(`refs L-/M- COLGANTES (sin def en 30): ${dangling.join(', ')} → definir o corregir`);
+// 5a/5b LEEN el 99-HISTORIAL + 30-LECCIONES (caros) → solo en --full (omitidos en --boot, §6.7).
+if (!BOOT) {
+  const histText = read(join(DOCS, '99-HISTORIAL-ADR.md'));
+  const indiceText = read(join(DOCS, '00-INDICE.md'));
+  const leccionesText = read(join(DOCS, '30-LECCIONES.md'));
+  // 5a) Todo ADR "## NN." de 99 debe tener fila "| §NN |" en 00-INDICE (decisión sin índice = hueco)
+  const adrNums = new Set([...histText.matchAll(/^##\s+(\d+)\./gm)].map((m) => m[1]));
+  const idxNums = new Set([...indiceText.matchAll(/^\|\s*§(\d+)\b/gm)].map((m) => m[1]));
+  const missingIdx = [...adrNums].filter((n) => !idxNums.has(n)).sort((a, b) => +a - +b);
+  if (!adrNums.size) warn('no detecté ADRs "## NN." en 99 (¿cambió el formato?)');
+  else if (!missingIdx.length) ok(`${adrNums.size} ADRs de 99 indexados en 00`);
+  else warn(`${missingIdx.length} ADR(s) de 99 SIN fila en 00-INDICE: §${missingIdx.join(', §')}`);
+  // 5b) Referencias L-/M- en todo el cerebro deben estar definidas (### L-NN/M-NN) en 30
+  const defined = new Set([...leccionesText.matchAll(/^###\s+([LM]-\d{2})\b/gm)].map((m) => m[1]));
+  const allBrain = [claude, indiceText, estado, leccionesText, histText,
+    existsSync(cortoPath) ? read(cortoPath) : '',
+    existsSync(espacialPath) ? read(espacialPath) : ''].join('\n');
+  const referenced = new Set([...allBrain.matchAll(/\b([LM]-\d{2})\b/g)].map((m) => m[1]));
+  const dangling = [...referenced].filter((r) => !defined.has(r)).sort();
+  if (!dangling.length) ok(`refs L-/M- (${referenced.size} usadas / ${defined.size} def) todas resuelven en 30`);
+  else warn(`refs L-/M- COLGANTES (sin def en 30): ${dangling.join(', ')} → definir o corregir`);
+} else {
+  console.log('  ⏭️  5a/5b (ADRs↔índice, refs L-/M-) omitidas en --boot (leen 99 ~43k L) → pre-commit / brain:check');
+}
 // 5c) Hojas docs/*.md referenciadas en CLAUDE.md deben existir
 const refDocs = new Set([...claude.matchAll(/docs\/([\w-]+\.md)/g)].map((m) => m[1]));
 const PLACEHOLDER = /^NN-|NOMBRE/; // ej. docs/NN-NOMBRE.md = plantilla de neurogénesis (§G.4/§G.5), no archivo real

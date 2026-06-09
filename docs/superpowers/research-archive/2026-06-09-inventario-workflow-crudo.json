@@ -1,0 +1,942 @@
+{
+  "summary": "Mandato 1: inventario exhaustivo read-only de los 3 cerebros + capa skills, y plan de preservacion/cuarentena (nunca borrar)",
+  "agentCount": 5,
+  "logs": [
+    "Inventario completo: 4/4 repos catalogados"
+  ],
+  "result": {
+    "inventories": [
+      {
+        "repo": "altorracars.github.io",
+        "brainMaturity": "neural-completo (la implementación más madura de los 3 proyectos Altorra, pero NO el canon del KERNEL). Arquitectura neuronal de memoria de 4 capas conceptuales, plenamente operativa: router auto-cargado (CLAUDE.md) + nodos always-on (05/10) + nodos on-demand (15/20/30/00/99/40+lóbulos) + hojas de detalle + specs + linter determinista (brain-check.mjs) + githook pre-commit que BLOQUEA commits con cerebro roto. 167+3 ADRs consolidados (99-HISTORIAL, 2.28 MB / ~43.037 líneas). brain:check reporta SANO. CLAUDE.md a 318/320 líneas (a 2 del tope — señal de presión). Per ADR §170 + spec 2026-06-09: el CANON del KERNEL (gobernanza §G + doctrinas §3 + linter + githooks) se decidió que viva en bersaglio (cerebro hermano más maduro: tiene brain-template-version, INSTALACION-CEREBRO.md, 60-WORKFLOWS, check #6). Este repo es el canon de la capa GROUP-Altorra (marca dorada, Colombia, Firebase, RBAC, patrones cars↔inmobiliaria). Iniciativa multi-proyecto APROBADA, PENDIENTE de ejecución en sesión nueva.",
+        "artifacts": [
+          {
+            "path": "CLAUDE.md",
+            "kind": "router",
+            "sizeOrLines": "318 líneas (~16 KB)",
+            "criticalInfo": "Tronco encefálico auto-cargado en CADA sesión. Contiene: §0.0 identidad ('este cerebro ES mi memoria'); §0 mapa de nodos + regla anti-saturación (NUNCA leer 99 entero, usar offset/limit vía índice); §1 stack (HTML/CSS/JS vanilla + Firebase Compat v11.3.0 CDN + GitHub Pages, project altorra-cars, apps namespaced, secrets YA configurados, deploys los ejecuta Claude); §2 protocolo git (Claude SOLO commitea con footer Co-Authored-By; push+merge los hace el cliente; NUNCA git add -A); §3 doctrinas always-on (perf §17, HTML estable, verifica-no-asumas §19, IAP §37, anti-MutationObserver §35, Lente de Arquitecto §3.8); §4 cache bump; §G gobernanza neuronal completa (G.1 ignorancia selectiva, G.2 triggers de escalación incl. 🔵 dominio y 🛰️ Decisión Fuerte, G.3 consolidación, G.4 reflejos autónomos, G.5 caps+sharding).",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source (de GROUP-Altorra). El bloque §G/§3 es KERNEL conceptual cuyo CANON se reconcilia desde bersaglio (ADR §170 PASO 2); el §1/§4/reglas-git son GROUP-Altorra/INSTANCE. NO inflar (318/320). keep-in-place.",
+            "risk": "high"
+          },
+          {
+            "path": "docs/05-ESTADO-GLOBAL.md",
+            "kind": "lobulo",
+            "sizeOrLines": "25 líneas (~3.7 KB)",
+            "criticalInfo": "Heartbeat auto-cargado. Signos vitales AHORA: build (catálogo cinematic LIVE + CRM rebuild núcleo completo 5 superficies §158-166); cache vigente v20260608231721; branch refactor/estructura; flujo git actualizado 2026-06-08 (Claude solo commit). Flags de riesgo: E2E SP-1 requiere deploy a main (L-08), blindaje SEC-03/04 LIVE + App Check monitor + SEC-01 pendiente, cerebro multi-proyecto decidido §170.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Tablero (pisar, no apilar). Validado por brain:check (frescura cache==SW).",
+            "risk": "low"
+          },
+          {
+            "path": "docs/10-MEMORIA-CORTO-PLAZO.md",
+            "kind": "lobulo",
+            "sizeOrLines": "82 líneas (~14.6 KB)",
+            "criticalInfo": "WIP vivo auto-cargado. Foco: (1) PRÓXIMO MACRO = cerebro MULTI-PROYECTO (sesión nueva, arrancar leyendo spec 2026-06-09); (2) CRM rebuild núcleo completo Fases 2-4+Contactos. Pendientes TODO-01..15. 🚫 Callejones sin salida (NO custom claims ahora; NO confiar en preview_screenshot). Bitácora efímera con cronología detallada de la construcción del CRM 2026-06-05/06.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Pizarra GC (cap ~110). Consolidar a 99/30 al cerrar tareas.",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/15-CONSEJO-EXTERNO.md",
+            "kind": "nodo",
+            "sizeOrLines": "93 líneas (~5.4 KB)",
+            "criticalInfo": "Protocolo Trigger 🛰️ Decisión Fuerte: cuándo/cómo pedir crítica adversarial a Gemini vía Antigravity (humano en el medio, peer-review NO subordinación). Matriz de selección de modelo (Pro High/Low, Flash) por reversibilidad. Plantilla de prompt autocontenido + anti-anclaje. Límites duros (Gemini NO ve el repo). Spec multi-proyecto lo marca como generalizable (KERNEL candidato).",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source del protocolo (portable). keep-in-place; el spec §170 lo lista como pieza a generalizar al kernel.",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/20-MEMORIA-ESPACIAL.md",
+            "kind": "nodo",
+            "sizeOrLines": "135 líneas (~11.4 KB)",
+            "criticalInfo": "Arquitectura/flujos verificados: mapa 'dónde vive cada cosa'; estructura js/ modular post-§119 (128 archivos: core 17 / admin 79 / public 9+ / concierge 3 / ai 16 / simulador 4); flujos de datos + módulos alto blast radius (firebase-config, comm-schema 8+, admin-state 22); schema Firestore (canónico CRM nuevo: contacts/leads/activities/deals/failedIngestions + índices); App CRM nueva admin-app/ (Vite + Firebase modular, capas datos/dominio/ui, realtime acotado, inteligencia determinista).",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place (Altorra-específico). canonical-source de la arquitectura real verificada (el dependency-map quedó stale; este es la fuente fresca).",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/30-LECCIONES.md",
+            "kind": "nodo",
+            "sizeOrLines": "~600 líneas (57.7 KB)",
+            "criticalInfo": "Memoria procedimental: lecciones L-01..L-34 (git/refactor, frontend/runtime, Firebase, código muerto, CRM Vite/modular L-27..L-33, triaje de hallazgos L-34) + Meta M-01..M-12 (fallos del PROPIO cerebro: neurona stale, falso negativo de grep, no-auto-alimentación, asumir estado git/remoto sin fetch M-06 con reincidencia, saturación de contexto, evaluar mejoras con evidencia M-08, lo verificable va al linter M-10, verifica-no-asumas universal M-11, entregar commit-msg M-12). ⚠️ EXCEDE su cap ~350 (a ~600) → candidato a SHARD por categoría.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Las M-NN (meta-aprendizajes de gobernanza) son KERNEL conceptual aunque vivan inline; las L-NN son INSTANCE/GROUP. Shard pendiente (31-LECCIONES-GIT, etc.).",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/00-INDICE.md",
+            "kind": "router",
+            "sizeOrLines": "~290 líneas (30.9 KB)",
+            "criticalInfo": "Índice sináptico: (1) enrutamiento semántico síntoma→neurona (la sinapsis de recuperación rápida, tabla de ~25 situaciones); (2) mapa § → línea exacta del 99-HISTORIAL (167 ADRs); (3) anclas internas §8; (4) doctrinas y planes maestros. CRÍTICO para la regla anti-saturación (encontrar offset antes de leer 99). Validado por brain:check (desync índice→headers).",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source del routing. keep-in-place. Su integridad la garantiza brain-check #3/#5a.",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/99-HISTORIAL-ADR.md",
+            "kind": "doc-monolitica",
+            "sizeOrLines": "~43.037 líneas (2.28 MB)",
+            "criticalInfo": "Largo plazo: 167+3 ADRs (§1..§170) — TODA la historia de decisiones verificadas del proyecto desde arquitectura general, RBAC dinámico §61-73, bot ALTOR/Hub §20-88, SEO §90, performance §15-17, rediseño cinematic §122-150, CRM rebuild §155-166, evolución del cerebro §118-125/§151-156/§167-170. Es la fuente de verdad histórica irremplazable. NUNCA leer entero (muerte por contexto) — solo offset/limit vía 00-INDICE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source histórico. keep-in-place. JAMÁS auto-carga (on-demand por offset). Si >50k líneas, shard en volúmenes 99a/99b (§G.5). Riesgo de pérdida ALTO si se reorganiza mal.",
+            "risk": "high"
+          },
+          {
+            "path": "docs/40-LOBULOS-DOMINIO.md",
+            "kind": "nodo",
+            "sizeOrLines": "184 líneas (~12 KB)",
+            "criticalInfo": "Registry de lóbulos de dominio (41-48 + categorías futuras 44/45/47 vacías) + workflow Trigger 🔵 (skill→lóbulo→neurogénesis con contenido REAL) + §🌱 Reflejo de Sugerencia de Skills (frontera skill-portable vs neurona-Altorra) + registro de skills creadas (accessibility-audit, crm-architect, comite-expertos/legal-colombia/arquitecto-software) + template de lóbulo hijo. Define que los lóbulos hijos NO viven en CLAUDE.md §0 sino aquí (brain-check lo sabe).",
+            "fourLayer": "SCHEMA",
+            "preservation": "canonical-source del namespace de lóbulos (SCHEMA: rangos 41-49=dominio). keep-in-place. El §🌱 (frontera skill/neurona) es KERNEL conceptual.",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/41-SEGURIDAD.md",
+            "kind": "lobulo",
+            "sizeOrLines": "81 líneas (~13 KB)",
+            "criticalInfo": "Lóbulo activo (auditoría Fase C §169). 9 hallazgos verificados SEC-01..09 contra código real (firestore.rules 763L, storage.rules, functions/index.js 3514L) con severidad recalibrada por verificador adversarial L-34. RBAC = lookup usuarios/{uid}.rol+permissions[] (NO claims). SEC-01 RBAC-read = Decisión Fuerte RESUELTA vía Gemini (Opción A, Write-Time Derived Permissions). Plan de blindaje P0/P1/P2. Runbook: SEC-03 (maxInstances) + SEC-04 (candado Telegram) DESPLEGADOS; App Check monitor escrito; SEC-01 gated. Lo que YA está bien (deny-by-default, callables super_admin server-side).",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source de la postura de seguridad Altorra. keep-in-place. Hallazgos reales no reproducibles sin re-auditar → riesgo medio si se pierde.",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/42-LEGAL.md",
+            "kind": "lobulo",
+            "sizeOrLines": "73 líneas (~8.3 KB)",
+            "criticalInfo": "Lóbulo activo (investigación Fase C §169, skill legal-colombia). Marco legal VEHÍCULOS USADOS Colombia: Habeas Data (Ley 1581 + Decreto 1377), Estatuto Consumidor (Ley 1480, garantía usados/retracto), traspaso/RUNT (Ley 769 art.47), SOAT/RTM (art.42/50-52), SARLAFT/SAGRILAFT (NO verificado). 6 TODOs LEGAL-01..06 (gate abogado/contador). DISCLAIMER duro: NO es asesoría jurídica, NUNCA publicar sin abogado colombiano colegiado.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source legal Altorra (la skill es el método portable; esto es el conocimiento de vehículos CO). keep-in-place. GATE humano obligatorio.",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/43-UX.md",
+            "kind": "lobulo",
+            "sizeOrLines": "260 líneas (~16.7 KB)",
+            "criticalInfo": "Lóbulo activo (R0 2026-05-29, skill redesign-existing-projects). Auditoría de fragmentación visual (HarmonyOS cinematic vs legacy Poppins/dark-theme), inventario de 89 páginas públicas, plan de migración SP-5.x por rondas (R0-R5), gaps por dimensión (typography/color/layout/interactivity), excepciones (admin excluido, templates cron-driven). Estado: cuerpo 100% cinematic logrado §140-146.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Acercándose al cap ~280 → vigilar shard.",
+            "risk": "low"
+          },
+          {
+            "path": "docs/46-ESCALABILIDAD.md",
+            "kind": "lobulo",
+            "sizeOrLines": "108 líneas (~7.9 KB)",
+            "criticalInfo": "Lóbulo activo (mandato arquitecto 2026-06-05, skill crm-architect). Manifiesto de arquitectura: 6 lentes obligatorias (negocio/escala/seguridad/costo/mantenibilidad/comunicación); 9 decisiones AD-1..AD-9 right-sized (serverless event-driven Firebase, cero monolitos, capas datos/dominio/ui, una fuente de verdad, seguridad por diseño, guardas de escalabilidad, disciplina de costo $0); disparadores de 'ahora sí escala más'. Es el respaldo de la doctrina §3.8 always-on.",
+            "fourLayer": "GROUP-Altorra",
+            "preservation": "canonical-source de la doctrina de arquitectura (parcialmente portable=KERNEL conceptual vía skill arquitecto-software; las restricciones $0/Firebase/Colombia son GROUP-Altorra). keep-in-place.",
+            "risk": "low"
+          },
+          {
+            "path": "docs/48-ACCESIBILIDAD.md",
+            "kind": "lobulo",
+            "sizeOrLines": "107 líneas (~9 KB)",
+            "criticalInfo": "Lóbulo activo (R inicial 2026-05-31, skill accessibility-audit creada por hueco). WCAG 2.2 AA: hallazgos A11Y-01..06 verificados en código (labels de filtro, h1 en landings, contraste cin-ink-faint, skip-link, focus-visible, reduced-motion). 5/6 resueltos; A11Y-04 skip-link REVERTIDO por el cliente §150. Pendientes que requieren tecnología asistiva real / dispositivo.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place.",
+            "risk": "low"
+          },
+          {
+            "path": "docs/dependency-map.md",
+            "kind": "hoja-detalle",
+            "sizeOrLines": "208 líneas (~9.6 KB)",
+            "criticalInfo": "Mapa de dependencias JS + globals window.* + schemas + anti-patterns. ⚠️ MARCADO STALE en su propio header (verificado 2026-06-05): subestima el sistema (decía 22 admin/52 JS/27 functions; real 79 admin/128 JS/28 functions; admin-inbox.js NO existe; mensajes muerta). Se conserva como referencia histórica v4; la fuente fresca es 20-ESPACIAL + crm-handoff.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place pero MARCADO stale (puntero al reemplazo). Candidato a quarantine-to-_legacy o a refresh — duplicate-of(20-ESPACIAL + crm-handoff) en lo vigente. Su valor histórico (anti-patterns v4) justifica conservarlo.",
+            "risk": "low"
+          },
+          {
+            "path": "docs/crm-handoff.md",
+            "kind": "hoja-detalle",
+            "sizeOrLines": "227 líneas (~24.7 KB)",
+            "criticalInfo": "Handoff verificado en código (4 agentes, 2026-06-05) del CRM: estado actual del admin viejo (sec-crm 3 tabs, Customer 360, IA heurística), puente público↔admin (comm-schema.js), 28 Cloud Functions, schema real, RBAC (1 rol CEO + 71 permisos), bugs/deuda §1.7, censo de captura/hemorragia §8.1, mapa de integración/cutover a portal único §9, revisión holística clase-mundial + prioridades de lanzamiento §9.8. Es la fuente de verdad del estado CRM.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source del estado CRM. keep-in-place. Alto valor de contexto verificado (evita re-investigar el admin de ~94 scripts).",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/skills-inventory.md",
+            "kind": "hoja-detalle",
+            "sizeOrLines": "198 líneas (~11.9 KB)",
+            "criticalInfo": "Catálogo de skills/ del repo (~88 skills, auditado 2026-06-03) + verdad del wiring CRÍTICA: skills/ del repo NO es la fuente de las skills cargadas (esas son bundle del entorno + plugin superpowers + ~/.claude/skills/crm-architect); el solape de nombres es curaduría del cliente. 6 repo-only (no instaladas), anomalías estructurales (4/7 resueltas). Mapea el 100% del contenido de skills/.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. La 'verdad del wiring' es un anti-supuesto valioso (corrige el error M-11). El spec §170 R6 amplía esto (4 de 7 skills globales son Altorra-coupled → migrar a git-tracked).",
+            "risk": "low"
+          },
+          {
+            "path": "docs/SITEMAP-FIX.md",
+            "kind": "hoja-detalle",
+            "sizeOrLines": "~200 líneas (~10.5 KB)",
+            "criticalInfo": "SEO: historia y diagnósticos del problema 'sitemap no leído' en Google Search Console (robots.txt, sitemap.xml limpio, lastmod fijo, .github.io baja prioridad de crawl). Fixes en generate-vehicles.mjs. Comparación con bersaglio (que se indexó al instante).",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Conocimiento operacional SEO específico.",
+            "risk": "low"
+          },
+          {
+            "path": "docs/PLAN-MIGRACION-ALTORRA.md",
+            "kind": "hoja-detalle",
+            "sizeOrLines": "~500 líneas (~24.7 KB)",
+            "criticalInfo": "Plan maestro de migración (Cloudflare Pages + Vite + dominio propio altorracars.com + email pro + rich snippets), escrito en lenguaje no-técnico para el cliente. Bloqueado por presupuesto (~$10/año dominio) = TODO-01/02. Cronograma 4 semanas. Target = Cloudflare (NO Vercel, §3.7).",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Plan diferido pero vigente.",
+            "risk": "low"
+          },
+          {
+            "path": "docs/SETUP-LLM.md",
+            "kind": "hoja-detalle",
+            "sizeOrLines": "~300 líneas (~12.4 KB)",
+            "criticalInfo": "Guía Windows para activar el LLM del bot ALTOR (Cloud Functions chatLLM/summarizeChat/onConciergeMessageAdded/proactiveEngagement, provider abstraction Anthropic/OpenAI/Google, knowledgeBase/_brain, rate limit). Estado: código deployado, falta setear LLM_API_KEY + deploy + toggle. Fallback rule-based mientras tanto.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Runbook operacional del bot.",
+            "risk": "low"
+          },
+          {
+            "path": "docs/altor-hub-cirugia-execution-plan.md",
+            "kind": "hoja-detalle",
+            "sizeOrLines": "~1500 líneas (95.2 KB)",
+            "criticalInfo": "Plan de cirugía técnica ejecutable del ALTOR Hub (bot) — documento auto-contenido de reconstrucción microquirúrgica (§59). El bot ALTOR está DIFERIDO (buggy, §3.6). Hoja grande de detalle histórico del subsistema bot.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place (plan histórico, subsistema diferido). El más grande de las hojas — vigilar si su valor justifica el peso o si parte va a _legacy.",
+            "risk": "low"
+          },
+          {
+            "path": "docs/superpowers/specs/2026-06-09-cerebro-unico-multiproyecto.md",
+            "kind": "spec",
+            "sizeOrLines": "76 líneas (~9.9 KB)",
+            "criticalInfo": "SPEC MAESTRO de la iniciativa ACTIVA: cerebro multi-proyecto. Decisión APROBADA (comité ×3 33 agentes + Gemini), PENDIENTE de ejecución. Veredicto: NO cerebro único merged; SÍ núcleo portable compartido (4 CAPAS KERNEL/SCHEMA/GROUP-Altorra/INSTANCE) + propagación por copia + brain:diff (hash, WARN no FAIL). Canon KERNEL=bersaglio. Líneas rojas (NO congelar set de nodos, NO inflar CLAUDE.md, NO centralizar skills, NO junction/symlink). Plan de ejecución PASO 0-4 (probar en inmobiliaria primero, riesgo 0 a cars). MANDATOS del cliente: (1) NO perder nada documentado (inventario + cuarentena _legacy), (2) mejorar holísticamente con comité. ESTE INVENTARIO sirve al Mandato 1.",
+            "fourLayer": "SCHEMA",
+            "preservation": "canonical-source de la arquitectura multi-proyecto (define las 4 capas = el SCHEMA del sistema). keep-in-place — es el punto de arranque de la sesión nueva.",
+            "risk": "high"
+          },
+          {
+            "path": "docs/superpowers/specs/2026-06-06-cerebro-skills-roadmap.md",
+            "kind": "spec",
+            "sizeOrLines": "312 líneas (~24.7 KB)",
+            "criticalInfo": "Roadmap de 5 capacidades del cerebro (legal-colombia, arquitecto-software, comité-expertos, workflows anti-error, blindaje CRM). Fases A/B/C ya ejecutadas (§167/§168/§169). Define la frontera skill-portable↔neurona-Altorra y el principio anti-bloat (skills = método+guardarraíl+índice, no cuerpos de conocimiento enteros).",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source de la doctrina de capacidades (mayormente ejecutada). keep-in-place. La frontera skill/neurona es KERNEL conceptual.",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/superpowers/specs/2026-06-05-crm-rebuild-design.md",
+            "kind": "spec",
+            "sizeOrLines": "307 líneas (~27 KB)",
+            "criticalInfo": "Blueprint maestro de la reconstrucción del CRM (modelo de datos canónico, colecciones Firestore, mapa de módulos, rules, plan por fases, §15 peer-review de Gemini que cambió 2 decisiones: greenfield+run-paralelo y Vite-solo-admin). Es el espinazo de los ADR §158-166.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source del diseño CRM. keep-in-place.",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/superpowers/specs/ (10 specs restantes: rediseno-index, sp51-chrome, sp52a-soft, comparador, detalle-vehiculo, sp4-recomendaciones, crm-fase2/3/3b/4)",
+            "kind": "spec",
+            "sizeOrLines": "26–323 líneas c/u (10 archivos)",
+            "criticalInfo": "Specs de diseño por sprint (rediseño cinematic SP-1..SP-5 y fases CRM 2/3/3b/4). Cada uno es el diseño aprobado que precedió a su ADR correspondiente. Detalle de implementación congelado (composiciones, tokens, decisiones de UI).",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Historial de diseño por sprint; valor de referencia decreciente una vez consolidado el ADR.",
+            "risk": "low"
+          },
+          {
+            "path": "scripts/brain-check.mjs",
+            "kind": "githook",
+            "sizeOrLines": "158 líneas (~10 KB)",
+            "criticalInfo": "Linter de integridad del cerebro (READ-ONLY, exit 1 si problemas). 5 chequeos deterministas: (1) neuronas huérfanas (registradas en CLAUDE.md o lóbulos 41-49 en 40-LOBULOS); (2) capacidad/caps §G.5; (3) desync índice→99 (fragilidad offset); (4) frescura cache SW==cache-manager + 05 vigente==SW + origin/main vs git; (5) referencias cruzadas (ADRs sin índice, L-/M- colgantes, hojas inexistentes, rutas js/ planas stale post-§119). Materializa M-10 (lo verificable va al linter que no se distrae).",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source pero el CANON se reconcilia desde bersaglio (que tiene check #6 skills↔inventario). Per §170 PASO 3: extender con brain:diff (hash) + gate de saturación + validación de namespace. keep-in-place; copia-de-archivo desde kernel.",
+            "risk": "high"
+          },
+          {
+            "path": "githooks/pre-commit",
+            "kind": "githook",
+            "sizeOrLines": "29 líneas (~1.2 KB)",
+            "criticalInfo": "Guardián determinista: corre brain:check cuando el commit toca CLAUDE.md o docs/ y BLOQUEA el commit si el cerebro tiene problemas. Activar: git config core.hooksPath githooks. Convierte el reflejo de auto-auditoría de doctrina-que-recordar a garantía determinista (M-10).",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source (parte del KERNEL universal junto a brain-check). keep-in-place; copia-de-archivo desde canon bersaglio.",
+            "risk": "high"
+          },
+          {
+            "path": "_legacy/ (README.md + 5 artefactos cuarentenados)",
+            "kind": "config",
+            "sizeOrLines": "README 28 líneas + 5 archivos HTML/CSS/JS (~55 KB)",
+            "criticalInfo": "Cuarentena (ADR §119): notifications-demo.html, admin-upload.html (MUERTA, sin auth), admin-components.html (storybook), theme-switcher.js (MUERTO), auth-header.css (mergeado a style.css). README documenta QUÉ era cada uno, POR QUÉ se cuarentenó (validado RCA §19: cero referencias + no en sitemap) y CÓMO revertir. Es el patrón de preservación que el mandato multi-proyecto exige replicar (cuarentenar, NO borrar).",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place. Es el ejemplo canónico del límite de guardián (apendar/cuarentenar, no borrar). El spec §170 R5 manda replicar este patrón para los ~280KB legacy de inmobiliaria.",
+            "risk": "none"
+          }
+        ],
+        "summary": "El cerebro de altorracars.github.io es la implementación neuronal MÁS COMPLETA Y OPERATIVA de los 3 proyectos Altorra, con gobernanza autónoma, linter determinista y githook que blinda la integridad. Está SANO y bien conectado (sin huérfanos verificables; brain-check cubre huérfanas/caps/desync/frescura/refs-cruzadas).\n\nCANÓNICO de la capa GROUP-Altorra (este repo, por mandato): marca dorada #b89658, jurisdicción Colombia, stack Firebase Compat v11.3.0 + GitHub Pages, RBAC por lookup usuarios/{uid}, patrones cars↔inmobiliaria. El nodo 46-ESCALABILIDAD + las doctrinas Firebase/dorado son su núcleo.\n\nLo que es KERNEL conceptual aunque viva inline: §G (gobernanza) + §3 (doctrinas) en CLAUDE.md, 15-CONSEJO-EXTERNO, brain-check.mjs + githooks, las M-NN de 30-LECCIONES, la frontera skill/neurona de 40-LOBULOS§🌱. Per ADR §170, el CANON de este KERNEL se reconcilia DESDE bersaglio (cerebro hermano más maduro), no desde aquí — este repo recibirá el kernel por copia + brain:diff.\n\nQUÉ ESTÁ EN RIESGO (alto): 99-HISTORIAL (2.28 MB / 43k líneas, irremplazable, jamás auto-carga); CLAUDE.md (318/320, a 2 del tope — toda escritura futura debe desplazar, no subir el tope); brain-check.mjs/pre-commit (KERNEL a reconciliar). MEDIO: 30-LECCIONES EXCEDE su cap (~600 vs 350) → SHARD pendiente. dependency-map.md MARCADO stale (reemplazado por 20-ESPACIAL + crm-handoff) — duplicate-of, conservar por valor histórico.\n\nINVENTARIO COMPLETO: 1 router (CLAUDE.md) + 1 índice (00) + 9 nodos (05,10,15,20,30,40,99 + lóbulos) + 5 lóbulos hijos activos (41,42,43,46,48; 44/45/47 vacíos por diseño) + 8 hojas de detalle + 13 specs + linter + githook + _legacy (5 cuarentenados + README). Mandato 1 del cliente (NO perder nada) CUMPLIDO por este inventario: cada artefacto tiene su conocimiento único catalogado + acción de preservación.",
+        "improvementSeeds": [
+          "ECONOMÍA DE CONTEXTO (urgente): 30-LECCIONES está a ~600 líneas vs cap §G.5 de 350 (73% sobre tope). Aplicar Reflejo de Sharding: extraer 31-LECCIONES-GIT + 32-LECCIONES-FRONTEND + dejar Meta M-NN en 30 (o un 3X-META). El cap está definido en brain-check pero el archivo lo viola sin que el linter lo marque como FAIL (solo WARN si >1.1x = 385) — endurecer.",
+          "CLAUDE.md a 318/320 (a 2 líneas del tope): toda doctrina/regla nueva DEBE desplazar detalle a un nodo, nunca subir el tope. El spec §170 ya propone mover los slots variables (reglas git, §3.7) a docs/.brain-manifest.json (no auto-cargado). Ejecutarlo libera presión y habilita el marcador de versión del template.",
+          "GOBERNANZA multi-capa (del propio spec §170, alinear con el comité): adoptar las 4 capas KERNEL/SCHEMA/GROUP-Altorra/INSTANCE explícitamente en el linter — añadir validación de NAMESPACE (cada lóbulo mapea a un slot de rango: 40-49=dominio, 50-59=arquitectura, 60-69=workflows) y gate de SATURACIÓN (sumar líneas auto-cargadas: WARN ~450 / FAIL ~600 por repo). Hoy brain-check no conoce las capas.",
+          "REFLEJOS — madurar desde bersaglio (canon kernel): bersaglio tiene §3.7 (comité por defecto), nodo 60-WORKFLOWS, INSTALACION-CEREBRO.md y brain-check check #6 (skills↔inventario) que cars NO tiene. La fusión Bersaglio→cars es 'el punto de partida, no el techo' (mandato 2). Importar el check #6 cerraría el gap de skills-inventory.md (hoy auditado a mano, sin linter).",
+          "LINTER — brain:diff por HASH (decidido, no construido): el mecanismo de propagación del kernel (copia + brain:diff read-only que en SessionStart compara kernel local vs bersaglio por hash, WARN accionable nunca FAIL-en-boot) es la pieza central del §170 y aún no existe. Es la mejora de gobernanza de mayor apalancamiento: sin ella los 3 cerebros driftean en silencio.",
+          "GAP — dependency-map.md stale tolerado: lleva marcado STALE desde 2026-06-05 pero sigue en docs/ sin puntero desde el linter. Opción: brain-check podría detectar el banner '🛑 STALE' en hojas y emitir WARN para forzar decisión (refresh vs _legacy). Hoy un doc marcado-stale convive indefinidamente.",
+          "GAP — skills Altorra-coupled afectan a bersaglio en silencio (§170 R6): 4 de 7 skills globales en ~/.claude/skills/ (legal-colombia, crm-architect, comite-expertos, arquitecto-software) traen sesgo Altorra/Colombia y HOY se cargan también en bersaglio. ~/.claude/skills/ NO es git-tracked → declarar INVARIANTE + manifest para reinstalar en máquina nueva. Riesgo de no-regresión inter-proyecto.",
+          "ECONOMÍA DE CONTEXTO — altor-hub-cirugia-execution-plan.md (95 KB) es la hoja más pesada y describe un subsistema DIFERIDO (bot ALTOR buggy). Evaluar si su valor de referencia justifica el peso o si parte va a _legacy/ una vez consolidado en ADRs §57-88. Reduce ruido al navegar docs/.",
+          "HOLÍSTICO — el spec §170 manda inventario EXHAUSTIVO + plan de preservación verificado de los 3 cerebros ANTES de tocarlos (condición de aceptación). Este inventario de cars es el primero; faltan los espejos de bersaglio (canon kernel, debe inventariarse para saber QUÉ se promueve) y de inmobiliaria (banco de pruebas, ~280KB legacy a cuarentenar). El comité debería revisar los 3 juntos."
+        ],
+        "_label": "inv:cars"
+      },
+      {
+        "repo": "C:/Users/romad/Documents/GitHub/bersagliojewelry.github.io (Bersaglio Jewelry — CANON del KERNEL, brain-template-version 1.0.0)",
+        "brainMaturity": "neural-completo (el más maduro del portafolio · brain-template-version 1.0.0). Router CLAUDE.md de 247 líneas con §G completo (gobernanza neuronal de 5 sub-secciones G.1-G.5) + §3.7 (calidad/comité-por-defecto, AUSENTE en cars) + §3.6 (lente de arquitecto fuerte). Cerebro de 18 nodos en docs/ con: nodos extra que cars NO tiene (50-ARQUITECTURA, 60-WORKFLOWS, INSTALACION-CEREBRO, lóbulos hijos 41/42/43/45 YA materializados con contenido real). Enforcement determinista TRIPLE: brain-check.mjs (6 checks, incl. check #6 skills↔inventario) + githooks/pre-commit (bloquea commit con cerebro roto) + .claude/settings.json (SessionStart hook). Historial 99 = 55 ADRs indexados (convención por fecha, no \"## NN.\"). brain:check reportado SANO al 2026-06-08. Diferencias vs cars: cars es neural-completo pero SIN template-version, SIN §3.7, SIN 50/60/INSTALACION, SIN check #6, SIN githook pre-commit, con convención ADR numerada \"## NN.\" en vez de por-fecha.",
+        "artifacts": [
+          {
+            "path": "CLAUDE.md",
+            "kind": "router",
+            "sizeOrLines": "247 líneas / 28KB",
+            "criticalInfo": "Router neuronal CANÓNICO con brain-template-version 1.0.0 en la 1ª línea. §G gobernanza completa (G.1 Ignorancia Selectiva, G.2 6 triggers incl. 🔵 dominio y 🛰️ decisión fuerte, G.3 consolidación, G.4 10 reflejos incl. Catalogación de Skills, G.5 sharding+caps). §3.6 lente de arquitecto (6 pilares, reafirmada). §3.7 Calidad-por-defecto + Comité ×3 por iniciativa propia (mecánica via skill comite-expertos) — ESTO es material KERNEL que cars NO tiene. §2 convención ADR por fecha. §4 cache bump SW genérico (public/sw.js, CACHE_NAME).",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source",
+            "risk": "high"
+          },
+          {
+            "path": "docs/INSTALACION-CEREBRO.md",
+            "kind": "spec",
+            "sizeOrLines": "687 líneas / 36KB",
+            "criticalInfo": "CROWN JEWEL del KERNEL: protocolo ejecutable completo de instalación/trasplante del cerebro (FASE 0-7 + 11 reglas duras + filosofía). Es el 'compilador' del template: descubrimiento del proyecto, mergeo seguro de CLAUDE.md/settings/package/githooks previos, adaptación condicional (§4 cache si hay SW, §3 doctrinas por stack), barrido anti-vacíos (grep de placeholders), validación con brain:check, FASE 3.8 cablea el provider externo. Marca brain-template-version 1.0.0. Inventario del paquete: 74 skills. Sin este archivo no se puede replicar/migrar el cerebro a otro repo.",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source",
+            "risk": "high"
+          },
+          {
+            "path": "scripts/brain-check.mjs",
+            "kind": "script",
+            "sizeOrLines": "282 líneas / 15KB",
+            "criticalInfo": "Linter portable READ-ONLY del cerebro, 6 checks: (1) neuronas huérfanas (con excepción lóbulos 41-49 vía 40-LOBULOS), (2) caps §G.5, (3) desync índice→historial (soporta ambas convenciones: numerada y por-fecha), (4) frescura SW+git OPCIONAL (soporta convención Altorra service-worker.js+cache-manager.js Y genérica public/sw.js), (5) refs cruzadas (5a ADR↔índice, 5b L-/M-↔30, 5c hojas↔CLAUDE), (6) skills↔skills-inventory (auto-detección, soporta bundles anidados). EL check #6 es exclusivo de bersaglio (cars no lo tiene). Diseño multi-proyecto: checks universales fallan, opcionales solo informan.",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source",
+            "risk": "high"
+          },
+          {
+            "path": "githooks/pre-commit",
+            "kind": "githook",
+            "sizeOrLines": "29 líneas",
+            "criticalInfo": "Guardián determinista: corre brain:check cuando el commit toca CLAUDE.md o docs/ y BLOQUEA el commit si el cerebro está roto. Convierte el Reflejo de Auto-auditoría de doctrina-recordable a garantía determinista. Activar: git config core.hooksPath githooks. cars NO tiene este githook — material KERNEL a promover.",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source",
+            "risk": "high"
+          },
+          {
+            "path": ".claude/settings.json",
+            "kind": "config",
+            "sizeOrLines": "15 líneas",
+            "criticalInfo": "Hook SessionStart que ejecuta node scripts/brain-check.mjs (timeout 30). Tercer pilar del enforcement (SessionStart + pre-commit + linter). Pieza portable del template (FASE 2.2 de INSTALACION la mergea sin pisar hooks previos).",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/60-WORKFLOWS.md",
+            "kind": "nodo",
+            "sizeOrLines": "37 líneas / 4KB",
+            "criticalInfo": "Catálogo de 9 workflows reutilizables de DETECCIÓN (W-01 red-team reglas Firestore, W-02 auditoría por dimensiones, W-03 red-team diseño, W-04 verificación post-subagente, W-05 testing CF, W-06 fan-out multi-agente, W-07 comité ×3, W-08 investigación grounded, W-09 brain:check). Patrón general portable: disparador→fan-out de lentes→síntesis→captura. La TABLA/estructura y W-04/W-06/W-07/W-08/W-09 son KERNEL; W-01/W-02/W-03/W-05 mezclan referencias INSTANCE (Firestore/panel). cars NO tiene este nodo — promover el esqueleto.",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/50-ARQUITECTURA.md",
+            "kind": "nodo",
+            "sizeOrLines": "~64 líneas / 11KB",
+            "criticalInfo": "North-star arquitectónico. §0 Mandato + §1 7 principios rectores + §2 reconciliación zero-budget/serverless = doctrina KERNEL-grade (reusable en cualquier proyecto Firebase free-tier). §3 Charter reconstrucción CRM + §4 stack + §5 decision-log (ADR §42/43/50, Kardex, módulos mini-ERP) = INSTANCE Bersaglio. Resumen always-on en CLAUDE §3.6.",
+            "fourLayer": "GROUP-Altorra",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/00-INDICE.md",
+            "kind": "nodo",
+            "sizeOrLines": "~109 líneas / 9KB",
+            "criticalInfo": "Índice sináptico: capa de enrutamiento semántico (síntoma→neurona) + mapa §→línea de 55 ADRs (convención por fecha). Estructura/encabezado portable (KERNEL); las 55 filas concretas son INSTANCE.",
+            "fourLayer": "SCHEMA",
+            "preservation": "keep-in-place",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/05-ESTADO-GLOBAL.md",
+            "kind": "nodo",
+            "sizeOrLines": "~25 líneas / 4KB",
+            "criticalInfo": "Signos vitales: build Vite, cache bersaglio-v9, branch Desarrollo, 344 clientes/cartera, flags F6 App Check. Plantilla del tablero = SCHEMA; los valores = INSTANCE. Auto-carga.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "docs/10-MEMORIA-CORTO-PLAZO.md",
+            "kind": "nodo",
+            "sizeOrLines": "~19KB",
+            "criticalInfo": "WIP vivo: foco actual, TODO-NN (TODO-14 App Check enforcement, TODO-16 mejoras cerebro ✅), bitácora, callejones sin salida. Estructura portable (SCHEMA); contenido INSTANCE. Auto-carga.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "docs/15-CONSEJO-EXTERNO.md",
+            "kind": "nodo",
+            "sizeOrLines": "~12KB",
+            "criticalInfo": "Protocolo red-team multi-modelo (2ª opinión adversarial). §0 provider activo = Gemini (Antigravity) con mapa de tier 3.1 Pro/3.5 Flash (rellenado en instalación FASE 3.8). §1-§4 protocolo (humano-en-medio, cuándo SÍ/NO, matriz de tier genérica §3) = KERNEL portable; §0 + §2.2/§2.3 casos concretos = INSTANCE.",
+            "fourLayer": "KERNEL",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/20-MEMORIA-ESPACIAL.md",
+            "kind": "nodo",
+            "sizeOrLines": "~13KB",
+            "criticalInfo": "Mapa físico del repo + flujos de datos e invariantes (Firestore onSnapshot, admin sync, checkout). Plantilla SCHEMA; mapa concreto INSTANCE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/30-LECCIONES.md",
+            "kind": "nodo",
+            "sizeOrLines": "~29KB",
+            "criticalInfo": "Memoria procedimental: doctrinas CSS Liquid Glass + 30 lecciones L-01..L-30 (gotchas: iOS scroll lock, SW/FOUC, Firestore rules adversarial, CF pura+integración, App Check, aging FIFO, git fetch antes de afirmar, verificar repo post-subagente) + §Meta M-NN. Formato L-NN/M-NN = SCHEMA; lecciones concretas INSTANCE (varias son patrones generalizables: L-26/L-27 verificación).",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/40-LOBULOS-DOMINIO.md",
+            "kind": "nodo",
+            "sizeOrLines": "49 líneas / 3KB",
+            "criticalInfo": "Registry de lóbulos de dominio (41-SEGURIDAD, 42-LEGAL, 43-UX, 45-PERFORMANCE activos; 48-A11Y planificado) + flujo de auditoría neuronal + mapa skill→dominio + guardrail legal (NUNCA legal:*/legalzoom:* extranjeros). El mecanismo de registry/neurogénesis de lóbulos = SCHEMA portable; el contenido por dominio = INSTANCE.",
+            "fourLayer": "SCHEMA",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/41-SEGURIDAD.md",
+            "kind": "lobulo",
+            "sizeOrLines": "~9KB",
+            "criticalInfo": "Lóbulo hijo: auditoría seguridad Firebase (hallazgos rankeados, RBAC CRM least-privilege, escalabilidad/listeners, orden Fase 2). Contenido específico de la app Bersaglio.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "docs/42-LEGAL.md",
+            "kind": "lobulo",
+            "sizeOrLines": "~11KB",
+            "criticalInfo": "Lóbulo legal COLOMBIANO: Ley 1480 e-commerce, Ley 1581 Habeas Data, RUCOM joyería, SAGRILAFT/LA-FT, DIAN/IVA, 5 obligaciones críticas, disclaimer anti-abogado. El guardrail anti-jurisdicción-extranjera es doctrina reusable (Colombia); el resto INSTANCE joyería.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "docs/43-UX.md",
+            "kind": "lobulo",
+            "sizeOrLines": "~8KB",
+            "criticalInfo": "Lóbulo UX: auditoría diseño premium iOS Aqua/alta joyería, oportunidades + plan de acción. INSTANCE marca Bersaglio.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "docs/45-PERFORMANCE.md",
+            "kind": "lobulo",
+            "sizeOrLines": "~4KB",
+            "criticalInfo": "Lóbulo performance: Core Web Vitals, carga de activos, plan priorizado. INSTANCE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "docs/99-HISTORIAL-ADR.md",
+            "kind": "nodo",
+            "sizeOrLines": "~99KB",
+            "criticalInfo": "Largo plazo: 55 ADRs (rediseño index V7, Liquid Glass, CRM Bloques 1-4, Fase R, Panel v2 mini-ERP, App Check). Convención headers POR FECHA (## YYYY-MM-DD —), distinto de cars que usa ## NN. NUNCA leer entero (offset/limit vía índice). INSTANCE histórico irremplazable.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source",
+            "risk": "high"
+          },
+          {
+            "path": "docs/skills-inventory.md",
+            "kind": "hoja-detalle",
+            "sizeOrLines": "~13KB",
+            "criticalInfo": "Catálogo de las 74 skills del repo skills/ con Disp. ✅/⚠️/🔧 + 'verdad del wiring' (skills/ del repo NO es la fuente de las cargadas; vienen de ~/.claude). Es la fuente del check #6 de brain-check. Estructura/concepto KERNEL; lista concreta semi-INSTANCE (curaduría del portafolio).",
+            "fourLayer": "SKILL",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "docs/PENDIENTES-Y-HALLAZGOS.md",
+            "kind": "doc-monolitica",
+            "sizeOrLines": "~7KB",
+            "criticalInfo": "Doc de apoyo para presentar el CRM a Kary: problemas del Kardex Excel (8 hallazgos: #REF!, columnas-mes, encoding roto), mejoras de la plataforma, pendientes con Kary. NO es nodo neuronal — doc de negocio. No referenciada en CLAUDE.md (potencialmente huérfana pero excluida por no ser docs/NN-*.md).",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "docs/superpowers/specs/ + plans/",
+            "kind": "spec",
+            "sizeOrLines": "8 specs + 3 plans",
+            "criticalInfo": "Specs de diseño y planes de ejecución (kardex-analisis, crm-cuentas-design, arquitectura-maestra v3 con Consejo Externo Gemini, morosos-vencidos, f6-hardening-plan). Referenciados desde 50-ARQUITECTURA y 05. INSTANCE: detalle de implementación del CRM Bersaglio.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "medium"
+          },
+          {
+            "path": "PLAN-NOVO.md",
+            "kind": "doc-monolitica",
+            "sizeOrLines": "~1330 líneas / 70KB",
+            "criticalInfo": "PLAN-NOVO recambio total: 16 secciones (mapa archivos BERSAGLIO NOVO, tabla maestra de páginas, spec EXACTA del home/internas, design system tokens liquid-glass.css, arquitectura técnica, sync admin Firestore NO TOCAR, fases de ejecución, riesgos, DoD, estado ejecución 2026-05-08). Doc de diseño monolítica histórica — su contenido vivo ya migró a 20/50/99. INSTANCE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "medium"
+          },
+          {
+            "path": "PLAN-MAESTRO.md",
+            "kind": "doc-monolitica",
+            "sizeOrLines": "~23KB",
+            "criticalInfo": "Plan maestro de crecimiento (diagnóstico por pilares perf/SEO/a11y/UI/UX/comercial con puntuaciones y metas). Doc estratégica de negocio histórica. INSTANCE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "PLAN.md",
+            "kind": "doc-monolitica",
+            "sizeOrLines": "~8KB",
+            "criticalInfo": "Plan de migración a inventario real (26 piezas reales, certificado Master Jeweler, gemas/esmeraldas). Doc de negocio puntual. INSTANCE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "FIREBASE-SETUP.md",
+            "kind": "doc-monolitica",
+            "sizeOrLines": "~20KB",
+            "criticalInfo": "Documentación de referencia Firebase + Admin Panel (sitio público, hosting, estructura). Predates el cerebro (actualizado 2026-03-31). Solapa con 20-ESPACIAL; candidato a referenciarse como hoja o cuarentenar si stale. INSTANCE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "STITCH-SETUP-GUIDE.md",
+            "kind": "doc-monolitica",
+            "sizeOrLines": "~6KB",
+            "criticalInfo": "Guía portable de configuración Stitch MCP + Claude Code en CUALQUIER repo (herramientas generate_screen_from_text, edit_screens, etc.). Capacidad/tooling portable, NO específica de Bersaglio — candidata a skill o doc compartida del KERNEL/portafolio.",
+            "fourLayer": "KERNEL",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "_legacy/README.md",
+            "kind": "config",
+            "sizeOrLines": "11 líneas",
+            "criticalInfo": "Cuarentena reversible: tabla de qué se archivó (CLAUDE-previo.md, skills-removed/) + motivo + fecha. Mecanismo de guardián 'cuarentenar antes que borrar' = patrón KERNEL; entradas concretas INSTANCE.",
+            "fourLayer": "SCHEMA",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "_legacy/CLAUDE-previo.md",
+            "kind": "router",
+            "sizeOrLines": "~7KB",
+            "criticalInfo": "CLAUDE.md anterior (pre-template-v1.0.0), cuarentenado en el upgrade. Su §1/§4 se cosecharon al nuevo. Conservado por si algo no migró. NO tocar (cuarentena reversible).",
+            "fourLayer": "INSTANCE",
+            "preservation": "quarantine-to-_legacy",
+            "risk": "low"
+          },
+          {
+            "path": "_legacy/skills-removed/",
+            "kind": "config",
+            "sizeOrLines": "README + 4 carpetas",
+            "criticalInfo": "4 carpetas de skills/ retiradas en la curación (SKILL-canvas-design dup malformado, 'ecommerce skills' dup byte-idéntico, example-plugin boilerplate, accessibility-audit-workspace sin SKILL.md). README documenta cada retiro + cómo restaurar (git mv). Reversible. Resultado: skills/ 78→74.",
+            "fourLayer": "INSTANCE",
+            "preservation": "quarantine-to-_legacy",
+            "risk": "low"
+          },
+          {
+            "path": ".handoff/BERSAGLIO NOVO/",
+            "kind": "template",
+            "sizeOrLines": "bundle (README + project/)",
+            "criticalInfo": "Handoff bundle de Claude Design (claude.ai/design): prototipos HTML/CSS/JS del rediseño NOVO. README instruye al agente a recrear pixel-perfect. Material fuente de diseño, ya consumido por PLAN-NOVO. INSTANCE histórico.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "tools/ (analizar-vendedoras.py, extraer-kardex.py, migracion-kary.json, migracion-review.csv)",
+            "kind": "script",
+            "sizeOrLines": "5 archivos",
+            "criticalInfo": "Herramientas de migración del Kardex Excel→Firestore (extracción openpyxl, análisis de vendedoras, JSON/CSV de revisión de la migración de 344 clientes). Específicas de la operación Bersaglio. INSTANCE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "low"
+          },
+          {
+            "path": "skills/ (74 carpetas)",
+            "kind": "skill",
+            "sizeOrLines": "74 skills portables / ~3.4MB",
+            "criticalInfo": "Catálogo de skills portables (proceso/superpowers, dominio, comite-expertos, legal-colombia, arquitecto-software, crm-architect, asesor-critico-honesto). Compartidas y portables a todo proyecto (memoria business_portfolio_skills). El INSTALACION-CEREBRO las copia como parte del paquete (FASE 1). KERNEL/portafolio compartido.",
+            "fourLayer": "SKILL",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          }
+        ],
+        "summary": "Bersaglio es el CANON del KERNEL y el cerebro más maduro del portafolio: brain-template-version 1.0.0 explícito, router CLAUDE.md de 247 líneas con §G completo y enforcement determinista TRIPLE (SessionStart hook en .claude/settings.json + githooks/pre-commit que bloquea commits con cerebro roto + brain-check.mjs de 6 checks). Lo CANÓNICO y a promover a cars (que es completo pero menos maduro): (1) docs/INSTALACION-CEREBRO.md — protocolo ejecutable FASE 0-7 que es el 'compilador' del template, permite trasplantar/migrar el cerebro a cualquier repo; cars NO lo tiene. (2) §3.7 de CLAUDE.md — Calidad-por-defecto + Comité ×3 por iniciativa propia (auto-crítica SIEMPRE); cars NO lo tiene. (3) scripts/brain-check.mjs check #6 (skills↔skills-inventory con soporte de bundles) — exclusivo de bersaglio. (4) githooks/pre-commit — guardián determinista ausente en cars. (5) Nodos 50-ARQUITECTURA (§0-§2 doctrina) y 60-WORKFLOWS (catálogo de detección) — ausentes en cars. (6) El brain-check de bersaglio es multi-proyecto-aware (soporta convención de ADR por-fecha Y numerada, SW genérico public/sw.js Y Altorra service-worker.js). Qué es canónico/KERNEL: CLAUDE.md, INSTALACION-CEREBRO, brain-check.mjs, pre-commit, settings.json, 15-CONSEJO (§1-§4), 50 (§0-§2), 60, el mecanismo de 40-LOBULOS. Qué es INSTANCE de bersaglio: 05/10/20/30/99, lóbulos 41-45 (contenido), specs CRM/Kardex, los 5 planes top-level, tools/migración, _legacy. En riesgo (high) si se reorganiza: 99-HISTORIAL (55 ADRs por-fecha irremplazables), INSTALACION-CEREBRO (single source del template), CLAUDE.md, brain-check.mjs, pre-commit. Nada huérfano detectado: lóbulos 41-49 se registran en 40-LOBULOS (excepción correcta del linter); PENDIENTES-Y-HALLAZGOS no es docs/NN-*.md así que el check no lo marca. FIREBASE-SETUP.md solapa con 20-ESPACIAL y podría estar stale (predates cerebro). brain:check reportado SANO 2026-06-08.",
+        "improvementSeeds": [
+          "PROMOVER A KERNEL/cars el §3.7 (Calidad-por-defecto + Comité ×3 por iniciativa propia): es la diferencia doctrinal más valiosa de bersaglio y aplica a cualquier proyecto. cars no lo tiene.",
+          "PROMOVER el check #6 de brain-check.mjs (skills↔skills-inventory) + el githooks/pre-commit + el SessionStart hook a cars: cars tiene el linter pero sin estos 3 refuerzos deterministas. Verificar primero que el brain-check de cars no haya divergido del de bersaglio (bersaglio es el más nuevo/portable: ya soporta ambas convenciones de ADR y ambos formatos de SW).",
+          "CONSOLIDAR un único brain-check.mjs canónico en el KERNEL compartido: el de bersaglio ya es multi-proyecto-aware (detecta convención por-fecha vs numerada, SW genérico vs Altorra). Debería ser la fuente única que ambos repos consumen, evitando drift.",
+          "INSTALACION-CEREBRO.md es el activo KERNEL más fuerte para la decisión ADR §170 (núcleo compartido 4-capas): formaliza el trasplante/migración entre versiones del template. El comité debería decidir si vive en el repo KERNEL compartido y se referencia, o se copia por proyecto. Hoy solo existe en bersaglio.",
+          "DESALINEACIÓN de convención ADR entre repos: bersaglio usa headers por fecha (## YYYY-MM-DD); cars usa numerados (## NN.). El brain-check ya tolera ambas, pero el comité debería decidir UNA convención canónica para el KERNEL o documentar explícitamente que ambas son válidas (ya está en el código del linter; falta en la doctrina escrita).",
+          "60-WORKFLOWS.md mezcla patrones KERNEL (W-04/06/07/08/09) con disparadores INSTANCE (W-01/02/03/05 mencionan Firestore/panel). Al promoverlo a cars, extraer el esqueleto reusable y dejar los workflows app-specific como ejemplos rellenables.",
+          "FIREBASE-SETUP.md (2026-03-31, predates el cerebro) solapa con 20-ESPACIAL y puede estar stale. Evaluar referenciarlo como hoja de detalle desde 20 o cuarentenarlo — hoy flota en la raíz sin conexión al cerebro.",
+          "STITCH-SETUP-GUIDE.md es una guía portable (no Bersaglio-específica) que vive en la raíz sin ser nodo ni skill. Candidata a convertirse en skill (skill-creator) o doc compartida del portafolio, según el Reflejo de Sugerencia de Skills §G.4.",
+          "ECONOMÍA DE CONTEXTO: confirmar que la promoción a cars NO duplique nodos INSTANCE. La arquitectura multi-proyecto (ADR §170) debe distinguir nítidamente: KERNEL compartido (CLAUDE §G/§3 genéricos, INSTALACION, brain-check, hooks, 15/50/60 esqueletos) vs memoria por-proyecto (05/10/20/30/99/lóbulos). brain:diff entre los dos CLAUDE.md ayudaría a detectar qué reglas KERNEL divergieron.",
+          "GAP de gobernanza: PENDIENTES-Y-HALLAZGOS.md (doc de negocio en docs/) no está referenciado en ningún nodo y escapa al check de huérfanas por no ser docs/NN-*.md. Considerar extender el linter para flaggear docs/*.md no-NN sin referencia, o mover docs de negocio fuera de docs/."
+        ],
+        "_label": "inv:bersaglio"
+      },
+      {
+        "repo": "altorrainmobiliaria.github.io",
+        "brainMaturity": "monolitico — NO hay cerebro neuronal. CERO carpeta docs/, CERO .claude/, CERO _legacy/, CERO npm run brain:check, CERO router CLAUDE.md de gobernanza 4-capas. Verificado: el error de `ls docs .claude` confirma que no existen. El \"cerebro\" son 8 archivos .md monoliticos cruzados en la raiz (~376KB reales: AVANCES 161.7KB + CLAUDE 61.6KB + ALTORRACARSCLAUDE 49.7KB + MEGA-PLAN 37.4KB + PLAN-MEJORAS 21.4KB + DEPLOY-RUNBOOK 10KB + CONTENIDO-EDITORIAL 8KB + tests/MANUAL-meta-snapshot 4.5KB). Sistema de auto-navegacion casero: CLAUDE.md §\"DOCUMENTOS DEL PROYECTO LEELOS EN ESTE ORDEN\" + cada doc enlaza a los demas (proto-router manual, NO neuronal). Es el CASO CRITICO del portafolio: contrasta con el cerebro neuronal maduro de cars (CLAUDE.md router + docs/00-99 + lobulos + skills-inventory).",
+        "artifacts": [
+          {
+            "path": "AVANCES.md",
+            "kind": "doc-monolitica/bitacora",
+            "sizeOrLines": "161.7KB / 3420 lineas",
+            "criticalInfo": "Bitacora append-only canonica de TODA la implementacion de inmobiliaria (Etapas 0-A..8 + microfases A1-A12, B1-B7, C1-C8, D1-D6, E1-E5, F1-F8, G, H1-H2, I1-I5, J gaps, Fases 1-12 del Mega-Plan). Lineas 9-39: doc UNICO que explica POR QUE coexisten CLAUDE.md (guia migracion inmobiliaria) y ALTORRACARSCLAUDE.md (copia de Cars como referencia). ESTADO GENERAL (~l.43-63) mapea que etapas estan ✅/⚠️ con punteros a DEPLOY-RUNBOOK. Linea 1005 'ERRORES CONOCIDOS (de Cars — evitar repetirlos aqui)' = lecciones portadas. Es la memoria historica/procedimental completa del proyecto: equivale a 99-HISTORIAL + 30-LECCIONES + 10-CORTO de un cerebro neuronal, todo fundido.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source",
+            "risk": "high"
+          },
+          {
+            "path": "CLAUDE.md",
+            "kind": "doc-monolitica/constitucion",
+            "sizeOrLines": "61.6KB / 1595 lineas",
+            "criticalInfo": "Constitucion de inmobiliaria. UNICO e intocable: §1 contexto/objetivo + §1.4 restriccion plan Blaze (limites free-tier CRITICOS), §4 SCHEMA FIRESTORE completo de inmobiliaria (colecciones propiedades/solicitudes/resenas/usuarios/config/system/loginAttempts/auditLog — en espanol), §5 plan migracion 9 etapas, §6 convenciones de codigo (6.1 reglas absolutas NUNCA romper: paleta dorada, Poppins, vanilla JS, no onSnapshot en colecciones publicas; 6.2 naming js/*.js y window.*; 6.3 estructura HTML base). CRUCE PARCIAL: §3 (l.270-636) 'ARQUITECTURA DE REFERENCIA — ALTORRA CARS' embebe arquitectura de Cars (RBAC, cache 4 capas, generate-vehicles) — solapamiento con ALTORRACARSCLAUDE.md pero adaptado/citado, no copia bruta. Fecha congelada 2026-04-16.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source",
+            "risk": "high"
+          },
+          {
+            "path": "ALTORRACARSCLAUDE.md",
+            "kind": "doc-monolitica/referencia-cruzada",
+            "sizeOrLines": "49.7KB / 1126 lineas",
+            "criticalInfo": "COPIA VERBATIM del knowledge base de Altorra CARS (titulo literal 'CLAUDE.md — Altorra Cars Knowledge Base', habla de vehiculos, marcas, detalle-vehiculo.html, generate-vehicles.mjs, RBAC de cars, cache 4 capas de cars). NO es conocimiento de inmobiliaria: es el cerebro viejo de cars (estado 2026-04-10, MONOLITICO pre-neuronal) clonado aqui como 'referencia arquitectonica a replicar'. Es DUPLICADO/CRUZADO de cars. Lo unico potencialmente valioso: §12 'Hallazgos investigacion live 2026-04-16' (l.927). Derivable enteramente del repo cars — su valor es solo historico (foto de como era el brain de cars antes de la migracion neuronal). NO confundir con conocimiento real de inmobiliaria.",
+            "fourLayer": "GROUP-Altorra",
+            "preservation": "duplicate-of(altorracars.github.io/CLAUDE.md @2026-04-10) / quarantine-to-_legacy",
+            "risk": "low"
+          },
+          {
+            "path": "MEGA-PLAN.md",
+            "kind": "doc-monolitica/estrategia",
+            "sizeOrLines": "37.4KB / 729 lineas",
+            "criticalInfo": "Inteligencia estrategica UNICA de inmobiliaria: §1 BENCHMARK de 15 competidores inmobiliarios (Compass, Altis Group, Zillow, etc. con 'lo mejor' de cada uno), §2 estado Altorra vs competencia, §3 matriz priorizacion impacto/esfuerzo, §4 mega-plan por bloques, §5 roadmap microfases, §6 resumen ejecutivo. Objetivo: 'la mejor web inmobiliaria de Colombia'. NO derivable de cars (es analisis de mercado inmobiliario). Fecha 2026-05-05. Conocimiento competitivo/de negocio que no vive en ningun otro lado.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "PLAN-MEJORAS.md",
+            "kind": "doc-monolitica/roadmap-activo",
+            "sizeOrLines": "21.4KB / ~560 lineas",
+            "criticalInfo": "Plan de mejoras ACTIVO (equivalente a 10-CORTO-PLAZO + parte de 20-ESPACIAL). §0 explica la relacion entre los 5 docs (proto-gobernanza). §1 contexto competitivo: posicion SEO real ('#1 o #2 en 'mejores inmobiliarias de Cartagena' segun ChatGPT, competidor = Altis Group'), §9.3 'que sigue'. Rama de trabajo citada: claude/analyze-competitor-features-ilXY4. UNICO de inmobiliaria. Fecha 2026-04-16 (mas viejo que AVANCES 2026-05-07 → posible desync de 'que sigue').",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "DEPLOY-RUNBOOK.md",
+            "kind": "doc-monolitica/runbook",
+            "sizeOrLines": "10KB / ~250 lineas",
+            "criticalInfo": "Runbook del propietario con DATOS DE INFRAESTRUCTURA UNICOS E IRREMPLAZABLES de inmobiliaria: Project ID `altorra-inmobiliaria-345c6`, cuenta Firebase CLI `altorrainmobiliaria@gmail.com`, ruta local, cuentas de servicio GCP exactas + roles IAM para arreglar el bloqueante de Eventarc/Cloud Functions 2nd gen, comandos PowerShell de deploy. Estos identificadores NO se derivan de ningun otro doc — perderlos = re-descubrir la config del proyecto. INTOCABLE.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source",
+            "risk": "high"
+          },
+          {
+            "path": "CONTENIDO-EDITORIAL.md",
+            "kind": "doc-monolitica/guia-operativa",
+            "sizeOrLines": "8KB / ~200 lineas",
+            "criticalInfo": "Guia operativa UNICA del blog inversionista: flujo para crear posts (estatico SEO-first via blog/_plantilla-post.html vs dinamico Firestore), schema completo del documento Firestore coleccion `blog` (slug/titulo/resumen/categoria/imagen/fecha/tiempoLectura/publicado/url), taxonomia de categorias (Inversion|Rentabilidad|Legal&Fiscal|Analisis|Mercado|Guias), integracion con scripts/upload-blog-posts.mjs y sitemap. Cadencia editorial (2-3/sem, meta 50+ posts). Fecha 2026-04-24.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source",
+            "risk": "medium"
+          },
+          {
+            "path": "tests/MANUAL-meta-snapshot.md",
+            "kind": "doc-monolitica/test-procedimiento",
+            "sizeOrLines": "4.5KB / 138 lineas",
+            "criticalInfo": "Procedimiento de prueba manual E2E UNICO: valida la cadena de invalidacion de cache en tiempo real (admin-properties.js touchSystemMeta → setDoc system/meta → onSnapshot → cache-manager invalidate → re-render). Incluye diagrama de la cadena, casos feliz/fallo, tabla de diagnostico por log de consola (permission-denied → firestore.rules:84-88), y snippets JS de verificacion (window.AltorraCache.info/invalidate). Conocimiento procedimental real de inmobiliaria. Registro de ejecuciones vacio ('pendiente') = nunca formalmente ejecutado.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source",
+            "risk": "low"
+          },
+          {
+            "path": "data/deploy-info.json",
+            "kind": "config",
+            "sizeOrLines": "122 bytes",
+            "criticalInfo": "Estado de deploy/version: version 2026-05-07T09:04:11Z, commit ddce614, ref main. Es el unico 'signo vital' tipo 05-ESTADO-GLOBAL que existe (pero es maquina, no narrativa). Consistente con git HEAD (165bfaa bump deploy-info). Marca la ultima fecha real de actividad del proyecto (~2026-05-07).",
+            "fourLayer": "INSTANCE",
+            "preservation": "keep-in-place",
+            "risk": "none"
+          },
+          {
+            "path": "skills/",
+            "kind": "skill (58 SKILL.md de terceros)",
+            "sizeOrLines": "58 carpetas */SKILL.md",
+            "criticalInfo": "Copia LOCAL de skills portables de terceros (anthropic-skills/superpowers: seo-audit, copywriting, programmatic-seo, schema-markup, systematic-debugging, etc.). NO es conocimiento de inmobiliaria — es el mismo set global ~/.claude/skills/ vendorizado en el repo. Duplicado de recursos compartidos del portafolio. Apartar del inventario de 'cerebro' (es recurso paralelo, como aclara la doctrina de cars §0).",
+            "fourLayer": "SKILL",
+            "preservation": "duplicate-of(~/.claude/skills global) / keep-in-place",
+            "risk": "none"
+          }
+        ],
+        "summary": "altorrainmobiliaria es el CASO CRITICO del portafolio: NO tiene cerebro neuronal — cero docs/, .claude/, _legacy/, brain:check. Toda la memoria vive en 8 .md monoliticos cruzados en la raiz (~376KB), navegados por un proto-router manual (CLAUDE.md §'DOCUMENTOS DEL PROYECTO' + enlaces cruzados). CANONICO E INTOCABLE (conocimiento UNICO de inmobiliaria, no derivable de cars): AVANCES.md (bitacora completa append-only = fuente historica maestra), CLAUDE.md (constitucion: schema Firestore propio, plan Blaze, convenciones), DEPLOY-RUNBOOK.md (Project ID altorra-inmobiliaria-345c6 + cuentas IAM/servicio — secrets de infra irreemplazables), MEGA-PLAN.md (benchmark 15 competidores inmobiliarios = inteligencia de mercado), PLAN-MEJORAS.md (roadmap activo + posicion SEO real vs Altis Group), CONTENIDO-EDITORIAL.md (schema blog + flujo editorial), tests/MANUAL-meta-snapshot.md (test E2E cache). EN RIESGO / DUPLICADO-CRUZADO: ALTORRACARSCLAUDE.md es COPIA VERBATIM del knowledge base de CARS (habla de vehiculos/RBAC/generate-vehicles, estado 2026-04-10) — es GROUP-Altorra clonado, no conocimiento de inmobiliaria; candidato #1 a cuarentena _legacy/. CRUCE PARCIAL: CLAUDE.md §3 (l.270-636) embebe arquitectura de cars como referencia. STALENESS: docs congelados ~2026-05-07 (ultima entrada AVANCES + deploy-info, consistentes con git HEAD); el header ESTADO GENERAL de AVANCES (etapas 0-C/2 'pendientes' desde 2026-04-10) quedo viejo frente al cuerpo que documenta decenas de fases ya cerradas; PLAN-MEJORAS (2026-04-16) anterior a AVANCES → su '§9.3 que sigue' puede estar desincronizado. ACCION DE PRESERVACION POR DEFECTO RESPETADA: nada se movio/edito/borro — inventario 100% read-only.",
+        "improvementSeeds": [
+          "NEUROGENESIS COMPLETA pendiente: aplicar la arquitectura 4-capas de cars (ADR §170 del cerebro compartido) a inmobiliaria — crear CLAUDE.md router liviano + docs/00-INDICE + 05-ESTADO-GLOBAL + 10-CORTO + 99-HISTORIAL. AVANCES.md (3420 l) debe destilarse en 99-HISTORIAL (ADRs §NN por microfase, leidos por offset) — NUNCA cargarse entero (mata contexto, exactamente la leccion del CLAUDE.md viejo de 40k l de cars).",
+          "ALTORRACARSCLAUDE.md (copia verbatim de cars, 49.7KB) es deuda de contexto: se reprocesa en cada sesion sin aportar conocimiento de inmobiliaria. Cuarentenar a _legacy/ (NUNCA borrar — limite de guardian) y, si se adopta el KERNEL compartido, reemplazar por un puntero/brain:diff al cerebro de cars en vez de duplicar 1126 lineas.",
+          "Falta un 05-ESTADO-GLOBAL real (signos vitales narrativos): hoy solo data/deploy-info.json (maquina). Sin tablero de salud, cada sesion re-investiga branch/version/flags. El header ESTADO GENERAL de AVANCES intenta serlo pero esta stale (etapas '0-C pendiente' de hace un mes mientras el cuerpo las cerro).",
+          "Desync de planes: PLAN-MEJORAS (2026-04-16) vs AVANCES (2026-05-07) — el '§9.3 que sigue' del plan puede contradecir lo ya hecho. Sin linter (brain:check) que detecte el desync entre 'plan' y 'bitacora', el riesgo de re-trabajo es real. Reflejo de consolidacion Corto→Largo no existe aqui.",
+          "Riesgo de fuga de conocimiento INSTANCE-critico: el Project ID, cuentas y roles IAM de DEPLOY-RUNBOOK son irreemplazables y viven en un solo .md de 10KB sin respaldo en un nodo 'config/secrets' indexado. Promoverlos a un nodo canonico explicito al migrar (no enterrarlos en un runbook).",
+          "Economia de contexto: los 8 docs raiz no tienen topes ni sharding; AVANCES seguira creciendo (append-only) hasta volverse incargable. Aplicar la doctrina G.5 de cars (topes blandos + sharding por categoria) desde el inicio de la migracion neuronal.",
+          "Gobernanza ausente: no hay reglas de captura/frescura/higiene ni footer de commits Co-Authored-By ni cache-bump documentado como doctrina. La migracion al KERNEL compartido (4-capas, brain:diff, mandatos: no perder docs + mejorar holisticamente) deberia traer estos reflejos. Inmobiliaria es el mejor candidato para validar el modelo multi-proyecto por ser el mas 'crudo'."
+        ],
+        "_label": "inv:inmobiliaria"
+      },
+      {
+        "repo": "altorracars.github.io (auditoría de la capa de skills global ~/.claude/skills/ — canal compartido inter-proyecto)",
+        "brainMaturity": "neural-completo (Altorra cars) + capa de skills global compartida. La capa global ~/.claude/skills/ contiene EXACTAMENTE 7 skills (verificado por ls + Glob), que son el ÚNICO canal que afecta a los 3 proyectos a la vez (Altorra Cars, Altorra Inmobiliaria, Bersaglio). Los skills/ DENTRO de cada repo (cars, bersaglio, inmobiliaria) son copias vendorizadas de anthropic-skills/superpowers (marketing/CRO/SEO/frontend/firecrawl) y NO contienen ninguna de las 7 skills de gobernanza — confirmado: el Glob de los 7 nombres sobre */skills/ dio CERO resultados. Gap de frescura detectado: docs/skills-inventory.md (cars, 2026-06-03) afirma que ~/.claude/skills/ tenía 'solo crm-architect'; HOY tiene 7 (arquitecto-software, comite-expertos, legal-colombia añadidas 2026-06-08). El inventario del cerebro está desincronizado respecto a la realidad de la capa global.",
+        "summary": "Inventario READ-ONLY de la capa de skills (ningún archivo editado/creado/movido). La ruta REAL del global es C:/Users/romad/.claude/skills/ y contiene EXACTAMENTE 7 carpetas con SKILL.md (verificado con ls -la y Glob). Verdict de acoplamiento tras LEER cada SKILL.md, contra la afirmación del spec §R6 (que 4 son Altorra-coupled): (1) crm-architect — el spec se EQUIVOCA: es genuinamente UNIVERSAL (builder de CRM multi-industria, verticales genéricos real-estate/dealership, Firebase/Ley 1581 son defaults sanos, no acoplamiento). Es la más portable de las 4. (2) arquitecto-software — UNIVERSAL en su método de 6 lentes PERO contiene un bloque hardcodeado 'En el proyecto Bersaglio' que referencia docs/50-ARQUITECTURA.md, 41-SEGURIDAD.md, 20-MEMORIA-ESPACIAL.md de Bersaglio. Es la contaminación cruzada MÁS CLARA: una skill GLOBAL con nombre de Bersaglio que dispara también en cada tarea de código de Altorra Cars. (3) comite-expertos — método ×3 mayormente PORTABLE pero soft-coupled: hardcodea docs/15-CONSEJO-EXTERNO.md, nombra a 'Daniel', y referencia rutas relativas skills/asesor-critico-honesto/ y skills/claude-skills-llm-council-main/ que NO existen en el global (solo en los repos vendor). (4) legal-colombia — COUPLED a jurisdicción Colombia (correcto del spec) y hardcodea docs/42-LEGAL.md de Altorra; PERO la jurisdicción Colombia y las señales de joyería (retracto Ley 1480, RUCOM oro/esmeraldas, SAGRILAFT) en realidad BENEFICIAN a Bersaglio (joyero colombiano), no lo rompen. Las 3 restantes (claude-automation-recommender, claude-md-improver, session-report) son skills oficiales de Anthropic 100% universales, sin rastro de Altorra/Colombia/Firebase. RIESGO real para Bersaglio: arquitecto-software (bloque Bersaglio que también pisa Altorra) y comite-expertos (rutas/nombres rotos fuera de Altorra) = riesgo medio de fricción/confusión, NO de ruptura dura. legal-colombia NO rompe Bersaglio (misma jurisdicción).",
+        "artifacts": [
+          {
+            "path": "C:/Users/romad/.claude/skills/crm-architect/SKILL.md",
+            "kind": "skill",
+            "sizeOrLines": "178 líneas",
+            "criticalInfo": "Router para construir CRMs world-class en Firebase+Firestore+Cloud Functions+GitHub, multi-industria con packs verticales (real-estate, concesionario de autos). Aporta: data spine universal (Org/User/Lead/Contact/Deal/Pipeline/Activity/AuditLog), stack canónico, quality bar (RBAC org-scoped, _version locking, Ley 1581 Habeas Data, WCAG AA), e índice de references/ + templates/ + scripts/ (scaffold/generate/validate). Es la base de la reconstrucción del CRM de Altorra (crm-handoff).",
+            "fourLayer": "SKILL",
+            "preservation": "universal→mantener en ~/.claude/skills (genuinamente portable: verticales genéricos, NO acoplado a Altorra pese a la afirmación del spec §R6). También vendorizado en cars/skills/crm-architect — duplicate-of(~/.claude/skills/crm-architect)",
+            "risk": "low"
+          },
+          {
+            "path": "C:/Users/romad/.claude/skills/arquitecto-software/SKILL.md",
+            "kind": "skill",
+            "sizeOrLines": "60 líneas",
+            "criticalInfo": "Doctrina 'pensar como arquitecto antes de codear': 6 lentes (negocio·escala·seguridad-por-diseño·costo·mantenibilidad·integración) + Impact Analysis de 5 puntos + matriz de patrones de integración (REST/GraphQL/eventos/colas/webhooks/gRPC con cuándo cada uno) + regla anti-cargo-cult (no microservicios en serverless free-tier). Es la skill de la doctrina §3.8 (Lente de Arquitecto) always-on de Altorra.",
+            "fourLayer": "SKILL",
+            "preservation": "coupled→git-track en repo Altorra: el MÉTODO (6 lentes) es universal pero el SKILL.md global incrusta un bloque 'En el proyecto Bersaglio' con rutas docs/50-ARQUITECTURA.md / 41-SEGURIDAD.md / 20-MEMORIA-ESPACIAL.md. Recomendación: extraer el bloque proyecto-específico FUERA del global (al cerebro del proyecto) y dejar solo el método universal en ~/.claude/skills.",
+            "risk": "high"
+          },
+          {
+            "path": "C:/Users/romad/.claude/skills/comite-expertos/SKILL.md",
+            "kind": "skill",
+            "sizeOrLines": "139 líneas",
+            "criticalInfo": "Comité de expertos que mejora ×3 la última respuesta de Claude: infiere 3-5 expertos por tema (con regla de tensión: ≥1 escéptico + ≥1 ejecutor), debate en paralelo, peer-review anónimo cruzado, síntesis de presidente, itera ×3 (exactitud→profundidad→claridad). 3 niveles (pulido/auto-crítica/comité). Paso 5 condicional = 2ª opinión externa Gemini en Decisión Fuerte. Adaptación de LLM Council (Karpathy).",
+            "fourLayer": "SKILL",
+            "preservation": "universal→mantener en ~/.claude/skills PERO desacoplar: el mecanismo ×3 es portable, pero hardcodea docs/15-CONSEJO-EXTERNO.md, el nombre 'Daniel', y rutas relativas skills/asesor-critico-honesto/ + skills/claude-skills-llm-council-main/ que NO existen en el global (solo en repos vendor) → referencias rotas fuera de Altorra.",
+            "risk": "medium"
+          },
+          {
+            "path": "C:/Users/romad/.claude/skills/legal-colombia/SKILL.md",
+            "kind": "skill",
+            "sizeOrLines": "60 líneas",
+            "criticalInfo": "Guardrail + método para CUALQUIER tarea legal de un negocio COLOMBIANO. Bloquea el uso de plugins legales extranjeros (legal:*, legalzoom:*, small-business:contract-review) para contenido legal colombiano. Método: leer lóbulo legal del proyecto → investigación profunda en fuentes oficiales .gov.co (sic/dian/supersociedades/uiaf/anm) → producir en marco colombiano citando norma → disclaimer obligatorio (validar con abogado) → Decisión Fuerte (Comité ×3 + Gemini). Señales clave: retracto Ley 1480, Habeas Data Ley 1581, RUCOM, SAGRILAFT, IVA 19%, factura electrónica DIAN.",
+            "fourLayer": "SKILL",
+            "preservation": "coupled→git-track en repo Altorra para el path docs/42-LEGAL.md, PERO la jurisdicción Colombia es CORRECTA y BENEFICIOSA para Bersaglio (joyero colombiano): las señales de joyería (retracto en piezas a la medida, RUCOM oro/esmeraldas, SAGRILAFT sector alto riesgo) ayudan a Bersaglio, no lo rompen. El acoplamiento real es solo la ruta docs/42-LEGAL.md (Altorra-específica).",
+            "risk": "low"
+          },
+          {
+            "path": "C:/Users/romad/.claude/skills/claude-automation-recommender/SKILL.md",
+            "kind": "skill",
+            "sizeOrLines": "289 líneas",
+            "criticalInfo": "Skill oficial de Anthropic (read-only): analiza un codebase y recomienda automatizaciones de Claude Code (hooks/subagentes/skills/plugins/MCP servers). NO crea ni modifica archivos. Tablas de señales→recomendación por categoría. 100% universal, sin rastro de Altorra/Colombia/Firebase.",
+            "fourLayer": "SKILL",
+            "preservation": "universal→mantener en ~/.claude/skills (sin acoplamiento alguno). También vendorizado en cars/skills/ — duplicate-of(~/.claude/skills/claude-automation-recommender)",
+            "risk": "none"
+          },
+          {
+            "path": "C:/Users/romad/.claude/skills/claude-md-improver/SKILL.md",
+            "kind": "skill",
+            "sizeOrLines": "180 líneas",
+            "criticalInfo": "Skill oficial de Anthropic: audita y mejora archivos CLAUDE.md (descubre todos → evalúa contra rúbrica A-F en 6 criterios → reporte de calidad → updates targeted con aprobación). PUEDE escribir a CLAUDE.md (no read-only). 100% universal, sin acoplamiento Altorra.",
+            "fourLayer": "SKILL",
+            "preservation": "universal→mantener en ~/.claude/skills. También vendorizado en cars/skills/ y bersaglio/skills/ — duplicate-of(~/.claude/skills/claude-md-improver)",
+            "risk": "none"
+          },
+          {
+            "path": "C:/Users/romad/.claude/skills/session-report/SKILL.md",
+            "kind": "skill",
+            "sizeOrLines": "43 líneas",
+            "criticalInfo": "Skill oficial de Anthropic: genera un reporte HTML explorable del uso de sesiones Claude Code (tokens/cache/subagentes/skills/prompts caros) desde ~/.claude/projects. Usa analyze-sessions.mjs + template.html bundleados. 100% universal, sin acoplamiento Altorra.",
+            "fourLayer": "SKILL",
+            "preservation": "universal→mantener en ~/.claude/skills. Depende de archivos bundleados (analyze-sessions.mjs + template.html) en su carpeta — NO mover sin ellos.",
+            "risk": "none"
+          },
+          {
+            "path": "C:/Users/romad/Documents/GitHub/altorracars.github.io/docs/skills-inventory.md",
+            "kind": "doc-monolitica",
+            "sizeOrLines": "198 líneas",
+            "criticalInfo": "Catálogo de las ~88 skills vendorizadas en cars/skills/ (hoja de detalle, no neurona, enlazada desde 40-LOBULOS). Aporta la 'verdad del wiring' clave: skills/ del repo NO es la fuente de las skills cargadas en sesión; el solape de nombres es coincidencia; el bundle anthropic-skills:* viene del entorno. Documenta 6 repo-only y 7 anomalías estructurales (4 resueltas). DESINCRONIZADO: afirma '~/.claude/skills/ solo crm-architect' (2026-06-03) cuando hoy hay 7.",
+            "fourLayer": "INSTANCE",
+            "preservation": "canonical-source (del catálogo vendor de cars) pero requiere actualización de frescura: la sección 'Verdad del wiring' subestima la capa global (dice 1 skill, son 7). keep-in-place + flag de desync.",
+            "risk": "medium"
+          }
+        ],
+        "improvementSeeds": [
+          "GOBERNANZA CRÍTICA — arquitecto-software contamina cross-proyecto: el SKILL.md GLOBAL (~/.claude/skills/arquitecto-software) incrusta un bloque 'En el proyecto Bersaglio' con rutas docs/50-ARQUITECTURA.md / 41-SEGURIDAD.md. Como es global, dispara en CADA tarea de código de Altorra Cars Y Altorra Inmobiliaria con paths de OTRO proyecto. Patrón de fix (para el comité): el global debe contener SOLO el método universal; el bloque proyecto-específico debe vivir en el cerebro de cada proyecto (lóbulo o CLAUDE.md §3.8), no en la capa compartida.",
+          "El spec §R6 está PARCIALMENTE equivocado en su clasificación: crm-architect NO está acoplado a Altorra (es multi-industria genuinamente portable) — clasificarlo como 'coupled' lo sacaría innecesariamente del canal compartido. Recomendación al comité: re-evaluar la matriz coupled/universal LEYENDO cada SKILL.md (como se hizo aquí) en vez de asumir por nombre.",
+          "Regla de gobernanza de skills propuesta: NINGUNA skill en ~/.claude/skills/ (canal compartido) debe hardcodear rutas docs/NN-*.md, nombres propios ('Daniel'), ni rutas relativas skills/* que solo existen en un repo. comite-expertos viola las 3. Acción: parametrizar (leer el path del cerebro del proyecto activo) o mover el detalle al proyecto. Esto es el corazón del problema 'afectan a bersaglio silenciosamente'.",
+          "Desincronización del inventario: docs/skills-inventory.md (cars) afirma que ~/.claude/skills/ tiene 'solo crm-architect' (2026-06-03) pero hoy tiene 7 (arquitecto-software/comite-expertos/legal-colombia añadidas 2026-06-08, claude-* el 06-05). El cerebro pierde de vista que la capa global creció a 7 skills compartidas. Crear/actualizar un inventario de la CAPA GLOBAL (distinto del catálogo vendor del repo) y mantenerlo con Reflejo de Frescura.",
+          "Duplicación de 3-vías sin gobernanza: crm-architect, claude-md-improver, claude-automation-recommender existen tanto en ~/.claude/skills/ (canónico, cargado) como vendorizados dentro de cars/skills/ y/o bersaglio/skills/. Riesgo de drift: editar una copia no propaga a la otra. Definir cuál es la fuente canónica (el global) y marcar las copias de repo como 'reference/legacy' o eliminarlas.",
+          "legal-colombia es un caso de acoplamiento BENÉFICO mal entendido: el spec lo marca como riesgo para Bersaglio, pero Bersaglio ES colombiano y la skill cubre joyería (RUCOM, retracto piezas a medida, SAGRILAFT joyería). El único acoplamiento dañino es la ruta hardcodeada docs/42-LEGAL.md. Generalizar el guardrail (jurisdicción Colombia compartida) y parametrizar solo el path del lóbulo legal por proyecto.",
+          "Falta un linter de la capa de skills compartida: 'brain:check' valida el cerebro de Altorra pero NO valida que las skills globales estén libres de referencias proyecto-específicas (rutas docs/, nombres, paths skills/ inexistentes). Proponer un check que escanee ~/.claude/skills/*/SKILL.md por patrones docs/NN- y nombres propios → alerta de fuga inter-proyecto."
+        ],
+        "_label": "inv:skills"
+      }
+    ],
+    "synthesis": {
+      "preservationPlan": "PLAN DE PRESERVACION — MANDATO 1 (condicion de aceptacion: NO perder NADA de lo documentado).\n\n== GARANTIA NUNCA-BORRAR (explicita, vinculante) ==\nNinguna operacion de la migracion multi-proyecto (ADR §170) borra, sobrescribe ni trunca conocimiento historico. El verbo es MOVER, no DELETE. Mecanismo unico permitido para reorganizar: `git mv <archivo> _legacy/<archivo>` (verificado: inmobiliaria es repo git en `main`, HEAD 165bfaa, working tree LIMPIO, remote origin presente → git mv preserva 100% de la historia local y tras push). Toda escritura es aditiva (apendar > sobrescribir; cuarentenar > borrar), conforme al Limite de Guardian del CLAUDE.md §G.4. El cliente hace push/merge — Claude solo commitea con footer Co-Authored-By.\n\n== PRINCIPIO DE NO-DESTRUCCION POR CAPA ==\n1) KERNEL (canon en bersaglio, brain-template-version 1.0.0): se PROPAGA POR COPIA-DE-ARCHIVO desde bersaglio (CLAUDE §G/§3 genericos, INSTALACION-CEREBRO.md, brain-check.mjs de 6 checks, githooks/pre-commit, .claude/settings.json SessionStart, 15/50/60 esqueletos). NUNCA se edita el destino a mano durante la copia; los conflictos se reconcilian con brain:diff (hash, WARN no FAIL). El kernel de cars (brain-check 5 checks, pre-commit) se RECONCILIA hacia el de bersaglio (6 checks), pero el archivo viejo de cars se conserva via git (es recuperable por historia, no se cuarentena fisicamente porque es reemplazo de un tracked file).\n2) SCHEMA (4 capas, namespace de lobulos 41-49, formato 05/10/00): definido por el spec 2026-06-09; se documenta, no se borra.\n3) GROUP-Altorra (cars es canon: dorado #b89658, Colombia, Firebase Compat v11.3.0, RBAC por lookup, patrones cars↔inmobiliaria, 46-ESCALABILIDAD): keep-in-place en cars; inmobiliaria lo CONSUME por puntero/brain:diff, NO por copia duplicada de 1126 lineas.\n4) INSTANCE (memoria por-proyecto): JAMAS tocada por copia inter-repo. El 99-HISTORIAL de cada repo (cars 2.28MB/43k lineas, bersaglio 99KB/55 ADRs, inmobiliaria AVANCES.md 165KB/3420 lineas), sus 05/10/20/30 y lobulos hijos con contenido real NUNCA se mezclan ni se sobrescriben entre repos. Esta es la linea roja dura: \"NO cerebro unico merged\" (spec §170).\n\n== COMO SE PRESERVA CADA CUERPO DE CONOCIMIENTO ==\nA) Cars (cerebro mas maduro, SANO verificado exit 0): TODO keep-in-place. 99-HISTORIAL jamas auto-carga (offset/limit via 00-INDICE). Recibe el kernel de bersaglio por copia + brain:diff. dependency-map.md (marcado STALE, duplicate-of 20-ESPACIAL+crm-handoff) se conserva por valor historico (anti-patterns v4) con puntero al reemplazo — candidato futuro a _legacy/ pero NO ahora.\nB) Bersaglio (canon KERNEL): keep-in-place. Es la fuente de la que se cosecha el kernel; su INSTANCE (05/10/20/30/99, lobulos 41-45, planes, tools/, _legacy) intacto.\nC) Inmobiliaria (caso critico, monolitico, sin cerebro neuronal): NEUROGENESIS no-destructiva. Los 8 .md raiz NO se borran ni se reescriben en sitio. El conocimiento UNICO se DESTILA hacia una estructura neuronal nueva (CLAUDE.md router liviano + docs/00/05/10/99 + lobulos) mediante EXTRACCION-Y-REFERENCIA: AVANCES.md (3420L) se destila en ADRs §NN del nuevo 99-HISTORIAL leidos por offset (NUNCA cargar entero — exacta leccion del CLAUDE viejo de 40k lineas de cars), pero el AVANCES.md original se MUEVE a _legacy/ con git history intacta, no se elimina. Cada doc unico (CLAUDE.md constitucion+schema Firestore, DEPLOY-RUNBOOK Project ID altorra-inmobiliaria-345c6+IAM, MEGA-PLAN benchmark 15 competidores, PLAN-MEJORAS roadmap+SEO real, CONTENIDO-EDITORIAL schema blog, tests/MANUAL-meta-snapshot E2E cache) se preserva integro hasta que su contenido viva en su nodo neuronal destino; recien entonces el monolito original va a _legacy/ como respaldo. ALTORRACARSCLAUDE.md (duplicate-of cars @2026-04-10, verificado: abre literal \"CLAUDE.md — Altorra Cars Knowledge Base\") es el candidato #1 a _legacy/ inmediato — PERO su §12 \"Hallazgos investigacion live 2026-04-16\" (lineas 927-1126) contiene un sliver UNICO de inmobiliaria (estado de js/smart-search.js comparado vs cars al 2026-04-16): ese §12 se extrae al 99-HISTORIAL de inmobiliaria ANTES de cuarentenar el archivo. Por eso incluso el \"duplicado\" se cuarentena, nunca se borra.\n\n== ORDEN SEGURO (riesgo 0 a cars) ==\nProbar TODA la migracion en inmobiliaria PRIMERO (banco de pruebas, mas crudo, riesgo 0 a cars/bersaglio). Cars solo recibe el kernel por copia una vez validado el flujo en inmobiliaria. Antes de cualquier movimiento: snapshot de conteos (baseline abajo) + git log por archivo. Despues: re-conteo y diff de git log == identico salvo el rename esperado.",
+      "quarantineMap": [
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "ALTORRACARSCLAUDE.md (1126 lineas, abre literal 'CLAUDE.md — Altorra Cars Knowledge Base' @2026-04-10, 4 commits de history)",
+          "action": "cuarentena (tras extraer su §12 unico)",
+          "destination": "_legacy/ALTORRACARSCLAUDE.md (via git mv, history intacta) — §12 lineas 927-1126 'Hallazgos investigacion live 2026-04-16' extraido antes al nuevo 99-HISTORIAL de inmobiliaria"
+        },
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "AVANCES.md (3420 lineas / 165KB, bitacora append-only)",
+          "action": "destilar-a-nodo + cuarentenar original",
+          "destination": "contenido → docs/99-HISTORIAL (ADRs §NN por microfase, leidos por offset) + docs/30-LECCIONES (seccion 'ERRORES CONOCIDOS de Cars' l.1005); original → _legacy/AVANCES.md SOLO tras destilado verificado"
+        },
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "CLAUDE.md (1595 lineas, constitucion: schema Firestore propio, plan Blaze, convenciones §6)",
+          "action": "promover-a-nodo (UNICO, intocable)",
+          "destination": "se convierte en la base del nuevo CLAUDE.md router liviano + docs/20-ESPACIAL (schema Firestore §4) — original conservado hasta migracion completa; §3 (l.270-636 arquitectura de cars embebida) → puntero a GROUP-Altorra, no copia"
+        },
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "DEPLOY-RUNBOOK.md (Project ID altorra-inmobiliaria-345c6, cuenta CLI, roles IAM/service accounts)",
+          "action": "promover-a-nodo-config (INSTANCE-critico irremplazable)",
+          "destination": "nodo canonico de config/infra explicito en docs/ (NO enterrado en runbook); keep-in-place hasta crearlo — NUNCA a _legacy"
+        },
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "MEGA-PLAN.md (benchmark 15 competidores inmobiliarios — inteligencia de mercado UNICA, no derivable de cars)",
+          "action": "mantener / destilar a lobulo",
+          "destination": "keep-in-place; futuro lobulo de dominio (mercado/competencia) o 99-HISTORIAL — original preservado"
+        },
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "PLAN-MEJORAS.md (501L, roadmap activo + posicion SEO real vs Altis Group)",
+          "action": "destilar-a-nodo",
+          "destination": "contenido vivo → docs/10-CORTO-PLAZO + 20-ESPACIAL; resolver desync vs AVANCES (§9.3 'que sigue' 2026-04-16 puede contradecir lo ya hecho 2026-05) ANTES de destilar; original conservado"
+        },
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "CONTENIDO-EDITORIAL.md (schema Firestore coleccion blog + flujo editorial UNICO)",
+          "action": "mantener / referenciar como hoja",
+          "destination": "keep-in-place; futura hoja de detalle enlazada desde 20-ESPACIAL"
+        },
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "tests/MANUAL-meta-snapshot.md (E2E cache invalidation, procedimiento UNICO)",
+          "action": "mantener",
+          "destination": "keep-in-place; referencia desde futuro 30-LECCIONES de inmobiliaria"
+        },
+        {
+          "repo": "altorrainmobiliaria.github.io",
+          "item": "data/deploy-info.json (signo vital tipo-maquina) + skills/ (58 SKILL.md vendor de terceros, duplicate-of ~/.claude global)",
+          "action": "mantener",
+          "destination": "keep-in-place (deploy-info es el unico heartbeat actual; skills/ es recurso paralelo vendorizado, NO cerebro)"
+        },
+        {
+          "repo": "altorracars.github.io",
+          "item": "dependency-map.md (208L, MARCADO STALE 2026-06-05, duplicate-of 20-ESPACIAL+crm-handoff)",
+          "action": "mantener (con puntero) — candidato futuro",
+          "destination": "keep-in-place por valor historico (anti-patterns v4); puntero al reemplazo ya presente; evaluar _legacy/ SOLO tras decision del comite, NO ahora"
+        },
+        {
+          "repo": "altorracars.github.io",
+          "item": "30-LECCIONES.md (333/350 hoy — fue ~600 segun inventario; verificado SANO bajo cap)",
+          "action": "mantener / shard preventivo",
+          "destination": "keep-in-place; al acercarse al cap → shard a 31-LECCIONES-GIT etc. dejando puntero en la madre (NUNCA borrar lecciones)"
+        },
+        {
+          "repo": "altorracars.github.io",
+          "item": "brain-check.mjs (5 checks) + githooks/pre-commit",
+          "action": "reconciliar-hacia-canon (bersaglio 6 checks)",
+          "destination": "reemplazo por copia desde bersaglio + extension brain:diff; version vieja recuperable por git history (es tracked file, no se cuarentena fisicamente)"
+        },
+        {
+          "repo": "~/.claude/skills (capa global compartida)",
+          "item": "arquitecto-software/SKILL.md (incrusta bloque 'En el proyecto Bersaglio' con rutas docs/50/41/20 → contamina cars e inmobiliaria)",
+          "action": "desacoplar (extraer bloque proyecto-especifico)",
+          "destination": "metodo universal de 6 lentes → keep en ~/.claude/skills; bloque Bersaglio → cerebro de bersaglio (lobulo/CLAUDE §3.8). NUNCA borrar, mover el detalle"
+        },
+        {
+          "repo": "~/.claude/skills (capa global compartida)",
+          "item": "comite-expertos/SKILL.md (hardcodea docs/15-CONSEJO-EXTERNO.md, nombre 'Daniel', rutas skills/* inexistentes en global)",
+          "action": "parametrizar (no borrar)",
+          "destination": "mantener en ~/.claude/skills; parametrizar paths para leer del cerebro del proyecto activo en vez de hardcodear Altorra"
+        },
+        {
+          "repo": "bersagliojewelry.github.io",
+          "item": "FIREBASE-SETUP.md (2026-03-31, predates cerebro, solapa 20-ESPACIAL) + STITCH-SETUP-GUIDE.md (guia portable no-Bersaglio)",
+          "action": "evaluar (referenciar o cuarentenar / promover a skill)",
+          "destination": "FIREBASE-SETUP → hoja de detalle enlazada desde 20 o _legacy si stale; STITCH-SETUP → candidata a skill via skill-creator. Decision del comite, sin borrar"
+        }
+      ],
+      "duplicationFindings": [
+        "ALTORRACARSCLAUDE.md (inmobiliaria, 1126L) es ~95% DUPLICADO de cars: verificado que abre literal 'CLAUDE.md — Altorra Cars Knowledge Base' (estado 2026-04-10, monolitico pre-neuronal de cars), habla de vehiculos/marcas/detalle-vehiculo.html/generate-vehicles.mjs/RBAC de cars/cache 4 capas de cars. Derivable enteramente del repo cars. UNICO en el: solo §12 'Hallazgos investigacion live 2026-04-16' (l.927-1126) que documenta el estado de js/smart-search.js de inmobiliaria comparandolo vs cars — ese sliver se extrae antes de cuarentenar.",
+        "CLAUDE.md §3 de inmobiliaria (l.270-636 'ARQUITECTURA DE REFERENCIA — ALTORRA CARS') embebe arquitectura de cars (RBAC, cache 4 capas, generate-vehicles) como referencia citada/adaptada — solapamiento PARCIAL con ALTORRACARSCLAUDE.md, pero adaptado/citado, no copia bruta. Es GROUP-Altorra referenciable, no INSTANCE de inmobiliaria.",
+        "UNICO de inmobiliaria (INTOCABLE, no derivable de cars): CLAUDE.md (constitucion: schema Firestore en espanol propiedades/solicitudes/resenas/usuarios, plan Blaze free-tier, convenciones §6), AVANCES.md (bitacora completa append-only = 99-HISTORIAL+30-LECCIONES+10-CORTO fundidos), DEPLOY-RUNBOOK.md (Project ID altorra-inmobiliaria-345c6 + cuenta CLI altorrainmobiliaria@ + roles IAM/service accounts — secrets de infra irremplazables, verificado), MEGA-PLAN.md (benchmark 15 competidores inmobiliarios = inteligencia de mercado), PLAN-MEJORAS.md (roadmap activo + posicion SEO real vs Altis Group), CONTENIDO-EDITORIAL.md (schema coleccion blog + flujo editorial), tests/MANUAL-meta-snapshot.md (E2E cache invalidation).",
+        "Duplicacion de 3-vias en skills SIN gobernanza: crm-architect, claude-md-improver, claude-automation-recommender existen en ~/.claude/skills/ (canonico, cargado) Y vendorizados dentro de cars/skills/ y/o bersaglio/skills/ e inmobiliaria/skills/ (58 SKILL.md). Riesgo de drift: editar una copia no propaga. La fuente canonica es el GLOBAL; las copias de repo son reference/vendor.",
+        "skills/ de los 3 repos (cars ~88, bersaglio 74, inmobiliaria 58) son copias vendorizadas de anthropic-skills/superpowers — NO contienen ninguna de las 7 skills de gobernanza del global (verificado: Glob de los 7 nombres sobre */skills/ dio CERO). El solape de nombres es curaduria del cliente, no wiring (corrige el supuesto M-11).",
+        "inmobiliaria es el UNICO repo SIN cerebro neuronal: cero docs/, .claude/, _legacy/, brain:check (verificado por ausencia). Todo su conocimiento UNICO vive en 8 .md monoliticos raiz — no duplica la ESTRUCTURA de cars, pero su contenido GROUP-Altorra (arquitectura cars embebida) si solapa.",
+        "dependency-map.md de cars es duplicate-of(20-ESPACIAL + crm-handoff) en lo vigente (marcado STALE 2026-06-05, subestima el sistema); se conserva por su capa historica unica (anti-patterns v4).",
+        "Las M-NN (meta-aprendizajes de gobernanza) de 30-LECCIONES de cars y las L-26/L-27 de bersaglio son KERNEL conceptual duplicado-en-espiritu entre repos: misma doctrina (verifica-no-asumas, git fetch antes de afirmar) capturada por separado en cada cerebro INSTANCE. Candidatas a consolidar como doctrina KERNEL compartida en vez de re-derivarse por repo."
+      ],
+      "crossRepoMatrix": "| Capa | altorracars (cars) | bersagliojewelry (bersaglio) | altorrainmobiliaria (inmobiliaria) | skills global ~/.claude | CANON |\n|---|---|---|---|---|---|\n| **KERNEL** (gobernanza §G, doctrinas §3, linter, hooks, INSTALACION, 15/50/60 esqueletos) | tiene §G + brain-check 5-checks + pre-commit, SIN §3.7/INSTALACION/check#6/50/60 | brain-template-version 1.0.0 · §G completo + §3.7 comite + INSTALACION-CEREBRO + brain-check 6-checks + pre-commit + settings.json + 50/60 | AUSENTE (monolitico, cero gobernanza neuronal) | 3 skills oficiales Anthropic 100% universales (claude-md-improver, automation-recommender, session-report) | **bersaglio** (mas maduro; cars recibe por copia+brain:diff; inmobiliaria por neurogenesis) |\n| **SCHEMA** (4 capas, namespace lobulos 41-49, formato 05/10/00) | 40-LOBULOS (rangos dominio) + spec 2026-06-09 (define las 4 capas) | 40-LOBULOS + 00 estructura por-fecha | proto-router manual (§DOCUMENTOS EN ESTE ORDEN), sin namespace | n/a | **spec 2026-06-09 de cars** (define el SCHEMA) + 40-LOBULOS de ambos |\n| **GROUP-Altorra** (dorado, Colombia, Firebase, RBAC, patrones cars↔inmob, 46-ESCALABILIDAD) | 46-ESCALABILIDAD + doctrinas Firebase/dorado/RBAC por lookup | 50-ARQUITECTURA §0-§2 (doctrina zero-budget portable) | embebe arquitectura de cars en CLAUDE §3 + ALTORRACARSCLAUDE (copia) | crm-architect (universal), legal-colombia (jurisdiccion CO compartida, beneficia a bersaglio joyero) | **cars** (por mandato; inmobiliaria consume por puntero, NO copia) |\n| **INSTANCE** (05/10/20/30/99 + lobulos con contenido real) | 99=168 ADRs/2.28MB + lobulos 41/42/43/46/48 | 99=55 ADRs por-fecha + lobulos 41-45 + planes + tools | AVANCES/CLAUDE/DEPLOY-RUNBOOK/MEGA-PLAN/PLAN-MEJORAS/CONTENIDO/MANUAL (8 monolitos) | n/a (la capa skill no es INSTANCE) | **cada repo es su propio canon — JAMAS tocada por copia inter-repo** |\n| **SKILL** (capa portable compartida) | cars/skills ~88 vendor | bersaglio/skills 74 vendor + skills-inventory canon | inmobiliaria/skills 58 vendor | 7 skills (4 con acoplamiento Altorra a sanear: arquitecto-software, comite-expertos, legal-colombia, crm-architect) | **~/.claude/skills GLOBAL** (las copias de repo son reference/vendor) |",
+      "verificationGates": [
+        "GATE 1 — brain:check SANO (determinista, ya pasa en cars): `node scripts/brain-check.mjs` debe reportar 'CEREBRO SANO' exit 0 ANTES y DESPUES de cualquier movimiento en cars. Baseline verificado HOY: exit 0, 168 ADRs indexados, 197 entradas de indice validas, refs L-/M- 46/46 resueltas, cache SW==cache-manager v20260608231721, 30-LECCIONES 333/350 bajo cap. Cualquier regresion = ABORTAR.",
+        "GATE 2 — git log intacto (la garantia nunca-borrar es VERIFICABLE): para cada archivo movido a _legacy/, `git log --follow --oneline -- <path-nuevo>` debe mostrar EXACTAMENTE la misma cadena de commits que antes del mv (ej. ALTORRACARSCLAUDE.md = 4 commits verificados HOY: 354ad6d, 9f882fc, 3f2ae1c + 1). Si --follow no enlaza el rename = el history se rompio = ABORTAR y rehacer con git mv puro (nunca rm+add).",
+        "GATE 3 — conteo de lineas antes/despues (nada se trunca): snapshot baseline verificado HOY en inmobiliaria — AVANCES 3420L, CLAUDE 1595L, ALTORRACARSCLAUDE 1126L, MEGA-PLAN 729L, PLAN-MEJORAS 501L, DEPLOY-RUNBOOK 282L, CONTENIDO-EDITORIAL 203L. Regla: SUM(lineas en nodos destilados) + SUM(lineas en _legacy) >= SUM(lineas originales). Una destilacion puede resumir, pero el ORIGINAL integro debe sobrevivir en _legacy → cero perdida neta. `wc -l` pre y post.",
+        "GATE 4 — conteo de headers/ADRs (ningun § desaparece): contar `grep -c '^## '` (o '^## NN.' / '^## YYYY-MM-DD') en cada 99-HISTORIAL antes/despues. El conteo de ADRs en cars (168 hoy) y el destilado de AVANCES de inmobiliaria solo pueden CRECER o igualar, nunca decrecer. brain-check #5a (ADRs↔indice) lo valida en cars.",
+        "GATE 5 — working tree limpio pre-movimiento (verificado HOY en inmobiliaria: status --short vacio): exigir `git status` limpio antes de cualquier mv para que ningun cambio sin commitear se pierda en la reorganizacion. Si hay WIP sin commitear → commitear o stash primero.",
+        "GATE 6 — _legacy/ con README de cuarentena (patron canonico de cars §119): cada _legacy/ nuevo (especialmente el de inmobiliaria, que no existe aun) DEBE nacer con README.md documentando QUE se cuarenteno, POR QUE (RCA verificada: duplicate-of / stale), CUANDO, y COMO revertir (git mv inverso). Replica el _legacy/ de cars (5 artefactos + README, verificado presente).",
+        "GATE 7 — brain:diff por hash (kernel sin drift silencioso): tras propagar el kernel de bersaglio a cars/inmobiliaria, `brain:diff` (a construir, §170 PASO 3) compara kernel local vs canon por hash y reporta WARN accionable (nunca FAIL-en-boot). Gate: divergencia de hash en piezas KERNEL = revisar deliberadamente, no auto-corregir.",
+        "GATE 8 — verificacion en inmobiliaria PRIMERO (riesgo 0 a cars): toda la secuencia (mv, destilado, neurogenesis, gates 1-7) se ejecuta y valida completa en inmobiliaria ANTES de tocar cars. Si algo falla en el banco de pruebas, cars queda intacto. Cars solo recibe el kernel una vez verde el flujo en inmobiliaria.",
+        "GATE 9 — auditoria de fuga inter-proyecto en skills globales: escanear `~/.claude/skills/*/SKILL.md` por patrones `docs/NN-`, nombres propios y rutas `skills/*` inexistentes; arquitecto-software (bloque Bersaglio) y comite-expertos (Daniel, paths rotos) deben quedar limpios o parametrizados antes de declarar la capa SKILL preservada sin contaminacion cruzada."
+      ],
+      "improvementSeedsForCommittee": [
+        "ECONOMIA DE CONTEXTO — endurecer el linter sobre caps: 30-LECCIONES de cars rozó/excedió su cap (inventario decía ~600 vs 350; brain:check hoy mide 333/350 — divergencia a aclarar). El cap está en brain-check pero solo emite WARN >1.1x. Adoptar Reflejo de Sharding (31-LECCIONES-GIT, 32-FRONTEND, dejar M-NN) y endurecer el linter a FAIL en sobre-tope sostenido.",
+        "ECONOMIA DE CONTEXTO — CLAUDE.md de cars a 318/320 (a 2 del tope): toda doctrina nueva DEBE desplazar detalle, no subir el tope. Ejecutar la propuesta del spec §170 de mover slots variables (reglas git, §3.7) a docs/.brain-manifest.json (no auto-cargado) para liberar presión y habilitar el marcador brain-template-version.",
+        "GOBERNANZA 4-CAPAS en el linter: añadir validación de NAMESPACE (cada lóbulo mapea a un rango: 40-49 dominio, 50-59 arquitectura, 60-69 workflows) y un GATE DE SATURACIÓN que sume las líneas auto-cargadas por repo (WARN ~450 / FAIL ~600). Hoy brain-check no conoce las 4 capas KERNEL/SCHEMA/GROUP/INSTANCE.",
+        "CONSOLIDAR un único brain-check.mjs canónico (el de bersaglio, 6 checks, ya multi-proyecto-aware: tolera convención ADR por-fecha Y numerada, SW genérico Y Altorra). Debe ser la fuente única que los 3 repos consumen, evitando drift. Promover a cars el check #6 (skills↔inventario), el githooks/pre-commit y el SessionStart hook que cars NO tiene.",
+        "PROMOVER A KERNEL/cars el §3.7 de bersaglio (Calidad-por-defecto + Comité ×3 por iniciativa propia): es la diferencia doctrinal más valiosa y aplica a cualquier proyecto. cars no lo tiene.",
+        "brain:diff POR HASH (decidido §170, no construido): mecanismo de propagación del kernel (copia + diff read-only en SessionStart vs canon, WARN nunca FAIL-en-boot). Es la mejora de mayor apalancamiento — sin ella los 3 cerebros driftean en silencio.",
+        "INSTALACION-CEREBRO.md (crown jewel, solo en bersaglio): formaliza el trasplante/migración entre versiones del template — es el activo KERNEL más fuerte para ejecutar §170. El comité decide si vive en el KERNEL compartido y se referencia o se copia por proyecto.",
+        "GAP de skills globales (corazón del problema 'afectan a bersaglio en silencio'): NINGUNA skill en ~/.claude/skills/ debe hardcodear rutas docs/NN-*.md, nombres propios ('Daniel'), ni rutas skills/* que solo existen en un repo. arquitecto-software (bloque Bersaglio que pisa cars/inmobiliaria) y comite-expertos (3 violaciones) deben parametrizarse o mover el detalle al cerebro del proyecto. Proponer un LINTER de la capa skill que escanee estos patrones.",
+        "CORREGIR la matriz coupled/universal del spec §R6 LEYENDO cada SKILL.md: crm-architect NO está acoplado a Altorra (multi-industria genuinamente portable) — clasificarlo 'coupled' lo sacaría innecesariamente del canal compartido. legal-colombia es acoplamiento BENÉFICO (Colombia + joyería ayuda a Bersaglio). El único acoplamiento dañino real es la ruta hardcodeada docs/42-LEGAL.md.",
+        "DESINCRONIZACIÓN del inventario de skills: docs/skills-inventory.md (cars, 2026-06-03) dice '~/.claude/skills solo crm-architect' pero hoy hay 7. Crear/mantener un inventario de la CAPA GLOBAL (distinto del catálogo vendor) bajo Reflejo de Frescura. ~/.claude/skills NO es git-tracked → declarar INVARIANTE + manifest para reinstalar en máquina nueva (no-regresión inter-proyecto).",
+        "CONVENCIÓN ADR canónica: bersaglio usa headers por-fecha (## YYYY-MM-DD), cars numerados (## NN.). El linter ya tolera ambas; el comité debe decidir UNA convención canónica para el KERNEL o documentar explícitamente que ambas son válidas (está en el código del linter, falta en la doctrina escrita).",
+        "DETECTAR docs marcados-STALE y huérfanos no-NN: dependency-map.md lleva marcado STALE desde 2026-06-05 sin puntero desde el linter; PENDIENTES-Y-HALLAZGOS.md (bersaglio) y los 8 monolitos de inmobiliaria escapan al check de huérfanas por no ser docs/NN-*.md. Extender brain-check para flaggear (a) banner '🛑 STALE' en hojas → WARN forzar decisión, (b) docs/*.md no-NN sin referencia.",
+        "NEUROGÉNESIS COMPLETA de inmobiliaria (mejor banco de pruebas del modelo multi-proyecto por ser el más crudo): CLAUDE.md router liviano + docs/00/05/10/99 + lóbulos, destilando AVANCES.md (3420L) en ADRs por offset. Falta un 05-ESTADO-GLOBAL real (hoy solo data/deploy-info.json es máquina, no narrativa). Aplicar caps/sharding G.5 desde el inicio para que AVANCES append-only no se vuelva incargable.",
+        "PROTEGER INSTANCE-crítico de inmobiliaria: Project ID altorra-inmobiliaria-345c6 + cuentas + roles IAM viven en un solo .md de 282L sin respaldo indexado. Promoverlos a un nodo canónico 'config/infra' explícito al migrar, no enterrarlos en un runbook.",
+        "RESOLVER desync de planes en inmobiliaria: PLAN-MEJORAS (2026-04-16, §9.3 'que sigue') vs AVANCES (cuerpo 2026-05) pueden contradecirse; sin linter que detecte desync plan↔bitácora el re-trabajo es real. El Reflejo de Consolidación Corto→Largo no existe allí.",
+        "ECONOMÍA DE CONTEXTO — altor-hub-cirugia-execution-plan.md (95KB, hoja más pesada de cars) describe un subsistema DIFERIDO (bot ALTOR buggy). Evaluar si su valor de referencia justifica el peso o si parte va a _legacy/ una vez consolidado en ADRs §57-88.",
+        "INVENTARIO EXHAUSTIVO de los 3 cerebros ANTES de tocarlos (condición de aceptación §170): este plan cubre cars + skills; los espejos de bersaglio (canon kernel) e inmobiliaria (banco de pruebas) ya están inventariados — el comité debería revisar los 3 + la capa skill JUNTOS para decidir qué se promueve.",
+        "CONSOLIDAR doctrinas KERNEL duplicadas-en-espíritu: las M-NN de cars y L-26/L-27 de bersaglio capturan la misma doctrina (verifica-no-asumas, git fetch antes de afirmar) por separado en cada INSTANCE. Candidatas a vivir como doctrina KERNEL compartida en vez de re-derivarse por repo.",
+        "FIREBASE-SETUP.md y STITCH-SETUP-GUIDE.md de bersaglio flotan en la raíz sin conexión al cerebro: el primero solapa 20-ESPACIAL (posible stale, predates cerebro) → referenciar como hoja o cuarentenar; el segundo es portable no-Bersaglio → candidato a skill vía skill-creator."
+      ],
+      "openQuestions": [
+        "¿La sesión de migración mueve realmente los monolitos de inmobiliaria a _legacy/ y commitea (el cliente luego hace push/merge), o el cliente prefiere que el destilado a nodos neuronales sea aprobado pieza por pieza antes de cuarentenar cada original? (afecta la cadencia de los gates).",
+        "¿Convención ADR canónica para el KERNEL: numerada (cars ## NN.) o por-fecha (bersaglio ## YYYY-MM-DD)? El linter tolera ambas; se necesita una decisión doctrinal o declarar oficialmente que ambas son válidas.",
+        "¿INSTALACION-CEREBRO.md vive en un repo KERNEL compartido nuevo y se referencia, o se copia físicamente en cada repo (cars/inmobiliaria) por valor? Define la topología de propagación del template.",
+        "¿Se crea un repo/carpeta KERNEL compartido explícito, o el canon sigue viviendo dentro de bersaglio y los demás copian desde ahí? (impacta brain:diff y la fuente de verdad).",
+        "¿Las skills globales con acoplamiento Altorra (arquitecto-software, comite-expertos) se parametrizan en sitio o se git-trackean en el repo Altorra? ~/.claude/skills NO está versionado — ¿se adopta un manifest para reinstalar en máquina nueva y garantizar no-regresión en bersaglio?",
+        "¿dependency-map.md (cars, stale) y altor-hub-cirugia-execution-plan.md (95KB, subsistema diferido) se cuarentenan ahora o se mantienen con puntero hasta una decisión posterior? (el plan los deja keep-in-place por defecto, pero el comité puede priorizar la limpieza).",
+        "¿El nodo de config/infra de inmobiliaria (Project ID + IAM de DEPLOY-RUNBOOK) puede vivir en docs/ versionado, o el cliente requiere que esos identificadores sensibles queden fuera de git-tracking (gitignore + plantilla)?"
+      ]
+    }
+  }
+}

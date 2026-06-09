@@ -7,7 +7,7 @@
 >
 > **Cerebro completo**: 🧠 `CLAUDE.md` (router/identidad) · 🩺 `05-ESTADO-GLOBAL.md` (signos vitales)
 > · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura)
-> · 🧪 `30-LECCIONES.md` (experiencia/recetas) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
+> · 🧪 `30-LECCIONES.md` (experiencia/recetas; hija 🔧 `31-LECCIONES-GIT.md`) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
 >
 > **Cómo usarlo (regla de oro anti-saturación)**:
 > 1. Busca aquí el § que necesitas y su línea de inicio.
@@ -29,9 +29,11 @@
 | Tu situación / síntoma | Ve a |
 |---|---|
 | ¿Dónde vive un módulo / ruta / flujo / componente? | 🗺️ `20-ESPACIAL` |
-| Voy a mover/renombrar archivos, refactor de estructura | 🧪 `30-LECCIONES` L-04/L-05/L-06 + 🗺️ `20-ESPACIAL` |
-| Conflicto al fusionar / cache / cron `[skip ci]` | 🧪 `30-LECCIONES` L-02/L-03 + `CLAUDE.md §4` |
-| Errores `403` de Firebase / referer en localhost | 🧪 `30-LECCIONES` L-08 |
+| Voy a mover/renombrar archivos, refactor de estructura | 🔧 `31-LECCIONES-GIT` L-04 + 🧪 `30-LECCIONES` L-05/L-06 + 🗺️ `20-ESPACIAL` |
+| Conflicto al fusionar / cache / cron `[skip ci]` / toda op git | 🔧 `31-LECCIONES-GIT` (hija de 30: L-01..L-04) + `CLAUDE.md §4` |
+| Errores `403` de Firebase / referer localhost / E2E de forms | 🧪 `30-LECCIONES` L-08 (ampliada §175: E2E solo live; stub `window.db` para UI) |
+| Functions muertas / "billing is disabled" / la ingestión no corre | 🧪 `30-LECCIONES` L-38 (logs ANTES de tocar código; Eventarc re-entrega) |
+| Rediseño de página rompe JS sin errores en consola | 🧪 `30-LECCIONES` L-37 (clases eliminadas vs callsites JS) |
 | Validar si algo es código muerto antes de borrar | 🧪 `30-LECCIONES` L-09 + `_legacy/README.md` |
 | Bug recurrente / clicks bloqueados / `MutationObserver` | 📚 §35 + §17.12 + RCA §19 |
 | Performance (transitions, lazy, `<picture>`, LCP) | `CLAUDE.md §3.1` + 📚 §15/§16/§17 |
@@ -265,6 +267,7 @@
 | §172 | **Mandato 3 (validación FINAL) → CERTIFICADO**: comité 11 agentes verificó en disco; NO_CERTIFICA → 2 bloqueantes (cura NO aterrizada en §G.4 = sobre-declaración recursiva de §171.7 + README stale) → RESUELTOS+verificados (grep) → CERTIFICADO (cars; Opción C diferida; propagar reflejo a bersaglio/inmob = follow-up). Meta-lección: verificar la cura en la capa que el boot lee, con evidencia. | 43060 |
 | §173 | **Comité v6 — cerebro auto-evaluable** (16 agentes, 45 hallazgos): cura del "SANO-teatro" = evaluación 2 NIVELES (gates hardcodeados + skill `auditoria-cerebro`/retrieval-drill/deepAudit) + GC dos palancas con trinquete + TODO-NN ledger único + captura-en-ORIGEN + brain-diff gateado por template 1.1.0. Checklist A-U → `specs/2026-06-09-comite-v6-…VEREDICTO.md`. Ítem C (exposición pública) = decisión cliente+Gemini. | 43072 |
 | §174 | **Bóveda privada brain-private** (ítem C, Gemini adoptado/refutado): RED/AMBER → repo hermano privado (NO submódulo — rompe Pages; NO purga de historial — riesgo residual documentado); stubs públicos + archiveDir ×3 → bóveda; cliente crea remote privado + push | 43109 |
+| §175 | **TODO-17 E2E live CRM ✅** (web+newsletter → solicitudes/subscriptions → ingestión → canónico → Bandeja score/NBA + Contactos 3/3) + **incidente billing-disabled** (~2h, Eventarc re-entregó solo, L-38) + **FIX spinner form contacto** (`.form-card` eliminada por el rediseño → fallback al `<form>`, L-37) + shard `31-LECCIONES-GIT` | 43139 |
 
 ---
 

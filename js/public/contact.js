@@ -141,7 +141,10 @@ if (contactForm) {
                 observaciones: '',
                 createdAt: new Date().toISOString()
             }, identity, src))).then(function (ref) {
-                var formCard = contactForm.closest('.form-card');
+                // contacto.html (rediseño cinematic) ya no envuelve el form en
+                // .form-card; sin fallback el éxito no se pinta y el botón queda
+                // en "Enviando..." para siempre (bug E2E 2026-06-09).
+                var formCard = contactForm.closest('.form-card') || contactForm;
                 _renderContactSuccess(formCard, {
                     nombre: data.nombre || '',
                     ticketId: ref.id,

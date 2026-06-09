@@ -16,33 +16,12 @@
 
 ---
 
-## 🔧 Operaciones de Git / refactor
+## 🔧 Operaciones de Git / refactor → **`31-LECCIONES-GIT.md`** (neurona hija, shard §G.5 2026-06-09)
 
-### L-01 · `sed -i '*.html'` corrompe el fin de línea (CRLF→LF)
-- **Síntoma**: tras un `sed` masivo aparecen 15+ archivos "modificados" que NO tocaste; GitHub Desktop muestra muchos más archivos de los esperados.
-- **Causa**: `sed -i` reescribe TODOS los archivos que recibe; en Windows convierte CRLF→LF aunque no haya match → git (con `core.autocrlf=true`) los marca como cambiados (ruido).
-- **Receta**: pasar a `sed` SOLO los archivos que contienen el patrón → `sed -i 's|viejo|nuevo|g' $(grep -rl "patrón" archivos)`. O usar la herramienta **Edit con replace_all** (no toca line-endings).
-- **Limpiar el ruido**: restaurar los archivos que están en `git status` pero NO en `git diff --name-only` → `git checkout -- <esos archivos>`.
-- *Descubierto en §119 Fase 2.2b-ii (comparador).*
-
-### L-02 · Conflicto recurrente cron ↔ cache al fusionar a `main`
-- **Síntoma**: el PR de la rama marca conflicto en `js/core/cache-manager.js` (o `service-worker.js`).
-- **Causa**: el cron de `main` (`Auto-generate vehicle pages + bump cache version`) bumpea `APP_VERSION`/`CACHE_VERSION` mientras la rama tiene esos archivos movidos/modificados → modify-en-main vs move/modify-nuestro.
-- **Receta**: en la rama → `git merge origin/main --no-edit`. La estrategia **`ort` detecta el rename y aplica el bump del cron al archivo movido AUTOMÁTICAMENTE** (cero conflicto manual). Verificar después: `node -c`, 0 refs viejas.
-- **Cómo evitarlo**: NO fusionar cada micro-paso a `main` (ver L-03). Sincronizar `main`→rama tras cada merge si se insiste en fusionar por paso.
-- *Doctrina relacionada: `CLAUDE.md §4` (cache bump). Vivido en §119.*
-
-### L-03 · No fusionar cada micro-paso a `main` durante un refactor largo
-- **Síntoma**: conflictos en bucle, un PR tras otro.
-- **Causa**: el cron mueve `main` entre fusiones (pintar la pared mientras la ensucian).
-- **Receta**: hacer todo el trabajo en la rama (`commit + push` solo guarda en GitHub), **UNA sola fusión final** tras terminar y probar. Un conflicto (o ninguno) en vez de uno por paso.
-
-### L-04 · Receta canónica para mover un archivo JS sin romper nada
-1. **Mapear refs**: `grep -rl "js/X.js"` en `*.html vehiculos/*.html marcas/*.html` + ¿dinámico en `js/core/components.js` (`.src=`)? + ¿ancla hardcodeada en `scripts/generate-vehicles.mjs`?
-2. `git mv js/X.js js/<carpeta>/X.js`.
-3. Refs estáticas (`"js/X.js"`) → `sed` solo en archivos con match. Refs dinámicas/ancla → **Edit**.
-4. **Verificar**: `grep` ruta-vieja = 0 en todo el repo · `node -c` · sin doble `carpeta/carpeta`.
-5. Probar en localhost · `commit`.
+### L-01 · `sed -i` corrompe CRLF→LF → detalle en `31-LECCIONES-GIT.md`
+### L-02 · Conflicto cron↔cache al fusionar → detalle en `31-LECCIONES-GIT.md`
+### L-03 · No fusionar micro-pasos a `main` → detalle en `31-LECCIONES-GIT.md`
+### L-04 · Receta para mover un JS sin romper → detalle en `31-LECCIONES-GIT.md`
 
 ---
 
@@ -91,10 +70,11 @@
 
 ## 🔥 Firebase / entorno
 
-### L-08 · Los errores `403` de Firebase en `localhost` son NORMALES
+### L-08 · Los errores `403` de Firebase en `localhost` son NORMALES — y el bloqueo es MÁS amplio que Auth
 - **Síntoma**: en `localhost:3000`, consola llena de `403 (Forbidden)` / `requests-from-referer-http://localhost:3000-are-blocked` (Auth, Installations, Analytics) + login admin falla.
 - **Causa**: la API key tiene restricción de HTTP referrer (solo `altorracars.github.io` + dominios Firebase), no `localhost`. Es seguridad funcionando bien.
-- **Implicación de prueba**: en localhost NO se prueba login/Auth. Lo que SÍ se prueba: que carguen los archivos (0 `404`), Firestore público (`[DB] Firestore loaded: 27 vehicles`), render, snippets. La prueba real de Auth es en el dominio en vivo.
+- **Ampliación (E2E §175, 2026-06-09)**: el bloqueo también tumba **App Check** (`appCheck/throttled` 403 con backoff de 1 DÍA) e Installations; el submit del form de contacto en preview local ni siquiera completó. **E2E de captura/forms = SOLO contra el dominio live** (`main`); para verificar lógica de UI sin red, stubear `window.db` en el preview (probado §175: stub de `.add()` resuelto ejercita el handler real).
+- **Implicación de prueba**: en localhost NO se prueba login/Auth ni writes de formularios. Lo que SÍ: archivos (0 `404`), Firestore público de LECTURA, render, snippets.
 
 ---
 
@@ -336,6 +316,17 @@
 - **Disparador**: una sesión cerró sin capturar la deliberación (comité/workflow/Gemini) → crees que el conocimiento se perdió.
 - **Realidad (verificada §173)**: el harness persiste TODO por-máquina en `~/.claude/projects/<proyecto>/<sesión>/` (transcripts + `subagents/workflows/*.jsonl`). Es deuda RECUPERABLE: localizar la sesión por fecha, extraer el crudo, archivarlo en `archiveDir` (manifest) + síntesis retroactiva.
 - **Prevención**: el PRIMER acto tras un workflow de deliberación = copiar el resultado a `research-archive/` (Reflejo de Captura §G.4); el runner no puede escribir disco (sandbox sin fs) → la copia la hace el agente `[HONOR]` + el check de integridad (kernel v1.2) detecta JSON sin indexar.
+
+### L-37 · Un rediseño que ELIMINA/renombra clases rompe los callsites JS que las buscan (catch real de §3.2)
+- **Síntoma**: form de contacto en vivo: el write a `solicitudes` OK pero spinner "Enviando..." ETERNO + `_inFlight` atascado (el visitante no puede reenviar) — y CERO errores en consola (§175).
+- **Causa**: el rediseño cinematic de `contacto.html` reemplazó `.form-card` por `.soft-*`; `contact.js` hacía `closest('.form-card')` para pintar el éxito → `null` → `_renderContactSuccess(null)` retorna sin pintar y NADIE restaura el botón. Fallo 100% silencioso: el `.catch` no dispara porque la promesa SÍ resolvió.
+- **Receta**: (1) al rediseñar una página, `grep -r "<clase>" js/` ANTES de eliminar/renombrar clases del markup. (2) Selectores de contenedor en JS con fallback (`closest('.x') || form`). (3) En success-paths, el happy path debe PINTAR algo o restaurar estado — un `return` silencioso en éxito es peor que un throw.
+- **Familia**: L-11 (class fidelity JS↔CSS) — esta es la variante JS↔HTML (comportamiento, no estilo).
+
+### L-38 · `billing disabled` tumba las 27 functions — pero Eventarc RE-ENTREGA al recuperarse (outage corto ≠ pérdida)
+- **Síntoma**: logs de TODAS las functions con "The request failed because billing is disabled" (crons + triggers). La web sigue viva (reads/writes directos a Firestore OK) pero ingestión CRM, emails, Telegram y LLM muertos.
+- **Observado (§175, 2026-06-09)**: outage ~21:00→23:03 UTC; al volver el billing, **Eventarc RE-ENTREGÓ los eventos fallidos solo** (la solicitud de las 22:50 se ingirió a las 23:03, `_ingestedAt` tardío, sin pérdida ni duplicados). La retención de reintentos es limitada (~horas) — un outage LARGO sí pierde eventos → revisar `failedIngestions` + backfill manual.
+- **Receta**: ante "la ingestión no corre": (1) `functions_get_logs` ANTES de tocar código — puede ser billing/cuota, no un bug; (2) al recuperarse, buscar `_ingestedAt` para ver si Eventarc ya re-procesó ANTES de re-disparar a mano (evita duplicados); (3) la causa de billing-disabled es del dueño del proyecto (tarjeta/cuenta GCP) — escalar al cliente, no "arreglar" código.
 
 ---
 

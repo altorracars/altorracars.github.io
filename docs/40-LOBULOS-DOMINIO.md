@@ -19,8 +19,8 @@
 
 | ID | Lóbulo | Disparador (cliente dice…) | Estado | Cubre |
 |---|---|---|---|---|
-| **41** | Seguridad | "audita seguridad", "vulnerabilidades", "Firebase rules", "rutas sin auth" | 🟢 vacío | API auth, validación input, prevención inyecciones, manejo de secrets, rules check Firebase. |
-| **42** | Legal/Compliance | "audita legal", "cookies", "privacidad", "GDPR", "Hábeas Data" | 🟢 vacío | Políticas, consentimientos, regulaciones aplicables (Colombia 1581/2012 etc.). |
+| **41** | Seguridad | "audita seguridad", "vulnerabilidades", "Firebase rules", "rutas sin auth" | 🟠 **activo** (auditoría Fase C 2026-06-08) | API auth, validación input, prevención inyecciones, manejo de secrets, rules check Firebase. **9 hallazgos + plan de blindaje en `41-SEGURIDAD.md`**. |
+| **42** | Legal/Compliance | "audita legal", "privacidad", "Hábeas Data", "términos", "garantía", "RUNT/SOAT" | 🟠 **activo** (investigación Fase C 2026-06-08) | Marco legal de **vehículos usados Colombia** (Ley 1581/1480/769, SARLAFT). Fuentes `.gov.co` + gate abogado. Hallazgos en `42-LEGAL.md`. |
 | **43** | UX/Diseño | "audita UX", "interfaz", "accesibilidad visual" | 🟠 **activo** (R0 2026-05-29) | Patrones de interfaz, modernización de componentes, jerarquía visual. Hallazgos en `43-UX.md`. |
 | **44** | SEO | "audita SEO", "rich snippets", "ranking", "indexación" | 🟢 vacío | Metadata, structured data, on-page, indexación. Complementa §90 historial. |
 | **45** | Performance | "audita performance", "Core Web Vitals", "LCP/CLS/FID" | 🟢 vacío | Métricas reales (Lighthouse), bottlenecks. Complementa doctrina §17. |
@@ -113,6 +113,22 @@ skills, verificar el largo antes de instalar) en `skills/<nombre>/` → (5) la *
   RBAC + Ley 1581. Es el framework de la **reconstrucción del CRM de Altorra** (Foco/handoff en `10`). Trae
   templates + scaffold en `skills/crm-architect/`. NO es lóbulo (capacidad portable); el conocimiento
   Altorra-específico del CRM (schema real, módulos, decisiones) irá a `20-ESPACIAL` + ADRs a medida que se construya.
+- **`comite-expertos` · `legal-colombia` · `arquitecto-software`** (Fase B, registradas 2026-06-08, ADR §168) —
+  **globales y portables**, viven en `~/.claude/skills/`, construidas por el cliente en una **sesión paralela**
+  (contexto Bersaglio). Sirven a TODOS sus proyectos (Altorra Cars/Inmobiliaria + Bersaglio); **regla: la skill se deja
+  funcional para todos** (lo de cada proyecto va al lóbulo del repo, NUNCA a la skill → por eso traen ejemplos de joyería).
+  - **`comite-expertos`** = mejora ×3 de una respuesta: expertos **dinámicos por tema** + 3 niveles (pulido / auto-crítica /
+    comité ×3) + 4ª voz externa (Gemini/`15`, humano en el medio). Adapta `llm-council` (peer-review anónimo + presidente)
+    sin adoptarla (panel fijo/1 nivel/HTML). On-demand, lo dispara el cliente.
+  - **`legal-colombia`** = guardrail + método: bloquea jurisdicción Colombia, fuentes oficiales `.gov.co`, **veta** plugins
+    legales US (`legal:*`,`legalzoom:*`), gate de abogado antes de publicar. En Altorra **espera leer el lóbulo `42-LEGAL`**
+    (ley de VEHÍCULOS — pendiente). Doctrina always-on ya en `CLAUDE.md §G.2` Trigger 🔵.
+  - **`arquitecto-software`** = "piensa como arquitecto antes de codear": 6 lentes (negocio/escala/seguridad/costo/
+    mantenibilidad/integración) + Impact Analysis + "contexto manda, no microservicios por moda". Es la versión afinada que
+    hace innecesario adoptar `engineering:architecture`/`system-design` (genéricas, asumen SaaS/cloud pago). Doctrina always-on
+    en `CLAUDE.md §3.8`; manifiesto en `46-ESCALABILIDAD`.
+  - ⚠️ **Defecto a corregir** (en la conversación dueña de las skills, no aquí — son co-editadas en paralelo): `description`
+    parseada >1024 (límite uploader): `comite-expertos` 1038, `legal-colombia` 1148; `arquitecto-software` 934 OK.
 
 ---
 

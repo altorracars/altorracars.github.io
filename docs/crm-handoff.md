@@ -210,3 +210,17 @@ El cliente señaló (2026-06-06) que **la mayoría de leads NO entran por la web
 La revisión multi-agente del §164 confirmó 2 puntos que son **holísticos del modelo Fase 1** (no específicos del newsletter), a resolver en Fase 5:
 - **Política de lectura del canónico**: `contacts`/`leads`/`activities`/`deals`/`subscriptions` usan `read: if isAuthenticated() || hasPermission('crm.read')` → cualquier admin (aun sin `crm.read`) lee PII. Endurecer a `hasPermission('crm.read')` en TODAS a la vez (no una sola, para no romper consistencia). Datos solo expuestos a usuarios del panel (no público).
 - **Rate-limit de forms públicos**: `solicitudes`/`citas`/`subscriptions` con `create:if true` → riesgo de spam (acotado por `maxInstances:10` en las functions). Añadir rate-limit/validación en Fase 5 (blueprint §11 R2).
+
+### 9.8 Revisión holística clase-mundial + blindaje (Fase C, 2026-06-08 · ADR §169)
+Auditoría multi-agente (workflow `fase-c-audit`, 12 subagentes + verificación L-34). **Seguridad** → lóbulo `docs/41-SEGURIDAD.md` (9 hallazgos verificados + plan P0/P1/P2; **NADA desplegado**; SEC-01 RBAC-read = Decisión Fuerte; el §9.7 de arriba se materializó como SEC-01/SEC-02). **Legal** → lóbulo `docs/42-LEGAL.md` (vehículos CO, gate abogado).
+
+**El CRM ya es fuerte** (8 fortalezas clase-mundial): espina canónica `people→deals→activities` con optimistic locking; captura omnicanal cerrada (incl. manual); ingestión con dedup determinista + dead-letter; pipeline automotriz con forecast; inteligencia 100% determinista; reporting con atribución por canal; escalabilidad free-tier acotada; compliance desde el inicio. *No hay que reconstruir — falta operativizar el último tramo.*
+
+**Prioridades de LANZAMIENTO (gaps, la mayoría con infra ya construida)**:
+1. **Quick-log de actividad** (Llamada/WhatsApp/Nota/Email) desde Bandeja + 360 → llama a `logActivity()` (YA existe); WhatsApp = deep-link `wa.me` pre-rellenado. *El gesto diario #1, media construido.*
+2. **Vista "Pendientes hoy + vencidos"** por asesor (`activities.dueAt<=hoy` + NBA ya calculado) → que ningún lead tibio se enfríe.
+3. **Asignación de owner obligatoria** al crear lead + **alerta** al dueño (FCM/Telegram ya existen) → speed-to-lead.
+4. **Blindaje de rules** (P0/P1 de `41-SEGURIDAD`).
+5. **E2E "cero pérdida"**: probar las 4 vías (web/cuenta/newsletter/manual) → canónico + `failedIngestions` monitoreado.
+
+**Diferir consciente (post-lanzamiento)**: bandeja de conversaciones inbound (depende de WhatsApp Cloud API/presupuesto + bot estabilizado) · búsqueda/dedup visible (`nameLower`/`phoneE164` + filtro cliente, §15.R1) · **quotes/CPQ** (portar `admin-quote.js` viejo) · automatización postventa/NPS+SLA (sin ventas aún → conectar `markWon()`→postventa que el admin viejo olvidaba).

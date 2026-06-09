@@ -15,6 +15,8 @@
 
 ## 🎯 Foco actual
 
+> 🧠 **PRÓXIMO MACRO-PROYECTO (sesión nueva, contexto limpio) — Cerebro MULTI-PROYECTO** (Decisión Fuerte **aprobada 2026-06-09**: **ADR §170** + **spec maestro** `docs/superpowers/specs/2026-06-09-cerebro-unico-multiproyecto.md` ← **arrancar leyéndolo**). NO cerebro único; SÍ **núcleo portable compartido (4 capas KERNEL/SCHEMA/GROUP-Altorra/INSTANCE) + `brain:diff` por hash** (canon kernel = bersaglio; **probar en inmobiliaria primero**, riesgo 0 a cars). PASO 0 ✅ (espejo confirmado = misma estructura + grupo, NO clon de 43k líneas). **Mandatos del cliente**: (1) NO perder lo ya documentado (inventario + cuarentena `_legacy/`, NUNCA borrar); (2) verificar holística/ampliamente cómo MEJORAR el cerebro, **con comité**. Skills: las 4 de Altorra viven en `~/.claude/skills/` (global), 4/7 son Altorra-coupled → separar (PASO 1).
+
 > 🏗️ **CRM rebuild — NÚCLEO COMPLETO: Fases 2–4 + Contactos DESPLEGADAS** (2026-06-06). **Portal único modular** `admin-app/` (Vite + Firebase modular `altorra-crm`) que reemplazará al `admin.html` viejo (mapa de integración/cutover → `crm-handoff.md §9`). **5 superficies LIVE** en `/admin-app/dist/` (Bandeja, Pipeline, Agenda, Reportes, Contactos — menú sin "Pronto"). Inteligencia **determinista, SIN ALTOR/LLM**. Capas datos/dominio/ui, HarmonyOS verbatim, realtime acotado. Arquitectura → `20-ESPACIAL §CRM-app`. **Auto-deploy por fase autorizado** (memoria `feedback-auto-deploy-crm`).
 >   - **Fase 2** — Bandeja Inteligente + Customer 360 (scoring7/NBA10/classify), ADR §159. ✅ LIVE (`crmNotes`). Cazó 2 bugs (L-27/28).
 >   - **Fase 3a** — Pipeline: embudo drag-drop sobre **`deals`** (lead→oportunidad, forecast Σ monto×prob), ADR §160. ✅ LIVE (`1e154c2`; reglas+índice `deals`). 0 bugs.

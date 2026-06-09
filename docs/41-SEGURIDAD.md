@@ -19,7 +19,7 @@
 
 | ID | Sev | Título | Ubicación | Fix ($0) | Decisión Fuerte |
 |---|---|---|---|---|---|
-| **SEC-01** | 🟠 med | RBAC-read laxo en CRM: `read: if isAuthenticated() \|\| hasPermission('crm.read')` es **redundante** → cualquier admin (aun sin `crm.read`) lee PII (incl. roles custom con `permissions:[]`). | `firestore.rules:314,321,328,336,343,353,361` (leads/contacts/crmNotes/activities/deals/subscriptions/failedIngestions) | Endurecer a **`isEditorOrAbove() \|\| hasPermission('crm.read')`** en TODAS a la vez (NO a solo `hasPermission` → rompería editor+ sin el permiso; la admin-app lee asumiendo `isAuthenticated()`). | **SÍ** (modelo RBAC + prod) |
+| **SEC-01** | 🟠 med | RBAC-read laxo en CRM: `read: if isAuthenticated() \|\| hasPermission('crm.read')` es **redundante** → cualquier admin (aun sin `crm.read`) lee PII (incl. roles custom con `permissions:[]`). | `firestore.rules:314,321,328,336,343,353,361` (leads/contacts/crmNotes/activities/deals/subscriptions/failedIngestions) | **RESUELTO → Opción A**: solo **`hasPermission('crm.read')`** en las 7 a la vez (ver §Decisión Fuerte). | **SÍ** (modelo RBAC + prod) |
 | **SEC-02** | 🔴 high | **Sin App Check en NINGÚN recurso** → forms públicos (`create:if true`) abusables por curl/script con el config público del bundle. | `firestore.rules:370,411,352,426,702`; `storage.rules:16`; functions (0 `enforceAppCheck`) | **Firebase App Check** (reCAPTCHA v3, gratis) modo **monitor→enforce** + validación de payload. | **SÍ** (rollout) |
 | **SEC-03** | 🔴 high | ~30 Functions legacy **sin `maxInstances`** (solo las 3 de ingestión lo tienen) → factura runaway + Gmail SMTP agotado si se inunda `onNewSolicitud`. | `functions/index.js:83,184,329,1143,2039,…` | `setGlobalOptions({ maxInstances:10 })` al tope de `index.js` (aditivo) + budget alert GCP $5. | No |
 | **SEC-04** | 🔴 high | Webhook público `linkTelegramChat` **sin verificación de firma** → secuestrar el `telegramChatId` de un asesor (fuga de alertas de leads). | `functions/index.js:2039-2116` | `secret_token` en `setWebhook` + rechazar 403 si `X-Telegram-Bot-Api-Secret-Token` no coincide. | No |
@@ -48,13 +48,34 @@
 >
 > **P2 — Hardening posterior**: SEC-07 (avatars ownership + storage admin-only) · SEC-09 (validación telemetría).
 
-## ⚖️ Decisión Fuerte (SEC-01) — gate de despliegue
-El cambio de RBAC-read **puede bloquear a un admin sin `crm.read`** en pleno lanzamiento (la `admin-app` lee asumiendo `isAuthenticated()` y solo gatea mutaciones en `crm.edit`). Por eso: (1) **prompt a Gemini/§15** (Decisión Fuerte, modelo de datos/seguridad); (2) **verificar** que super_admin/editor reales tengan acceso y que ningún rol viewer dependa de leer el CRM; (3) **emulator rules tests**; (4) **OK explícito del cliente**; (5) deploy MANUAL por Claude. Recomendación de fix = `isEditorOrAbove() || hasPermission('crm.read')` (preserva editor+, cierra el hueco de viewers/custom-roles).
+## ⚖️ Decisión Fuerte (SEC-01) — RESUELTA (Consejo Externo Gemini 3.1 Pro High + verificación de código, 2026-06-08)
+**Decisión: Opción A** — `read: if hasPermission('crm.read')` (estricto) en las 7 colecciones canónicas a la vez. (Cambié mi postura inicial B → A.)
+- **Por qué A y no B** (argumento de Gemini, adoptado): B (`isEditorOrAbove() || hasPermission`) acopla la PII al rol editor → un futuro "Editor de Inventario/Contenido" **heredaría** acceso al CRM = privilege-creep + deuda de auditoría (la política diría `crm.read` pero la DB diría "eso o editor"). A hace `crm.read` **significativo y auditable** (mínimo privilegio real). La "consistencia con la convención de la casa" que motivaba B es justamente el anti-patrón.
+- **Por qué A es SEGURO hoy** (verificado en el repo, punto ciego que Gemini no podía ver): `RBAC_SYSTEM_ROLES` solo siembra `system_super_admin` con `permissions:['*']` (`functions/index.js:2642-2654`); **editor/viewer ELIMINADOS del seeder** (§69 R7). `hasPermission` acepta `'*'` → **los admins actuales (super_admin) pasan A por wildcard: cero lock-out**. A solo deniega a roles no-wildcard sin `crm.read` (que es el objetivo).
+- **Patrón forward (Gemini, adoptado)**: *Write-Time Derived Permissions* — Firestore "tonto y estricto" (A); la inteligencia vive en el panel: al crear/asignar un rol que necesita CRM, la UI **inyecta `crm.read`** en `permissions[]`.
+- **Lo que NO se cambia** (refuté a Gemini en parte): App Check (SEC-02) **sigue**; es ortogonal — A cierra el insider-read de PII, App Check cierra el abuso de escritura externo. No se descarta uno por el otro.
+- **Gate de despliegue**: (1) **pre-seed** `crm.read` en `permissions[]` de cualquier admin **no-super_admin** vía consola Firestore (10 min, $0) ANTES del deploy; (2) **emulator rules tests** de las 7 colecciones; (3) **OK del cliente**; (4) deploy MANUAL `firebase deploy --only firestore:rules` (Claude); push/merge = cliente.
+- **Follow-up no bloqueante**: la `admin-app` lee sin `catch` robusto (p.ej. `contacts.data.js`) → añadir manejo de `permission-denied` ("sin permiso de CRM") para que un futuro rol denegado vea un mensaje, no un crash.
 
 ## Excepciones / decisiones específicas de Altorra
 - ⚠️ El verificador **corrigió la justificación** de SEC-01: el patrón `isAuthenticated() || hasPermission(x.read)` NO es un descuido del CRM — es **convención de la casa** (también en `concesionarios:112`, `citas:368`, `vehículos auditLog:99`). El fix sigue siendo válido; la cita de precedente (`concesionarios usa isEditorOrAbove`) era falsa → L-34 en acción.
 - **Deploy de reglas/functions = MANUAL** por Claude (`firebase deploy --only ...`), con OK. Nunca romper el público que crea `solicitudes`/`citas`/`subscriptions`.
 - Auth anónimo del público (`auth.js signInAnonymously`) es **intencional** (favoritos/historial atados a uid privado) — por eso `isAuthenticated()` en Storage incluye anónimos (raíz de SEC-07).
+
+## 🚀 Runbook de despliegue (P0 escrito en código ✅, gated por OK + consola)
+**Estado**: SEC-03 (tope) + SEC-04 (candado Telegram) **escritos en `functions/index.js`** (revisión adversarial = **OK**, `node -c` OK; **inofensivos hasta activarse**). **NO desplegado.**
+
+- **SEC-03 maxInstances** → `firebase deploy --only functions` (Claude). Aditivo; las funciones con `maxInstances` propio lo conservan; **sin cambio de region**. Tope global 10 (per-función puede subirse si alguna lo necesita).
+- **SEC-04 candado Telegram — ORDEN OBLIGATORIO** (si no, se rompe el alta de Telegram):
+  1. `firebase functions:secrets:set TELEGRAM_WEBHOOK_SECRET` (valor aleatorio).
+  2. `firebase deploy --only functions` (linkTelegramChat + setupTelegramWebhook).
+  3. Desde el admin, correr **setupTelegramWebhook** (re-registra el webhook con `secret_token`).
+  > El código exige el header solo si el secret está seteado → el secret NO debe quedar "vivo" en la función antes del paso 3.
+- **SEC-02 App Check (anti-spam) — necesita 1 paso del cliente en consola**:
+  - **Init points (modo monitor)**: `js/core/firebase-config.js:132` (app [DEFAULT], compat — activate canónico) + cargar `firebase-app-check-compat.js` en el `Promise.all` crítico (~L71-74); `admin-app/src/core/firebase.js:27` (modular, `initializeAppCheck`). **Mismo SITE KEY** (misma web app). `firebase-messaging-sw.js` queda **INTACTO** (reCAPTCHA v3 no corre en Service Worker; no toca Firestore/Storage). El bot ALTOR (`js/concierge`,`js/ai`) reusa `window.db` → cubierto por el activate del compat.
+  - **Consola (cliente)**: Firebase → App Check → web app `1:235148219730:web:…` → proveedor **reCAPTCHA v3** (NO Enterprise = $0) → copiar **SITE KEY** → dominios `altorracars.github.io` + `localhost` → dejar TODOS los recursos en **Unenforced** (monitor).
+  - **Rollout**: Fase 0 consola (Unenforced) → Fase 1 código monitor (**cache bump §4**) → Fase 2 observar 1-2 sem (% Verified ~100%) → Fase 3 enforce por-recurso (reversible, empezar por Storage). Scripts Node + Functions usan Admin SDK → exentos.
+  - ⚠️ Nunca enforce antes de ~100% verificado; nunca olvidar la carga del CDN (si no, `firebase.appCheck` = undefined → skip silencioso → clientes sin token).
 
 ## Pendientes / próxima ronda
 - Ejecutar P0 → P1 → P2 tras OK + Gemini (SEC-01).

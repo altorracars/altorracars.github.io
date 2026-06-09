@@ -138,14 +138,14 @@ Antes de CUALQUIER commit: 5 secciones → (A) archivos a modificar, (B) archivo
 - CERO `pointermove` persistente global (solo durante drag activo).
 - Selectores substring `[class*="x"]` son peligrosos — matchean clases hijas; excluir namespaces con `:not()` (lección §101.1.6).
 
-### 3.6 Bot ALTOR Hub (§57.7, §57.9, §60.1/§60.2, §71)
-- `_chatsUnsub` (lista del Hub) SIEMPRE activo globalmente; solo `_messagesUnsub` (chat abierto) se cancela al cambiar de sección.
-- Cliente: patrón "lazy reset on next open" — cierre solo oculta panel; reset al reabrir.
-- Optimistic UI universal (cliente + admin): la UI nunca espera al server; estados ✓/✓✓/⚠ + rollback.
-- Cloud Function role triggers: anti-loop por filtro de `roleId` change (§71).
+### 3.6 Bot ALTOR Hub (§57.7, §60, §71) — DIFERIDO (buggy)
+- Realtime/optimistic/anti-loop del Hub (`_chatsUnsub` global, lazy-reset, anti-loop `roleId`) → detalle en §57.7/§60/§71. **Optimistic UI universal** (la UI nunca espera al server; ✓/✓✓/⚠ + rollback) sigue vigente en TODO el portal nuevo.
 
 ### 3.7 Migración (§94)
 Target = **Cloudflare Pages** (NO Vercel). Deploy en segundos + edge global. Plan en `docs/PLAN-MIGRACION-ALTORRA.md`. Bloqueado por presupuesto del dominio (~$10/año).
+
+### 3.8 Lente de Arquitecto (always-on; extiende §37 IAP)
+- En TODO trabajo de código piensa como **arquitecto, no solo programador**: decide por el sistema completo en 6 pilares — **visión de negocio · escalabilidad · seguridad · costos · mantenibilidad · comunicación** (detalle + traducción al stack en lóbulo `46-ESCALABILIDAD`; skill `software-architect`). Modular > monolito; diseña para el crecimiento de mañana; seguridad desde el inicio. *"El código hace que funcione; la arquitectura hace que sobreviva."*
 
 ---
 
@@ -196,6 +196,7 @@ Cuando se dispara un trigger, leer el nodo correspondiente deja de ser opcional:
   (seguridad/legal/UX/SEO/perf/escalabilidad/copy/a11y/etc.) → (1) skill relevante vía tool Skill
   (catálogo `docs/skills-inventory.md`); (2) `40-LOBULOS` por lóbulo; (3) si no, neurogénesis del hijo
   (`41`,`42`…) CON contenido REAL, nunca vacío (§G.4); (4) capturar findings + QUÉ skill usé. Persiste.
+  **⚖️ Legal SIEMPRE = jurisdicción Colombia**: verificar fuentes primarias oficiales (workflow/agentes), NUNCA publicar contenido legal sin revisión de abogado (skill `legal-colombia` + lóbulo `42-LEGAL`).
 - **🛰️ Trigger de Decisión Fuerte**: ANTES de una decisión cara de revertir (arquitectura, modelo de
   datos, seguridad/legal, fork 50/50, op irreversible) considera crítica adversarial de **Gemini vía Antigravity** → cuándo + matriz de modelo + anti-anclaje en `docs/15-CONSEJO-EXTERNO.md`. Sin tokens → solo + lo marco.
 

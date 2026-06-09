@@ -82,6 +82,14 @@ valor con menos fricción."**
 - **AD-9 · Evolución por configuración.** Pipelines, reglas de automatización y campos custom
   viven como **documentos de config en Firestore** → el admin cambia comportamiento sin tocar código.
 
+**Monolito → por-componentes (lo que dejamos → lo que construimos):**
+| Monolito | Por-componentes |
+|---|---|
+| Difícil de escalar · despliegues riesgosos · alto acoplamiento · cambios lentos · costos crecientes | Escalable por módulo/dominio · despliegues/ediciones independientes · bajo acoplamiento · cambios rápidos y seguros · costos optimizados |
+| `admin.html` ~3.870 líneas · `functions/index.js` ~3.500 líneas | `admin-app/` modular (datos/dominio/ui) + Functions por dominio |
+
+> Frases-faro (cliente): *"El código hace que funcione; la arquitectura hace que sobreviva."* · *"Un sistema escalable hoy es un negocio sostenible mañana."* · *"Un sistema seguro no es más complejo, es más confiable y resiliente."*
+
 ## 4. Disparadores de "ahora sí escala más" (cuándo subir de nivel)
 - Reporting pesado / cross-tenant → activar **BigQuery export**.
 - Búsqueda full-text (no solo filtros) → **Algolia/Typesense**.

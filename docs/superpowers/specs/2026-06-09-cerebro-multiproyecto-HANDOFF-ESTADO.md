@@ -12,7 +12,7 @@
 ## §A — CÓMO ARRANCAR LA PRÓXIMA SESIÓN (receta de boot)
 
 1. **Boot normal** en el repo **cars** (`altorracars.github.io`): se auto-carga `CLAUDE.md` + `docs/05` + `docs/10` + la memoria `project-multiproject-brain` (vía MEMORY.md). Corre `npm run brain:check` (debe dar SANO).
-2. **Lee este documento COMPLETO** (`docs/superpowers/specs/2026-06-09-cerebro-multiproyecto-HANDOFF-ESTADO.md`).
+2. **Lee este documento COMPLETO** (`docs/superpowers/specs/2026-06-09-cerebro-multiproyecto-HANDOFF-ESTADO.md`) + el **CHECKLIST DE CIERRE** (`docs/superpowers/specs/2026-06-09-cerebro-multiproyecto-CHECKLIST-CIERRE.md`) — la lista tickeable de TODO lo que falta para "certificado", con criterios de aceptación. Ve marcando `[x]` ahí a medida que avanzas.
 3. **Lee el plan v5** (`docs/superpowers/specs/2026-06-09-plan-mejora-cerebro-v4-comite.md`) — la arquitectura final reestructurada por el comité + Gemini. Es la fuente de las decisiones de diseño.
 4. **Verifica el estado real vs git** (doctrina §3.3): `git -C <repo> log --oneline -3` en los 3 repos para confirmar qué se pusheó. NO asumas; verifica.
 5. **Continúa por PASO 1** (§E.1 de este doc). Trabaja cross-repo (el cliente autorizó acceso a los 3 repos + a `~/.claude/skills`).

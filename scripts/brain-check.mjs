@@ -26,11 +26,22 @@ const read = (p) => readFileSync(p, 'utf-8');
 
 console.log('\n🧠 BRAIN-CHECK — integridad del cerebro neuronal\n');
 
-// Topes §G.5 (auto-cargadas en rojo)
+// Topes §G.5. lines = doctrina histórica (compat); chars = UNIDAD REAL de boot/contexto
+// (PRE-PASO-0 del plan multi-proyecto v5 §6.1: el cap de líneas es "teatro" — el nodo 10
+// pesa ~16k chars en 85 líneas y el cap de 110 líneas lo daba por sano). El char-cap es el
+// gate de regresión real; no se re-congela al alza sin ADR (§6.2).
 const CAPS = {
-  'CLAUDE.md': 320, 'docs/05-ESTADO-GLOBAL.md': 25, 'docs/10-MEMORIA-CORTO-PLAZO.md': 110,
-  'docs/20-MEMORIA-ESPACIAL.md': 280, 'docs/30-LECCIONES.md': 350, 'docs/00-INDICE.md': 450,
+  'CLAUDE.md':                     { lines: 320, chars: 25000 },
+  'docs/05-ESTADO-GLOBAL.md':      { lines: 25,  chars: 4000  },
+  'docs/10-MEMORIA-CORTO-PLAZO.md':{ lines: 110, chars: 16000 },
+  'docs/20-MEMORIA-ESPACIAL.md':   { lines: 280, chars: 14000 },
+  'docs/30-LECCIONES.md':          { lines: 350, chars: 60000 },
+  'docs/00-INDICE.md':             { lines: 450, chars: 36000 },
 };
+// Sub-presupuesto del BOOT always-on (chars): CLAUDE + 05 + 10 se auto-cargan CADA sesión.
+// Objetivo plan v5: ~31.500 chars (~9k tokens @ ~3.5 char/tok). Hoy ~44k → destilar (nodo 10 primero).
+const ALWAYS_ON = ['CLAUDE.md', 'docs/05-ESTADO-GLOBAL.md', 'docs/10-MEMORIA-CORTO-PLAZO.md'];
+const BOOT_CHARS_TARGET = 31500;
 
 const claude = read(join(ROOT, 'CLAUDE.md'));
 
@@ -52,16 +63,28 @@ for (const n of neurons) {
   else warn(`${n} NO referenciada en CLAUDE.md → HUÉRFANA (conectar en §0)`);
 }
 
-// 2) Capacidad (§G.5)
-console.log('\n2) Capacidad de neuronas (§G.5):');
+// 2) Capacidad (§G.5) — chars = unidad REAL de contexto; líneas = compat histórica.
+console.log('\n2) Capacidad de neuronas (§G.5 · chars = unidad real de contexto):');
+let bootChars = 0;
 for (const [rel, cap] of Object.entries(CAPS)) {
   const p = join(ROOT, rel);
   if (!existsSync(p)) { warn(`${rel} no existe`); continue; }
-  const lines = read(p).split('\n').length;
-  if (lines > Math.round(cap * 1.1)) warn(`${rel}: ${lines} líneas (tope ~${cap}) → SHARD/poda`);
-  else if (lines > cap) console.log(`  ↗  ${rel}: ${lines} (tope ~${cap}, leve exceso)`);
-  else ok(`${rel}: ${lines}/${cap}`);
+  const txt = read(p);
+  const lines = txt.split('\n').length;
+  const chars = txt.length;
+  if (ALWAYS_ON.includes(rel)) bootChars += chars;
+  const over = chars > Math.round(cap.chars * 1.1) || lines > Math.round(cap.lines * 1.1);
+  const nudge = chars > cap.chars || lines > cap.lines;
+  const tag = `${chars}c/${cap.chars} · ${lines}L/${cap.lines}`;
+  if (over) warn(`${rel}: ${tag} → SHARD/poda (excede tope)`);
+  else if (nudge) console.log(`  ↗  ${rel}: ${tag} (leve exceso — destilar)`);
+  else ok(`${rel}: ${tag}`);
 }
+// 2-bis) Sub-presupuesto del BOOT always-on (chars) — el costo real por sesión (plan v5 §6.3/§6.9)
+const bootTok = Math.round(bootChars / 3.5);
+if (bootChars > Math.round(BOOT_CHARS_TARGET * 1.1))
+  console.log(`  ↗  BOOT always-on = ${bootChars}c (~${bootTok} tok) vs objetivo ${BOOT_CHARS_TARGET}c (~9k tok) → DESTILAR (nodo 10 primero)`);
+else ok(`BOOT always-on = ${bootChars}c (~${bootTok} tok) ≤ objetivo ${BOOT_CHARS_TARGET}c`);
 
 // 3) Desync del índice: cada "| §X | tema | N |" debe apuntar a un header "## " del historial
 console.log('\n3) Desync índice 00-INDICE → 99-HISTORIAL (fragilidad offset):');

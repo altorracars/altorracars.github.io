@@ -140,13 +140,24 @@ const ACTIVITIES = {
 
 const CONTACTS = {};
 LEADS.forEach((l) => {
+  const lifecycleStage = l.status === 'convertido' ? 'customer' : (l.source === 'newsletter' ? 'subscriber' : 'lead');
   CONTACTS[l.contactId] = {
-    id: l.contactId, fullName: l.fullName, email: l.email, phone: l.phone, type: 'lead',
-    source: l.source, score: 0, rating: 'cold', lifecycleStage: 'lead', clienteUid: null,
+    id: l.contactId, fullName: l.fullName, email: l.email, phone: l.phone,
+    type: lifecycleStage === 'customer' ? 'cliente' : 'lead',
+    source: l.source, score: 0, rating: 'cold', lifecycleStage, clienteUid: null,
     consent: { email: l.source !== 'web', whatsapp: l.source !== 'web', calls: false, askedAt: l.createdAt, source: l.source, policyVersion: 'v1' },
     doNotContact: l.source === 'web', tags: [], createdAt: l.createdAt, lastActivityAt: l.lastActivityAt, _version: 1,
   };
 });
+
+// Suscriptor "puro" SIN lead (newsletter standalone) → en Contactos se muestra como
+// fila informativa NO interactiva (no tiene ficha 360 que abrir). Ejercita ese camino.
+CONTACTS['email_camila_lectora_gmail_com'] = {
+  id: 'email_camila_lectora_gmail_com', fullName: 'Camila Lectora', email: 'camila.lectora@gmail.com', phone: '',
+  type: 'lead', source: 'newsletter', score: 0, rating: 'cold', lifecycleStage: 'subscriber', clienteUid: null,
+  consent: { email: true, whatsapp: false, calls: false, askedAt: daysAgo(3), source: 'newsletter', policyVersion: 'v1' },
+  doNotContact: false, tags: ['newsletter'], createdAt: daysAgo(3), lastActivityAt: daysAgo(3), _version: 1,
+};
 
 const NOTES = {}; // contactId -> [{id, body, authorName, createdAt}]
 
@@ -155,6 +166,7 @@ export const getMockLeads = () => LEADS.map((l) => ({ ...l }));
 export const getMockTeam = () => TEAM.map((t) => ({ ...t }));
 export const getMockActivities = (leadId) => (ACTIVITIES[leadId] || []).map((a) => ({ ...a }));
 export const getMockContact = (contactId) => (CONTACTS[contactId] ? { ...CONTACTS[contactId] } : null);
+export const getMockContacts = () => Object.values(CONTACTS).map((c) => ({ ...c }));
 export const getMockNotes = (contactId) => (NOTES[contactId] || []).map((n) => ({ ...n }));
 export function addMockNote(contactId, note) {
   if (!NOTES[contactId]) NOTES[contactId] = [];

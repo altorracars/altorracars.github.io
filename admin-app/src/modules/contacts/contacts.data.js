@@ -5,12 +5,30 @@
 // ============================================================
 
 import {
-  doc, getDoc, collection, query, where, orderBy, limit, onSnapshot, addDoc,
+  doc, getDoc, getDocs, collection, query, where, orderBy, limit, onSnapshot, addDoc,
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
+import { getMockContacts, getMockLeads } from '../../core/mock.js';
 
 const withId = (d) => ({ id: d.id, ...d.data() });
+
+/**
+ * Directorio de contactos (lista). Snapshot puntual acotado — `contacts` por
+ * `createdAt` desc (campo SIEMPRE presente; `lastActivityAt` podría faltar y
+ * Firestore excluye del orderBy los docs sin el campo) + `leads` para mapear
+ * contacto→ficha 360. Campo único → índice automático (L-30). Mock-first.
+ * Lectura ya permitida (crm.read, §9.7).
+ * @returns {Promise<{contacts:object[], leads:object[]}>}
+ */
+export async function loadContactsList({ pageSize = 500 } = {}) {
+  if (store.get().mock) return { contacts: getMockContacts(), leads: getMockLeads() };
+  const [contacts, leads] = await Promise.all([
+    getDocs(query(collection(db, 'contacts'), orderBy('createdAt', 'desc'), limit(pageSize))).then((s) => s.docs.map(withId)),
+    getDocs(query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(pageSize))).then((s) => s.docs.map(withId)),
+  ]);
+  return { contacts, leads };
+}
 
 export async function getContact(contactId) {
   if (!contactId) return null;

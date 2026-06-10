@@ -91,10 +91,35 @@ export function applySearch(leads, term) {
   });
 }
 
-export function buildView(leads, { queue, uid, filters, search }) {
+/**
+ * F4-fase1 (ADR §176 E0): SLA de PRIMER CONTACTO visible en la tarjeta.
+ * Mientras el lead siga 'nuevo' (nadie le ha hablado), minutos desde createdAt:
+ * ok <45 · warn 45-59 · late >=60. Cero reads extra (puro sobre el lead).
+ */
+export function contactTimer(lead, now = Date.now()) {
+  if ((lead.status || 'nuevo') !== 'nuevo') return null;
+  const created = new Date(lead.createdAt || 0).getTime();
+  if (!created) return null;
+  const mins = Math.max(0, Math.floor((now - created) / 60000));
+  return { mins, state: mins >= 60 ? 'late' : mins >= 45 ? 'warn' : 'ok' };
+}
+
+/**
+ * F4-fase1: la vista default OCULTA los cerrados (perdido/no_calificado/
+ * convertido) con contador explícito "N ocultos · ver todos" — nunca
+ * desaparición silenciosa. Un filtro de estado explícito o showClosed
+ * los trae de vuelta. Devuelve { rows, hiddenClosed }.
+ */
+export function buildView(leads, { queue, uid, filters, search, showClosed = false }) {
   let rows = leads.filter((l) => inQueue(l, queue, uid));
   rows = applyFilters(rows, filters);
   rows = applySearch(rows, search);
+  let hiddenClosed = 0;
+  if (!showClosed && !filters.status) {
+    const open = rows.filter((l) => !isClosedStatus(l.status));
+    hiddenClosed = rows.length - open.length;
+    rows = open;
+  }
   rows.sort(sortByUrgency);
-  return rows;
+  return { rows, hiddenClosed };
 }

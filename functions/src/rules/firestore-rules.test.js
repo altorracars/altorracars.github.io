@@ -1,0 +1,82 @@
+/**
+ * F30 (ADR §176 E0) — tests de Firestore Rules contra el EMULADOR.
+ * Corren SOLO si el emulador está activo (FIRESTORE_EMULATOR_HOST):
+ *   firebase emulators:exec --only firestore "npm --prefix functions test"
+ * En `npm test` normal se saltan (skipIf) para no romper la suite local.
+ */
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const EMU = !!process.env.FIRESTORE_EMULATOR_HOST;
+const __dir = dirname(fileURLToPath(import.meta.url));
+
+describe.skipIf(!EMU)('Rules — F1 lead convertido inmutable', () => {
+  let testEnv, rut;
+
+  const ADMIN_UID = 'admin_crm_edit';
+
+  beforeAll(async () => {
+    rut = await import('@firebase/rules-unit-testing');
+    testEnv = await rut.initializeTestEnvironment({
+      projectId: 'altorra-rules-test',
+      firestore: { rules: readFileSync(join(__dir, '../../../firestore.rules'), 'utf8') },
+    });
+    // Seed con rules apagadas: perfil admin con crm.edit + 2 leads
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc('usuarios/' + ADMIN_UID).set({
+        rol: 'custom', permissions: ['crm.read', 'crm.edit'], estado: 'activo',
+      });
+      await db.doc('leads/libre').set({
+        status: 'contactado', convertedTo: null, fullName: 'Lead Libre', _version: 1,
+      });
+      await db.doc('leads/congelado').set({
+        status: 'convertido', convertedTo: { dealId: 'd1' }, fullName: 'Lead Convertido', _version: 3,
+      });
+    });
+  });
+
+  afterAll(async () => { if (testEnv) await testEnv.cleanup(); });
+
+  function adminDb() {
+    return testEnv.authenticatedContext(ADMIN_UID).firestore();
+  }
+
+  it('admin con crm.edit SÍ cambia el status de un lead NO convertido', async () => {
+    await rut.assertSucceeds(
+      adminDb().doc('leads/libre').update({ status: 'descartado' })
+    );
+  });
+
+  it('admin con crm.edit NO puede cambiar el status de un lead convertido (F1)', async () => {
+    await rut.assertFails(
+      adminDb().doc('leads/congelado').update({ status: 'perdido' })
+    );
+  });
+
+  it('sí puede tocar OTROS campos del convertido si el status no cambia (asignar owner)', async () => {
+    await rut.assertSucceeds(
+      adminDb().doc('leads/congelado').update({ ownerId: 'x', updatedAt: 'now' })
+    );
+  });
+
+  it('la CONVERSIÓN misma sigue permitida (convertedTo era null)', async () => {
+    await rut.assertSucceeds(
+      adminDb().doc('leads/libre').update({ status: 'convertido', convertedTo: { dealId: 'dNuevo' } })
+    );
+  });
+
+  it('anónimo no escribe leads (sanidad)', async () => {
+    await rut.assertFails(
+      testEnv.unauthenticatedContext().firestore().doc('leads/libre').update({ status: 'nuevo' })
+    );
+  });
+});
+
+describe.skipIf(EMU)('Rules (skip)', () => {
+  it('se saltan sin emulador — correr con firebase emulators:exec', () => {
+    expect(true).toBe(true);
+  });
+});

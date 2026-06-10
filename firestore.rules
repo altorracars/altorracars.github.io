@@ -311,9 +311,21 @@ service cloud.firestore {
     // lo escribe la capa de ingestión vía Admin SDK (bypassa rules); el
     // cliente público NO tiene acceso (no tiene usuarios/{uid}).
     match /leads/{leadId} {
-      allow read:           if isAuthenticated() || hasPermission('crm.read');
-      allow create, update: if isSuperAdmin() || hasPermission('crm.edit');
-      allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
+      // F1 (ADR §176 E0): un lead con deal vinculado (convertedTo.dealId) es
+      // INMUTABLE en `status` desde el cliente — evita estados imposibles
+      // (ej. "perdido" en Bandeja con su deal en "negociación"). Solo el
+      // server lo cambia (Admin SDK bypasea rules: trigger F2 / anulación F7).
+      function leadStatusUnlocked() {
+        return !('convertedTo' in resource.data)
+          || resource.data.convertedTo == null
+          || !('dealId' in resource.data.convertedTo)
+          || resource.data.convertedTo.dealId == null
+          || request.resource.data.status == resource.data.status;
+      }
+      allow read:   if isAuthenticated() || hasPermission('crm.read');
+      allow create: if isSuperAdmin() || hasPermission('crm.edit');
+      allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && leadStatusUnlocked();
+      allow delete: if isSuperAdmin() || hasPermission('crm.delete');
     }
 
     // ========== CONTACTS (CRM canónico — persona unificada — Fase 1) ==========

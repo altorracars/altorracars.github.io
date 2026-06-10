@@ -72,6 +72,11 @@ export async function assignLead(leadId, owner) {
 }
 
 export async function setLeadStatus(leadId, status, lead = {}) {
+  // F1 (ADR §176): lead convertido = status inmutable. Las Rules lo rechazan
+  // server-side; este guard evita el intento y da el mensaje correcto.
+  if (lead && lead.convertedTo && lead.convertedTo.dealId) {
+    throw new Error('Este lead ya es un negocio: gestiónalo en el Pipeline.');
+  }
   const ts = nowISO();
   await updateDoc(doc(db, 'leads', leadId), {
     status,

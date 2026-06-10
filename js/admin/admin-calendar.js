@@ -240,15 +240,26 @@
 
         if (!confirm('¿Reprogramar esta cita para el ' + newDate + '?' + warnings)) return;
 
-        window.db.collection('solicitudes').doc(docId).update({
+        var updateData = {
             fecha: newDate,
             estado: 'reprogramada',
             updatedAt: new Date().toISOString()
-        }).then(function () {
+        };
+        // F17 §176: el drag-drop pasa por la MISMA transacción de cupos que el
+        // modal (libera el slot viejo + reserva el nuevo). Guard L-13 por si
+        // admin-appointments.js aún no cargó: fallback al update directo legacy.
+        var op = (window.AltorraCitaSlots && window.AltorraCitaSlots.updateCitaAtomically)
+            ? window.AltorraCitaSlots.updateCitaAtomically(docId, updateData)
+            : window.db.collection('solicitudes').doc(docId).update(updateData);
+        op.then(function () {
             AP.toast('Cita reprogramada al ' + newDate);
             renderMonth();
         }).catch(function (err) {
-            AP.toast('Error al reprogramar: ' + err.message, 'error');
+            if (err.code === 'SLOT_TAKEN') {
+                AP.toast('Ese horario ya está reservado (' + (err.slotLabel || '') + '). Elige otra celda u hora.', 'error');
+            } else {
+                AP.toast('Error al reprogramar: ' + err.message, 'error');
+            }
         });
     }
 

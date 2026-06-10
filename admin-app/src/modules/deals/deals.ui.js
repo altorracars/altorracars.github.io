@@ -26,7 +26,11 @@ export function mountPipeline(root) {
 
   const bar = el('div', { class: 'pipeline__bar' });
   const board = el('div', { class: 'pipeline__board', role: 'list', 'aria-label': 'Embudo de ventas' });
-  const section = el('section', { class: 'pipeline' }, [bar, board]);
+  // F6 (§176): espejo del rótulo de la Bandeja — aquí viven las VENTAS activas.
+  const hint = el('p', { class: 'u-muted u-caption', style: { margin: '0' } }, [
+    'Aquí se trabajan las ventas activas. Los interesados nuevos llegan a la Bandeja.',
+  ]);
+  const section = el('section', { class: 'pipeline' }, [hint, bar, board]);
   clear(root); root.append(section);
 
   // ── Acciones (real vs mock) ──

@@ -22,6 +22,7 @@ import {
 import { createDealFromLead } from '../deals/deals.data.js';
 import { openNewLeadForm } from '../capture/new-lead.js';
 import { openQuickLeadForm } from '../capture/quick-lead.js';
+import { frictionTrack } from '../../core/friction.js';
 import { dealFromLead } from '../../domain/pipeline.js';
 import { getMockLeads, getMockTeam, addMockDeal } from '../../core/mock.js';
 
@@ -143,7 +144,9 @@ export function mountInbox(root) {
   // lleno y mata el contactado-y-olvidado.
   function promptNextStep(lead, anchor) {
     if (!canEdit) return;
+    const t0 = performance.now(); // F33a: medir si el prompt estorba
     openMenu(anchor || document.body, nextStepPresets(), (it) => {
+      frictionTrack('proximo_paso', t0, { preset: it.label });
       if (!it.value) return;
       if (it.value === 'abrir360') { openDetail(lead.id); return; }
       if (store.get().mock) { toast('Próximo paso anotado (mock)', 'ok'); return; }

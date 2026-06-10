@@ -13,6 +13,7 @@ import { el } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { addMockLead } from '../../core/mock.js';
+import { frictionTrack } from '../../core/friction.js';
 
 const FUENTES = [
   { id: 'whatsapp', label: 'WhatsApp', icon: '💬' },
@@ -25,6 +26,7 @@ const FUENTES = [
 const GUION_1581 = '“¿Me autorizas guardar tu nombre y teléfono para contactarte sobre vehículos? (Ley 1581)”';
 
 export function openQuickLeadForm() {
+  const t0 = performance.now(); // F33a: umbral F39 = lead rápido <30s
   const state = { fuente: 'whatsapp', medio: 'organico' };
   const user = store.get().user || {};
 
@@ -125,6 +127,7 @@ export function openQuickLeadForm() {
     toast(navigator.onLine
       ? '⚡ Lead registrado — aparecerá en la Bandeja en segundos'
       : '📴 Guardado local — se enviará al volver la señal', 'ok');
+    frictionTrack('lead_rapido', t0, { fuente: state.fuente, online: navigator.onLine });
     close();
   });
 

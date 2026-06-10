@@ -17,9 +17,11 @@ import {
 } from './inbox.domain.js';
 import {
   subscribeLeads, loadMoreLeads, fetchTeam, assignLead, setLeadStatus, logActivity,
+  scheduleTask, fetchPendingTasks, completeTask,
 } from './inbox.data.js';
 import { createDealFromLead } from '../deals/deals.data.js';
 import { openNewLeadForm } from '../capture/new-lead.js';
+import { openQuickLeadForm } from '../capture/quick-lead.js';
 import { dealFromLead } from '../../domain/pipeline.js';
 import { getMockLeads, getMockTeam, addMockDeal } from '../../core/mock.js';
 
@@ -30,7 +32,26 @@ const ICONS = {
   expand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   convert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M13 9l3 3-3 3"/></svg>',
+  call: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
 };
+
+// P2.b (§178): presets de PRÓXIMO PASO — un prompt, un tap.
+function nextStepPresets() {
+  const at = (days, hour) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    if (hour != null) d.setHours(hour, 0, 0, 0);
+    return d.toISOString();
+  };
+  const in2h = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+  return [
+    { value: { subject: 'Llamar al cliente', dueAt: at(1, 9) }, label: 'Llamar mañana 9 am', icon: '📞' },
+    { value: { subject: 'Escribir por WhatsApp', dueAt: in2h }, label: 'WhatsApp en 2 horas', icon: '💬' },
+    { value: { subject: 'Hacer seguimiento', dueAt: at(3, 9) }, label: 'Seguimiento en 3 días', icon: '🔁' },
+    { value: 'abrir360', label: 'Agendar cita (abrir 360)', icon: '📅' },
+    { value: null, label: 'Sin próximo paso', icon: '⊘' },
+  ];
+}
 
 export function mountInbox(root) {
   const ui = {
@@ -56,15 +77,23 @@ export function mountInbox(root) {
     el('input', { type: 'search', placeholder: 'Buscar nombre, correo, teléfono…', autocomplete: 'off' }),
   ]);
   const elFilters = el('div', { class: 'inbox__filters' });
-  const elNewBtn = canEdit ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', style: { marginLeft: 'auto' } }, ['＋ Nuevo lead']) : null;
+  // F36 §178: el camino RÁPIDO es el primario (WhatsApp/walk-in en <30s);
+  // el form completo queda como secundario (canales con campaña/vehículo).
+  const elQuickBtn = canEdit ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', style: { marginLeft: 'auto' } }, ['⚡ Lead rápido']) : null;
+  if (elQuickBtn) elQuickBtn.addEventListener('click', () => openQuickLeadForm());
+  const elNewBtn = canEdit ? el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['＋ Completo']) : null;
   if (elNewBtn) elNewBtn.addEventListener('click', () => openNewLeadForm());
-  const elToolbar = el('div', { class: 'inbox__toolbar' }, [elSearch, elFilters, elNewBtn]);
+  // P2 §178: Pendientes hoy + vencidos.
+  const elPendBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['📋 Pendientes hoy']);
+  elPendBtn.addEventListener('click', () => togglePendientes());
+  const elPendPanel = el('div', { class: 'inbox__pendientes', hidden: true });
+  const elToolbar = el('div', { class: 'inbox__toolbar' }, [elSearch, elFilters, elQuickBtn, elNewBtn, elPendBtn]);
   const elList = el('div', { class: 'inbox__list', role: 'list', tabindex: '-1' });
   // F6 (§176): la UI enseña el rol de cada superficie — Bandeja = TRIAGE.
   const elHint = el('p', { class: 'u-muted u-caption', style: { margin: '0' } }, [
     'Aquí llegan los interesados: contacta y califica. Las ventas activas viven en el Pipeline.',
   ]);
-  const section = el('section', { class: 'inbox' }, [elHint, elQueues, elToolbar, elList]);
+  const section = el('section', { class: 'inbox' }, [elHint, elQueues, elToolbar, elPendPanel, elList]);
   clear(root);
   root.append(section);
 
@@ -91,13 +120,92 @@ export function mountInbox(root) {
     } catch (e) { toast('No se pudo cambiar el estado', 'error'); }
   }
 
-  function doWhatsapp(lead) {
+  function doWhatsapp(lead, anchor) {
     const url = waLink(lead.phone, whatsappTemplate(lead));
     if (!url) { toast('Este lead no tiene teléfono', 'error'); return; }
     window.open(url, '_blank', 'noopener');
     if (!store.get().mock && canEdit) {
       logActivity(lead.id, { type: 'whatsapp', subject: 'WhatsApp enviado', direction: 'outbound', name: lead.fullName }).catch(() => {});
     }
+    promptNextStep(lead, anchor); // P2.b: cada toque al cliente deja próximo paso
+  }
+
+  // P2 §178 — quick-log de LLAMADA (un tap) + próximo paso.
+  function doCall(lead, anchor) {
+    if (!store.get().mock && canEdit) {
+      logActivity(lead.id, { type: 'llamada', subject: 'Llamada registrada', direction: 'outbound', name: lead.fullName }).catch(() => {});
+    }
+    toast('📞 Llamada registrada', 'ok');
+    promptNextStep(lead, anchor);
+  }
+
+  // P2.b §178 — UN prompt con presets de un tap. Mantiene "Pendientes hoy"
+  // lleno y mata el contactado-y-olvidado.
+  function promptNextStep(lead, anchor) {
+    if (!canEdit) return;
+    openMenu(anchor || document.body, nextStepPresets(), (it) => {
+      if (!it.value) return;
+      if (it.value === 'abrir360') { openDetail(lead.id); return; }
+      if (store.get().mock) { toast('Próximo paso anotado (mock)', 'ok'); return; }
+      scheduleTask(lead.id, { subject: it.value.subject, dueAt: it.value.dueAt, name: lead.fullName })
+        .then(() => toast('✓ Próximo paso: ' + it.label, 'ok'))
+        .catch(() => toast('No se pudo guardar el próximo paso', 'error'));
+    }, { title: '¿Próximo paso con ' + (lead.fullName || 'el cliente').split(/\s+/)[0] + '?' });
+  }
+
+  // P2 §178 — panel "Pendientes hoy + vencidos".
+  let pendOpen = false;
+  async function togglePendientes() {
+    pendOpen = !pendOpen;
+    elPendPanel.hidden = !pendOpen;
+    if (pendOpen) await renderPendientes();
+  }
+  async function renderPendientes() {
+    clear(elPendPanel);
+    if (store.get().mock) {
+      elPendPanel.append(el('div', { class: 'u-muted u-caption', style: { padding: '10px' }, text: 'Pendientes no disponible en modo demo.' }));
+      return;
+    }
+    elPendPanel.append(el('div', { class: 'u-muted u-caption', style: { padding: '10px' }, text: 'Cargando pendientes…' }));
+    let tasks = [];
+    try { tasks = await fetchPendingTasks(); }
+    catch (e) { clear(elPendPanel); elPendPanel.append(el('div', { class: 'u-muted u-caption', style: { padding: '10px' }, text: 'No se pudieron cargar los pendientes.' })); return; }
+    clear(elPendPanel);
+    elPendPanel.append(el('div', { class: 'inbox__listhead' }, [
+      el('span', { class: 'u-muted u-caption', text: `📋 ${tasks.length} pendiente${tasks.length === 1 ? '' : 's'} (hoy y vencidos)` }),
+    ]));
+    if (!tasks.length) {
+      elPendPanel.append(el('div', { class: 'u-muted u-caption', style: { padding: '0 10px 10px' }, text: '¡Al día! Registra llamadas/WhatsApps y elige “próximo paso” para que aparezcan aquí.' }));
+      return;
+    }
+    const now = Date.now();
+    tasks.forEach((t) => {
+      const late = new Date(t.dueAt).getTime() < now;
+      const doneBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', title: 'Marcar hecho' }, ['✓ Hecho']);
+      const openBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['Abrir 360']);
+      const row = el('div', { class: 'lead-card', style: { alignItems: 'center' } }, [
+        el('span', { class: `badge badge--${late ? 'danger' : 'gold'}`, text: late ? 'VENCIDO' : 'HOY' }),
+        el('div', { class: 'u-grow' }, [
+          el('div', { class: 'lead-card__name', text: (t.type === 'cita' ? '📅 ' : '') + t.subject }),
+          el('div', { class: 'u-caption u-muted', text: `${t.relatedTo && t.relatedTo.name ? t.relatedTo.name + ' · ' : ''}${timeAgo(t.dueAt)}` }),
+        ]),
+        el('div', { class: 'u-row u-row--tight' }, [openBtn, canEdit ? doneBtn : null]),
+      ]);
+      openBtn.addEventListener('click', () => { if (t.relatedTo && t.relatedTo.id) openDetail(t.relatedTo.id); });
+      doneBtn.addEventListener('click', async () => {
+        doneBtn.disabled = true;
+        try {
+          await completeTask(t.id);
+          toast('✓ Hecho', 'ok');
+          await renderPendientes();
+          // P2.b: cerrar una activity pregunta el siguiente paso.
+          if (t.relatedTo && t.relatedTo.id) {
+            promptNextStep({ id: t.relatedTo.id, fullName: t.relatedTo.name || '' }, elPendBtn);
+          }
+        } catch (e) { doneBtn.disabled = false; toast('No se pudo completar', 'error'); }
+      });
+      elPendPanel.append(row);
+    });
   }
 
   async function doConvert(lead) {
@@ -273,6 +381,7 @@ export function mountInbox(root) {
       ]),
       el('div', { class: 'lead-card__actions' }, [
         actionBtn('wa', ICONS.wa, 'WhatsApp', 'btn--wa'),
+        canEdit ? actionBtn('call', ICONS.call, 'Registrar llamada') : null,
         canEdit ? actionBtn('assign', ICONS.person, 'Asignar') : null,
         // F1 §176: convertido = inmutable; estado y conversión desaparecen.
         canEdit && !isConverted ? actionBtn('status', ICONS.flag, 'Cambiar estado') : null,
@@ -311,7 +420,8 @@ export function mountInbox(root) {
 
   function handleAction(action, lead, anchor) {
     if (action === 'open') return openDetail(lead.id);
-    if (action === 'wa') return doWhatsapp(lead);
+    if (action === 'wa') return doWhatsapp(lead, anchor);
+    if (action === 'call') return doCall(lead, anchor);
     if (action === 'convert') return doConvert(lead);
     if (action === 'pipeline') { window.location.hash = '#/pipeline'; return; }
     if (action === 'assign') {

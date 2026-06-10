@@ -6,7 +6,7 @@
 // ============================================================
 
 import {
-  collection, query, orderBy, limit, startAfter, onSnapshot, getDocs,
+  collection, query, where, orderBy, limit, startAfter, onSnapshot, getDocs,
   doc, updateDoc, addDoc, increment,
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
@@ -105,6 +105,44 @@ export async function logActivity(leadId, { type = 'nota', subject = '', body = 
     type, subject, body, status: 'closed', direction,
     relatedTo: { type: 'lead', id: leadId, name },
     ownerId: currentUid(), createdAt: nowISO(), _version: 1,
+  });
+}
+
+/**
+ * P2.b (ADR §178) — tarea de PRÓXIMO PASO con vencimiento: lo que llena
+ * "Pendientes hoy" y mata el contactado-y-olvidado.
+ */
+export async function scheduleTask(leadId, { subject, dueAt, name = '' }) {
+  await addDoc(collection(db, 'activities'), {
+    type: 'tarea', subject, body: '', status: 'open', direction: 'outbound',
+    dueAt,
+    relatedTo: { type: 'lead', id: leadId, name },
+    ownerId: currentUid(), createdAt: nowISO(), _version: 1,
+  });
+}
+
+/**
+ * P2 (ADR §178) — "Pendientes hoy + vencidos": tareas/citas abiertas con
+ * dueAt hasta el fin de HOY (local). Rango sobre un solo campo → índice
+ * automático (L-30); status/type se filtran en memoria (volumen pequeño).
+ */
+export async function fetchPendingTasks() {
+  const end = new Date(); end.setHours(23, 59, 59, 999);
+  const q = query(
+    collection(db, 'activities'),
+    where('dueAt', '<=', end.toISOString()),
+    orderBy('dueAt', 'desc'),
+    limit(80),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(withId)
+    .filter((a) => a.status === 'open' && (a.type === 'tarea' || a.type === 'cita'))
+    .sort((a, b) => String(a.dueAt).localeCompare(String(b.dueAt)));
+}
+
+export async function completeTask(activityId) {
+  await updateDoc(doc(db, 'activities', activityId), {
+    status: 'closed', closedAt: nowISO(), closedBy: currentUid(),
   });
 }
 

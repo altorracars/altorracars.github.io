@@ -3,6 +3,7 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const admin = require('firebase-admin');
 const { normalizeSolicitud } = require('./normalize');
+const { ingestLeadTransaction } = require('./ingestLead');
 
 const POLICY_VERSION = 'v1'; // versión vigente de la política de tratamiento
 
@@ -28,35 +29,10 @@ exports.onSolicitudCreated = onDocumentCreated(
     if (sol._ingestedAt) return;
 
     try {
-      const { dedupKey, contact, lead, activity } = normalizeSolicitud(sol, solId, POLICY_VERSION);
-
-      // IDs: determinístico (contacto, para dedup) / auto (lead, activity).
-      const contactId = dedupKey.replace(/[^a-z0-9]/gi, '_').slice(0, 480);
-      const contactRef = db.collection('contacts').doc(contactId);
-      const leadRef = db.collection('leads').doc();
-      const activityRef = db.collection('activities').doc();
-      activity.relatedTo.id = leadRef.id;
-      lead.contactId = contactId;
-
-      // Transacción atómica: upsert de contacto SIN pisar first-seen ni campos
-      // volátiles (createdAt/score/rating/ownerId/lifecycleStage) de un contacto
-      // que regresa, + lead + activity + marca de idempotencia — todo o nada.
-      // Elimina la ventana de lead/activity duplicados ante reintentos.
-      await db.runTransaction(async (tx) => {
-        const contactDoc = await tx.get(contactRef);
-        if (!contactDoc.exists) {
-          tx.set(contactRef, contact); // primer contacto: shape completo
-        } else {
-          // contacto recurrente: solo refrescar actividad reciente.
-          tx.update(contactRef, {
-            lastActivityAt: contact.lastActivityAt,
-            updatedAt: contact.updatedAt,
-          });
-        }
-        tx.set(leadRef, lead);
-        tx.set(activityRef, activity);
-        tx.update(snap.ref, { _ingestedAt: new Date().toISOString(), _leadId: leadRef.id });
-      });
+      const canonical = normalizeSolicitud(sol, solId, POLICY_VERSION);
+      // Alta atómica por la ruta COMPARTIDA (ingestLead.js, F36 §178) — misma
+      // transacción de siempre, ahora reutilizada por lead_intake.
+      await ingestLeadTransaction(db, canonical, snap.ref);
     } catch (err) {
       // Dead-letter: cero pérdida de información (Consejo Externo R4).
       await db.collection('failedIngestions').add({

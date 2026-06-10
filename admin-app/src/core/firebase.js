@@ -10,7 +10,9 @@
 import { initializeApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import {
+  initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+} from 'firebase/firestore';
 
 export const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyD9MJrON70mPqZxQqhndgQHNkTZUnnaQIs',
@@ -35,4 +37,13 @@ export const appCheck = initializeAppCheck(app, {
 });
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// F40a (ADR §178, E1a): persistencia OFFLINE — el patio tiene señal
+// intermitente. Los flujos de CAPTURA (lead rápido, quick-log, notas) son
+// escrituras directas validadas por Rules → se encolan sin señal y
+// sincronizan solos. Lo TRANSACCIONAL (conversión, cupos) sí exige red y
+// la UI lo declara. singleTabManager: el asesor usa UNA pestaña en el
+// celular; evita el coste/edge-cases del multi-tab.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) }),
+});

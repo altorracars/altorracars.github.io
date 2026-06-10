@@ -23,11 +23,15 @@
 
 ## 2. Tu rutina diaria en 5 pasos (15 minutos cada mañana)
 
-1. **Abre la Bandeja** → mira la cola **“🔥 Calientes sin contestar”**. Esos son primero: cada hora que pasa, el cliente se enfría.
-2. **Contacta** (botón de WhatsApp en la fila) → saluda, pregunta qué busca. Al hacerlo, cambia el estado del lead a **Contactado**.
-3. **Mira “Mis asignados”** → ¿tienes leads pendientes de respuesta? Atiéndelos.
-4. **Abre el Pipeline** → revisa tus negocios: ¿alguno lleva días sin moverse? Llámalo hoy.
+1. **Abre la Bandeja** → botón **“📋 Pendientes hoy”**: ahí están tus llamadas y seguimientos de hoy (y los vencidos en rojo). Hazlos primero y márcalos **✓ Hecho**.
+2. Mira la cola **“🔥 Calientes sin contestar”** — cada hora que pasa, el cliente se enfría (la tarjeta te muestra **⏱ cuántos minutos lleva sin contacto**: ámbar a los 45, rojo a los 60).
+3. **Contacta** (WhatsApp 💬 o registra la llamada con 📞) → al terminar, el sistema te pregunta **“¿Próximo paso?”** — elige uno SIEMPRE (un tap): así nada se te olvida.
+4. **Abre el Pipeline** → ¿algún negocio lleva días quieto? Llámalo hoy.
 5. **Abre la Agenda** → ¿qué citas hay hoy? Confírmalas por WhatsApp en la mañana.
+
+### ⚡ El botón más importante: “Lead rápido”
+¿Te escribió alguien por WhatsApp? ¿Entró un cliente caminando al patio? ¿Te llamaron? **Regístralo en 30 segundos**: Bandeja → **⚡ Lead rápido** → nombre + teléfono + de dónde vino → lee la frase de autorización al cliente → ✓ → Registrar. Queda asignado a TI automáticamente. **Funciona incluso sin señal** (se sincroniza solo al volver la conexión).
+> 🥇 Regla de la casa: **si no está en el CRM, no existe** — y los negocios que no estén registrados no entran a la liquidación de comisiones.
 
 ---
 

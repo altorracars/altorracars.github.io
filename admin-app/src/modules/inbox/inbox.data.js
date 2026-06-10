@@ -9,7 +9,8 @@ import {
   collection, query, where, orderBy, limit, startAfter, onSnapshot, getDocs,
   doc, updateDoc, addDoc, increment,
 } from 'firebase/firestore';
-import { db } from '../../core/firebase.js';
+import { httpsCallable } from 'firebase/functions';
+import { db, fns } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 
 const nowISO = () => new Date().toISOString();
@@ -144,6 +145,32 @@ export async function completeTask(activityId) {
   await updateDoc(doc(db, 'activities', activityId), {
     status: 'closed', closedAt: nowISO(), closedBy: currentUid(),
   });
+}
+
+/**
+ * F13 (ADR §180) — ARCHIVAR: el soft-delete del día a día. Reversible;
+ * sale de todas las vistas (Bandeja, Reportes). Las Rules ya lo permiten
+ * (update con crm.edit; no toca `status` → F1 no estorba ni en convertidos).
+ */
+export async function archiveLead(leadId, archived = true) {
+  await updateDoc(doc(db, 'leads', leadId), {
+    archived,
+    archivedAt: archived ? nowISO() : null,
+    updatedAt: nowISO(),
+    updatedBy: currentUid(),
+    _version: increment(1),
+  });
+}
+
+/**
+ * F15 (ADR §180) — ELIMINAR DEFINITIVO (solo super admin, solo prueba/spam):
+ * callable server-side con cascada completa (activities + deals + doc de
+ * entrada + contact huérfano). Requiere RED (transaccional, no offline).
+ */
+export async function purgeLead(leadId) {
+  const call = httpsCallable(fns, 'crmPurgeLead');
+  const res = await call({ leadId });
+  return res.data;
 }
 
 function currentUid() {

@@ -13,6 +13,7 @@ import { getAuth } from 'firebase/auth';
 import {
   initializeFirestore, persistentLocalCache, persistentSingleTabManager,
 } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 
 export const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyD9MJrON70mPqZxQqhndgQHNkTZUnnaQIs',
@@ -47,3 +48,6 @@ export const auth = getAuth(app);
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) }),
 });
+
+// Callables del CRM (crmPurgeLead F15, crmRunSlaSweep F37, …).
+export const fns = getFunctions(app, 'us-central1');

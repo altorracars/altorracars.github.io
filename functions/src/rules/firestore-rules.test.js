@@ -75,6 +75,63 @@ describe.skipIf(!EMU)('Rules — F1 lead convertido inmutable', () => {
   });
 });
 
+describe.skipIf(!EMU)('Rules — F36 lead_intake (lead rápido)', () => {
+  let testEnv, rut;
+  const ASESOR = 'asesor_crm_create';
+
+  beforeAll(async () => {
+    rut = await import('@firebase/rules-unit-testing');
+    testEnv = await rut.initializeTestEnvironment({
+      projectId: 'altorra-rules-test-intake',
+      firestore: { rules: readFileSync(join(__dir, '../../../firestore.rules'), 'utf8') },
+    });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc('usuarios/' + ASESOR).set({
+        rol: 'custom', permissions: ['crm.read', 'crm.create'], estado: 'activo',
+      });
+    });
+  });
+  afterAll(async () => { if (testEnv) await testEnv.cleanup(); });
+
+  const VALID = {
+    nombre: 'Walkin Pérez', telefono: '3001234567', fuente: 'walkin',
+    consentVerbal: true, ownerId: ASESOR, createdAt: '2026-06-10T12:00:00.000Z',
+  };
+
+  it('asesor con crm.create registra un lead rápido (owner = él mismo)', async () => {
+    await rut.assertSucceeds(
+      testEnv.authenticatedContext(ASESOR).firestore().collection('lead_intake').add(VALID)
+    );
+  });
+
+  it('NO puede registrar a nombre de OTRO owner', async () => {
+    await rut.assertFails(
+      testEnv.authenticatedContext(ASESOR).firestore().collection('lead_intake')
+        .add({ ...VALID, ownerId: 'otro_uid' })
+    );
+  });
+
+  it('sin nombre o sin teléfono/email → rechazado', async () => {
+    const db = testEnv.authenticatedContext(ASESOR).firestore();
+    await rut.assertFails(db.collection('lead_intake').add({ ...VALID, nombre: '' }));
+    const sinContacto = { ...VALID };
+    delete sinContacto.telefono;
+    await rut.assertFails(db.collection('lead_intake').add(sinContacto));
+  });
+
+  it('anónimo no escribe; nadie edita/borra desde el cliente', async () => {
+    await rut.assertFails(
+      testEnv.unauthenticatedContext().firestore().collection('lead_intake').add(VALID)
+    );
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc('lead_intake/fijo').set(VALID);
+    });
+    await rut.assertFails(
+      testEnv.authenticatedContext(ASESOR).firestore().doc('lead_intake/fijo').update({ nombre: 'X' })
+    );
+  });
+});
+
 describe.skipIf(EMU)('Rules (skip)', () => {
   it('se saltan sin emulador — correr con firebase emulators:exec', () => {
     expect(true).toBe(true);

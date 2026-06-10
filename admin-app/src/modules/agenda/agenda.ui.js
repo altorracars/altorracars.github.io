@@ -10,6 +10,7 @@ import {
   WEEKDAYS, MONTHS, monthMatrix, gridRange, groupByDay, dayKey, timeOf, isSameDay,
 } from '../../domain/agenda.js';
 import { subscribeRange } from './agenda.data.js';
+import { openCitaDetail } from './cita-dialog.js';
 import { getMockAgenda } from '../../core/mock.js';
 
 export function mountAgenda(root) {
@@ -17,13 +18,14 @@ export function mountAgenda(root) {
   const ui = { year: today.getFullYear(), month: today.getMonth(), events: [], loading: true, error: null, sub: null };
 
   const head = el('div', { class: 'agenda__head' });
-  // F16 §182: las citas WEB ya se PROYECTAN aquí (solicitud = SSoT →
-  // activities/cita_*). Falta la GESTIÓN (confirmar/reprogramar/cancelar)
-  // que llega con F18/F19 — hasta entonces, esa parte vive en el clásico.
+  // F18/F19 §184: la GESTIÓN de citas ya vive AQUÍ (confirmar con asesor,
+  // WhatsApp con link, reprogramar, cancelar, no-show). El clásico sigue
+  // disponible como respaldo hasta el cutover (strangler F23).
   const banner = el('p', { class: 'u-muted u-caption', style: { margin: '0', padding: '8px 10px', border: '1px dashed var(--line, #444)', borderRadius: '8px' } }, [
-    '✅ Las citas que los clientes piden desde la web YA aparecen aquí (solo lectura). Para confirmar/reprogramar/cancelar usa el ',
-    el('a', { href: '/admin.html#solicitudes', target: '_blank', rel: 'noopener', text: 'calendario del panel clásico' }),
-    ' — esos botones llegan aquí en la siguiente entrega.',
+    '✅ Toca una cita para confirmarla (asignando asesor), pedir confirmación por WhatsApp, reprogramarla o cancelarla. ',
+    'Si el cliente no confirma, caduca sola 3h antes y libera el cupo. El ',
+    el('a', { href: '/admin.html#solicitudes', target: '_blank', rel: 'noopener', text: 'calendario clásico' }),
+    ' sigue de respaldo hasta el cambio definitivo.',
   ]);
   const weekdays = el('div', { class: 'agenda__weekdays' }, WEEKDAYS.map((w) => el('span', { class: 'agenda__wd', text: w })));
   const grid = el('div', { class: 'agenda__grid' });
@@ -87,7 +89,13 @@ export function mountAgenda(root) {
   }
 
   function eventChip(ev) {
-    const chip = el('button', { class: 'agenda__chip', type: 'button', title: ev.subject || 'Cita' }, [
+    // F18 §184: las citas pintan su estado (pendiente ámbar / confirmada
+    // verde / cerradas apagadas) y abren su diálogo de acciones.
+    const estado = ev.type === 'cita' ? (ev.estadoCita || 'pendiente') : null;
+    const cls = 'agenda__chip'
+      + (estado ? ' agenda__chip--' + estado : '')
+      + (ev.status === 'closed' ? ' is-closed' : '');
+    const chip = el('button', { class: cls, type: 'button', title: ev.subject || 'Cita' }, [
       el('span', { class: 'agenda__chip-time', text: timeOf(ev.dueAt) }),
       el('span', { class: 'u-truncate', text: ev.relatedTo?.name || ev.subject || 'Cita' }),
     ]);
@@ -96,6 +104,11 @@ export function mountAgenda(root) {
   }
 
   function openEvent(ev) {
+    // Cita proyectada (F16) → diálogo de gestión F18; lo demás → 360.
+    if (ev.type === 'cita' && ev.sourceSolicitudId) {
+      openCitaDetail(ev, { onLead: (id) => store.set({ detailLeadId: id }) });
+      return;
+    }
     const leadId = ev.relatedTo && ev.relatedTo.id;
     if (leadId) store.set({ detailLeadId: leadId });
   }

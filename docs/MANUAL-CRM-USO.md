@@ -95,11 +95,23 @@ Columnas = etapas del proceso real de venta. Cada tarjeta es un negocio. **Arrá
 
 ---
 
-## 6. La Agenda (citas)
+## 6. La Agenda (citas) — ahora TODO se maneja aquí
 
-- **Agendar**: abre la ficha 360 del cliente → botón **Agendar cita** → fecha y hora.
-- La vista de mes muestra las citas; clic en una cita → abre la ficha del cliente.
-- 🔜 **En camino**: las citas que el cliente pide desde la web aparecerán aquí mismas, con botones Confirmar / Reprogramar / Cancelar (que avisan al cliente por correo automáticamente). Hoy esas citas web se gestionan todavía en el calendario del panel admin clásico.
+- La vista de mes muestra todas las citas: las que pide el cliente desde la **web** y las que tú creas a mano. El **color del borde** dice cómo va: 🟡 pendiente (sin confirmar) · 🟢 confirmada · 🔵 reprogramada · gris = cerrada.
+- **Toca una cita** y ahí mismo tienes los botones:
+  - **📲 Pedir confirmación por WhatsApp** — abre WhatsApp con el mensaje listo y un **link mágico**: el cliente lo toca, ve una página de ALTORRA y pulsa **"✅ Confirmar mi cita"** — queda confirmada sola (te enteras en la Agenda). Este es el canal principal — aquí casi nadie abre el correo.
+  - **✓ Confirmar (asignar asesor)** — si el cliente ya te dijo que sí por teléfono/persona. Eliges quién lo atiende (y qué carro): eso **reserva el tiempo del asesor y del carro** para que nadie más agende encima.
+  - **🔁 Reprogramar** — mueve la cita; el link viejo deja de servir y hay que pedirle confirmación otra vez (así nadie confirma una hora que ya no existe).
+  - **✖ Cancelar / 🏁 Completada / 🚫 No asistió** — cierran la cita y LIBERAN el cupo. "No asistió" te deja una tarea automática para mañana 9am: llamarlo y reagendar.
+- ⏳ **Regla de oro**: una cita web que NADIE confirma **caduca sola 3 horas antes** y libera el cupo (te llega aviso para llamar al cliente). Confirma temprano.
+- 🔔 El sistema solo también ayuda: recordatorio automático al cliente 1-2 días antes (correo con el link) + aviso por Telegram al asesor con el WhatsApp listo, y otro recordatorio la misma mañana.
+- **Agendar a mano**: ficha 360 del cliente → **📅 Agendar cita** → fecha, hora, asesor y carro. Nace ya confirmada.
+- El calendario del panel clásico sigue ahí de respaldo, pero ya no lo necesitas para el día a día.
+
+### ⚙️ Disponibilidad (qué horarios ve el cliente en la web)
+
+- Sección **Disponibilidad** del portal (solo quien administra): días y horario de atención, fechas bloqueadas y **festivos** (botón "🇨🇴 Cargar festivos de Colombia 2026" — tócalo una vez), horas puntuales bloqueadas, y **ausencias por asesor** (vacaciones/incapacidad: en esas fechas no le caen leads ni citas).
+- Lo que guardes ahí aplica AL INSTANTE en la página web pública.
 
 ---
 

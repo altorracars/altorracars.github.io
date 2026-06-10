@@ -32,7 +32,8 @@
             'reprogramada',  // admin movio fecha/hora
             'completada',    // cliente vino y se atendio
             'cancelada',     // admin o cliente cancelaron
-            'no_show'        // cliente no se presento sin avisar
+            'no_show',       // cliente no se presento sin avisar
+            'caducada'       // F19 §184: pendiente sin confirmar a T-3h (hold-expiry)
         ],
         solicitud: [
             'pendiente',     // recien creada
@@ -89,6 +90,7 @@
         completada: 'Completada',
         cancelada: 'Cancelada',
         no_show: 'No asistio',
+        caducada: 'Caducada (no confirmó)',
         en_revision: 'En revisión',
         contactado: 'Contactado',
         aprobada: 'Aprobada',
@@ -109,6 +111,7 @@
         completada: 'admin-gold',
         cancelada: 'admin-danger',
         no_show: 'admin-danger',
+        caducada: 'admin-text-muted',
         en_revision: 'admin-info',
         contactado: 'admin-info',
         aprobada: 'admin-success',

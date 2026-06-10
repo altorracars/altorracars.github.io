@@ -2,6 +2,7 @@
 
 const { sanitizeContactId } = require('./normalize');
 const { pickFromRotation } = require('../../shared/business-hours');
+const { advisorOverrideFor, bogotaDayKey } = require('../../shared/cita-blocks');
 
 /**
  * ingestLead.js — transacción de ALTA al canónico, COMPARTIDA (F36, ADR §178).
@@ -37,13 +38,31 @@ async function ingestLeadTransaction(db, canonical, sourceRef) {
     // Sin config → ownerId null (comportamiento previo, intacto).
     let rotationNext = null;
     if (!lead.ownerId) {
-      const cfgSnap = await tx.get(intakeCfgRef);
+      const [cfgSnap, ovSnap] = await Promise.all([
+        tx.get(intakeCfgRef),
+        tx.get(db.collection('crm_config').doc('advisorOverrides')),
+      ]);
       if (cfgSnap.exists) {
-        const { owner, next } = pickFromRotation(cfgSnap.data());
-        if (owner) {
-          lead.ownerId = owner.uid;
-          lead.ownerName = owner.nombre;
-          rotationNext = next;
+        const cfg = cfgSnap.data();
+        // F37/F21.5 §184: la rotación SALTA asesores con ausencia activa HOY
+        // (vacaciones/incapacidad del editor de Disponibilidad). Si todos
+        // están ausentes, cae al primer turno (mejor un owner ausente que
+        // un lead huérfano — la escalera SLA igual avisa al CEO).
+        const overrides = (ovSnap.exists && ovSnap.data().overrides) || {};
+        const hoy = bogotaDayKey(Date.now());
+        const rotLen = Array.isArray(cfg.rotation) ? cfg.rotation.length : 0;
+        let pick = pickFromRotation(cfg);
+        let fallback = pick;
+        let saltos = 0;
+        while (pick.owner && advisorOverrideFor(overrides, pick.owner.uid, hoy) && saltos < rotLen) {
+          pick = pickFromRotation({ ...cfg, next: pick.next });
+          saltos++;
+        }
+        if (pick.owner && advisorOverrideFor(overrides, pick.owner.uid, hoy)) pick = fallback;
+        if (pick.owner) {
+          lead.ownerId = pick.owner.uid;
+          lead.ownerName = pick.owner.nombre;
+          rotationNext = pick.next;
         }
       }
     }

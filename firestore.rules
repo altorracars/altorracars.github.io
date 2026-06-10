@@ -792,11 +792,32 @@ service cloud.firestore {
         || (docId == 'bookedSlots')
         || (docId == 'counters' && hasPermission('settings.backup'))
         || (docId == 'calendarConfig' && hasPermission('calendar.config'))
+        // F21 §184: availability = SSoT de disponibilidad (mismo permiso).
+        || (docId == 'availability' && hasPermission('calendar.config'))
         || (docId == 'followups' && hasPermission('templates.edit'))
         || (docId == 'messageTemplates' && hasPermission('templates.edit'))
         || hasPermission('settings.theme')
         || hasPermission('settings.seo')
         || hasPermission('settings.backup');
+    }
+
+    // ========== CRM CONFIG PRIVADA (§184) ==========
+    // advisorOverrides (ausencias con nombre+motivo = PII/dato sensible) vive
+    // AQUÍ y no en config/* porque config tiene read público (el form web).
+    match /crm_config/{docId} {
+      allow read: if isEditorOrAbove() || hasPermission('crm.read')
+        || hasPermission('crm.edit') || hasPermission('calendar.config');
+      allow write: if isSuperAdmin() || hasPermission('calendar.config');
+    }
+
+    // ========== RESOURCE SLOTS (F19 §184 — tupla asesor+vehículo) ==========
+    // Bloques de 30min por día: { 'asesor_<uid>': ['10:00'], 'vehiculo_<id>': [...] }.
+    // SOLO escribe el Admin SDK (callable crmCitaAction + jobs). El staff lee
+    // para pintar disponibilidad al confirmar/reprogramar.
+    match /resource_slots/{day} {
+      allow read: if isEditorOrAbove() || hasPermission('crm.read')
+        || hasPermission('crm.edit') || hasPermission('calendar.config');
+      allow write: if false;
     }
 
     // ========== DRAFTS ACTIVOS (admin collaboration) ==========

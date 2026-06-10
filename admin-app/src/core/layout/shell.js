@@ -9,7 +9,7 @@ import { store } from '../store.js';
 import { openMenu } from '../popover.js';
 import { navigate } from '../router.js';
 import { toggleTheme } from '../theme.js';
-import { signOutUser, displayName, displayRole } from '../auth.js';
+import { signOutUser, displayName, displayRole, hasPermission } from '../auth.js';
 import { initials } from '../../domain/format.js';
 
 const APP_VERSION = '0.4.1';
@@ -20,6 +20,8 @@ const NAV = [
   { id: 'agenda', label: 'Agenda', icon: '📅', ready: true },
   { id: 'reportes', label: 'Reportes', icon: '📊', ready: true },
   { id: 'contactos', label: 'Contactos', icon: '👤', ready: true },
+  // F21 §184: editor del SSoT de disponibilidad — solo quien lo administra.
+  { id: 'config', label: 'Disponibilidad', icon: '⚙️', ready: true, perm: 'calendar.config' },
 ];
 
 const TITLES = {
@@ -28,6 +30,7 @@ const TITLES = {
   agenda: 'Agenda',
   reportes: 'Reportes y KPIs',
   contactos: 'Contactos',
+  config: 'Disponibilidad de citas',
 };
 
 export function mountShell(appRoot) {
@@ -38,7 +41,7 @@ export function mountShell(appRoot) {
     el('span', { class: 'sidebar__sub u-caption', text: 'CRM' }),
   ]);
   const nav = el('nav', { class: 'sidebar__nav', 'aria-label': 'Secciones' });
-  NAV.forEach((item) => {
+  NAV.filter((item) => !item.perm || hasPermission(item.perm)).forEach((item) => {
     const btn = el('button', { class: 'navitem', type: 'button', disabled: !item.ready }, [
       el('span', { class: 'navitem__icon', 'aria-hidden': 'true', text: item.icon }),
       el('span', { class: 'navitem__label', text: item.label }),

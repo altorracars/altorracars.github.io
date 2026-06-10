@@ -45,17 +45,16 @@ Cada interés que llega — formulario de la web, suscripción, lead que tú reg
 - **📥 Sin asignar** — sin dueño. Si está libre, ¡tómalo!
 - **Todo** — todos los leads, incluso cerrados.
 
-### Los estados de un lead (en orden natural)
+### Los estados de un lead (solo 4 — cero ambigüedad)
 | Estado | Significa | Cuándo lo pones |
 |---|---|---|
 | **Nuevo** | Acaba de entrar, nadie le ha hablado | (automático) |
 | **Contactado** | Ya le escribiste/llamaste | Apenas le hables la primera vez |
-| **Calificado** | Va en serio: tiene presupuesto e intención real | Cuando confirmes que puede y quiere comprar |
-| **No calificado** | No es un comprador (spam, curioso, sin presupuesto) | Cuando lo confirmes — no lo borres, márcalo |
-| **Convertido** | Lo pasaste a Negocio (Pipeline) | (lo pone el sistema al convertir) |
-| **Perdido** | Se enfrió ANTES de ser negocio (no responde, compró en otro lado) | Tras varios intentos sin respuesta |
+| **Convertido** | Ya es un Negocio en el Pipeline | (lo pone el sistema al usar “Convertir”) |
+| **Descartado** | No va — el sistema te pide la RAZÓN: *inalcanzable* (nunca contestó) ≠ *no califica* (sin presupuesto) ≠ duplicado ≠ ya compró en otra parte ≠ spam | Cuando lo confirmes — nunca lo borres |
 
-> ⚠️ **Regla importante**: si el lead ya está **Convertido**, NO le cambies más el estado en la Bandeja — su vida sigue en el Pipeline. Cambiárselo crea contradicciones (ej. “perdido” aquí y “negociación” allá). *(El sistema pronto lo bloqueará solo; mientras tanto, disciplina.)*
+> 💡 La razón del descarte importa: con ella los Reportes te dicen si un canal trae gente **incontactable** o gente que **no califica** — son problemas distintos con soluciones distintas.
+> ✅ El lead **Convertido** ya está bloqueado por el sistema: su tarjeta muestra **en qué etapa va su negocio** (se actualiza sola) y un link directo al Pipeline.
 
 ### Acciones por fila
 - **WhatsApp** 💬 — abre chat con el cliente y deja registro.
@@ -69,13 +68,13 @@ Para los que NO llegan por la web: llamadas, walk-ins, Instagram/Facebook, refer
 
 ---
 
-## 4. Convertir: el momento clave
+## 4. Convertir: el momento clave (calificar y convertir son LO MISMO)
 
-**¿Cuándo?** Cuando el cliente está **Calificado**: sabes que quiere un carro, puede pagarlo y está dispuesto a avanzar.
+**¿Cuándo?** Cuando confirmes las 3 cosas que el diálogo te recuerda: hablaste con él · tiene presupuesto o forma de pago en mente · busca un carro concreto o una categoría.
 
-**¿Cómo?** Botón **Convertir a negocio** (en la fila de la Bandeja o en la ficha 360). El sistema crea el Negocio en el Pipeline (columna “Nuevo”) y marca el lead como Convertido.
+**¿Cómo?** Botón **🎯 Convertir** → un solo formulario de 45 segundos: el **carro** (del inventario, o “sin vehículo aún”), el **valor estimado** (se prellenan con el precio — alimenta el pronóstico) y el **asesor responsable**. El Negocio nace en “Cuadrando cita”.
 
-**Después de convertir**: todo se trabaja en el **Pipeline**. La Bandeja queda como historial de ese lead.
+**¿Te equivocaste?** Tienes 10 segundos de **Deshacer** en pantalla (y hasta 24h si el negocio no tiene actividad — después, márcalo Perdido con razón “Error de registro”).
 
 ---
 
@@ -83,12 +82,14 @@ Para los que NO llegan por la web: llamadas, walk-ins, Instagram/Facebook, refer
 
 Columnas = etapas del proceso real de venta. Cada tarjeta es un negocio. **Arrástrala** a la etapa donde va (o usa el botón ↔ si prefieres menú):
 
-**Nuevo → Contactado → Cita agendada → Visitó → Test drive → Negociación → Financiación → 🏆 Vendido**
+**Cuadrando cita → Cita fijada → Visita / Test drive → Negociación → Apartado → 🏆 Vendido**
 
-- El % de cada etapa alimenta el **pronóstico** de ventas del mes (Reportes).
-- **Editar monto** 💰: pon el precio real del carro que negocia — sin monto, el pronóstico queda cojo.
-- **Marcar GANADO** 🏆 cuando firme/pague.
-- **Marcar PERDIDO** ✖ si se cae — elige la **razón** (precio, financiación negada, compró en otro lado…). Esa razón vale oro: en Reportes te dice POR QUÉ se pierden ventas.
+- “Cuadrando cita” = coordinando con el cliente · “Cita fijada” = ya hay fecha y hora.
+- Al mover, el sistema puede pedirte UN dato (los “peajes” de la venta): ¿hubo test drive? · monto y vencimiento del **apartado** (default 72h) · forma de pago al **vender** · razón al **perder** o al retroceder. Es un solo prompt, presets de un tap.
+- ¿Saltas etapas? (walk-in que compra el mismo día) — puedes: el sistema junta los peajes en una sola pregunta.
+- **Deshacer** (10 seg) aparece tras cada movimiento — el arrastre accidental no existe.
+- El header muestra **cuánta plata hay en el pipeline** por etapa y ponderada (con los valores estimados).
+- **Marcar GANADO** 🏆: pide la forma de pago; el carro se marca **vendido** y se baja de la página web solo.
 
 > ⚠️ No dejes negocios “zombies”: si lleva 2 semanas quieto, o lo reactivas o lo marcas perdido con su razón.
 

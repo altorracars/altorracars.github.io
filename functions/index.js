@@ -3517,6 +3517,12 @@ exports.crmRestore = require('./src/ops/crmBackup').crmRestore;
 // F15 §180 (adelanto E3): borrado físico en cascada de datos de prueba/spam.
 exports.crmPurgeLead = require('./src/ops/crmPurge').crmPurgeLead;
 
+// ========== CRM E1b — Pipeline v2 (ADR §181) ==========
+// F2/F3/F25b/F29: única fuente de sincronización deal→lead/contact/vehículo.
+exports.onDealUpdated = require('./src/crm/onDealUpdated').onDealUpdated;
+// F7: anulación compensatoria de la conversión (el "Deshacer" server-side).
+exports.anularConversion = require('./src/crm/anularConversion').anularConversion;
+
 // ========== CRM F37 — vigilante de SLA (ADR §179, E1a) ==========
 // La tarjeta de la Bandeja avisa al ASESOR a los 45/60 min (F4); este sweep
 // escala al RESPONSABLE a las N horas HÁBILES (default 2 — en usados el lead

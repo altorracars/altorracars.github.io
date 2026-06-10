@@ -117,24 +117,45 @@ export function slaState(lead) {
   return { state, dueAt, remainingMs, closed };
 }
 
-// ── Estados del lead (pipeline corto de la Bandeja) ──
+// ── Estados del lead v3 (§176/§181) — ESPEJO de crm-spec (test de paridad) ──
+// 4 estados, cero ambigüedad: la Bandeja FILTRA (nuevo→contactado→convertir
+// o descartar). "perdido" es vocabulario EXCLUSIVO del deal; "convertido"
+// solo se alcanza vía "Calificar → crear negocio" (jamás por dropdown).
 export const LEAD_STATUSES = [
-  { id: 'nuevo',         label: 'Nuevo',          badge: 'gold' },
-  { id: 'contactado',    label: 'Contactado',     badge: 'info' },
-  { id: 'calificado',    label: 'Calificado',     badge: 'ok' },
-  { id: 'no_calificado', label: 'No calificado',  badge: '' },
-  { id: 'convertido',    label: 'Convertido',     badge: 'ok' },
-  { id: 'perdido',       label: 'Perdido',        badge: 'danger' },
+  { id: 'nuevo',      label: 'Nuevo',      badge: 'gold' },
+  { id: 'contactado', label: 'Contactado', badge: 'info' },
+  { id: 'convertido', label: 'Convertido', badge: 'ok' },
+  { id: 'descartado', label: 'Descartado', badge: '' },
 ];
+
+// Razones de descarte (picklist OBLIGATORIA): 'inalcanzable' ≠ 'no_califica'
+// separa "el canal trae gente incontactable" de "trae gente que no califica".
+export const DISCARD_REASONS = [
+  { id: 'inalcanzable', label: 'Inalcanzable (no responde)' },
+  { id: 'no_califica', label: 'No califica (sin presupuesto/intención)' },
+  { id: 'duplicado', label: 'Duplicado' },
+  { id: 'ya_compro_en_otra_parte', label: 'Ya compró en otra parte' },
+  { id: 'spam_prueba', label: 'Spam / prueba' },
+];
+
+// Legacy v2 (solo lectura defensiva si quedara un doc viejo; migración F35b).
+const LEGACY_STATUS_LABELS = {
+  calificado: { id: 'calificado', label: 'Calificado (v2)', badge: 'ok' },
+  no_calificado: { id: 'no_calificado', label: 'No calificado (v2)', badge: '' },
+  perdido: { id: 'perdido', label: 'Perdido (v2)', badge: 'danger' },
+};
 
 const STATUS_MAP = LEAD_STATUSES.reduce((m, s) => ((m[s.id] = s), m), {});
 
 export function statusMeta(status) {
-  return STATUS_MAP[status] || { id: status || 'nuevo', label: status || 'Nuevo', badge: '' };
+  return STATUS_MAP[status] || LEGACY_STATUS_LABELS[status]
+    || { id: status || 'nuevo', label: status || 'Nuevo', badge: '' };
 }
 
 export function isClosedStatus(status) {
-  return status === 'convertido' || status === 'perdido' || status === 'no_calificado';
+  return status === 'convertido' || status === 'descartado'
+    // legacy v2 cerrados (defensivo hasta consolidar la migración):
+    || status === 'perdido' || status === 'no_calificado';
 }
 
 /** ¿Aún no lo contestó nadie? (clave para "calientes sin contestar"). */

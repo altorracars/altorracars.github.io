@@ -98,14 +98,14 @@ function buildRestorePlan(backupCollections, currentIdsByCollection, onlyCollect
   return plan;
 }
 
-/* ── EXPORT ─────────────────────────────────────────────────────────────── */
-const crmExport = onCall(callableOptions, async (request) => {
-  await verifySuperAdmin(request.auth);
+/* ── Núcleo transport-agnóstico (F34 v2 — ensayable en EMULADOR) ────────── */
 
+/** Construye el snapshot exportable leyendo Firestore (sin Storage). */
+async function buildExportData(firestoreDb, meta = {}) {
   const data = {
     _meta: {
       exportedAt: new Date().toISOString(),
-      by: request.auth.uid,
+      by: meta.by || null,
       version: 1,
       projectId: process.env.GCLOUD_PROJECT || null,
     },
@@ -114,9 +114,8 @@ const crmExport = onCall(callableOptions, async (request) => {
   };
   const counts = {};
   const capped = [];
-
   for (const col of CRM_COLLECTIONS) {
-    const snap = await db().collection(col).limit(MAX_DOCS_PER_COLLECTION + 1).get();
+    const snap = await firestoreDb.collection(col).limit(MAX_DOCS_PER_COLLECTION + 1).get();
     const docs = snap.docs.slice(0, MAX_DOCS_PER_COLLECTION);
     if (snap.docs.length > MAX_DOCS_PER_COLLECTION) capped.push(col);
     data.collections[col] = {};
@@ -124,9 +123,56 @@ const crmExport = onCall(callableOptions, async (request) => {
     counts[col] = docs.length;
   }
   for (const id of CONFIG_DOCS) {
-    const s = await db().collection('config').doc(id).get();
+    const s = await firestoreDb.collection('config').doc(id).get();
     if (s.exists) data.configDocs[id] = encodeValue(s.data());
   }
+  return { data, counts, capped };
+}
+
+/**
+ * Aplica un backup (set total por doc + _migration:true, luego limpia el
+ * flag en 2ª pasada). NO destructivo: docs actuales fuera del backup quedan.
+ */
+async function applyRestore(firestoreDb, backup, { collections = null, FieldValue } = {}) {
+  const restored = {};
+  const flagged = [];
+  for (const col of Object.keys(backup.collections)) {
+    if (collections && !collections.includes(col)) continue;
+    const entries = Object.entries(backup.collections[col] || {});
+    restored[col] = 0;
+    for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+      const batch = firestoreDb.batch();
+      for (const [id, raw] of entries.slice(i, i + BATCH_SIZE)) {
+        const ref = firestoreDb.collection(col).doc(id);
+        batch.set(ref, Object.assign({}, decodeValue(raw), { _migration: true }));
+        flagged.push(ref);
+        restored[col]++;
+      }
+      await batch.commit();
+    }
+  }
+  if (!collections && backup.configDocs) {
+    for (const id of Object.keys(backup.configDocs)) {
+      if (!CONFIG_DOCS.includes(id)) continue;
+      await firestoreDb.collection('config').doc(id).set(decodeValue(backup.configDocs[id]));
+    }
+  }
+  const FV = FieldValue || admin.firestore.FieldValue;
+  for (let i = 0; i < flagged.length; i += BATCH_SIZE) {
+    const batch = firestoreDb.batch();
+    for (const ref of flagged.slice(i, i + BATCH_SIZE)) {
+      batch.update(ref, { _migration: FV.delete() });
+    }
+    await batch.commit();
+  }
+  return restored;
+}
+
+/* ── EXPORT ─────────────────────────────────────────────────────────────── */
+const crmExport = onCall(callableOptions, async (request) => {
+  await verifySuperAdmin(request.auth);
+
+  const { data, counts, capped } = await buildExportData(db(), { by: request.auth.uid });
 
   const gz = zlib.gzipSync(Buffer.from(JSON.stringify(data), 'utf8'));
   const path = 'crm-backups/' + data._meta.exportedAt.replace(/[:.]/g, '-') + '/export.json.gz';
@@ -170,42 +216,13 @@ const crmRestore = onCall(callableOptions, async (request) => {
     return { ok: true, dryRun: true, exportedAt: backup._meta.exportedAt, plan };
   }
 
-  // Ejecutar: set() total por doc (restauración fiel) + _migration:true.
-  const restored = {};
-  const flagged = []; // refs para la 2ª pasada (limpiar _migration)
-  for (const col of Object.keys(plan)) {
-    const entries = Object.entries(backup.collections[col] || {});
-    restored[col] = 0;
-    for (let i = 0; i < entries.length; i += BATCH_SIZE) {
-      const batch = db().batch();
-      for (const [id, raw] of entries.slice(i, i + BATCH_SIZE)) {
-        const ref = db().collection(col).doc(id);
-        batch.set(ref, Object.assign({}, decodeValue(raw), { _migration: true }));
-        flagged.push(ref);
-        restored[col]++;
-      }
-      await batch.commit();
-    }
-  }
-  // configDocs (si vienen en el backup y no se filtró por collections)
-  if (!collections && backup.configDocs) {
-    for (const id of Object.keys(backup.configDocs)) {
-      if (!CONFIG_DOCS.includes(id)) continue;
-      await db().collection('config').doc(id).set(decodeValue(backup.configDocs[id]));
-    }
-  }
-  // 2ª pasada: retirar el flag (sin _migration permanente, los triggers de
-  // cara al cliente vuelven a operar normal para escrituras FUTURAS reales).
-  for (let i = 0; i < flagged.length; i += BATCH_SIZE) {
-    const batch = db().batch();
-    for (const ref of flagged.slice(i, i + BATCH_SIZE)) {
-      batch.update(ref, { _migration: admin.firestore.FieldValue.delete() });
-    }
-    await batch.commit();
-  }
+  const restored = await applyRestore(db(), backup, { collections });
 
   console.log('[crmRestore] OK desde ' + path + ' · ' + JSON.stringify(restored));
   return { ok: true, dryRun: false, restored, plan };
 });
 
-module.exports = { crmExport, crmRestore, buildRestorePlan, encodeValue, decodeValue };
+module.exports = {
+  crmExport, crmRestore, buildRestorePlan, encodeValue, decodeValue,
+  buildExportData, applyRestore, CRM_COLLECTIONS,
+};

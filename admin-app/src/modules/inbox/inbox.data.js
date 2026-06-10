@@ -72,7 +72,7 @@ export async function assignLead(leadId, owner) {
   });
 }
 
-export async function setLeadStatus(leadId, status, lead = {}) {
+export async function setLeadStatus(leadId, status, lead = {}, extra = {}) {
   // F1 (ADR §176): lead convertido = status inmutable. Las Rules lo rechazan
   // server-side; este guard evita el intento y da el mensaje correcto.
   if (lead && lead.convertedTo && lead.convertedTo.dealId) {
@@ -80,6 +80,7 @@ export async function setLeadStatus(leadId, status, lead = {}) {
   }
   const ts = nowISO();
   await updateDoc(doc(db, 'leads', leadId), {
+    ...extra, // v3 §181: 'descartado' viaja con su discardReason (rules lo exigen)
     status,
     lastActivityAt: ts,
     updatedAt: ts,

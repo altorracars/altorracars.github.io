@@ -322,9 +322,22 @@ service cloud.firestore {
           || resource.data.convertedTo.dealId == null
           || request.resource.data.status == resource.data.status;
       }
+      // F35b (ADR §181): whitelist de estados v3 — los valores retirados
+      // (calificado/no_calificado/perdido) se RECHAZAN en escritura; un
+      // cliente con la SPA vieja recibe denegación, nunca corrompe.
+      // 'descartado' exige razón de picklist (inalcanzable ≠ no_califica).
+      function leadStatusV3Ok() {
+        return request.resource.data.status == resource.data.status
+          || (
+            request.resource.data.status in ['nuevo', 'contactado', 'convertido', 'descartado']
+            && (request.resource.data.status != 'descartado'
+                || request.resource.data.discardReason in
+                   ['inalcanzable', 'no_califica', 'duplicado', 'ya_compro_en_otra_parte', 'spam_prueba'])
+          );
+      }
       allow read:   if isAuthenticated() || hasPermission('crm.read');
       allow create: if isSuperAdmin() || hasPermission('crm.edit');
-      allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && leadStatusUnlocked();
+      allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && leadStatusUnlocked() && leadStatusV3Ok();
       allow delete: if isSuperAdmin() || hasPermission('crm.delete');
     }
 
@@ -369,10 +382,57 @@ service cloud.firestore {
     }
 
     // ========== DEALS (CRM canónico — oportunidades/embudo — Fase 3) ==========
+    // F8/F35b (ADR §181): etapas v3 + GATES + matriz de transiciones,
+    // enforced en DATOS (espejo de functions/shared/crm-spec.js — el test de
+    // paridad F30 lo afirma). El server (Admin SDK: trigger F2, anulación F7)
+    // bypasea. Cliente obsoleto con enums v2 → denegado (pide recargar).
     match /deals/{dealId} {
-      allow read:           if isAuthenticated() || hasPermission('crm.read');
-      allow create, update: if isSuperAdmin() || hasPermission('crm.edit');
-      allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
+      function stageIdx(s) {
+        return s == 'cuadrando_cita' ? 0
+          : s == 'cita_fijada' ? 1
+          : s == 'visita_test_drive' ? 2
+          : s == 'negociacion' ? 3
+          : s == 'apartado' ? 4
+          : s == 'vendido' ? 5
+          : s == 'perdido' ? 6
+          : -1;
+      }
+      function validLostReason(r) {
+        return r in ['precio', 'financiacion_negada', 'compro_en_otro_lado',
+                     'no_responde', 'cambio_de_opinion', 'error_de_registro', 'otro'];
+      }
+      // Gates de la matriz: adelante acumula (cruzar visita→huboTestDrive;
+      // llegar/cruzar apartado→monto+vence; llegar a vendido→tipoPago);
+      // atrás exige regressReason; vendido es terminal para el cliente.
+      function dealStageChangeOk() {
+        let oldS = resource.data.stageId;
+        let newS = request.resource.data.stageId;
+        let oi = stageIdx(oldS);
+        let ni = stageIdx(newS);
+        return newS == oldS
+          || (
+            ni >= 0 && oi >= 0
+            && oldS != 'vendido'
+            && (newS != 'perdido' || validLostReason(request.resource.data.lostReason))
+            && (newS == 'perdido' || oldS == 'perdido' || (
+                 (ni > oi && (
+                    (!(oi <= 2 && ni > 2) || 'huboTestDrive' in request.resource.data)
+                    && (!(oi < 4 && ni >= 4) || (request.resource.data.montoApartado is number && request.resource.data.venceEl is string))
+                    && (ni != 5 || request.resource.data.tipoPago in ['contado', 'financiado'])
+                 ))
+                 || (ni < oi && request.resource.data.regressReason is string && request.resource.data.regressReason.size() > 0)
+               ))
+            && (oldS != 'perdido' || (request.resource.data.regressReason is string && request.resource.data.regressReason.size() > 0))
+          );
+      }
+      allow read:   if isAuthenticated() || hasPermission('crm.read');
+      // F7: el deal nace SOLO en cuadrando_cita, con valor estimado y owner.
+      allow create: if (isSuperAdmin() || hasPermission('crm.edit'))
+        && request.resource.data.stageId == 'cuadrando_cita'
+        && request.resource.data.amount is number
+        && request.resource.data.ownerId is string;
+      allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && dealStageChangeOk();
+      allow delete: if isSuperAdmin() || hasPermission('crm.delete');
     }
 
     // ========== SUBSCRIPTIONS (newsletter público — §164) ==========

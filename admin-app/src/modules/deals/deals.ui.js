@@ -12,13 +12,12 @@ import { hasPermission } from '../../core/auth.js';
 import { initials, copShort, timeAgo } from '../../domain/format.js';
 import {
   OPEN_STAGES, stageById, probFor, weighted, forecast, totalValue, groupByStage, isRotting,
+  dealTransition, LOST_REASONS,
 } from '../../domain/pipeline.js';
 import {
   subscribeDeals, updateDealStage, setDealAmount, markWon, markLost,
 } from './deals.data.js';
 import { getMockDeals, updateMockDeal } from '../../core/mock.js';
-
-const LOST_REASONS = ['Precio / presupuesto', 'Financiación negada', 'Compró en otro lado', 'No responde', 'Cambió de opinión', 'Otro motivo'];
 
 export function mountPipeline(root) {
   const ui = { deals: [], loading: true, error: null, sub: null, dragId: null };
@@ -42,12 +41,152 @@ export function mountPipeline(root) {
     render();
   }
 
+  /**
+   * F8/F9 (§181) — mover de etapa respeta la MATRIZ: adelante con saltos
+   * acumula gates en UN mini-prompt; atrás exige razón; vendido es terminal.
+   * Los gates son los del espejo (las Rules los re-validan server-side).
+   */
   async function doStage(deal, stageId) {
     if (deal.stageId === stageId) return;
-    const st = stageById(stageId);
-    patch(deal.id, { stageId, stageName: st.label, probability: st.prob, lastActivityAt: new Date().toISOString() });
-    if (store.get().mock) { toast('Etapa → ' + st.label, 'ok'); return; }
-    try { await updateDealStage(deal.id, stageId, deal); } catch (e) { toast('No se pudo mover', 'error'); }
+    const t = dealTransition(deal.stageId, stageId);
+    if (!t.ok) {
+      toast(t.error === 'vendido_es_terminal' ? 'Un negocio vendido no se mueve (anulación = admin).' : 'Movimiento no válido', 'error');
+      return;
+    }
+    const needs = [...t.gates];
+    if (t.needsReason) needs.push('regressReason');
+    const apply = async (gateFields) => {
+      const st = stageById(stageId);
+      const prevStage = deal.stageId;
+      patch(deal.id, { stageId, stageName: st.label, probability: st.prob, ...gateFields, lastActivityAt: new Date().toISOString() });
+      if (store.get().mock) { toast('Etapa → ' + st.label, 'ok'); return; }
+      try {
+        await updateDealStage(deal.id, stageId, deal, gateFields);
+        showUndoStage(deal, prevStage, st.label); // F11: deshacer 10s
+      } catch (e) {
+        patch(deal.id, { stageId: prevStage, stageName: stageById(prevStage).label, probability: probFor(prevStage) });
+        toast(e && e.code === 'permission-denied'
+          ? 'Movimiento rechazado por las reglas — recarga el portal si tu versión es vieja.'
+          : 'No se pudo mover', 'error');
+      }
+    };
+    if (!needs.length) return apply({});
+    openGatePrompt(deal, stageId, needs, apply);
+  }
+
+  // F11 — snackbar Deshacer ≥10s nombrando el cambio (anti arrastre accidental).
+  let _undoBar = null;
+  function showUndoStage(deal, prevStageId, newLabel) {
+    if (_undoBar) _undoBar.remove();
+    const undo = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['Deshacer']);
+    const bar = el('div', {
+      role: 'status',
+      style: {
+        position: 'fixed', bottom: '18px', left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', gap: '12px', alignItems: 'center', zIndex: '99',
+        padding: '10px 14px', borderRadius: '10px',
+        background: 'var(--bg-elev, #1c1a17)', border: '1px solid var(--line, #444)',
+        boxShadow: '0 6px 24px rgba(0,0,0,.4)',
+      },
+    }, [el('span', { text: `${(deal.contactName || deal.name || 'Negocio').split(' · ')[0]} → ${newLabel}` }), undo]);
+    document.body.appendChild(bar);
+    _undoBar = bar;
+    const timer = setTimeout(() => { bar.remove(); if (_undoBar === bar) _undoBar = null; }, 10000);
+    undo.addEventListener('click', async () => {
+      clearTimeout(timer); bar.remove(); if (_undoBar === bar) _undoBar = null;
+      // retroceso vía la MISMA matriz: razón automática "deshacer"
+      const st = stageById(prevStageId);
+      patch(deal.id, { stageId: prevStageId, stageName: st.label, probability: st.prob });
+      if (store.get().mock) return;
+      try {
+        await updateDealStage(deal.id, prevStageId, deal, { regressReason: 'Deshacer (arrastre accidental)' });
+      } catch (e) { toast('No se pudo deshacer', 'error'); }
+    });
+  }
+
+  /**
+   * F8/F9 — mini-prompt de GATES acumulados: UN modal pequeño con SOLO los
+   * campos que exige la transición (presupuesto de fricción: 1 prompt).
+   */
+  function openGatePrompt(deal, stageId, needs, apply) {
+    const f = {};
+    const fields = [];
+    const fld = (label, control) => el('label', { class: 'field' }, [el('span', { class: 'field__label', text: label }), control]);
+
+    if (needs.includes('huboTestDrive')) {
+      f.huboTestDrive = el('select', { class: 'select' }, [
+        el('option', { value: 'si' }, ['Sí, hubo test drive']),
+        el('option', { value: 'no' }, ['No alcanzó a probarlo']),
+      ]);
+      fields.push(fld('¿Hubo test drive?', f.huboTestDrive));
+    }
+    if (needs.includes('montoApartado')) {
+      f.montoApartado = el('input', { class: 'input', type: 'number', min: '0', step: '50000', placeholder: '500000' });
+      const def = new Date(Date.now() + 72 * 3600 * 1000);
+      f.venceEl = el('input', { class: 'input', type: 'date', value: def.toISOString().slice(0, 10) });
+      fields.push(fld('Monto del apartado (COP) *', f.montoApartado), fld('Vence el (default 72h)', f.venceEl));
+    }
+    if (needs.includes('tipoPago')) {
+      f.tipoPago = el('select', { class: 'select' }, [
+        el('option', { value: 'contado' }, ['De contado']),
+        el('option', { value: 'financiado' }, ['Financiado']),
+      ]);
+      f.estadoCredito = el('select', { class: 'select' }, [
+        el('option', { value: '' }, ['— Estado del crédito —']),
+        el('option', { value: 'pre_aprobado' }, ['Pre-aprobado']),
+        el('option', { value: 'en_estudio' }, ['En estudio']),
+        el('option', { value: 'aprobado' }, ['Aprobado']),
+        el('option', { value: 'rechazado' }, ['Rechazado']),
+      ]);
+      fields.push(fld('Forma de pago *', f.tipoPago), fld('Crédito (si aplica)', f.estadoCredito));
+    }
+    if (needs.includes('lostReason')) {
+      f.lostReason = el('select', { class: 'select' },
+        LOST_REASONS.map((r) => el('option', { value: r.id }, [r.label])));
+      fields.push(fld('¿Por qué se perdió? *', f.lostReason));
+    }
+    if (needs.includes('regressReason')) {
+      f.regressReason = el('input', { class: 'input', type: 'text', placeholder: '¿Qué pasó? (obligatorio al retroceder)' });
+      fields.push(fld('Razón del retroceso *', f.regressReason));
+    }
+
+    const err = el('div', { class: 'login__error', role: 'alert', hidden: true });
+    const cancel = el('button', { class: 'btn btn--ghost', type: 'button' }, ['Cancelar']);
+    const ok = el('button', { class: 'btn btn--gold', type: 'submit' }, ['Mover a ' + stageById(stageId).label]);
+    const form = el('form', { class: 'nl-form' }, [...fields, err, el('div', { class: 'nl-actions' }, [cancel, ok])]);
+    const overlay = el('div', { class: 'modal-overlay' }, [
+      el('div', { class: 'modal' }, [
+        el('div', { class: 'modal__head' }, [el('h2', { class: 'modal__title', text: stageById(stageId).label })]),
+        form,
+      ]),
+    ]);
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const out = {};
+      if (f.huboTestDrive) out.huboTestDrive = f.huboTestDrive.value === 'si';
+      if (f.montoApartado) {
+        const m = Math.round(Number(f.montoApartado.value) || 0);
+        if (!(m > 0)) { err.textContent = 'El monto del apartado es obligatorio.'; err.hidden = false; return; }
+        out.montoApartado = m;
+        out.venceEl = new Date((f.venceEl.value || new Date().toISOString().slice(0, 10)) + 'T18:00:00-05:00').toISOString();
+      }
+      if (f.tipoPago) {
+        out.tipoPago = f.tipoPago.value;
+        if (f.estadoCredito && f.estadoCredito.value) out.estadoCredito = f.estadoCredito.value;
+      }
+      if (f.lostReason) out.lostReason = f.lostReason.value;
+      if (f.regressReason) {
+        const r = f.regressReason.value.trim();
+        if (!r) { err.textContent = 'Escribe la razón del retroceso.'; err.hidden = false; return; }
+        out.regressReason = r;
+      }
+      close();
+      apply(out);
+    });
   }
 
   async function doAmount(deal, amount) {
@@ -56,16 +195,24 @@ export function mountPipeline(root) {
     try { await setDealAmount(deal.id, amount, deal); } catch (e) { toast('No se pudo guardar el monto', 'error'); }
   }
 
+  // Ganar pasa por la MISMA matriz (gates acumulados hasta vendido).
   async function doWon(deal) {
-    patch(deal.id, { status: 'won' });
-    if (store.get().mock) { toast('🎉 ¡Venta ganada!', 'ok'); return; }
-    try { await markWon(deal.id, deal); toast('🎉 ¡Venta ganada!', 'ok'); } catch (e) { toast('Error', 'error'); }
+    const t = dealTransition(deal.stageId, 'vendido');
+    if (!t.ok) { toast('Movimiento no válido', 'error'); return; }
+    const apply = async (gateFields) => {
+      patch(deal.id, { status: 'won', ...gateFields });
+      if (store.get().mock) { toast('🎉 ¡Venta ganada!', 'ok'); return; }
+      try { await markWon(deal.id, deal, gateFields); toast('🎉 ¡Venta ganada!', 'ok'); }
+      catch (e) { toast('No se pudo marcar — revisa los datos requeridos', 'error'); }
+    };
+    if (!t.gates.length) return apply({});
+    openGatePrompt(deal, 'vendido', t.gates, apply);
   }
 
-  async function doLost(deal, reason) {
-    patch(deal.id, { status: 'lost', lostReason: reason });
+  async function doLost(deal, reasonId) {
+    patch(deal.id, { status: 'lost', lostReason: reasonId });
     if (store.get().mock) { toast('Marcado perdido', 'info'); return; }
-    try { await markLost(deal.id, reason, deal); toast('Marcado perdido', 'info'); } catch (e) { toast('Error', 'error'); }
+    try { await markLost(deal.id, reasonId, deal); toast('Marcado perdido', 'info'); } catch (e) { toast('Error', 'error'); }
   }
 
   // ── Render ──
@@ -183,7 +330,7 @@ export function mountPipeline(root) {
     }
     if (action === 'won') return doWon(deal);
     if (action === 'lost') {
-      return openMenu(anchor, LOST_REASONS.map((r) => ({ value: r, label: r })), (it) => doLost(deal, it.value), { title: 'Motivo de pérdida' });
+      return openMenu(anchor, LOST_REASONS.map((r) => ({ value: r.id, label: r.label })), (it) => doLost(deal, it.value), { title: 'Motivo de pérdida' });
     }
   }
 

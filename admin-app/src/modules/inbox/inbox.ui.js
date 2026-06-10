@@ -11,7 +11,7 @@ import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { initials, timeAgo, waLink, humanizeDuration } from '../../domain/format.js';
 import { RATING_META } from '../../domain/scoring.js';
-import { LEAD_STATUSES, statusMeta } from '../../domain/classify.js';
+import { LEAD_STATUSES, DISCARD_REASONS, statusMeta } from '../../domain/classify.js';
 import {
   enrichAll, enrich, QUEUES, queueCounts, buildView, contactTimer,
 } from './inbox.domain.js';
@@ -19,12 +19,11 @@ import {
   subscribeLeads, loadMoreLeads, fetchTeam, assignLead, setLeadStatus, logActivity,
   scheduleTask, fetchPendingTasks, completeTask, archiveLead, purgeLead,
 } from './inbox.data.js';
-import { createDealFromLead } from '../deals/deals.data.js';
 import { openNewLeadForm } from '../capture/new-lead.js';
 import { openQuickLeadForm } from '../capture/quick-lead.js';
+import { openConvertDialog } from '../capture/convert-dialog.js';
 import { frictionTrack } from '../../core/friction.js';
-import { dealFromLead } from '../../domain/pipeline.js';
-import { getMockLeads, getMockTeam, addMockDeal } from '../../core/mock.js';
+import { getMockLeads, getMockTeam } from '../../core/mock.js';
 
 const ICONS = {
   wa: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.477-.91zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>',
@@ -113,11 +112,11 @@ export function mountInbox(root) {
     } catch (e) { toast('No se pudo asignar', 'error'); }
   }
 
-  async function doStatus(lead, status) {
-    patchLead(lead.id, { status, lastActivityAt: new Date().toISOString() });
+  async function doStatus(lead, status, extra = {}) {
+    patchLead(lead.id, { status, ...extra, lastActivityAt: new Date().toISOString() });
     if (store.get().mock) { toast(`Estado → ${statusMeta(status).label}`, 'ok'); return; }
     try {
-      await setLeadStatus(lead.id, status, lead);
+      await setLeadStatus(lead.id, status, lead, extra);
       toast(`Estado → ${statusMeta(status).label}`, 'ok');
     } catch (e) { toast('No se pudo cambiar el estado', 'error'); }
   }
@@ -212,12 +211,13 @@ export function mountInbox(root) {
     });
   }
 
-  async function doConvert(lead) {
-    if (lead.status === 'convertido') { toast('Ya es una oportunidad', 'info'); return; }
-    patchLead(lead.id, { status: 'convertido' });
-    if (store.get().mock) { addMockDeal(dealFromLead(lead)); toast('🎯 Convertido a oportunidad', 'ok'); return; }
-    try { await createDealFromLead(lead); toast('🎯 Convertido a oportunidad', 'ok'); }
-    catch (e) { toast('No se pudo convertir', 'error'); }
+  // F7 §181: calificar y convertir son LA MISMA acción — diálogo canónico
+  // (vehículo + valor estimado + owner, <45s) con Deshacer server-side.
+  function doConvert(lead) {
+    if (lead.status === 'convertido') { toast('Ya es un negocio: gestiónalo en el Pipeline', 'info'); return; }
+    openConvertDialog(lead, {
+      onDone: () => patchLead(lead.id, { status: 'convertido' }),
+    });
   }
 
   // El panel 360 (módulo aparte) lee los leads enriquecidos desde el store.
@@ -367,10 +367,17 @@ export function mountInbox(root) {
           el('span', { class: 'lead-card__dot', text: '·' }),
           isConverted
             ? el('button', {
+                // F4-fase2 §181: chip con la ETAPA REAL del deal, denormalizada
+                // por el trigger onDealUpdated — cero N+1 reads. El criterio de
+                // cierre de E1b: la Bandeja ya no miente sobre el Pipeline.
                 class: 'badge badge--ok', type: 'button', 'data-action': 'pipeline',
                 title: 'Este lead ya es un negocio: gestiónalo en el Pipeline',
                 style: { cursor: 'pointer', border: 'none' },
-              }, ['🎯 Convertido → ver Pipeline'])
+              }, [
+                lead.convertedTo && lead.convertedTo.outcome === 'perdido' ? '✖ Negocio perdido → Pipeline'
+                  : lead.convertedTo && lead.convertedTo.outcome === 'vendido' ? '🏆 VENDIDO'
+                  : `🎯 ${(lead.convertedTo && lead.convertedTo.stageName) || 'Convertido'} → Pipeline`,
+              ])
             : el('span', { class: `badge badge--${sm.badge || ''}`.trim(), text: sm.label }),
           lead.archived ? el('span', { class: 'badge', text: '🗄 Archivado' }) : null,
           ctChip ? el('span', { class: 'lead-card__dot', text: '·' }) : null,
@@ -415,13 +422,11 @@ export function mountInbox(root) {
     }, [el('span', { html: icon, 'aria-hidden': 'true' })]);
   }
 
-  // F6: cada estado se explica a sí mismo (tooltip en el menú).
+  // F6: cada estado se explica a sí mismo (tooltip en el menú). Vocabulario v3.
   const STATUS_HINTS = {
     nuevo: 'Acaba de entrar, nadie le ha hablado',
     contactado: 'Ya le escribiste o llamaste',
-    calificado: 'Va en serio: presupuesto e intención real',
-    no_calificado: 'No es un comprador (spam, curioso)',
-    perdido: 'Se enfrió antes de ser negocio',
+    descartado: 'No va: inalcanzable, no califica, spam… (pide la razón)',
   };
 
   function handleAction(action, lead, anchor) {
@@ -445,7 +450,16 @@ export function mountInbox(root) {
       // 'convertido' NUNCA se pone a mano (solo vía Convertir → crea el deal).
       const items = LEAD_STATUSES.filter((s) => s.id !== 'convertido')
         .map((s) => ({ value: s.id, label: s.label, hint: STATUS_HINTS[s.id] || '', active: (lead.status || 'nuevo') === s.id }));
-      return openMenu(anchor, items, (it) => doStatus(lead, it.value), { title: 'Cambiar estado' });
+      return openMenu(anchor, items, (it) => {
+        if (it.value === 'descartado') {
+          // v3: descartar EXIGE razón (inalcanzable ≠ no_califica → F31).
+          openMenu(anchor, DISCARD_REASONS.map((r) => ({ value: r.id, label: r.label })),
+            (r) => doStatus(lead, 'descartado', { discardReason: r.value }),
+            { title: '¿Por qué se descarta?' });
+          return;
+        }
+        doStatus(lead, it.value);
+      }, { title: 'Cambiar estado' });
     }
     if (action === 'more') {
       // F13/F15 §180: archivar (día a día, reversible) + eliminar (solo

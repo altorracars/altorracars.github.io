@@ -104,6 +104,13 @@ exports.onNewSolicitud = onDocumentCreated({
     const sol = snap.data();
     const solId = event.params.solicitudId;
 
+    // F34 §176: escrituras de one-shots/backfills llevan _migration:true →
+    // CERO side-effects de cara al cliente (las proyecciones internas sí corren).
+    if (sol._migration === true) {
+        console.log('[Email] Skipped solicitud ' + solId + ' — _migration flag');
+        return;
+    }
+
     // Idempotency: skip if email was already sent
     if (sol.emailSent === true) {
         console.log('[Email] Skipped solicitud ' + solId + ' — email already sent');
@@ -202,6 +209,9 @@ exports.onSolicitudStatusChanged = onDocumentUpdated({
     const before = event.data.before.data();
     const after = event.data.after.data();
     const solId = event.params.solicitudId;
+
+    // F34 §176: one-shots/backfills (_migration:true) no disparan emails al cliente.
+    if (after._migration === true) return;
 
     // Only fire when estado actually changes
     if (before.estado === after.estado) return;
@@ -347,6 +357,9 @@ exports.onVehiclePriceAlert = onDocumentUpdated({
     const before = event.data.before.data();
     const after = event.data.after.data();
     const vehicleId = event.params.vehicleId;
+
+    // F34 §176: escrituras de migración no disparan alertas de precio a clientes.
+    if (after._migration === true) return;
 
     if (after.estado !== 'disponible') return;
 
@@ -496,6 +509,9 @@ exports.onVehicleChange = onDocumentWritten({
     // Check if this is a meaningful change (not just a read)
     const before = event.data.before ? event.data.before.data() : null;
     const after = event.data.after ? event.data.after.data() : null;
+
+    // F34 §176: escrituras de migración no gastan dispatches de GitHub Actions.
+    if (after && after._migration === true) return;
 
     // ALL fields used by generate-vehicles.mjs to build OG tags, JSON-LD, and noscript content.
     // If ANY of these change, the static page must be regenerated.
@@ -3533,3 +3549,8 @@ exports.onSolicitudCreated = require('./src/ingestion/onSolicitudCreated').onSol
 exports.onClienteCreated = require('./src/ingestion/onClienteCreated').onClienteCreated;
 // ========== CRM — Canal AUTO: newsletter → contacto subscriber (§164) ==========
 exports.onSubscriptionCreated = require('./src/ingestion/onSubscriptionCreated').onSubscriptionCreated;
+
+// ========== CRM OPS — F34 red de seguridad (ADR §176 E0) ==========
+// Export/restore del CRM a Storage privado. Restore = dryRun por defecto.
+exports.crmExport = require('./src/ops/crmBackup').crmExport;
+exports.crmRestore = require('./src/ops/crmBackup').crmRestore;

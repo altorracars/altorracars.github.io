@@ -24,6 +24,81 @@
     function tipoLabel(t) { return TIPO_LABELS[t] || (t ? t.charAt(0).toUpperCase() + t.slice(1) : 'General'); }
     function origenLabel(o) { return ORIGEN_LABELS[o] || (o ? o.charAt(0).toUpperCase() + o.slice(1) : 'Web'); }
 
+    // ========== F17-URGENTE (ADR §176 E0) — CICLO DE VIDA DE CUPOS ==========
+    // Bug histórico: bookSlotAtomically (público) solo AGREGA cupos a
+    // config/bookedSlots; cancelar/reprogramar desde el admin NUNCA liberaba
+    // → cupos fantasma que mataban disponibilidad real. TODO cambio de
+    // estado/fecha/hora de una cita pasa por ESTA transacción:
+    //   activa → no-activa  : libera (fecha, hora) actual
+    //   activa → activa con fecha/hora distinta : libera viejo + reserva nuevo
+    //   no-activa → activa  : re-reserva (reactivación)
+    // Reservar un slot ya tomado lanza err.code='SLOT_TAKEN' (mensaje legible).
+    // El formato del doc es el MISMO del puente público: { 'YYYY-MM-DD': ['HH:MM'] }.
+    var SLOT_ACTIVE_STATES = ['pendiente', 'confirmada', 'reprogramada'];
+
+    function updateCitaAtomically(docId, updateData) {
+        var solRef = window.db.collection('solicitudes').doc(docId);
+        var slotsRef = window.db.collection('config').doc('bookedSlots');
+        return window.db.runTransaction(function (tx) {
+            return tx.get(solRef).then(function (solSnap) {
+                if (!solSnap.exists) { throw new Error('La solicitud ya no existe'); }
+                return tx.get(slotsRef).then(function (slotsSnap) {
+                    var sol = solSnap.data();
+                    var slots = slotsSnap.exists ? (slotsSnap.data() || {}) : {};
+                    var changes = {};
+
+                    function release(f, h) {
+                        if (!f || !h || !Array.isArray(slots[f])) return;
+                        var arr = slots[f].filter(function (x) { return x !== h; });
+                        slots[f] = arr; changes[f] = arr;
+                    }
+                    function reserve(f, h) {
+                        if (!f || !h) return;
+                        var arr = (slots[f] || []).slice();
+                        if (arr.indexOf(h) !== -1) {
+                            var e = new Error('SLOT_TAKEN');
+                            e.code = 'SLOT_TAKEN';
+                            e.slotLabel = f + ' ' + h;
+                            throw e;
+                        }
+                        arr.push(h);
+                        slots[f] = arr; changes[f] = arr;
+                    }
+
+                    // Solo las citas reservan cupos (kind cita o con fecha agendada).
+                    var isCita = sol.kind === 'cita' || sol.requiereCita === true || !!sol.fecha;
+                    if (isCita) {
+                        var oldFecha = sol.fecha || null, oldHora = sol.hora || null;
+                        var newEstado = updateData.estado || sol.estado;
+                        var newFecha = updateData.fecha || oldFecha;
+                        var newHora = updateData.hora || oldHora;
+                        var wasActive = SLOT_ACTIVE_STATES.indexOf(sol.estado) !== -1;
+                        var willBeActive = SLOT_ACTIVE_STATES.indexOf(newEstado) !== -1;
+                        var moved = (newFecha !== oldFecha) || (newHora !== oldHora);
+
+                        if (wasActive && !willBeActive) {
+                            release(oldFecha, oldHora);
+                        } else if (!wasActive && willBeActive) {
+                            reserve(newFecha, newHora);
+                        } else if (wasActive && willBeActive && moved) {
+                            release(oldFecha, oldHora);
+                            reserve(newFecha, newHora);
+                        }
+                    }
+
+                    tx.update(solRef, updateData);
+                    if (Object.keys(changes).length) {
+                        if (slotsSnap.exists) { tx.update(slotsRef, changes); }
+                        else { tx.set(slotsRef, changes); }
+                    }
+                    return { ok: true };
+                });
+            });
+        });
+    }
+    // Expuesto para admin-calendar.js (drag-drop) — misma transacción, cero duplicación.
+    window.AltorraCitaSlots = { updateCitaAtomically: updateCitaAtomically };
+
     // ========== WHATSAPP HELPERS ==========
     function buildWhatsappMessage(sol, nuevoEstado) {
         var nombre = sol.nombre || 'Cliente';
@@ -1108,7 +1183,9 @@
                 if (nuevaHora) updateData.hora = nuevaHora;
             }
 
-            window.db.collection('solicitudes').doc(docId).update(updateData).then(function() {
+            // F17 §176: vía transaccional — mantiene config/bookedSlots consistente
+            // (cancelar libera el cupo; reprogramar mueve el cupo; SLOT_TAKEN si choca).
+            updateCitaAtomically(docId, updateData).then(function() {
                 AP.toast('Solicitud actualizada a: ' + updateData.estado);
                 AP.writeAuditLog('appointment_' + updateData.estado, 'solicitud ' + docId, updateData.observaciones || '');
                 // I.3+I.4 — EventBus emission with diff metadata
@@ -1136,7 +1213,9 @@
                     updateWhatsappPreview(Object.assign({}, _currentManageSol, updateData));
                 }
             }).catch(function(err) {
-                if (err.code === 'permission-denied') {
+                if (err.code === 'SLOT_TAKEN') {
+                    AP.toast('Ese horario ya está reservado (' + (err.slotLabel || '') + '). Elige otro.', 'error');
+                } else if (err.code === 'permission-denied') {
                     AP.toast('Sin permisos para actualizar. Verifica tu rol y las Firestore Rules.', 'error');
                 } else {
                     AP.toast('Error: ' + err.message, 'error');

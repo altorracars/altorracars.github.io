@@ -6,7 +6,7 @@
 | Señal | Valor (última actualización: **2026-06-09**) |
 |---|---|
 | **Build** | 🟢 Sitio cinematic + a11y en producción. **CRM E2E live ✅ (§175); plan VIGENTE = Comité CRM v2 E0→E6 (§176, TODO-21)** — espera OK del dueño a 3 decisiones. Cerebro: comité v6 19/21 (→ `10`). |
-| **Cache version vigente** | **`v20260609181210`** (§175 fix form contacto). SW == cache-manager ✅. Ctrl+Shift+R la 1ª vez. |
+| **Cache version vigente** | **`v20260610011703`** (§177 E0: F17 cupos + F1). SW == cache-manager ✅. Ctrl+Shift+R la 1ª vez. |
 | **Branch activa** | `refactor/estructura` — **fix §175 + cerebro commiteados, PENDIENTE merge+push (cliente)**. `main` avanza por cron cada 4h. Flujo git: **Claude commitea; push/merge = el cliente**. Deploys firebase = Claude (§1). |
 | **Producción (`main`)** | Catálogo cinematic + CRM completo (§157-§166) + App Check monitor LIVE. ⚠️ El form de contacto en prod tiene el bug del spinner HASTA el merge del fix §175. |
 

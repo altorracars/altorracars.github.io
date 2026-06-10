@@ -13,7 +13,7 @@ import { initials, timeAgo, waLink, humanizeDuration } from '../../domain/format
 import { RATING_META } from '../../domain/scoring.js';
 import { LEAD_STATUSES, statusMeta } from '../../domain/classify.js';
 import {
-  enrichAll, enrich, QUEUES, queueCounts, buildView,
+  enrichAll, enrich, QUEUES, queueCounts, buildView, contactTimer,
 } from './inbox.domain.js';
 import {
   subscribeLeads, loadMoreLeads, fetchTeam, assignLead, setLeadStatus, logActivity,
@@ -37,6 +37,7 @@ export function mountInbox(root) {
     queue: 'todo',
     filters: { type: '', channel: '', status: '' },
     search: '',
+    showClosed: false, // F4-fase1: la vista default oculta cerrados (con contador)
     leads: [],
     loading: true,
     error: null,
@@ -59,7 +60,11 @@ export function mountInbox(root) {
   if (elNewBtn) elNewBtn.addEventListener('click', () => openNewLeadForm());
   const elToolbar = el('div', { class: 'inbox__toolbar' }, [elSearch, elFilters, elNewBtn]);
   const elList = el('div', { class: 'inbox__list', role: 'list', tabindex: '-1' });
-  const section = el('section', { class: 'inbox' }, [elQueues, elToolbar, elList]);
+  // F6 (§176): la UI enseña el rol de cada superficie — Bandeja = TRIAGE.
+  const elHint = el('p', { class: 'u-muted u-caption', style: { margin: '0' } }, [
+    'Aquí llegan los interesados: contacta y califica. Las ventas activas viven en el Pipeline.',
+  ]);
+  const section = el('section', { class: 'inbox' }, [elHint, elQueues, elToolbar, elList]);
   clear(root);
   root.append(section);
 
@@ -167,21 +172,38 @@ export function mountInbox(root) {
     if (ui.loading) return renderSkeletons();
     if (ui.error) return renderState('⚠️', 'No se pudo cargar', ui.error, true);
 
-    const rows = buildView(ui.leads, { queue: ui.queue, uid, filters: ui.filters, search: ui.search });
+    const { rows, hiddenClosed } = buildView(ui.leads, {
+      queue: ui.queue, uid, filters: ui.filters, search: ui.search, showClosed: ui.showClosed,
+    });
     clear(elList);
 
-    if (!rows.length) {
+    if (!rows.length && !hiddenClosed) {
       const empty = ui.search || ui.filters.type || ui.filters.channel || ui.filters.status;
       elList.append(stateNode('🗂️', empty ? 'Sin resultados' : '¡Bandeja al día!',
         empty ? 'Ajusta la búsqueda o los filtros.' : 'No hay clientes en esta cola.'));
       return;
     }
 
+    // F4-fase1: contador de cerrados ocultos — visible, nunca silencioso.
+    const hiddenBtn = hiddenClosed || ui.showClosed
+      ? el('button', { class: 'chip', type: 'button', style: { marginLeft: 'auto' } }, [
+          ui.showClosed ? '✕ Ocultar cerrados' : `${hiddenClosed} ocultos · ver todos`,
+        ])
+      : null;
+    if (hiddenBtn) hiddenBtn.addEventListener('click', () => { ui.showClosed = !ui.showClosed; renderList(); });
+
     const head = el('div', { class: 'inbox__listhead' }, [
-      el('span', { class: 'u-muted u-caption', text: `${rows.length} ${rows.length === 1 ? 'cliente' : 'clientes'}` }),
+      el('span', { class: 'u-muted u-caption', text: `${rows.length} ${rows.length === 1 ? 'cliente' : 'clientes'} activos` }),
       el('span', { class: 'u-faint u-caption', text: 'Ordenado por urgencia' }),
+      hiddenBtn,
     ]);
     elList.append(head);
+
+    if (!rows.length && hiddenClosed) {
+      elList.append(stateNode('🗂️', '¡Bandeja al día!',
+        `No hay clientes activos en esta cola (${hiddenClosed} cerrados ocultos).`));
+      return;
+    }
 
     rows.forEach((lead) => elList.append(renderCard(lead)));
 
@@ -195,6 +217,16 @@ export function mountInbox(root) {
   function renderCard(lead) {
     const rm = RATING_META[lead._rating];
     const sm = statusMeta(lead.status);
+    // F1/F4 §176: convertido = se gestiona en el Pipeline, no aquí.
+    const isConverted = !!(lead.convertedTo && lead.convertedTo.dealId) || lead.status === 'convertido';
+    // F4-fase1: SLA de primer contacto en la tarjeta (45/60 min).
+    const ct = contactTimer(lead);
+    const ctChip = ct && ct.state !== 'ok'
+      ? el('span', {
+          class: `badge badge--${ct.state === 'late' ? 'danger' : 'gold'}`,
+          title: 'Tiempo sin primer contacto',
+        }, [`⏱ ${ct.mins < 120 ? ct.mins + ' min' : humanizeDuration(ct.mins * 60000)} sin contacto`])
+      : null;
     const sla = lead._sla;
     const slaCls = `sla-dot sla-dot--${sla.state}`;
     const slaLabel = sla.closed ? 'Cerrado'
@@ -221,7 +253,15 @@ export function mountInbox(root) {
           el('span', { class: 'lead-card__dot', text: '·' }),
           el('span', { text: timeAgo(lead.createdAt) }),
           el('span', { class: 'lead-card__dot', text: '·' }),
-          el('span', { class: `badge badge--${sm.badge || ''}`.trim(), text: sm.label }),
+          isConverted
+            ? el('button', {
+                class: 'badge badge--ok', type: 'button', 'data-action': 'pipeline',
+                title: 'Este lead ya es un negocio: gestiónalo en el Pipeline',
+                style: { cursor: 'pointer', border: 'none' },
+              }, ['🎯 Convertido → ver Pipeline'])
+            : el('span', { class: `badge badge--${sm.badge || ''}`.trim(), text: sm.label }),
+          ctChip ? el('span', { class: 'lead-card__dot', text: '·' }) : null,
+          ctChip,
           lead.ownerName ? el('span', { class: 'lead-card__dot', text: '·' }) : null,
           lead.ownerName ? el('span', { class: 'u-faint', text: '👤 ' + lead.ownerName }) : null,
         ]),
@@ -234,8 +274,9 @@ export function mountInbox(root) {
       el('div', { class: 'lead-card__actions' }, [
         actionBtn('wa', ICONS.wa, 'WhatsApp', 'btn--wa'),
         canEdit ? actionBtn('assign', ICONS.person, 'Asignar') : null,
-        canEdit ? actionBtn('status', ICONS.flag, 'Cambiar estado') : null,
-        canEdit ? actionBtn('convert', ICONS.convert, 'Convertir a oportunidad') : null,
+        // F1 §176: convertido = inmutable; estado y conversión desaparecen.
+        canEdit && !isConverted ? actionBtn('status', ICONS.flag, 'Cambiar estado') : null,
+        canEdit && !isConverted ? actionBtn('convert', ICONS.convert, 'Convertir a oportunidad') : null,
         actionBtn('open', ICONS.expand, 'Abrir 360'),
       ]),
     ]);
@@ -259,10 +300,20 @@ export function mountInbox(root) {
     }, [el('span', { html: icon, 'aria-hidden': 'true' })]);
   }
 
+  // F6: cada estado se explica a sí mismo (tooltip en el menú).
+  const STATUS_HINTS = {
+    nuevo: 'Acaba de entrar, nadie le ha hablado',
+    contactado: 'Ya le escribiste o llamaste',
+    calificado: 'Va en serio: presupuesto e intención real',
+    no_calificado: 'No es un comprador (spam, curioso)',
+    perdido: 'Se enfrió antes de ser negocio',
+  };
+
   function handleAction(action, lead, anchor) {
     if (action === 'open') return openDetail(lead.id);
     if (action === 'wa') return doWhatsapp(lead);
     if (action === 'convert') return doConvert(lead);
+    if (action === 'pipeline') { window.location.hash = '#/pipeline'; return; }
     if (action === 'assign') {
       const team = store.get().team || [];
       const items = [{ value: null, label: 'Sin asignar', icon: '⊘', active: !lead.ownerId },
@@ -270,7 +321,14 @@ export function mountInbox(root) {
       return openMenu(anchor, items, (it) => doAssign(lead, it.value), { title: 'Asignar a' });
     }
     if (action === 'status') {
-      const items = LEAD_STATUSES.map((s) => ({ value: s.id, label: s.label, active: (lead.status || 'nuevo') === s.id }));
+      // F1 §176: guard espejo (el botón ya no se pinta para convertidos).
+      if (lead.convertedTo && lead.convertedTo.dealId) {
+        toast('Este lead ya es un negocio: gestiónalo en el Pipeline.', 'info');
+        return;
+      }
+      // 'convertido' NUNCA se pone a mano (solo vía Convertir → crea el deal).
+      const items = LEAD_STATUSES.filter((s) => s.id !== 'convertido')
+        .map((s) => ({ value: s.id, label: s.label, hint: STATUS_HINTS[s.id] || '', active: (lead.status || 'nuevo') === s.id }));
       return openMenu(anchor, items, (it) => doStatus(lead, it.value), { title: 'Cambiar estado' });
     }
   }

@@ -17,9 +17,16 @@ export function mountAgenda(root) {
   const ui = { year: today.getFullYear(), month: today.getMonth(), events: [], loading: true, error: null, sub: null };
 
   const head = el('div', { class: 'agenda__head' });
+  // F23/A.3 (§178): banner de transición HASTA que F16 (E2) proyecte las citas
+  // web aquí. Sin él, el asesor cree que "no hay citas" y pierde una visita.
+  const banner = el('p', { class: 'u-muted u-caption', style: { margin: '0', padding: '8px 10px', border: '1px dashed var(--line, #444)', borderRadius: '8px' } }, [
+    '📌 Por ahora, las citas que los clientes piden desde la WEB se gestionan en el ',
+    el('a', { href: '/admin.html#solicitudes', target: '_blank', rel: 'noopener', text: 'calendario del panel clásico' }),
+    '. Aquí ves las citas agendadas desde el 360. (Se unifican en la épica E2.)',
+  ]);
   const weekdays = el('div', { class: 'agenda__weekdays' }, WEEKDAYS.map((w) => el('span', { class: 'agenda__wd', text: w })));
   const grid = el('div', { class: 'agenda__grid' });
-  const section = el('section', { class: 'agenda' }, [head, weekdays, grid]);
+  const section = el('section', { class: 'agenda' }, [head, banner, weekdays, grid]);
   clear(root); root.append(section);
 
   function go(delta) {

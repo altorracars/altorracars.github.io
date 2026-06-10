@@ -3549,6 +3549,8 @@ exports.onSolicitudCreated = require('./src/ingestion/onSolicitudCreated').onSol
 exports.onClienteCreated = require('./src/ingestion/onClienteCreated').onClienteCreated;
 // ========== CRM — Canal AUTO: newsletter → contacto subscriber (§164) ==========
 exports.onSubscriptionCreated = require('./src/ingestion/onSubscriptionCreated').onSubscriptionCreated;
+// F36 §178: lead rápido (WhatsApp/walk-in/llamada/referido) → canónico.
+exports.onLeadIntakeCreated = require('./src/ingestion/onLeadIntakeCreated').onLeadIntakeCreated;
 
 // ========== CRM OPS — F34 red de seguridad (ADR §176 E0) ==========
 // Export/restore del CRM a Storage privado. Restore = dryRun por defecto.

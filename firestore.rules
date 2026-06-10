@@ -328,6 +328,24 @@ service cloud.firestore {
       allow delete: if isSuperAdmin() || hasPermission('crm.delete');
     }
 
+    // ========== LEAD_INTAKE (F36 §178 — lead rápido del asesor) ==========
+    // Colección PROPIA (no toca el puente `solicitudes`): el asesor escribe el
+    // doc (funciona offline) y el trigger onLeadIntakeCreated lo proyecta al
+    // canónico. Owner FORZADO = quien lo registra. Sin update/delete de cliente
+    // (la marca _ingestedAt la pone el server vía Admin SDK).
+    match /lead_intake/{intakeId} {
+      allow read: if isAuthenticated() || hasPermission('crm.read');
+      allow create: if (isSuperAdmin() || hasPermission('crm.edit') || hasPermission('crm.create'))
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && (
+          (request.resource.data.telefono is string && request.resource.data.telefono.size() >= 7)
+          || (request.resource.data.email is string && request.resource.data.email.size() >= 5)
+        );
+      allow update, delete: if false;
+    }
+
     // ========== CONTACTS (CRM canónico — persona unificada — Fase 1) ==========
     match /contacts/{contactId} {
       allow read:           if isAuthenticated() || hasPermission('crm.read');

@@ -2,6 +2,10 @@
 
 /**
  * Normaliza un teléfono a E.164 aproximado: dígitos + prefijo de país.
+ * F40d (ADR §178): sin prefijo explícito, un celular colombiano (10 dígitos
+ * empezando en 3) asume +57 — sin esto el MISMO número escrito de dos formas
+ * ("3001234567" vs "+57 300 123 4567") produce DOS contactos y la supresión
+ * Ley 1581 falla en silencio. Regla conservadora: solo aplica a esa forma.
  */
 function normalizePhone(phone, prefijoPais) {
   const raw = String(phone || '').trim();
@@ -12,6 +16,8 @@ function normalizePhone(phone, prefijoPais) {
   const prefixDigits = String(prefijoPais || '').replace(/\D/g, '');
   if (prefixDigits && !hadPlus && !digits.startsWith(prefixDigits)) {
     digits = prefixDigits + digits;
+  } else if (!prefixDigits && !hadPlus && digits.length === 10 && digits.startsWith('3')) {
+    digits = '57' + digits; // celular CO sin prefijo → +57
   }
   return '+' + digits;
 }
@@ -154,7 +160,67 @@ function subscriptionToContact(sub, policyVersion) {
   return { dedupKey, contactId: sanitizeContactId(dedupKey), contact };
 }
 
+/**
+ * F36 (ADR §178, E1a) — Traduce un documento `lead_intake/{id}` (lead rápido:
+ * WhatsApp directo / walk-in / llamada / referido, registrado por un asesor
+ * en <30s) al modelo canónico. Owner = quien lo registró (OBLIGATORIO).
+ * Consentimiento: `consentVerbal === true` = autorización verbal registrada
+ * leyendo el guion en pantalla (texto final lo valida P4) → consent expreso.
+ * Lógica pura; NO toca Firestore.
+ */
+const INTAKE_SOURCES = ['whatsapp', 'walkin', 'llamada', 'referido'];
+
+function intakeToCanonical(intake, intakeId, policyVersion) {
+  const it = intake || {};
+  const dedupKey = contactDedupKey({ email: it.email, phone: it.telefono });
+  if (!dedupKey) {
+    throw new Error('Lead rápido sin email ni teléfono (' + intakeId + ')');
+  }
+  if (!it.ownerId) {
+    throw new Error('Lead rápido sin owner (' + intakeId + ') — owner es obligatorio');
+  }
+  const email = String(it.email || '').trim().toLowerCase();
+  const phone = normalizePhone(it.telefono);
+  const fullName = String(it.nombre || '').trim() || 'Sin nombre';
+  const source = INTAKE_SOURCES.includes(it.fuente) ? it.fuente : 'otro';
+  const createdAt = it.createdAt || new Date().toISOString();
+  const now = new Date().toISOString();
+  const given = it.consentVerbal === true;
+  const consent = {
+    email: given, whatsapp: given, calls: given,
+    askedAt: now, source: 'lead_rapido', policyVersion: policyVersion || 'v1',
+  };
+  const tags = [source, it.medio === 'pauta' ? 'pauta' : 'organico']
+    .concat(it.campana ? [String(it.campana)] : []);
+
+  const contact = {
+    fullName, email, phone, type: 'lead', source,
+    ownerId: it.ownerId, ownerName: it.ownerName || null,
+    score: 0, rating: 'cold', lifecycleStage: 'lead',
+    tags, consent, doNotContact: !given, clienteUid: null,
+    lastActivityAt: createdAt, createdAt, updatedAt: createdAt, _version: 1,
+  };
+  const lead = {
+    fullName, email, phone, source, sourceDetail: it.medio || 'organico',
+    vehicleOfInterestId: it.vehiculoId || null,
+    status: 'nuevo', rating: 'cold', score: 0,
+    ownerId: it.ownerId, ownerName: it.ownerName || null,
+    slaDueAt: null, consent, sourceIntakeId: intakeId, convertedTo: null,
+    lastActivityAt: createdAt, createdAt, updatedAt: createdAt, _version: 1,
+  };
+  const activity = {
+    type: 'lead_intake',
+    subject: 'Lead rápido: ' + source,
+    body: String(it.nota || ''),
+    status: 'closed', direction: 'inbound',
+    relatedTo: { type: 'lead', id: null, name: fullName },
+    ownerId: it.ownerId, createdAt, _version: 1,
+  };
+  return { dedupKey, contact, lead, activity };
+}
+
 module.exports = {
   normalizePhone, contactDedupKey, mapConsent, normalizeSolicitud,
   sanitizeContactId, clienteToContact, subscriptionToContact,
+  intakeToCanonical, INTAKE_SOURCES,
 };

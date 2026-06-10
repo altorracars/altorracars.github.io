@@ -3523,6 +3523,15 @@ exports.onDealUpdated = require('./src/crm/onDealUpdated').onDealUpdated;
 // F7: anulación compensatoria de la conversión (el "Deshacer" server-side).
 exports.anularConversion = require('./src/crm/anularConversion').anularConversion;
 
+// ========== CRM E2 — Calendario unificado (ADR §182) ==========
+// F16: la solicitud kind:'cita' es la SSoT → proyección a activities/cita_{id}
+// (startAt canónico -05:00, idempotente) → la Agenda del portal ve TODO.
+exports.onSolicitudWritten = require('./src/crm/onSolicitudWritten').onSolicitudWritten;
+// F17-resto/F28v1/F34: mantenimiento diario 5am Bogotá (backup PRIMERO,
+// backfill startAt, rebuild de cupos anti-fantasma, purga, digest).
+exports.crmDailyJob = require('./src/ops/crmDailyJob').crmDailyJob;
+exports.crmRunDailyMaintenance = require('./src/ops/crmDailyJob').crmRunDailyMaintenance;
+
 // ========== CRM F37 — vigilante de SLA (ADR §179, E1a) ==========
 // La tarjeta de la Bandeja avisa al ASESOR a los 45/60 min (F4); este sweep
 // escala al RESPONSABLE a las N horas HÁBILES (default 2 — en usados el lead

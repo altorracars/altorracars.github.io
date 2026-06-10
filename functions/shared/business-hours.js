@@ -55,4 +55,25 @@ function pickFromRotation(cfg) {
   return { owner: owner.uid ? owner : null, next: (idx + 1) % rot.length };
 }
 
-module.exports = { businessHoursBetween, pickFromRotation, OPEN_HOUR, CLOSE_HOUR, BOGOTA_OFFSET_MS };
+/**
+ * F16 (ADR §182) — `startAt` canónico de una cita: Timestamp UTC (ISO)
+ * computado desde los strings del puente (`fecha` 'YYYY-MM-DD' + `hora`
+ * 'HH:MM') con offset FIJO -05:00 (Colombia, sin DST). Los strings quedan
+ * como presentación; los RANGOS (Agenda, jobs, índices) usan startAt.
+ * Devuelve null si fecha/hora no parsean (cita sin agendar).
+ */
+function computeStartAt(fecha, hora) {
+  const f = String(fecha || '').trim();
+  const h = String(hora || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f)) return null;
+  const hm = h.match(/^(\d{1,2}):(\d{2})$/);
+  if (!hm) return null;
+  const iso = f + 'T' + String(hm[1]).padStart(2, '0') + ':' + hm[2] + ':00-05:00';
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) ? new Date(t).toISOString() : null;
+}
+
+module.exports = {
+  businessHoursBetween, pickFromRotation, computeStartAt,
+  OPEN_HOUR, CLOSE_HOUR, BOGOTA_OFFSET_MS,
+};

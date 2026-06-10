@@ -43,6 +43,7 @@
 | ¿Qué hay pendiente? estado del sprint | ⚡ `10-CORTO-PLAZO` (TODO-NN) |
 | Migración Cloudflare / Vite / dominio | `docs/PLAN-MIGRACION-ALTORRA.md` + TODO-01 |
 | 🚗 Reconstrucción del CRM / estado actual admin-CRM / pipeline / leads / 360° | `docs/crm-handoff.md` (stub → bóveda privada `../brain-private/`, ADR §174) + skill `crm-architect` + 🛰️ `15` |
+| 🚗 Plan CRM VIGENTE (E0→E6) / sync lead-deal / calendario único / manual de uso | **bóveda `2026-06-09-comite-crm-v2-VEREDICTO.md`** (ADR §176, TODO-21) + `docs/MANUAL-CRM-USO.md` |
 | 🔵 Audita SEGURIDAD / vulnerabilidades / Firebase rules / rutas sin auth / blindaje | 🎯 **`41-SEGURIDAD.md` (stub → bóveda privada, ADR §174; 9 hallazgos + blindaje)** + Skill `arquitecto-software` |
 | 🔵 Audita LEGAL / privacidad / Hábeas Data / términos / garantía / RUNT / SOAT | 🎯 **`42-LEGAL.md` (activo — vehículos CO, ADR §169)** + Skill **`legal-colombia`** (gate: jurisdicción Colombia, fuentes `.gov.co`, NUNCA publicar sin abogado) |
 | 🔵 Audita UX / interfaz / componentes | 🎯 **`43-UX.md` (activo R0)** + Skill tool (`frontend-design`, `impeccable`, `redesign-existing-projects`) |
@@ -268,6 +269,7 @@
 | §173 | **Comité v6 — cerebro auto-evaluable** (16 agentes, 45 hallazgos): cura del "SANO-teatro" = evaluación 2 NIVELES (gates hardcodeados + skill `auditoria-cerebro`/retrieval-drill/deepAudit) + GC dos palancas con trinquete + TODO-NN ledger único + captura-en-ORIGEN + brain-diff gateado por template 1.1.0. Checklist A-U → `specs/2026-06-09-comite-v6-…VEREDICTO.md`. Ítem C (exposición pública) = decisión cliente+Gemini. | 43072 |
 | §174 | **Bóveda privada brain-private** (ítem C, Gemini adoptado/refutado): RED/AMBER → repo hermano privado (NO submódulo — rompe Pages; NO purga de historial — riesgo residual documentado); stubs públicos + archiveDir ×3 → bóveda; cliente crea remote privado + push | 43109 |
 | §175 | **TODO-17 E2E live CRM ✅** (web+newsletter → solicitudes/subscriptions → ingestión → canónico → Bandeja score/NBA + Contactos 3/3) + **incidente billing-disabled** (~2h, Eventarc re-entregó solo, L-38) + **FIX spinner form contacto** (`.form-card` eliminada por el rediseño → fallback al `<form>`, L-37) + shard `31-LECCIONES-GIT` | 43139 |
+| §176 | **Comité CRM v2 → plan E0→E6** (quejas reales: CERO sync lead↔deal verificado + sin CRUD + calendarios desconectados + cupos que nunca se liberan). Estados lead v3, pipeline v3 con gates, calendario único (solicitud=SSoT, WhatsApp-first), Ley 1581=anonimización, lead_intake offline, F39 HECHO-cronometrado, F42 comisiones. VEREDICTO+crudo → bóveda. Manual novatos `docs/MANUAL-CRM-USO.md`. Tracking TODO-21 | 43151 |
 
 ---
 

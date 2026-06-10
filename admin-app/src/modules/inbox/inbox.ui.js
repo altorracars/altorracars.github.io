@@ -17,7 +17,7 @@ import {
 } from './inbox.domain.js';
 import {
   subscribeLeads, loadMoreLeads, fetchTeam, assignLead, setLeadStatus, logActivity,
-  scheduleTask, fetchPendingTasks, completeTask,
+  scheduleTask, fetchPendingTasks, completeTask, archiveLead, purgeLead,
 } from './inbox.data.js';
 import { createDealFromLead } from '../deals/deals.data.js';
 import { openNewLeadForm } from '../capture/new-lead.js';
@@ -34,6 +34,7 @@ const ICONS = {
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   convert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M13 9l3 3-3 3"/></svg>',
   call: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
 };
 
 // P2.b (§178): presets de PRÓXIMO PASO — un prompt, un tap.
@@ -371,6 +372,7 @@ export function mountInbox(root) {
                 style: { cursor: 'pointer', border: 'none' },
               }, ['🎯 Convertido → ver Pipeline'])
             : el('span', { class: `badge badge--${sm.badge || ''}`.trim(), text: sm.label }),
+          lead.archived ? el('span', { class: 'badge', text: '🗄 Archivado' }) : null,
           ctChip ? el('span', { class: 'lead-card__dot', text: '·' }) : null,
           ctChip,
           lead.ownerName ? el('span', { class: 'lead-card__dot', text: '·' }) : null,
@@ -389,6 +391,7 @@ export function mountInbox(root) {
         // F1 §176: convertido = inmutable; estado y conversión desaparecen.
         canEdit && !isConverted ? actionBtn('status', ICONS.flag, 'Cambiar estado') : null,
         canEdit && !isConverted ? actionBtn('convert', ICONS.convert, 'Convertir a oportunidad') : null,
+        canEdit ? actionBtn('more', ICONS.more, 'Más acciones') : null,
         actionBtn('open', ICONS.expand, 'Abrir 360'),
       ]),
     ]);
@@ -443,6 +446,40 @@ export function mountInbox(root) {
       const items = LEAD_STATUSES.filter((s) => s.id !== 'convertido')
         .map((s) => ({ value: s.id, label: s.label, hint: STATUS_HINTS[s.id] || '', active: (lead.status || 'nuevo') === s.id }));
       return openMenu(anchor, items, (it) => doStatus(lead, it.value), { title: 'Cambiar estado' });
+    }
+    if (action === 'more') {
+      // F13/F15 §180: archivar (día a día, reversible) + eliminar (solo
+      // super admin, solo prueba/spam — lo real se ARCHIVA, no se borra).
+      const items = [
+        lead.archived
+          ? { value: 'unarchive', label: 'Restaurar de archivados', icon: '↩️' }
+          : { value: 'archive', label: 'Archivar', icon: '🗄', hint: 'Sale de las vistas; reversible' },
+        hasPermission('crm.delete')
+          ? { value: 'purge', label: 'Eliminar definitivo', icon: '🗑', hint: 'Solo pruebas/spam — borra TODO su rastro' }
+          : null,
+      ].filter(Boolean);
+      return openMenu(anchor, items, async (it) => {
+        if (it.value === 'archive' || it.value === 'unarchive') {
+          const archived = it.value === 'archive';
+          patchLead(lead.id, { archived });
+          if (store.get().mock) { toast(archived ? '🗄 Archivado' : '↩️ Restaurado', 'ok'); return; }
+          try { await archiveLead(lead.id, archived); toast(archived ? '🗄 Archivado' : '↩️ Restaurado', 'ok'); }
+          catch (e) { patchLead(lead.id, { archived: !archived }); toast('No se pudo archivar', 'error'); }
+          return;
+        }
+        if (it.value === 'purge') {
+          if (!navigator.onLine) { toast('Eliminar definitivo necesita señal.', 'error'); return; }
+          if (!window.confirm('🗑 ¿Eliminar DEFINITIVAMENTE a "' + lead.fullName + '"?\n\nBorra el lead, sus actividades, negocios y su contacto si queda huérfano. Esto es SOLO para pruebas/spam — un cliente real se ARCHIVA.')) return;
+          if (!window.confirm('Última confirmación: esta acción NO se puede deshacer. ¿Eliminar?')) return;
+          if (store.get().mock) { toast('Eliminado (mock)', 'ok'); return; }
+          try {
+            const r = await purgeLead(lead.id);
+            toast(`🗑 Eliminado: ${r.activities} actividades, ${r.deals} negocios${r.contactDeleted ? ', contacto' : ''}`, 'ok');
+          } catch (e) {
+            toast(e.message && e.message.includes('Super Admin') ? 'Solo el Super Admin puede eliminar.' : 'No se pudo eliminar: ' + (e.message || e.code), 'error');
+          }
+        }
+      }, { title: 'Más acciones' });
     }
   }
 

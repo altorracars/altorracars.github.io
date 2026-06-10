@@ -3514,6 +3514,8 @@ exports.onLeadIntakeCreated = require('./src/ingestion/onLeadIntakeCreated').onL
 // Export/restore del CRM a Storage privado. Restore = dryRun por defecto.
 exports.crmExport = require('./src/ops/crmBackup').crmExport;
 exports.crmRestore = require('./src/ops/crmBackup').crmRestore;
+// F15 §180 (adelanto E3): borrado físico en cascada de datos de prueba/spam.
+exports.crmPurgeLead = require('./src/ops/crmPurge').crmPurgeLead;
 
 // ========== CRM F37 — vigilante de SLA (ADR §179, E1a) ==========
 // La tarjeta de la Bandeja avisa al ASESOR a los 45/60 min (F4); este sweep

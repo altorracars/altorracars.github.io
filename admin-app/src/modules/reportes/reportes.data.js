@@ -29,9 +29,11 @@ export async function loadReports({ pageSize = 500 } = {}) {
   if (store.get().mock) {
     return { leads: getMockLeads(), deals: getMockDeals(), capped: false };
   }
-  const [leads, deals] = await Promise.all([
+  const [leadsRaw, deals] = await Promise.all([
     fetchAll('leads', pageSize),
     fetchAll('deals', pageSize),
   ]);
-  return { leads, deals, capped: leads.length >= pageSize || deals.length >= pageSize };
+  // F13 §180: lo archivado no contamina los números del tablero.
+  const leads = leadsRaw.filter((l) => !l.archived);
+  return { leads, deals, capped: leadsRaw.length >= pageSize || deals.length >= pageSize };
 }

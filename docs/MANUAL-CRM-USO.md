@@ -122,8 +122,8 @@ KPIs del período, embudo (cuántos entran vs cuántos compran), ventas por cana
 
 | Error | Corrección |
 |---|---|
-| Cambiar el estado de un lead **Convertido** en la Bandeja | No lo hagas: su vida sigue en el Pipeline. Si lo hiciste, vuélvelo a “Convertido”. |
-| Borrar… nada — hoy no se puede borrar | Marca **No calificado** (spam/curioso) o **Perdido**. La opción de archivar/eliminar viene en camino. |
+| Cambiar el estado de un lead **Convertido** en la Bandeja | Ya no se puede (el sistema lo bloquea): su vida sigue en el Pipeline. |
+| Borrar un cliente real | **No se borra: se ARCHIVA** (menú ⋯ → 🗄 Archivar — reversible, sale de todas las vistas y de Reportes). **🗑 Eliminar definitivo** es SOLO para pruebas/spam, solo lo puede el Super Admin, y borra TODO el rastro (no hay vuelta atrás). |
 | Lead sin asesor asignado | Asígnalo apenas entre — un lead sin dueño es un lead que nadie atiende. |
 | Negocio sin monto | Edita el monto apenas sepas el carro que negocia. |
 | Marcar Perdido sin razón | La razón es lo que te enseña a vender más. Elígela siempre. |

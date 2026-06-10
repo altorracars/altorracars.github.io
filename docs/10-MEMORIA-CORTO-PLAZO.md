@@ -60,3 +60,6 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 > - **2026-06-10 (madrugada 3)**: "continua" → **E1a CERRADA (§179)**: sweep SLA horario +
 >   rotación intake (E2E live: owner auto ✅) + notify.js + friction.js · 72 tests ·
 >   config/crmIntake sembrada (REAL) · lead-demo `_test_sla_e1a` esperando al cron.
+> - **2026-06-10 (madrugada 4)**: quejas del dueño → **adelanto E3 (§180)**: Archivar +
+>   crmPurgeLead (cascada) + Reportes sin archivados + popup GitHub fijado. El dueño
+>   verifica el purge borrando el lead-demo él mismo (F39).

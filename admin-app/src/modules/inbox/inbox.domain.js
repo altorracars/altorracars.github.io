@@ -105,10 +105,11 @@ export function contactTimer(lead, now = Date.now()) {
 }
 
 /**
- * F4-fase1: la vista default OCULTA los cerrados (perdido/no_calificado/
- * convertido) con contador explícito "N ocultos · ver todos" — nunca
- * desaparición silenciosa. Un filtro de estado explícito o showClosed
- * los trae de vuelta. Devuelve { rows, hiddenClosed }.
+ * F4-fase1 + F13 (§180): la vista default OCULTA los cerrados (perdido/
+ * no_calificado/convertido) Y los ARCHIVADOS, con contador explícito
+ * "N ocultos · ver todos" — nunca desaparición silenciosa. Un filtro de
+ * estado explícito o showClosed los trae de vuelta (los archivados se
+ * distinguen por su badge). Devuelve { rows, hiddenClosed }.
  */
 export function buildView(leads, { queue, uid, filters, search, showClosed = false }) {
   let rows = leads.filter((l) => inQueue(l, queue, uid));
@@ -116,7 +117,7 @@ export function buildView(leads, { queue, uid, filters, search, showClosed = fal
   rows = applySearch(rows, search);
   let hiddenClosed = 0;
   if (!showClosed && !filters.status) {
-    const open = rows.filter((l) => !isClosedStatus(l.status));
+    const open = rows.filter((l) => !isClosedStatus(l.status) && !l.archived);
     hiddenClosed = rows.length - open.length;
     rows = open;
   }

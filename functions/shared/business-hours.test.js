@@ -30,6 +30,24 @@ describe('F37 — businessHoursBetween (lun-sáb 8-18, UTC-5)', () => {
   });
 });
 
+describe('F16 — computeStartAt (fecha+hora del puente → UTC canónico)', () => {
+  it('convierte hora Bogotá a UTC (+5)', () => {
+    expect(require('./business-hours.js').computeStartAt('2026-06-20', '10:00')).toBe('2026-06-20T15:00:00.000Z');
+  });
+  it('acepta hora de un dígito y cruza medianoche UTC', () => {
+    const { computeStartAt } = require('./business-hours.js');
+    expect(computeStartAt('2026-06-20', '9:30')).toBe('2026-06-20T14:30:00.000Z');
+    expect(computeStartAt('2026-06-20', '20:00')).toBe('2026-06-21T01:00:00.000Z');
+  });
+  it('inputs inválidos → null (cita sin agendar no se proyecta)', () => {
+    const { computeStartAt } = require('./business-hours.js');
+    expect(computeStartAt('', '10:00')).toBeNull();
+    expect(computeStartAt('2026-06-20', '')).toBeNull();
+    expect(computeStartAt('20-06-2026', '10:00')).toBeNull();
+    expect(computeStartAt('2026-06-20', 'mañana')).toBeNull();
+  });
+});
+
 describe('F37b — pickFromRotation (round-robin de intake)', () => {
   it('rota en orden y envuelve', () => {
     const cfg = { rotation: [{ uid: 'a', nombre: 'Ana' }, { uid: 'b', nombre: 'Beto' }], next: 1 };

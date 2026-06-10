@@ -15,7 +15,7 @@ import { scoreLead, RATING_META, FACTOR_LABELS, FACTOR_WEIGHTS } from '../../dom
 import { classifyType, channelOf, statusMeta } from '../../domain/classify.js';
 import { computeNBA } from '../../domain/nba.js';
 import { getContact, subscribeActivities, subscribeNotes, addNote } from './contacts.data.js';
-import { createDealFromLead } from '../deals/deals.data.js';
+import { openConvertDialog } from '../capture/convert-dialog.js';
 import { scheduleActivity } from '../agenda/agenda.data.js';
 import { dealFromLead } from '../../domain/pipeline.js';
 import { getMockContact, getMockActivities, getMockNotes, addMockNote, addMockDeal, addMockAgenda } from '../../core/mock.js';
@@ -124,14 +124,8 @@ export function mountDetailPanel(root) {
     const canEdit = hasPermission('crm.edit');
     const convertBtn = (canEdit && lead.status !== 'convertido')
       ? el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['🎯 Convertir']) : null;
-    if (convertBtn) convertBtn.addEventListener('click', async () => {
-      convertBtn.disabled = true;
-      try {
-        if (store.get().mock) addMockDeal(dealFromLead(lead));
-        else await createDealFromLead(lead);
-        toast('🎯 Convertido a oportunidad', 'ok');
-      } catch (e) { toast('No se pudo convertir', 'error'); convertBtn.disabled = false; }
-    });
+    // F7 §181: el 360 usa el MISMO diálogo canónico de conversión que la Bandeja.
+    if (convertBtn) convertBtn.addEventListener('click', () => openConvertDialog(lead, {}));
 
     const agendaBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Agendar cita', title: 'Agendar cita' }, ['📅']) : null;
     if (agendaBtn) agendaBtn.addEventListener('click', () => openScheduler(lead, agendaBtn));

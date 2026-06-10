@@ -44,9 +44,9 @@ describe.skipIf(!EMU)('Rules — F1 lead convertido inmutable', () => {
     return testEnv.authenticatedContext(ADMIN_UID).firestore();
   }
 
-  it('admin con crm.edit SÍ cambia el status de un lead NO convertido', async () => {
+  it('admin con crm.edit SÍ cambia el status de un lead NO convertido (v3: con razón)', async () => {
     await rut.assertSucceeds(
-      adminDb().doc('leads/libre').update({ status: 'descartado' })
+      adminDb().doc('leads/libre').update({ status: 'descartado', discardReason: 'no_califica' })
     );
   });
 
@@ -129,6 +129,64 @@ describe.skipIf(!EMU)('Rules — F36 lead_intake (lead rápido)', () => {
     await rut.assertFails(
       testEnv.authenticatedContext(ASESOR).firestore().doc('lead_intake/fijo').update({ nombre: 'X' })
     );
+  });
+});
+
+describe.skipIf(!EMU)('Rules — F8/F35b deals v3 (gates + matriz) y leads v3', () => {
+  let testEnv, rut;
+  const ADMIN = 'admin_v3';
+
+  beforeAll(async () => {
+    rut = await import('@firebase/rules-unit-testing');
+    testEnv = await rut.initializeTestEnvironment({
+      projectId: 'altorra-rules-test-v3',
+      firestore: { rules: readFileSync(join(__dir, '../../../firestore.rules'), 'utf8') },
+    });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc('usuarios/' + ADMIN).set({ rol: 'custom', permissions: ['crm.read', 'crm.edit'], estado: 'activo' });
+      await db.doc('deals/d_cuadrando').set({ stageId: 'cuadrando_cita', status: 'open', amount: 50, ownerId: ADMIN });
+      await db.doc('deals/d_visita').set({ stageId: 'visita_test_drive', status: 'open', amount: 50, ownerId: ADMIN });
+      await db.doc('deals/d_apartado').set({ stageId: 'apartado', status: 'open', amount: 50, ownerId: ADMIN });
+      await db.doc('deals/d_vendido').set({ stageId: 'vendido', status: 'won', amount: 50, ownerId: ADMIN });
+      await db.doc('leads/l_libre').set({ status: 'contactado', convertedTo: null });
+    });
+  });
+  afterAll(async () => { if (testEnv) await testEnv.cleanup(); });
+
+  const dbA = () => testEnv.authenticatedContext(ADMIN).firestore();
+
+  it('adelante adyacente sin gate pasa (cuadrando→cita_fijada)', async () => {
+    await rut.assertSucceeds(dbA().doc('deals/d_cuadrando').update({ stageId: 'cita_fijada' }));
+  });
+  it('entrar a APARTADO sin monto+vence → denegado; con gate → pasa', async () => {
+    await rut.assertFails(dbA().doc('deals/d_visita').update({ stageId: 'apartado' }));
+    await rut.assertSucceeds(dbA().doc('deals/d_visita').update({
+      stageId: 'apartado', huboTestDrive: true, montoApartado: 2000000, venceEl: '2026-06-13T18:00:00.000Z',
+    }));
+  });
+  it('VENDIDO exige tipoPago; vendido es TERMINAL para el cliente', async () => {
+    await rut.assertFails(dbA().doc('deals/d_apartado').update({ stageId: 'vendido' }));
+    await rut.assertSucceeds(dbA().doc('deals/d_apartado').update({ stageId: 'vendido', tipoPago: 'contado' }));
+    await rut.assertFails(dbA().doc('deals/d_vendido').update({ stageId: 'negociacion', regressReason: 'error' }));
+  });
+  it('PERDIDO exige razón de picklist; retroceso exige regressReason', async () => {
+    await rut.assertFails(dbA().doc('deals/d_cuadrando').update({ stageId: 'perdido' }));
+    await rut.assertSucceeds(dbA().doc('deals/d_cuadrando').update({ stageId: 'perdido', lostReason: 'no_responde' }));
+    // d_visita quedó en apartado (test anterior): retroceder sin razón falla, con razón pasa
+    await rut.assertFails(dbA().doc('deals/d_visita').update({ stageId: 'negociacion' }));
+    await rut.assertSucceeds(dbA().doc('deals/d_visita').update({ stageId: 'negociacion', regressReason: 'cliente pidió pausa' }));
+  });
+  it('create del deal: solo nace en cuadrando_cita con amount y owner', async () => {
+    await rut.assertFails(dbA().collection('deals').add({ stageId: 'negociacion', amount: 1, ownerId: ADMIN, status: 'open' }));
+    await rut.assertFails(dbA().collection('deals').add({ stageId: 'cuadrando_cita', ownerId: ADMIN, status: 'open' }));
+    await rut.assertSucceeds(dbA().collection('deals').add({ stageId: 'cuadrando_cita', amount: 0, ownerId: ADMIN, status: 'open' }));
+  });
+  it('leads v3: enum retirado DENEGADO; descartado exige razón válida', async () => {
+    await rut.assertFails(dbA().doc('leads/l_libre').update({ status: 'calificado' }));
+    await rut.assertFails(dbA().doc('leads/l_libre').update({ status: 'perdido' }));
+    await rut.assertFails(dbA().doc('leads/l_libre').update({ status: 'descartado' }));
+    await rut.assertSucceeds(dbA().doc('leads/l_libre').update({ status: 'descartado', discardReason: 'inalcanzable' }));
   });
 });
 

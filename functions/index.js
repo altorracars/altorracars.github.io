@@ -2156,51 +2156,9 @@ exports.linkTelegramChat = onRequest({
  * Best-effort: si no hay token o usuario sin chatId, skip silente.
  */
 async function sendTelegramAlert(uid, text, options) {
-    const TOKEN = telegramBotToken.value();
-    if (!TOKEN) return false;
-    try {
-        const userSnap = await db.collection('usuarios').doc(uid).get();
-        if (!userSnap.exists) return false;
-        const chatId = userSnap.data().telegramChatId;
-        if (!chatId) return false;
-
-        const payload = {
-            chat_id: chatId,
-            text: text,
-            parse_mode: 'Markdown',
-            disable_web_page_preview: true,
-            // §55 — Garantizar push con sonido (no silent push).
-            // Default Telegram ya es false, lo explicitamos para defense.
-            disable_notification: false
-        };
-
-        // Inline keyboard si se pasa link
-        if (options && options.url) {
-            payload.reply_markup = {
-                inline_keyboard: [[{
-                    text: options.urlLabel || 'Atender ahora',
-                    url: options.url
-                }]]
-            };
-        }
-
-        const resp = await fetch('https://api.telegram.org/bot' + TOKEN + '/sendMessage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        // Update lastUsed
-        if (resp.ok) {
-            await db.collection('usuarios').doc(uid).update({
-                telegramLastUsedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-        }
-        return resp.ok;
-    } catch (err) {
-        console.warn('[sendTelegramAlert] error for ' + uid + ':', err.message);
-        return false;
-    }
+    // §179 F38: delega en el módulo compartido de routing de alertas
+    // (src/ops/notify.js) — una sola implementación de Telegram push.
+    return require('./src/ops/notify').sendTelegram(db, telegramBotToken.value(), uid, text, options);
 }
 
 /**
@@ -3556,3 +3514,71 @@ exports.onLeadIntakeCreated = require('./src/ingestion/onLeadIntakeCreated').onL
 // Export/restore del CRM a Storage privado. Restore = dryRun por defecto.
 exports.crmExport = require('./src/ops/crmBackup').crmExport;
 exports.crmRestore = require('./src/ops/crmBackup').crmRestore;
+
+// ========== CRM F37 — vigilante de SLA (ADR §179, E1a) ==========
+// La tarjeta de la Bandeja avisa al ASESOR a los 45/60 min (F4); este sweep
+// escala al RESPONSABLE a las N horas HÁBILES (default 2 — en usados el lead
+// se enfría en 2 horas). Idempotente por flag _slaAlertedAt. Config en
+// config/crmIntake: { slaHours, alertUid (CEO), rotation, next }.
+async function runCrmSlaSweep() {
+    const { businessHoursBetween } = require('./shared/business-hours');
+    const notify = require('./src/ops/notify');
+    const token = telegramBotToken.value();
+
+    const cfgSnap = await db.collection('config').doc('crmIntake').get();
+    const cfg = cfgSnap.exists ? cfgSnap.data() : {};
+    const slaHours = typeof cfg.slaHours === 'number' ? cfg.slaHours : 2;
+    const ceoUid = cfg.alertUid || null;
+
+    const snap = await db.collection('leads').where('status', '==', 'nuevo').limit(200).get();
+    const now = new Date();
+    const result = { checked: snap.size, alerted: 0, slaHours };
+
+    for (const docSnap of snap.docs) {
+        const lead = docSnap.data();
+        if (lead._slaAlertedAt || !lead.createdAt) continue;
+        const hours = businessHoursBetween(lead.createdAt, now);
+        if (hours < slaHours) continue;
+
+        const target = lead.ownerId || ceoUid; // sin owner → directo al CEO
+        const quien = lead.ownerName ? ' (asesor: ' + lead.ownerName + ')' : ' (SIN asignar)';
+        const text = '🚨 *Lead sin primer contacto hace ' + hours.toFixed(1) + 'h hábiles*\n'
+            + (lead.fullName || 'Sin nombre') + quien + '\n'
+            + (lead.phone ? '📱 ' + lead.phone + '\n' : '')
+            + 'Fuente: ' + (lead.source || '—');
+        const sent = await notify.criticalAlert(db, token, {
+            targetUid: target, text,
+            url: 'https://altorracars.github.io/admin-app/dist/#/',
+            urlLabel: 'Abrir Bandeja y reasignar',
+            type: 'sla_lead',
+            meta: { leadId: docSnap.id, hours: Math.round(hours * 10) / 10 },
+        });
+        // Escalera: si el responsable era un asesor, el CEO también se entera.
+        if (ceoUid && target !== ceoUid) {
+            await notify.sendTelegram(db, token, ceoUid, text, {
+                url: 'https://altorracars.github.io/admin-app/dist/#/', urlLabel: 'Abrir Bandeja y reasignar',
+            });
+        }
+        await docSnap.ref.update({ _slaAlertedAt: now.toISOString() });
+        result.alerted++;
+        void sent;
+    }
+    console.log('[crmSlaSweep] ' + JSON.stringify(result));
+    return result;
+}
+
+exports.crmHourlyJob = onSchedule({
+    schedule: 'every 60 minutes',
+    region: 'us-central1',
+    secrets: [telegramBotToken],
+    maxInstances: 1
+}, async () => { await runCrmSlaSweep(); });
+
+// Disparo manual del sweep (pruebas / "revisa ya") — solo super admin.
+exports.crmRunSlaSweep = onCall({
+    region: 'us-central1', invoker: 'public', cors: true,
+    secrets: [telegramBotToken]
+}, async (request) => {
+    await verifySuperAdmin(request.auth);
+    return runCrmSlaSweep();
+});

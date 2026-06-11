@@ -17,6 +17,7 @@ import { computeNBA } from '../../domain/nba.js';
 import { getContact, subscribeActivities, subscribeNotes, addNote } from './contacts.data.js';
 import { openConvertDialog } from '../capture/convert-dialog.js';
 import { openCitaCreate } from '../agenda/cita-dialog.js';
+import { openContactEdit } from './contacts.edit.js';
 import { dealFromLead } from '../../domain/pipeline.js';
 import { getMockContact, getMockActivities, getMockNotes, addMockNote, addMockDeal } from '../../core/mock.js';
 
@@ -132,6 +133,14 @@ export function mountDetailPanel(root) {
     const agendaBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Agendar cita', title: 'Agendar cita' }, ['📅']) : null;
     if (agendaBtn) agendaBtn.addEventListener('click', () => openCitaCreate(lead, {}));
 
+    // F12 §185: editar contacto (optimistic locking + colisión→fusión + 1581).
+    const editBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Editar contacto', title: 'Editar contacto' }, ['✏️']) : null;
+    if (editBtn) editBtn.addEventListener('click', () => openContactEdit(data.contact, {
+      onChanged: () => {
+        if (lead.contactId) getContact(lead.contactId).then((c) => { data.contact = c; render(); }).catch(() => {});
+      },
+    }));
+
     return el('div', { class: 'detail__header' }, [
       el('div', { class: 'u-row u-grow', style: { minWidth: '0' } }, [
         el('span', { class: 'avatar', 'aria-hidden': 'true', text: initials(lead.fullName) }),
@@ -145,7 +154,7 @@ export function mountDetailPanel(root) {
           ]),
         ]),
       ]),
-      el('div', { class: 'u-row u-row--tight' }, [convertBtn, agendaBtn, waBtn, close$]),
+      el('div', { class: 'u-row u-row--tight' }, [convertBtn, agendaBtn, editBtn, waBtn, close$]),
     ]);
   }
 

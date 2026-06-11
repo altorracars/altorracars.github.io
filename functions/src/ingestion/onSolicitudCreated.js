@@ -29,6 +29,8 @@ exports.onSolicitudCreated = onDocumentCreated(
 
     // Idempotencia: si ya se ingirió, salir.
     if (sol._ingestedAt) return;
+    // F14 §185: una solicitud suprimida (Ley 1581) jamás re-ingresa al canónico.
+    if (sol._suppressed === true) return;
 
     try {
       const canonical = normalizeSolicitud(sol, solId, POLICY_VERSION);

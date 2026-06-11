@@ -22,15 +22,19 @@ const { advisorOverrideFor, bogotaDayKey } = require('../../shared/cita-blocks')
  */
 async function ingestLeadTransaction(db, canonical, sourceRef) {
   const { dedupKey, contact, lead, activity } = canonical;
-  const contactId = sanitizeContactId(dedupKey);
-  const contactRef = db.collection('contacts').doc(contactId);
+  const fallbackId = sanitizeContactId(dedupKey);
   const leadRef = db.collection('leads').doc();
   const activityRef = db.collection('activities').doc();
   activity.relatedTo.id = leadRef.id;
-  lead.contactId = contactId;
 
   const intakeCfgRef = db.collection('config').doc('crmIntake');
+  // F40e (ADR §185): claves del índice dedup para email Y teléfono — un
+  // contacto cuyo email fue EDITADO (F12) sigue resolviendo aquí en vez de
+  // duplicarse. La consulta y las altas van DENTRO de la transacción.
+  const { dedupKeysFor } = require('../crm/contactGraph');
+  const wantedKeys = dedupKeysFor(contact);
 
+  let resolvedContactId = fallbackId;
   await db.runTransaction(async (tx) => {
     // F37b §179 — owner OBLIGATORIO al ingerir: si el lead llega sin dueño
     // (web), se asigna por round-robin desde config/crmIntake.rotation,
@@ -67,15 +71,54 @@ async function ingestLeadTransaction(db, canonical, sourceRef) {
       }
     }
 
-    const contactDoc = await tx.get(contactRef);
+    // F40e: resolver el contacto VÍA ÍNDICE (email manda; luego teléfono).
+    const keySnaps = [];
+    for (const k of wantedKeys) {
+      keySnaps.push({ key: k, snap: await tx.get(db.collection('dedup').doc(k)) });
+    }
+    const hit = keySnaps.find((e) => e.snap.exists);
+    resolvedContactId = hit ? hit.snap.data().contactId : fallbackId;
+    let contactRef = db.collection('contacts').doc(resolvedContactId);
+    let contactDoc = await tx.get(contactRef);
+
+    // Redirecciones (ADR §185): fusionado → seguir la cadena (acotada) RE-
+    // VALIDANDO cada destino; suprimido/en-gracia → contacto FRESCO de ID
+    // aleatorio (B.3); destino BORRADO tras un hop → también fresco (jamás
+    // re-materializar el ID determinista de un suprimido — review §185).
+    let cData = contactDoc.exists ? contactDoc.data() : null;
+    let hops = 0;
+    while (cData && cData._mergedInto && hops < 3) {
+      contactRef = db.collection('contacts').doc(cData._mergedInto);
+      contactDoc = await tx.get(contactRef);
+      cData = contactDoc.exists ? contactDoc.data() : null;
+      hops++;
+    }
+    if ((cData && (cData._suppressed === true || cData.suppressionStatus === 'pendiente_supresion'))
+      || (!contactDoc.exists && hops > 0)) {
+      contactRef = db.collection('contacts').doc();
+      contactDoc = { exists: false };
+    }
+    resolvedContactId = contactRef.id;
+    lead.contactId = resolvedContactId;
+
     if (!contactDoc.exists) {
-      tx.set(contactRef, contact); // primer contacto: shape completo
+      // primer contacto: shape completo + espejo de claves del índice.
+      tx.set(contactRef, { ...contact, dedupKeys: wantedKeys });
     } else {
-      // contacto recurrente: solo refrescar actividad reciente.
+      // contacto recurrente: refrescar actividad + protocolo _version (F12a).
       tx.update(contactRef, {
         lastActivityAt: contact.lastActivityAt,
         updatedAt: contact.updatedAt,
+        _version: (require('firebase-admin')).firestore.FieldValue.increment(1),
       });
+    }
+    // create-if-absent de entradas faltantes (jamás robar las de otro).
+    for (const e of keySnaps) {
+      if (!e.snap.exists) {
+        tx.set(db.collection('dedup').doc(e.key), {
+          contactId: resolvedContactId, createdAt: new Date().toISOString(),
+        });
+      }
     }
     tx.set(leadRef, lead);
     tx.set(activityRef, activity);
@@ -83,7 +126,7 @@ async function ingestLeadTransaction(db, canonical, sourceRef) {
     tx.update(sourceRef, { _ingestedAt: new Date().toISOString(), _leadId: leadRef.id });
   });
 
-  return { contactId, leadId: leadRef.id, ownerId: lead.ownerId || null, ownerName: lead.ownerName || null };
+  return { contactId: resolvedContactId, leadId: leadRef.id, ownerId: lead.ownerId || null, ownerName: lead.ownerName || null };
 }
 
 module.exports = { ingestLeadTransaction };

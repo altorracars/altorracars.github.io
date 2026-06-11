@@ -28,12 +28,35 @@ exports.onClienteCreated = onDocumentCreated(
 
     try {
       const { contactId, contact } = clienteToContact(cliente, uid, POLICY_VERSION);
-      const contactRef = db.collection('contacts').doc(contactId);
+      // F40e §185: resolver vía índice dedup — un contacto cuyo email fue
+      // EDITADO (F12) se vincula en vez de duplicarse.
+      const { dedupKeysFor } = require('../crm/contactGraph');
+      const wantedKeys = dedupKeysFor(contact);
 
       await db.runTransaction(async (tx) => {
-        const doc = await tx.get(contactRef);
+        const keySnaps = [];
+        for (const k of wantedKeys) {
+          keySnaps.push({ key: k, snap: await tx.get(db.collection('dedup').doc(k)) });
+        }
+        const hit = keySnaps.find((e) => e.snap.exists);
+        let contactRef = db.collection('contacts').doc(hit ? hit.snap.data().contactId : contactId);
+        let doc = await tx.get(contactRef);
+        let cData = doc.exists ? doc.data() : null;
+        let hops = 0;
+        while (cData && cData._mergedInto && hops < 3) { // cadena acotada, re-validando
+          contactRef = db.collection('contacts').doc(cData._mergedInto);
+          doc = await tx.get(contactRef);
+          cData = doc.exists ? doc.data() : null;
+          hops++;
+        }
+        if ((cData && (cData._suppressed === true || cData.suppressionStatus === 'pendiente_supresion'))
+          || (!doc.exists && hops > 0)) {
+          contactRef = db.collection('contacts').doc(); // B.3: jamás resucitar
+          doc = { exists: false };
+        }
+
         if (!doc.exists) {
-          tx.set(contactRef, contact); // primer contacto: shape completo
+          tx.set(contactRef, { ...contact, dedupKeys: wantedKeys });
         } else {
           // Contacto existente (invitado que ahora se registra) → VINCULAR la
           // cuenta sin pisar first-seen ni campos volátiles (score/owner/etc.).
@@ -41,7 +64,15 @@ exports.onClienteCreated = onDocumentCreated(
             clienteUid: uid,
             lastActivityAt: contact.lastActivityAt,
             updatedAt: contact.updatedAt,
+            _version: admin.firestore.FieldValue.increment(1),
           });
+        }
+        for (const e of keySnaps) {
+          if (!e.snap.exists) {
+            tx.set(db.collection('dedup').doc(e.key), {
+              contactId: contactRef.id, createdAt: new Date().toISOString(),
+            });
+          }
         }
         tx.update(snap.ref, { _crmIngested: new Date().toISOString() });
       });

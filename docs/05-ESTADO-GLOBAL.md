@@ -5,17 +5,18 @@
 
 | Señal | Valor (última actualización: **2026-06-10 noche**) |
 |---|---|
-| **Build** | 🟢 **CRM §176: E0+E1a+E1b+E2 COMPLETA ✅ LIVE** (§177-§184) + adelanto E3 (§180). Retomar: **"continúa E3"** (F12 fusión · F14 anonimización 1581). Cerebro: comité v6 19/21. |
+| **Build** | 🟢 **CRM §176: E0→E3 COMPLETAS ✅ LIVE** (§177-§185). Retomar: **"continúa E4"** (F10 post-venta · F25 agregado vehículo · F26 colisión · F42 comisiones). Cerebro: comité v6 19/21. |
 | **Cache version vigente** | **`v20260610181500`** (§184). SW == cache-manager ✅. Ctrl+Shift+R la 1ª vez. |
-| **Branch activa** | `refactor/estructura` — mergeado a `main` hasta §183; **tanda 2 (§184) commiteada, merge = cliente**. Deploys firebase = Claude (§1). |
-| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 · lead rápido offline · SLA+rotación · **calendario único** (citas web+manuales en Agenda con acciones, confirmación tokenizada WhatsApp-first, tupla asesor+vehículo, hold-expiry, editor Disponibilidad) · daily/hourly jobs · 17 functions CRM LIVE. |
+| **Branch activa** | `refactor/estructura` — mergeado a `main` hasta §183; **§184+§185 commiteadas, merge = cliente**. Deploys firebase = Claude (§1). |
+| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 · lead rápido offline · SLA+rotación · **calendario único** (§184) · **CRUD/1581** (editar `_version`, fusión, supresión 72h, índice dedup F40e) · daily/hourly jobs · 21 functions CRM LIVE. |
 
 ## ⚠️ Flags de riesgo activos
 - 🔒 **Blindaje** (canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor · SEC-01 RBAC-read pendiente (→E5) · Legal `42` (gate abogado, F14 en E3 lo necesita).
 - 🟡 **Festivos**: migrados al SSoT SOLO cuando el dueño toque **"🇨🇴 Cargar festivos 2026"** (portal→Disponibilidad). Hasta entonces el validador clásico no avisa festivos (la web tampoco los bloqueaba — ventana benigna, §184.7).
 - 🔴 **Billing GCP se cayó ~2h el 2026-06-09** (recuperado, L-38). **Causa SIN identificar (cliente: console.cloud.google.com/billing)** o se repetirá.
 - 🧹 Cliente: merge tanda 2 + Ctrl+Shift+R + clic festivos + anunciar F42.
-- ✅ Verificar mañana: 1ª corrida `crmDailyJob` 5am (digest F28 v2 en `crm_alerts`; fantasmas feb-abr + basura feb de availability deben desaparecer).
+- ✅ Verificar mañana: 1ª corrida `crmDailyJob` 5am (digest F28 v2 en `crm_alerts`; fantasmas feb-abr + basura feb de availability deben desaparecer + reconcile dedup backfillea contactos existentes).
+- ⚖️ Texto legal PÚBLICO de supresión/privacidad = gate P4 (abogado, `42-LEGAL`) — el mecanismo F14 ya está live.
 - cron↔cache = patrón conocido (L-02, hija `31-LECCIONES-GIT`).
 
 ## 🧩 Sub-sistemas (resumen)

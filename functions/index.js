@@ -3613,6 +3613,12 @@ exports.crmHourlyJob = onSchedule({
 exports.crmCitaAction = require('./src/crm/citaActions').crmCitaAction;
 exports.citaConfirm = require('./src/crm/citaActions').citaConfirm;
 
+// E3 §185 — F12 fusión + F14 supresión 1581 + índice dedup F40e.
+exports.crmMergeContacts = require('./src/crm/contactAdmin').crmMergeContacts;
+exports.crmSuppressContact = require('./src/crm/contactAdmin').crmSuppressContact;
+exports.crmCancelSuppression = require('./src/crm/contactAdmin').crmCancelSuppression;
+exports.onContactWritten = require('./src/crm/onContactWritten').onContactWritten;
+
 // Disparo manual del sweep de citas (pruebas) — solo super admin.
 exports.crmRunCitaSweep = onCall({
     region: 'us-central1', invoker: 'public', cors: true,

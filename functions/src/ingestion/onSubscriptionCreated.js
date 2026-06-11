@@ -28,13 +28,37 @@ exports.onSubscriptionCreated = onDocumentCreated(
 
     try {
       const { contactId, contact } = subscriptionToContact(sub, POLICY_VERSION);
-      const contactRef = db.collection('contacts').doc(contactId);
       const given = sub.consentGiven === true;
+      // F40e §185: resolver vía índice dedup (mismo patrón que ingestLead) —
+      // jamás duplicar a un contacto cuyo email fue editado ni resucitar a
+      // un suprimido (B.3).
+      const { dedupKeysFor } = require('../crm/contactGraph');
+      const wantedKeys = dedupKeysFor(contact);
 
       await db.runTransaction(async (tx) => {
-        const doc = await tx.get(contactRef);
+        const keySnaps = [];
+        for (const k of wantedKeys) {
+          keySnaps.push({ key: k, snap: await tx.get(db.collection('dedup').doc(k)) });
+        }
+        const hit = keySnaps.find((e) => e.snap.exists);
+        let contactRef = db.collection('contacts').doc(hit ? hit.snap.data().contactId : contactId);
+        let doc = await tx.get(contactRef);
+        let cData = doc.exists ? doc.data() : null;
+        let hops = 0;
+        while (cData && cData._mergedInto && hops < 3) { // cadena acotada, re-validando
+          contactRef = db.collection('contacts').doc(cData._mergedInto);
+          doc = await tx.get(contactRef);
+          cData = doc.exists ? doc.data() : null;
+          hops++;
+        }
+        if ((cData && (cData._suppressed === true || cData.suppressionStatus === 'pendiente_supresion'))
+          || (!doc.exists && hops > 0)) {
+          contactRef = db.collection('contacts').doc();
+          doc = { exists: false };
+        }
+
         if (!doc.exists) {
-          tx.set(contactRef, contact); // nuevo suscriptor
+          tx.set(contactRef, { ...contact, dedupKeys: wantedKeys }); // nuevo suscriptor
         } else {
           // Contacto existente que se suscribe → SOLO SUBE consentimiento,
           // nunca lo baja (una suscripción sin consent NO debe degradar un
@@ -43,9 +67,17 @@ exports.onSubscriptionCreated = onDocumentCreated(
             tags: admin.firestore.FieldValue.arrayUnion('newsletter'),
             lastActivityAt: contact.lastActivityAt,
             updatedAt: contact.updatedAt,
+            _version: admin.firestore.FieldValue.increment(1),
           };
           if (given) { upd['consent.email'] = true; upd.doNotContact = false; }
           tx.update(contactRef, upd);
+        }
+        for (const e of keySnaps) {
+          if (!e.snap.exists) {
+            tx.set(db.collection('dedup').doc(e.key), {
+              contactId: contactRef.id, createdAt: new Date().toISOString(),
+            });
+          }
         }
         tx.update(snap.ref, { _ingestedAt: new Date().toISOString() });
       });

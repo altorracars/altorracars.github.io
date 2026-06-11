@@ -49,6 +49,7 @@ const onSolicitudWritten = onDocumentWritten(
   async (event) => {
     const after = event.data.after.exists ? event.data.after.data() : null;
     if (!after) return; // delete: la activity histórica se queda (purga = F15/F28)
+    if (after._suppressed === true) return; // F14 §185: suprimido corto-circuita TODO
     const solId = event.params.solicitudId;
     const db = admin.firestore();
 

@@ -195,3 +195,80 @@ describe.skipIf(EMU)('Rules (skip)', () => {
     expect(true).toBe(true);
   });
 });
+
+describe.skipIf(!EMU)('Rules — F12 §185 contacts: protocolo _version + campos de servidor', () => {
+  let testEnv, rut;
+  const EDITOR = 'editor_contacts';
+
+  beforeAll(async () => {
+    rut = await import('@firebase/rules-unit-testing');
+    testEnv = await rut.initializeTestEnvironment({
+      projectId: 'altorra-rules-test-contacts',
+      firestore: { rules: readFileSync(join(__dir, '../../../firestore.rules'), 'utf8') },
+    });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc('usuarios/' + EDITOR).set({
+        rol: 'custom', permissions: ['crm.read', 'crm.edit'], estado: 'activo',
+      });
+      await db.doc('contacts/c_normal').set({
+        fullName: 'Carlos', email: 'c@x.co', _version: 4, dedupKeys: ['email_c_x_co'],
+      });
+      await db.doc('contacts/c_legacy').set({ fullName: 'Sin Version' });
+      await db.doc('contacts/c_gracia').set({
+        fullName: 'En Gracia', _version: 2, suppressionStatus: 'pendiente_supresion',
+      });
+      await db.doc('dedup/email_c_x_co').set({ contactId: 'c_normal' });
+    });
+  });
+
+  afterAll(async () => { if (testEnv) await testEnv.cleanup(); });
+  const ed = () => testEnv.authenticatedContext(EDITOR).firestore();
+
+  it('update con _version = actual+1 PASA; sin _version o con la actual FALLA', async () => {
+    await rut.assertSucceeds(ed().doc('contacts/c_normal').update({ fullName: 'Carlos M', _version: 5 }));
+    await rut.assertFails(ed().doc('contacts/c_normal').update({ fullName: 'X' }));
+    await rut.assertFails(ed().doc('contacts/c_normal').update({ fullName: 'X', _version: 5 })); // ya esta en 5
+  });
+
+  it('contacto legacy SIN _version: el cliente arranca el protocolo con _version=1', async () => {
+    await rut.assertSucceeds(ed().doc('contacts/c_legacy').update({ fullName: 'Con Version', _version: 1 }));
+  });
+
+  it('campos de SERVIDOR intocables desde el cliente (dedupKeys / _suppressed / _mergedInto)', async () => {
+    await rut.assertFails(ed().doc('contacts/c_normal').update({ dedupKeys: [], _version: 6 }));
+    await rut.assertFails(ed().doc('contacts/c_normal').update({ _suppressed: true, _version: 6 }));
+    await rut.assertFails(ed().doc('contacts/c_normal').update({ _mergedInto: 'otro', _version: 6 }));
+  });
+
+  it('contacto en gracia de supresion NO es editable; dedup/ es read-only para staff', async () => {
+    await rut.assertFails(ed().doc('contacts/c_gracia').update({ fullName: 'Y', _version: 3 }));
+    await rut.assertSucceeds(ed().doc('dedup/email_c_x_co').get());
+    await rut.assertFails(ed().doc('dedup/email_c_x_co').set({ contactId: 'pirata' }));
+    await rut.assertFails(testEnv.unauthenticatedContext().firestore().doc('dedup/email_c_x_co').get());
+  });
+});
+
+describe.skipIf(!EMU)('Rules — §185 contacts delete cerrado al cliente', () => {
+  let testEnv, rut;
+  beforeAll(async () => {
+    rut = await import('@firebase/rules-unit-testing');
+    testEnv = await rut.initializeTestEnvironment({
+      projectId: 'altorra-rules-test-cdelete',
+      firestore: { rules: readFileSync(join(__dir, '../../../firestore.rules'), 'utf8') },
+    });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc('usuarios/deleter').set({
+        rol: 'custom', permissions: ['crm.read', 'crm.edit', 'crm.delete'], estado: 'activo',
+      });
+      await ctx.firestore().doc('contacts/c_x').set({ fullName: 'X', _version: 1 });
+    });
+  });
+  afterAll(async () => { if (testEnv) await testEnv.cleanup(); });
+
+  it('ni con crm.delete: borrar contacts es SOLO del Admin SDK (un delete en gracia dejaria PII huerfana)', async () => {
+    await rut.assertFails(
+      testEnv.authenticatedContext('deleter').firestore().doc('contacts/c_x').delete()
+    );
+  });
+});

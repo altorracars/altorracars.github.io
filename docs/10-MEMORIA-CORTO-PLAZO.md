@@ -16,21 +16,22 @@
 > 🚫 Callejones: NO classification-en-manifest, NO checklist-doc-nuevo, NO score LLM, NO brain-diff
 > en boot, NO regex 5c para el BFS.
 
-> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0✅ E1a✅ E1b✅ adelanto-E3✅ E2✅ COMPLETA (§182+§184)** —
-> Calendario único LIVE: SSoT `config/availability` (editor portal `#/config` + validador clásico
-> mapeado) · `crmCitaAction` transaccional (tupla asesor+vehículo, bloques 30min, `resource_slots/`) ·
-> `citaConfirm` tokenizada WhatsApp-first (E2E live ✅) · hold-expiry T-3h → `caducada` · job horario
-> de citas · F28 v2 invariantes. 125 tests emulador + carrera C.5 ✅.
-> **Retomar con: "continúa E3"** = F12 (editar contacto `_version` + fusión resumible `merges/{id}`)
-> + F14 (anonimización Ley 1581: `_suppressed`, gracia 72h, gate legal P4) — F13/F15 ya viven (§180).
-> Después: E4 post-venta → E5 blindaje (TODO-18) → E6 cutover (TODO-19) + E6.5 comité diseño + E6.6
-> auditoría admin clásico (§183, FIRMES).
-> ⏳ **Cliente**: (1) merge+push de la tanda 2; (2) Ctrl+Shift+R; (3) **clic en "🇨🇴 Cargar festivos
-> de Colombia 2026"** en portal→Disponibilidad (hasta ese clic el validador clásico no avisa festivos
-> — la migración de datos quedó como SU verificación F39; el clasificador denegó hacerla directa);
-> (4) anunciar F42; (5) billing GCP (causa sin identificar).
+> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0✅ E1a✅ E1b✅ E2✅ E3✅ (§184+§185)** — Calendario
+> único LIVE (§184) + **CRUD/1581 LIVE (§185)**: índice `dedup/` F40e (E2E live ✓) · editar contacto
+> con `_version` en Rules · fusión resumible `crmMergeContacts` · supresión `crmSuppressContact`
+> (gracia 72h → finalizador del daily job: stub anónimo, tombstones en cascada, snapshot purgado,
+> auditoría por hash). 139 tests emulador. Review adversarial ×2 (E2t2: 9 fixes · E3: 10 fixes,
+> 1 crítico) — TODO corregido pre-commit.
+> **Retomar con: "continúa E4"** = F10 (checklist post-venta del deal ganado: entrega/traspaso RUNT/
+> trámites + retoma) + F25 (estado del vehículo como AGREGADO en transacción + workflow_dispatch al
+> ganar) + F26 (aviso de colisión comercial) + F42 (comisiones). Después: E5 blindaje (TODO-18) →
+> E6 cutover (TODO-19) + E6.5 comité diseño + E6.6 auditoría admin clásico (§183, FIRMES).
+> ⏳ **Cliente**: (1) merge+push; (2) Ctrl+Shift+R; (3) **clic "🇨🇴 Cargar festivos 2026"** en
+> portal→Disponibilidad (migración F21 = SU verificación F39); (4) anunciar F42; (5) billing GCP.
 > ✅ **Verificar al retomar**: 1ª corrida del `crmDailyJob` (mañana 5am — digest F28 v2 en
-> `crm_alerts`: fantasmas feb-abr eliminados, basura feb de availability purgada).
+> `crm_alerts`: fantasmas feb-abr eliminados + reconcile dedup con backfill de contactos existentes).
+> ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado
+> (el mecanismo F14 ya está; el copy del panel es interno).
 >
 > **🚫 Callejones sin salida (NO reintentar)**:
 > (a) **NO custom claims ahora** — reglas Fase 1 usan lookup `usuarios/{uid}`; claims = Fase 5 (§159.3).
@@ -68,10 +69,11 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 > GC 2026-06-10: §175-§183 consolidados (ver `00-INDICE` → `99`). Solo lo vivo:
 >
 > - **2026-06-10 (madrugada→tarde)**: maratón E0→E2t1 (§177→§182) + relevo §183. Todo en ADRs.
-> - **2026-06-10 (noche)**: "continua" → **E2 tanda 2 COMPLETA (§184)**: F21 SSoT+editor portal ·
->   F18/F19 crmCitaAction+citaConfirm · F20 citaSweep · F28 v2. **Review adversarial (workflow
->   22 agentes): 9 hallazgos reales (1 crítico) corregidos ANTES del commit** (holdsTuple, GET
->   intersticial/POST, XSS+CSP, PII→crm_config, deleteField, isHoliday, token en el clásico,
->   corto-aviso, rebuild indexado — detalles §184.4; lecciones L-39/L-40). 126 tests emulador +
->   carrera C.5 ✅. E2E live post-fixes ✅. Deploy ×2. Cache `v20260610181500`. De paso: el dueño
->   YA purgó `_test_sla_e1a` (F39 §180 ✅). Gotcha: emulador zombi en :8081 — matar java antes.
+> - **2026-06-10 (noche)**: "continua" → **E2 tanda 2 COMPLETA (§184)** con review adversarial
+>   (9 fixes, 1 crítico) + E2E live. Cache `v20260610181500`. Lecciones L-39/L-40. El dueño YA
+>   purgó `_test_sla_e1a` (F39 §180 ✅). Gotcha: emulador zombi en :8081 — matar java antes.
+> - **2026-06-10 (madrugada 11/06)**: "CONTINUA AQUI" (misma sesión) → **E3 COMPLETA (§185)**:
+>   índice dedup F40e (no existía — F12/F14 lo asumían) + editar/fusionar + supresión 1581.
+>   Review adversarial: 1 CRÍTICO (tombstone con PII post-supresión) + 9 majors — todos
+>   corregidos. 139 tests. E2E live del trigger de índice ✓ (1er evento perdido = Eventarc §178).
+>   SIN cache bump (L-32). Fusión/supresión live = las verifica el dueño al primer uso (F39).

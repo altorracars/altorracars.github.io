@@ -87,6 +87,7 @@ admin-crm.js / admin-appointments.js / admin-inbox.js → comm-schema.js
 - `config/{docId}` — counters, bookedSlots, automationRules, followups, messageTemplates. **`availability` = SSoT de disponibilidad (§184)**: días/horas/interval/maxPerSlot/blockedDates(+labels)/blockedHours/`advisorOverrides`; lo leen el form web, el validador clásico (mapeado) y las functions. `calendarConfig` = MUERTO (no leer).
 - **`resource_slots/{YYYY-MM-DD}`** (§184, F19) — tupla del calendario: `asesor_<uid>`/`vehiculo_<id>` → bloques 30min reservados. Escribe SOLO Admin SDK (`crmCitaAction`/jobs); staff lee. Rebuild diario F28.
 - **Acciones de cita** = callable `crmCitaAction` + HTTP `citaConfirm` (token) en `functions/src/crm/citaActions.js`; sweep horario `src/ops/citaSweep.js`; mantenimiento `src/ops/crmDailyJob.js`.
+- **`dedup/{key}`** (§185, F40e) — índice email/tel→contactId; lo mantienen los 4 escritores de ingestión (en tx) + trigger `onContactWritten` (espejo `dedupKeys[]` en el contact) + reconcile nocturno. Staff lee (colisiones F12); write solo Admin SDK. `merges/{id}` y `suppressions/{id}` = estado de fusión/supresión (server-only write). Grafo de contacto: `functions/src/crm/contactGraph.js`; callables F12/F14: `contactAdmin.js`. Contacts: protocolo `_version` en Rules; `_mergedInto`/`_suppressed` = tombstone/stub (filtrados del directorio).
 - `system/meta` — señal de invalidación de cache. `loginAttempts/{hash}` — rate limiting.
 
 Detalle completo y subcolecciones → `docs/dependency-map.md` §Schemas.

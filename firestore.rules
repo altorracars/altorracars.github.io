@@ -361,9 +361,35 @@ service cloud.firestore {
 
     // ========== CONTACTS (CRM canónico — persona unificada — Fase 1) ==========
     match /contacts/{contactId} {
-      allow read:           if isAuthenticated() || hasPermission('crm.read');
-      allow create, update: if isSuperAdmin() || hasPermission('crm.edit');
-      allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
+      // F12 §185 — protocolo _version v2 (optimistic locking): toda edición
+      // del cliente DEBE venir con _version = actual + 1 (los triggers
+      // también incrementan — Admin SDK bypasea rules pero respeta el
+      // protocolo). Campos de servidor (supresión/fusión/índice) y un
+      // contacto suprimido o en gracia son INTOCABLES desde el cliente.
+      function contactVersionOk() {
+        return (!('_version' in resource.data) && request.resource.data._version == 1)
+          || request.resource.data._version == resource.data._version + 1;
+      }
+      function contactServerFieldsUntouched() {
+        return !request.resource.data.diff(resource.data).affectedKeys().hasAny(
+          ['_suppressed', 'suppressionStatus', 'suppressionExecuteAfter',
+           '_mergedInto', '_mergedAt', '_mergedBy', 'dedupKeys',
+           'createdAt', 'clienteUid'].toSet());
+      }
+      function contactEditable() {
+        return resource.data.get('_suppressed', false) != true
+          && resource.data.get('suppressionStatus', '') != 'pendiente_supresion'
+          && resource.data.get('_mergedInto', null) == null;
+      }
+      allow read:   if isAuthenticated() || hasPermission('crm.read');
+      allow create: if isSuperAdmin() || hasPermission('crm.edit');
+      allow update: if (isSuperAdmin() || hasPermission('crm.edit'))
+        && contactVersionOk() && contactServerFieldsUntouched() && contactEditable();
+      // §185: el cliente JAMÁS borra contacts — un delete directo durante la
+      // gracia dejaría el grafo con PII para siempre (el finalizador lo
+      // saltaría como "no-existe"). Toda destrucción va por Admin SDK
+      // (crmPurgeLead / executeSuppression).
+      allow delete: if false;
 
       // Notas internas del Customer 360 (Fase 2, §159). Admin-gated.
       // Sin este match anidado, Firestore deniega la subcolección por defecto.
@@ -799,6 +825,25 @@ service cloud.firestore {
         || hasPermission('settings.theme')
         || hasPermission('settings.seo')
         || hasPermission('settings.backup');
+    }
+
+    // ========== DEDUP / MERGES / SUPPRESSIONS (E3 §185 — solo server) ==========
+    // dedup/{key}: índice email/tel→contactId (F40e). El portal lo LEE para
+    // detectar colisiones al editar; SOLO el Admin SDK escribe.
+    match /dedup/{key} {
+      allow read: if isEditorOrAbove() || hasPermission('crm.read')
+        || hasPermission('crm.edit');
+      allow write: if false;
+    }
+    // Estado de fusiones (resumible B.5) y supresiones (gracia 72h F14).
+    match /merges/{mergeId} {
+      allow read: if isEditorOrAbove() || hasPermission('crm.read');
+      allow write: if false;
+    }
+    match /suppressions/{contactId} {
+      allow read: if isEditorOrAbove() || hasPermission('crm.read')
+        || hasPermission('crm.delete');
+      allow write: if false;
     }
 
     // ========== CRM CONFIG PRIVADA (§184) ==========

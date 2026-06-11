@@ -188,6 +188,82 @@ async function runDailyMaintenance(db, deps) {
     report.availabilityPurged = Object.keys(upd);
   }
 
+  // ── d2-F14) FINALIZADOR de supresiones Ley 1581 (ADR §185): gracia de
+  // 72h vencida → anonimizar TODO el grafo (stub anónimo de ID aleatorio,
+  // doc original BORRADO — su ID determinista deriva del email = PII).
+  {
+    const { executeSuppression, contactHashOf } = require('../crm/contactGraph');
+    const due = await db.collection('suppressions')
+      .where('status', '==', 'pending').limit(50).get();
+    let ejecutadas = 0;
+    for (const d of due.docs) {
+      const s = d.data();
+      if (!s.executeAfter || s.executeAfter > nowIso) continue;
+      try {
+        const r = await executeSuppression(db, s.contactId, { by: 'crmDailyJob' });
+        // Post-ejecución NADA conserva el ID derivado del email (review §185):
+        // (a) el snapshot F34 de la gracia se BORRA de Storage; (b) el doc de
+        // estado se re-keyea a un ID opaco con hash y el original cae.
+        if (s.backupPath) {
+          await admin.storage().bucket().file(s.backupPath).delete().catch(() => {});
+        }
+        await db.collection('suppressions').doc().set({
+          status: 'done', contactHash: contactHashOf(s.contactId),
+          stubId: r.stubId || null, result: r,
+          requestedBy: s.requestedBy || null, requestedAt: s.requestedAt || null,
+          executedAt: nowIso,
+        });
+        await d.ref.delete();
+        ejecutadas++;
+      } catch (err) {
+        console.error('[crmDailyJob] supresión falló (' + contactHashOf(s.contactId) + '):', err.message);
+        await d.ref.set({ lastError: err.message, lastErrorAt: nowIso }, { merge: true });
+      }
+    }
+    report.supresionesEjecutadas = ejecutadas;
+  }
+
+  // ── d2-bis) retención de backups (review §185): los exports diarios y de
+  // operaciones conservan PII pre-supresión — caducan a los 45 días.
+  {
+    let purgados = 0;
+    try {
+      const cutoff = Date.now() - 45 * 24 * 3600e3;
+      const [files] = await admin.storage().bucket().getFiles({ prefix: 'crm-backups/' });
+      for (const f of files) {
+        const created = new Date(f.metadata.timeCreated || 0).getTime();
+        if (created && created < cutoff) { await f.delete().catch(() => {}); purgados++; }
+      }
+    } catch (err) { console.warn('[crmDailyJob] retención de backups:', err.message); }
+    report.backupsCaducadosPurgados = purgados;
+  }
+
+  // ── d3-F40e/F27e) reconcile del índice dedup (backfill permanente):
+  // todo contacto vivo debe tener sus entradas (create-if-absent; una clave
+  // de OTRO contacto = colisión que se reporta, jamás se roba).
+  {
+    const { dedupKeysFor, ensureDedupEntries } = require('../crm/contactGraph');
+    let backfilled = 0;
+    let colisiones = 0;
+    const cs = await db.collection('contacts').limit(500).get();
+    for (const d of cs.docs) {
+      const c = d.data();
+      if (c._suppressed || c._mergedInto || c.suppressionStatus === 'pendiente_supresion') continue;
+      const keys = dedupKeysFor(c);
+      const mirror = Array.isArray(c.dedupKeys) ? c.dedupKeys : null;
+      // SIN atajo por espejo (review §185): el espejo puede mentir tras una
+      // supresión que borró entradas por query — verificar el índice REAL
+      // cada noche (create-if-absent es idempotente y el volumen diminuto).
+      const { created, taken } = await ensureDedupEntries(db, d.id, keys);
+      colisiones += taken.length;
+      const mine = keys.filter((k) => !taken.some((t) => t.key === k));
+      const same = mirror && mine.length === mirror.length && mine.every((k) => mirror.includes(k));
+      if (!same) await d.ref.update({ dedupKeys: mine });
+      if (created) backfilled++;
+    }
+    report.dedup = { contactosBackfilled: backfilled, colisiones };
+  }
+
   // ── d-bis) higiene de overrides por asesor (crm_config, doc PRIVADO —
   // review §184: PII fuera del doc público): ausencias ya vencidas se purgan.
   {
@@ -285,6 +361,8 @@ async function runDailyMaintenance(db, deps) {
       + ' · reproyectadas: ' + report.proyeccion.reproyectadas
       + ' · reagendar: ' + report.citasRequierenReagendar
       + ' · apartados vencidos: ' + report.apartadosVencidos
+      + (report.supresionesEjecutadas ? ' · supresiones 1581 ejecutadas: ' + report.supresionesEjecutadas : '')
+      + (report.dedup.colisiones ? ' · ⚠️ colisiones dedup (fusionar a mano): ' + report.dedup.colisiones : '')
       + (report.invariantes.sinDeal.length ? ' · ⚠️ convertidos sin deal: ' + report.invariantes.sinDeal.length : ''),
     meta: report,
   });

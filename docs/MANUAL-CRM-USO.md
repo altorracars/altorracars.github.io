@@ -123,6 +123,12 @@ Todas las personas: **Leads**, **Clientes** y **Suscriptores** (newsletter). Bus
 - **Score** — desglose de qué tan caliente está.
 - **Notas** — apuntes internos del equipo (escribe todo lo importante: “prefiere SUV blanco, llamar después de las 6pm”).
 
+### ✏️ Corregir datos / duplicados / “bórrenme” (nuevo)
+
+- **Editar**: botón ✏️ en la ficha 360 → corrige nombre, correo o teléfono (el teléfono se normaliza solo a +57). Si dos personas editan a la vez, el sistema lo detecta y te avisa antes de pisar nada.
+- **Duplicados**: si pones un correo/teléfono que YA es de otro contacto, el sistema lo BLOQUEA y ofrece **Fusionar** (solo Super Admin): eliges quién sobrevive y todos los leads, negocios y notas pasan a él. Nada se fusiona solo.
+- **“Bórrenme de su base” (Ley 1581)**: dentro de ✏️ → zona **🛡 Privacidad** → "Solicitar supresión definitiva" (escribir SUPRIMIR). Hay **72 horas de gracia** para arrepentirse; después, los datos personales se borran de verdad (nombre, contacto, notas) y solo queda el historial comercial anónimo (montos, fechas, carro). Ojo: los mensajes ya enviados por Telegram/email no se pueden des-enviar.
+
 ---
 
 ## 8. Reportes (cómo va el negocio)

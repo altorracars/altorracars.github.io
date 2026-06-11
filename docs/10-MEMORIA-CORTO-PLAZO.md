@@ -26,10 +26,14 @@
 > trámites + retoma) + F25 (estado del vehículo como AGREGADO en transacción + workflow_dispatch al
 > ganar) + F26 (aviso de colisión comercial) + F42 (comisiones). Después: E5 blindaje (TODO-18) →
 > E6 cutover (TODO-19) + E6.5 comité diseño + E6.6 auditoría admin clásico (§183, FIRMES).
-> ⏳ **Cliente**: (1) merge+push; (2) Ctrl+Shift+R; (3) **clic "🇨🇴 Cargar festivos 2026"** en
-> portal→Disponibilidad (migración F21 = SU verificación F39); (4) anunciar F42; (5) billing GCP.
-> ✅ **Verificar al retomar**: 1ª corrida del `crmDailyJob` (mañana 5am — digest F28 v2 en
-> `crm_alerts`: fantasmas feb-abr eliminados + reconcile dedup con backfill de contactos existentes).
+> ⏳ **Cliente**: (1) merge ✓ HECHO (verificado `4b68f2a` en main); (2) Ctrl+Shift+R; (3) **clic
+> "🇨🇴 Cargar festivos 2026"** en portal→Disponibilidad (migración F21 = SU verificación F39);
+> (4) anunciar F42; (5) billing GCP; (6) commit+push de la bóveda `brain-private` (4 archivos:
+> 2 crudos de reviews + README ×2).
+> ✅ **Verificar al retomar** (PRIMERO, antes de E4): 1ª corrida del `crmDailyJob` del 11/06 5am
+> (digest F28 v2 en `crm_alerts`: fantasmas feb-abr eliminados, basura feb de availability purgada,
+> reconcile dedup backfilleando contactos existentes, retención de backups). Patrón: `functions_get_logs`
+> de crmDailyJob + query `crm_alerts` type=daily_digest.
 > ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado
 > (el mecanismo F14 ya está; el copy del panel es interno).
 >
@@ -77,3 +81,7 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   Review adversarial: 1 CRÍTICO (tombstone con PII post-supresión) + 9 majors — todos
 >   corregidos. 139 tests. E2E live del trigger de índice ✓ (1er evento perdido = Eventarc §178).
 >   SIN cache bump (L-32). Fusión/supresión live = las verifica el dueño al primer uso (F39).
+> - **2026-06-11 (00:30)**: "listo merge hechos… cerrar y documentar" → **RELEVO por saturación**
+>   (2 épicas en una sesión). Merge a main verificado (`4b68f2a`). Próxima sesión: boot normal →
+>   verificar 1ª corrida del daily job → **"continúa E4"**. Sin decisiones nuevas del dueño
+>   (E6.5/E6.6 de §183 siguen FIRMES).

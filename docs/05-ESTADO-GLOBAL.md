@@ -3,11 +3,11 @@
 > **Nodo: signos vitales.** AUTO-CARGA (con `CLAUDE.md` + `10`). Tablero, no bitácora: solo señales
 > ACTUALES (pisar, no apilar); lo histórico vive en `99` (ADR). Tope ~25 líneas / ~2.8k chars (§G.5).
 
-| Señal | Valor (última actualización: **2026-06-10 noche**) |
+| Señal | Valor (última actualización: **2026-06-11 madrugada**) |
 |---|---|
-| **Build** | 🟢 **CRM §176: E0→E3 COMPLETAS ✅ LIVE** (§177-§185). Retomar: **"continúa E4"** (F10 post-venta · F25 agregado vehículo · F26 colisión · F42 comisiones). Cerebro: comité v6 19/21. |
+| **Build** | 🟢 **CRM §176: E0→E3 COMPLETAS ✅ LIVE y MERGEADAS** (§177-§185). ⏸️ **Relevo por saturación** → retomar en sesión NUEVA: **"continúa E4"** (F10 post-venta · F25 agregado vehículo · F26 colisión · F42 comisiones — plan en `10` + VEREDICTO bóveda). Cerebro: comité v6 19/21. |
 | **Cache version vigente** | **`v20260610181500`** (§184). SW == cache-manager ✅. Ctrl+Shift+R la 1ª vez. |
-| **Branch activa** | `refactor/estructura` — mergeado a `main` hasta §183; **§184+§185 commiteadas, merge = cliente**. Deploys firebase = Claude (§1). |
+| **Branch activa** | `refactor/estructura` — **TODO mergeado a `main` por el cliente (hasta §185, commit `4b68f2a` ✓ verificado)**. Deploys firebase = Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 · lead rápido offline · SLA+rotación · **calendario único** (§184) · **CRUD/1581** (editar `_version`, fusión, supresión 72h, índice dedup F40e) · daily/hourly jobs · 21 functions CRM LIVE. |
 
 ## ⚠️ Flags de riesgo activos

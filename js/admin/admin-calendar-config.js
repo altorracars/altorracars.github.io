@@ -1,14 +1,19 @@
 /**
- * ALTORRA CARS — Config calendario (Mega-Plan v4, D.3+D.4)
+ * ALTORRA CARS — Config calendario (Mega-Plan v4, D.3+D.4 · F21 ADR §184)
  * ==========================================================
  * Config de disponibilidad para citas. Incluye:
  *   - Días/horas laborales
  *   - Slot duration + buffer entre citas
  *   - Capacidad por slot (max citas concurrentes)
- *   - Festivos colombianos (preconfigurados 2026 + custom)
+ *   - Festivos/bloqueos (blockedDates del doc canónico)
  *   - Anti-overbooking: detecta colisiones antes de agendar
  *
- * Almacenado en `config/calendarConfig` de Firestore.
+ * F21 (§184): el SSoT es `config/availability` (el MISMO doc que lee el
+ * form público js/public/citas.js — una sola verdad). Este módulo LEE y
+ * ESCRIBE ese doc con un mapeo bidireccional, conservando la forma
+ * histórica de getConfig() para no tocar a sus consumidores
+ * (admin-calendar-tabs, admin-calendar drag-drop, bot D.7).
+ * `config/calendarConfig` queda muerto (no se lee ni escribe).
  *
  * Public API:
  *   AltorraCalendarConfig.load()
@@ -61,14 +66,64 @@
     var _unsub = null;
 
     /* ═══════════════════════════════════════════════════════════
-       LOAD / SAVE
+       LOAD / SAVE — F21: contra config/availability (SSoT) con mapeo
+       bidireccional. Forma interna (_config) = la histórica.
        ═══════════════════════════════════════════════════════════ */
+    function pad2(n) { return String(n).padStart(2, '0'); }
+
+    /** availability (canónico) → forma histórica de este módulo. */
+    function mapFromAvailability(av) {
+        var labels = av.blockedDateLabels || {};
+        return {
+            workDays: Array.isArray(av.days) ? av.days : DEFAULT_CONFIG.workDays,
+            workHours: {
+                start: pad2(av.startHour != null ? av.startHour : 8) + ':00',
+                end: pad2(av.endHour != null ? av.endHour : 18) + ':00'
+            },
+            slotDurationMin: av.interval || 60,
+            bufferMin: av.bufferMin != null ? av.bufferMin : 15,
+            maxPerSlot: av.maxPerSlot || 1,
+            timezone: 'America/Bogota',
+            holidays: (av.blockedDates || []).map(function (d) {
+                return labels[d] ? { date: d, label: labels[d] } : d;
+            })
+        };
+    }
+
+    /** updates en forma histórica → campos del doc canónico availability. */
+    function mapToAvailability(updates) {
+        var out = {};
+        if (updates.workDays) out.days = updates.workDays;
+        if (updates.workHours) {
+            // El canónico modela horas ENTERAS (el form web genera slots por
+            // hora). "08:30" se conserva conservador: floor de la hora.
+            out.startHour = parseInt(String(updates.workHours.start).split(':')[0], 10) || 8;
+            out.endHour = parseInt(String(updates.workHours.end).split(':')[0], 10) || 18;
+        }
+        if (updates.slotDurationMin) out.interval = updates.slotDurationMin;
+        if (updates.bufferMin != null) out.bufferMin = updates.bufferMin;
+        if (updates.maxPerSlot) out.maxPerSlot = updates.maxPerSlot;
+        if (updates.holidays) {
+            var dates = [];
+            var labels = {};
+            updates.holidays.forEach(function (h) {
+                var d = typeof h === 'string' ? h : (h.date || '');
+                if (!d) return;
+                if (dates.indexOf(d) === -1) dates.push(d);
+                if (typeof h === 'object' && h.label) labels[d] = h.label;
+            });
+            out.blockedDates = dates.sort();
+            out.blockedDateLabels = labels;
+        }
+        return out;
+    }
+
     function load() {
         if (!window.db) return Promise.resolve(_config);
-        return window.db.collection('config').doc('calendarConfig').get()
+        return window.db.collection('config').doc('availability').get()
             .then(function (doc) {
                 if (doc.exists) {
-                    _config = Object.assign({}, DEFAULT_CONFIG, doc.data());
+                    _config = Object.assign({}, DEFAULT_CONFIG, mapFromAvailability(doc.data()));
                 }
                 _loaded = true;
                 return _config;
@@ -81,26 +136,26 @@
 
     function save(updates) {
         if (!window.db) return Promise.reject('no-db');
-        var merged = Object.assign({}, _config, updates);
-        return window.db.collection('config').doc('calendarConfig')
+        var mapped = mapToAvailability(updates);
+        return window.db.collection('config').doc('availability')
             .set(Object.assign({
                 updatedAt: new Date().toISOString(),
                 updatedBy: window.auth.currentUser.uid
-            }, merged), { merge: true })
+            }, mapped), { merge: true })
             .then(function () {
-                _config = merged;
+                _config = Object.assign({}, _config, updates);
                 if (window.AltorraEventBus) {
-                    window.AltorraEventBus.emit('calendar.config-changed', merged);
+                    window.AltorraEventBus.emit('calendar.config-changed', _config);
                 }
             });
     }
 
     function startListener() {
         if (_unsub || !window.db) return;
-        _unsub = window.db.collection('config').doc('calendarConfig')
+        _unsub = window.db.collection('config').doc('availability')
             .onSnapshot(function (doc) {
                 if (doc.exists) {
-                    _config = Object.assign({}, DEFAULT_CONFIG, doc.data());
+                    _config = Object.assign({}, DEFAULT_CONFIG, mapFromAvailability(doc.data()));
                     _loaded = true;
                 }
             }, function () {});
@@ -112,7 +167,11 @@
     function isHoliday(dateStr) {
         if (!dateStr) return false;
         var key = String(dateStr).slice(0, 10);
-        return (_config.holidays || []).indexOf(key) !== -1;
+        // F21 §184: holidays puede traer strings O {date,label} (las fechas
+        // con motivo del editor) — matcher agnóstico de forma.
+        return (_config.holidays || []).some(function (h) {
+            return (typeof h === 'string' ? h : (h && h.date)) === key;
+        });
     }
 
     function isWorkDay(dateStr) {
@@ -152,9 +211,9 @@
     function checkOverbooking(fecha, hora, citasExistentes) {
         var result = { ok: true, warnings: [], conflicts: [] };
 
-        // 1. Festivo
+        // 1. Festivo / fecha bloqueada (blockedDates del canónico)
         if (isHoliday(fecha)) {
-            result.warnings.push('La fecha ' + fecha + ' es festivo nacional.');
+            result.warnings.push('La fecha ' + fecha + ' está bloqueada (festivo o bloqueo manual).');
         }
 
         // 2. Día no laboral

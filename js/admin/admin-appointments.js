@@ -84,6 +84,18 @@
                             release(oldFecha, oldHora);
                             reserve(newFecha, newHora);
                         }
+
+                        // F18 §184 (coexistencia con el portal): si el clásico
+                        // mueve o cierra la cita, el link de confirmación viejo
+                        // DEBE morir (C.4) y los recordatorios re-armarse — si
+                        // no, el cliente confirmaría una hora que ya no existe.
+                        var FV = firebase.firestore.FieldValue;
+                        if (moved || (wasActive && !willBeActive)) {
+                            updateData.confirmToken = FV.delete();
+                            updateData.confirmTokenAt = FV.delete();
+                            updateData.reminder24hSentAt = FV.delete();
+                            updateData.confirmDiaSentAt = FV.delete();
+                        }
                     }
 
                     tx.update(solRef, updateData);
@@ -1600,6 +1612,9 @@
             document.querySelectorAll('#availDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value, 10)); });
             var blockedList = Object.keys(AP.blockedDates).filter(function(k) { return AP.blockedDates[k]; });
             var blockedHoursObj = AP.blockedHours || {};
+            // F21 §184: merge OBLIGATORIO — el doc canónico ahora también
+            // guarda maxPerSlot/bufferMin/advisorOverrides (los edita el
+            // portal); un set() sin merge los borraría.
             window.db.collection('config').doc('availability').set({
                 startHour: startHour,
                 endHour: endHour,
@@ -1608,7 +1623,7 @@
                 blockedDates: blockedList,
                 blockedHours: blockedHoursObj,
                 updatedAt: new Date().toISOString()
-            }).then(function() {
+            }, { merge: true }).then(function() {
                 AP.toast('Disponibilidad guardada');
                 $('availabilityStatus').innerHTML = '<span style="color:var(--admin-success);">Guardado correctamente</span>';
                 renderAdminCalendar();

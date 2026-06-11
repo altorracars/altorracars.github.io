@@ -3584,12 +3584,43 @@ async function runCrmSlaSweep() {
     return result;
 }
 
+// F20 §184: el job horario ahora también barre CITAS (recordatorio 24-48h,
+// confirmación del día, hold-expiry T-3h). Cada pata es idempotente por flags.
+async function runCitaSweepWithDeps() {
+    const { runCitaSweep } = require('./src/ops/citaSweep');
+    const user = emailUser.value();
+    const pass = emailPass.value();
+    const cfgSnap = await db.collection('config').doc('crmIntake').get();
+    return runCitaSweep(db, {
+        transporter: (user && pass) ? createTransporter(user, pass) : null,
+        fromUser: user,
+        telegramToken: telegramBotToken.value(),
+        ceoUid: cfgSnap.exists ? (cfgSnap.data().alertUid || null) : null,
+    });
+}
+
 exports.crmHourlyJob = onSchedule({
     schedule: 'every 60 minutes',
     region: 'us-central1',
-    secrets: [telegramBotToken],
+    secrets: [telegramBotToken, emailUser, emailPass],
     maxInstances: 1
-}, async () => { await runCrmSlaSweep(); });
+}, async () => {
+    await runCrmSlaSweep();
+    try { await runCitaSweepWithDeps(); } catch (e) { console.error('[crmHourlyJob] citaSweep:', e); }
+});
+
+// F18/F19 §184 — acciones de cita server-side + confirmación tokenizada.
+exports.crmCitaAction = require('./src/crm/citaActions').crmCitaAction;
+exports.citaConfirm = require('./src/crm/citaActions').citaConfirm;
+
+// Disparo manual del sweep de citas (pruebas) — solo super admin.
+exports.crmRunCitaSweep = onCall({
+    region: 'us-central1', invoker: 'public', cors: true,
+    secrets: [telegramBotToken, emailUser, emailPass]
+}, async (request) => {
+    await verifySuperAdmin(request.auth);
+    return runCitaSweepWithDeps();
+});
 
 // Disparo manual del sweep (pruebas / "revisa ya") — solo super admin.
 exports.crmRunSlaSweep = onCall({

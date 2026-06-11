@@ -5,9 +5,10 @@
 // ============================================================
 
 import {
-  collection, query, where, orderBy, onSnapshot, addDoc,
+  collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc,
 } from 'firebase/firestore';
-import { db } from '../../core/firebase.js';
+import { httpsCallable } from 'firebase/functions';
+import { db, fns } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 
 const withId = (d) => ({ id: d.id, ...d.data() });
@@ -24,7 +25,34 @@ export function subscribeRange(startISO, endISO, onData, onError) {
   return onSnapshot(q, (snap) => onData(snap.docs.map(withId)), (err) => onError && onError(err));
 }
 
-/** Agenda una cita (activity con dueAt) ligada a un lead. */
+/**
+ * F18/F19 (ADR §184) — TODA acción de cita va por la callable transaccional
+ * (cupos + tupla + token server-side; el cliente jamás escribe eso directo).
+ * action: confirm | reschedule | cancel | no_show | complete | create | getConfirmLink
+ */
+export async function citaAction(action, solicitudId, payload) {
+  const call = httpsCallable(fns, 'crmCitaAction');
+  const res = await call({ action, solicitudId: solicitudId || null, payload: payload || {} });
+  return res.data;
+}
+
+/** Solicitud fresca (SSoT de la cita) — la activity es solo proyección. */
+export async function fetchSolicitud(id) {
+  const s = await getDoc(doc(db, 'solicitudes', id));
+  return s.exists() ? { id: s.id, ...s.data() } : null;
+}
+
+/** SSoT de disponibilidad + cupos globales (para pintar slots libres). */
+export async function fetchAvailability() {
+  const s = await getDoc(doc(db, 'config', 'availability'));
+  return s.exists() ? s.data() : {};
+}
+export async function fetchBookedSlots() {
+  const s = await getDoc(doc(db, 'config', 'bookedSlots'));
+  return s.exists() ? s.data() : {};
+}
+
+/** Agenda una TAREA simple (activity con dueAt) ligada a un lead. */
 export async function scheduleActivity(lead, dueAtISO, subject) {
   return addDoc(collection(db, 'activities'), {
     type: 'cita',

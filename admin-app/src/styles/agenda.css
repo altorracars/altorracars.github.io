@@ -60,3 +60,22 @@
   .agenda__grid { margin-left: var(--s-3); margin-right: var(--s-3); grid-auto-rows: minmax(72px, 1fr); }
   .agenda__chip span:not(.agenda__chip-time) { display: none; }
 }
+
+/* F18 §184 — estado de la cita visible en el chip */
+.agenda__chip--pendiente { border-left: 3px solid var(--warning, #d9a014); }
+.agenda__chip--confirmada { border-left: 3px solid var(--success, #2f9e63); }
+.agenda__chip--reprogramada { border-left: 3px solid var(--info, #3a7bd5); }
+.agenda__chip.is-closed { opacity: 0.45; }
+.agenda__chip--cancelada, .agenda__chip--no_show { text-decoration: line-through; }
+
+/* Dialogo de cita (cita-dialog.js) */
+.cita-info { display: flex; flex-direction: column; gap: 4px; }
+.cita-row { display: flex; gap: var(--s-2); align-items: baseline; }
+.cita-row__k { flex: 0 0 84px; }
+.cita-row__v { min-width: 0; overflow-wrap: anywhere; }
+.cita-conflict {
+  padding: 8px 10px; border-radius: 8px; font-size: 0.85rem;
+  border: 1px solid var(--warning, #d9a014);
+  background: color-mix(in srgb, var(--warning, #d9a014) 12%, transparent);
+}
+.cita-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }

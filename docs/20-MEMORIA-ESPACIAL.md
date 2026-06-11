@@ -84,7 +84,9 @@ admin-crm.js / admin-appointments.js / admin-inbox.js → comm-schema.js
 - `clientes/{uid}` (+ subcolecciones: busquedasGuardadas, notifications, cotizaciones, postventa, crmNotes).
 - **CANÓNICO CRM nuevo (§158/§160, LIVE)**: `contacts/{dedupKey}` (persona unificada; +subcol `crmNotes`) · `leads/{id}` (interés; `status`/`rating`/`score`/`ownerId`/`sourceDetail`/`vehicleOfInterestId`/`slaDueAt`/`contactId`/`convertedTo.dealId`) · `activities/{id}` (timeline; `relatedTo.{type,id}` — type lead|deal) · `deals/{id}` (oportunidad/embudo §160; `stageId`/`probability`/`amount`/`weightedAmount`/`status`(open|won|lost)/`contactId`/`leadId`/`vehicleId`/`ownerId`) · `failedIngestions/{id}` (dead-letter). **Timestamps = strings ISO.** Índices: leads(status,createdAt) · leads(ownerId,lastActivityAt) · activities(relatedTo.id,createdAt) · contacts(rating,lastActivityAt) · **deals(status,lastActivityAt)**.
 - `usuarios/{uid}` — perfiles admin (`rol`/`roleId`/`permissions[]`; la app nueva hidrata permisos de aquí, NO de claims). `auditLog/{id}` — acciones admin.
-- `config/{docId}` — counters, bookedSlots, automationRules, followups, messageTemplates.
+- `config/{docId}` — counters, bookedSlots, automationRules, followups, messageTemplates. **`availability` = SSoT de disponibilidad (§184)**: días/horas/interval/maxPerSlot/blockedDates(+labels)/blockedHours/`advisorOverrides`; lo leen el form web, el validador clásico (mapeado) y las functions. `calendarConfig` = MUERTO (no leer).
+- **`resource_slots/{YYYY-MM-DD}`** (§184, F19) — tupla del calendario: `asesor_<uid>`/`vehiculo_<id>` → bloques 30min reservados. Escribe SOLO Admin SDK (`crmCitaAction`/jobs); staff lee. Rebuild diario F28.
+- **Acciones de cita** = callable `crmCitaAction` + HTTP `citaConfirm` (token) en `functions/src/crm/citaActions.js`; sweep horario `src/ops/citaSweep.js`; mantenimiento `src/ops/crmDailyJob.js`.
 - `system/meta` — señal de invalidación de cache. `loginAttempts/{hash}` — rate limiting.
 
 Detalle completo y subcolecciones → `docs/dependency-map.md` §Schemas.
@@ -103,11 +105,13 @@ admin-app/src/
   domain/    PURO sin DOM/Firestore/ALTOR: format · classify · scoring(7) · nba(10) · pipeline(etapas/forecast) · agenda(grilla mes)
   modules/
     inbox/    data(queries paginadas+realtime) | domain(colas/filtro/orden) | ui  → LA BANDEJA
-    contacts/ data(contact+activities+notes)   | ui(+Convertir,+Agendar)         → Customer 360
+    contacts/ data(contact+activities+notes)   | ui(+Convertir,+Agendar→cita real) → Customer 360
     deals/    data(subscribe/convert/stage/won) | ui(kanban drag-drop)            → PIPELINE (§160)
-    agenda/   data(subscribeRange/schedule)     | ui(vista mes)                   → AGENDA (§161)
+    agenda/   data(subscribeRange+citaAction)   | ui(vista mes) | cita-dialog(F18) → AGENDA (§161/§184)
     capture/  data(createManualLead)            | new-lead(form modal)            → CAPTURA MANUAL (§162)
-  styles/    shell · login · inbox · contacts · pipeline · agenda · capture
+    config/   data+ui — editor del SSoT config/availability (#/config, F21 §184)  → DISPONIBILIDAD
+  core/advisors.js — lista de asesores (usuarios → fallback rotación crmIntake)
+  styles/    shell · login · inbox · contacts · pipeline · agenda · capture · config
 ```
 - **Ruteo**: `router.js` (hash `#/bandeja`,`#/pipeline`,`#/agenda`) → `main.mountRoute` monta el módulo en el outlet con **cleanup del anterior** (cancela `onSnapshot`) + cierra el 360. `shell.setActive(route)` resalta nav + título.
 - **lead → deal**: la Bandeja trabaja `leads`; "Convertir a oportunidad" crea un `deal` (Pipeline). No mezclar (L-29).

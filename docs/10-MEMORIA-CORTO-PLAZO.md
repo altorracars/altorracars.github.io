@@ -26,6 +26,8 @@
 > del dueño (gap 8)** → ④ RBAC/usuarios → cutover (stub redirect, NUNCA borrar admin.html).
 > ✅ Verificar (F39): reseña + banner con imagen + editar una marca desde el portal → web SIN
 > Ctrl+Shift+R (§190/§191/§192 + cacheSignal) · cita walk-in · bloqueo real.
+> ⚖️ Decisiones del dueño §193 (siembra post-panel): bot SIN fallback gratuito + solo Claude
+> (R-1 resuelta) · fase ④ hereda RBAC DEPARTAMENTAL (§193.4, comparar con cerebro Bersaglio).
 > ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
 > 2FA portal (R-9) · vista Inicio (gap 3). Gates: F32 móvil · F33b piloto 1 semana · manual.
 > 🚫 Callejones E6.6: NO borrar admin-calendar-config (inyectado en público para el bot,
@@ -73,6 +75,8 @@
 | **TODO-19** | CRM Fase 5 cutover → **E6 EN CURSO**: E6.6 ✅ §188 → paso 0 pre-fase | ⏳ | — |
 | **TODO-20** | **Comité v6**: quedan T (inmobiliaria) + U (auditoría Nivel-2, sesión fresca) | 🔄 | — |
 | **TODO-21** | **Plan CRM E0→E6** — ledger en VEREDICTO (bóveda). **E0→E5 ✅ en main** · E6 ⏳ (plan 29 pasos §188) | ⏳ | — |
+| **TODO-22** | **Fábrica de skills web** (frontend/backend/framework, comité+Antigravity, portables) §193.2 | 🔮 | post-panel |
+| **TODO-23** | **Web pública CMS-izada** (mismo diseño, estructura escalable, todo editable por panel) §193.3 | 🔮 | post-panel + TODO-22 |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -88,4 +92,8 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 > - **2026-06-12 (4-6:30am, misma sesión, E6)**: E6.6 auditoría (workflow 16 agentes → §188) →
 >   paso 0 (§189: hallazgo E5-rompió-cita-interna → L-41; deploy + merge #833) → fase ② Reseñas
 >   (§190, merge #834; core/audit.js nace) → Banners (§191, merge #835: Storage/WebP) → fase ③
->   Marcas (§192). Preview mock ✓ ×3. Gotcha vigente: emulador zombi :8081 — matar java antes.
+>   Marcas (§192, merge #836). Preview mock ✓ ×3. Gotcha: emulador zombi :8081 — matar java.
+> - **2026-06-12 (6:40am, RELEVO pedido por el dueño)**: siembra §193 (bot solo-Claude sin
+>   fallback gratuito = R-1 resuelta · fábrica de skills TODO-22 · web CMS-izada TODO-23 · RBAC
+>   departamental → fase ④). Sesión cerrada en frontera limpia. **Retomar: "continua"** → gate
+>   fase ② (si F39 del dueño hechos) + Atributos/listas (S) → **vehículos en sesión fresca**.

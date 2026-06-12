@@ -79,3 +79,17 @@
   background: color-mix(in srgb, var(--warning, #d9a014) 12%, transparent);
 }
 .cita-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+/* Chooser "Nueva cita" (gap 5 F23-7) */
+.cita-pick { display: flex; flex-direction: column; }
+.cita-pick__row {
+  display: flex; align-items: baseline; gap: var(--s-2);
+  padding: 6px 8px;
+  border: 0; border-bottom: 1px solid var(--line);
+  background: none; color: inherit;
+  text-align: left; cursor: pointer;
+  border-radius: var(--r-md);
+}
+.cita-pick__row:hover { background: color-mix(in srgb, var(--gold, #b89658) 10%, transparent); }
+.cita-pick__row:last-child { border-bottom: 0; }
+.cita-pick__sep { text-align: center; padding: 2px 0; }

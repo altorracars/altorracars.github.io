@@ -95,8 +95,9 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   login del dueño 11:05Z, SIN F39 aún → gate abierto) → **fase ③ p2 ✅: Atributos (§194)**,
 >   ruta propia `#/atributos` (desviación deliberada del "→ #/config" — razón en §194.2).
 >   Preview mock ✓ + build ✓. Merge #837 del dueño.
-> - **2026-06-12 (~8:40am, misma sesión + relevo por cierre accidental de Claude)**: "continua"
->   → F39 re-verificado (vacío) → **backup inventario ✅ (§195)**: CRM_COLLECTIONS +vehiculos/
->   marcas, CONFIG_DOCS +listas, módulo `#/respaldos` (restore dry-run-first). Tests 127 ✓ ·
->   preview mock ✓ · **deploy functions ✓**. Commit local.
+> - **2026-06-12 (~8:40am, misma sesión + relevo por cierre accidental)**: backup inventario ✅
+>   (§195: CRM_COLLECTIONS +vehiculos/marcas, +listas, `#/respaldos`, deploy ✓, merge #838) →
+>   ampliación §193.2 (fábrica de skills cubre arranque + RESCATE; orden E6-primero ratificado,
+>   merge #839) → **gap 5 Agenda ✅ (§196)**: "＋ Nueva cita" con buscador + walk-in sin lead.
+>   F39 re-verificado ×3: auditLog VACÍO — gates ②/③ siguen esperando al dueño. Commit local.
 >   **Retomar: "continua"** → gates ②/③ (si F39 del dueño hechos) → **vehículos en SESIÓN FRESCA**.

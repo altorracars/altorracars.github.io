@@ -15,8 +15,9 @@ import { hasPermission } from '../../core/auth.js';
 import { fetchAdvisors } from '../../core/advisors.js';
 import { fetchAvailableVehicles } from '../deals/deals.data.js';
 import { addMockAgenda } from '../../core/mock.js';
+import { getMockLeads } from '../../core/mock.js';
 import {
-  citaAction, fetchSolicitud, fetchAvailability, fetchBookedSlots,
+  citaAction, fetchSolicitud, fetchAvailability, fetchBookedSlots, fetchLeadsForCita,
 } from './agenda.data.js';
 
 const ESTADO_LABEL = {
@@ -289,6 +290,70 @@ export async function openCitaDetail(ev, { onLead } = {}) {
   }
 
   await renderMain();
+}
+
+/* ════════════════ CHOOSER "Nueva cita" (gap 5 F23-7, Agenda) ════════════════
+ * La cita manual necesitaba pasar por el 360 — el walk-in que entra al
+ * concesionario no tiene por qué existir aún en el CRM. Dos caminos:
+ * cliente existente (buscador sobre leads recientes) o persona nueva
+ * (nombre+teléfono → cita SIN lead, igual que la cita interna del clásico;
+ * el server solo exige nombre/fecha/hora/asesor). Para que el walk-in
+ * quede en el CRM, el camino sigue siendo ⚡ Lead rápido (Bandeja). */
+
+export async function openCitaChooser({ onDone } = {}) {
+  const body = el('div', { class: 'nl-form' });
+  const { close } = modal('＋ Nueva cita', 'Elige para quién es', [body]);
+
+  const search = el('input', { class: 'input', type: 'search', placeholder: 'Buscar por nombre o teléfono…', autocomplete: 'off' });
+  const results = el('div', { class: 'cita-pick' });
+  const hint = el('p', { class: 'u-caption u-faint', text: 'El walk-in agenda sin quedar en el CRM — para registrarlo como cliente usa ⚡ Lead rápido en la Bandeja.' });
+
+  let leads = [];
+  function renderResults() {
+    const term = search.value.trim().toLowerCase();
+    const match = !term ? leads.slice(0, 8)
+      : leads.filter((l) => (l.fullName || '').toLowerCase().includes(term)
+        || String(l.phone || '').replace(/\D/g, '').includes(term.replace(/\D/g, '') || ' ')).slice(0, 8);
+    results.replaceChildren(...match.map((l) => {
+      const b = el('button', { class: 'cita-pick__row', type: 'button' }, [
+        el('strong', { text: l.fullName || 'Sin nombre' }),
+        el('span', { class: 'u-caption u-muted', text: [l.phone, l.status].filter(Boolean).join(' · ') }),
+      ]);
+      b.addEventListener('click', () => { close(); openCitaCreate(l, { onDone }); });
+      return b;
+    }));
+    if (!match.length) results.append(el('span', { class: 'u-caption u-muted', text: term ? 'Nadie coincide — ¿es un walk-in nuevo?' : 'Cargando clientes…' }));
+  }
+  search.addEventListener('input', renderResults);
+  renderResults();
+
+  if (store.get().mock) {
+    leads = getMockLeads(); renderResults();
+  } else {
+    fetchLeadsForCita()
+      .then((list) => { leads = list; renderResults(); })
+      .catch(() => results.replaceChildren(el('span', { class: 'u-caption u-muted', text: 'No se pudieron cargar los clientes — usa el camino de walk-in.' })));
+  }
+
+  // Walk-in: persona nueva, cita sin lead.
+  const wNombre = el('input', { class: 'input', type: 'text', placeholder: 'Nombre *', autocomplete: 'off' });
+  const wTel = el('input', { class: 'input', type: 'tel', placeholder: 'Teléfono (opcional)', inputmode: 'tel', autocomplete: 'off' });
+  const wBtn = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '🚶 Agendar walk-in' });
+  wBtn.addEventListener('click', () => {
+    const fullName = wNombre.value.trim();
+    if (!fullName) { toast('El nombre es obligatorio.', 'error'); wNombre.focus(); return; }
+    close();
+    openCitaCreate({ id: null, fullName, phone: wTel.value.trim() || null }, { onDone });
+  });
+
+  body.append(
+    el('label', { class: 'field' }, [el('span', { class: 'field__label', text: '👤 Cliente existente' }), search]),
+    results,
+    el('div', { class: 'cita-pick__sep u-caption u-faint', text: '— o —' }),
+    el('label', { class: 'field' }, [el('span', { class: 'field__label', text: '🚶 Walk-in / persona nueva' }), wNombre]),
+    wTel, wBtn, hint,
+  );
+  search.focus();
 }
 
 /* ════════════════ CITA MANUAL (360/Agenda → callable create) ════════════════ */

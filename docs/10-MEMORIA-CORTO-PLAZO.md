@@ -16,25 +16,33 @@
 > 🚫 Callejones: NO classification-en-manifest, NO checklist-doc-nuevo, NO score LLM, NO brain-diff
 > en boot, NO regex 5c para el BFS.
 
-> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0✅ E1a✅ E1b✅ E2✅ E3✅ E4✅ (§186)** — Post-venta
-> F10 (checklist del ganado + `commissionSnapshot` server-only + retoma con borrador) · F25-completo
-> (vehículo = AGREGADO transaccional; **badge 'Apartado' visible en la web**) · F26 colisión ·
-> F42 Comisiones del mes en Reportes. 169 tests emulador. Review adversarial 4-dim: 23 hallazgos
-> corregidos pre-commit (+2 self-review; top: `retry:true` faltaba en onDealUpdated — Eventarc no
-> reintenta por defecto). **FIX: pipeline de páginas estáticas roto 16 días** (yml ruta cache-manager).
-> Cache `v20260611031500`. Deploy: rules+indexes ✓ · functions (ver estado abajo).
-> **Retomar con: "continúa E5"** = blindaje (P1: SEC-01 lectura canónico, rate-limit forms públicos,
-> App Check, auditoría retry de triggers CRM restantes) + P3 E2E vías de captura. Después: E6 cutover
-> (TODO-19) + E6.5 comité diseño + E6.6 auditoría admin clásico (§183, FIRMES).
-> ⏳ **Cliente**: (1) merge tanda E4 + Ctrl+Shift+R; (2) **clic "🇨🇴 Cargar festivos 2026"** en
-> portal→Disponibilidad (sigue pendiente); (3) anunciar F42 al equipo ("sin CRM no hay comisión" —
-> el reporte ya existe en Reportes→Comisiones del mes); (4) billing GCP causa raíz; (5) commit+push
-> de la bóveda `brain-private` (ahora 6 archivos: +2 crudos E4).
-> ✅ **Verificar al retomar**: 1ª corrida del `crmDailyJob` post-E4 (digest con bloques nuevos:
-> colisiones/drift/wons backfilled + lo de §184: fantasmas feb-abr, reconcile dedup). Patrón:
-> `functions_get_logs` de crmDailyJob + query `crm_alerts` type=daily_digest.
-> ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado
-> (el mecanismo F14 ya está; el copy del panel es interno).
+> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0✅ E1a✅ E1b✅ E2✅ E3✅ E4✅ E5✅ (§187)** —
+> Blindaje DESPLEGADO: SEC-01 read estricto · SEC-06 whitelists+caps+escapes (censo literal de los
+> 5 forms; fix soft-lead concierge) · SEC-08 bookedSlots acotado con self-heal de auth + liberación
+> de slot · citas legacy cerrada · retry:true ×6 triggers con guards transaccionales. 189 tests.
+> Review adversarial: 21 confirmados corregidos. Cache `v20260612041500`.
+> ✅ **E2E live E5 HECHO (12/06 3:40am, esta sesión)**: submit Playwright contra
+> `contacto.html` LIVE (datos "PRUEBA E2E E5 (borrar)") → rules E5 aceptaron el form viejo de
+> `main` (no-regresión real) · doc `solicitudes/VMVMJGcn2Gu7iwd6zCuD` · ingestión → lead
+> `a0djMAe5…` + contact con dedupKeys · email admin ✓ · **Telegram entregado** (evidencia:
+> `usuarios/{Daniel}.telegramLastUsedAt == 08:40:07Z`) · festivos ✅ en `config/availability`.
+> **COMMIT E5 hecho** → solo falta: dueño push/merge + Ctrl+Shift+R + descartar lead de prueba
+> (Bandeja → descartado → spam_prueba). App Check 403 al bot = esperado (anotado en lóbulo `41`).
+> 🚫 Callejones de E5: NO añadir condiciones a la rule de solicitudes sin medir (límite ~1000
+> expresiones, ya al borde) · NO abrir updates anónimos de solicitudes (bot diferido) · emulador
+> zombi en :8081 (matar java) · suite paralela necesita testTimeout/hookTimeout (ya en config).
+> **Retomar con: "continúa E6"** = cutover (strangler restante: inventario/sitio público/RBAC al
+> portal + F32 móvil + F33b piloto + manual completo + checklists F39) + E6.5 comité diseño +
+> E6.6 auditoría admin clásico (§183, FIRMES). Gates heredados: App Check enforce (observar →
+> ~16-23/06, estado canónico en lóbulo `41-SEGURIDAD` bóveda) · SEC-05 loginAttempts (diferido) ·
+> SEC-07/09 (P2).
+> ⏳ **Cliente**: (1) **push/merge E5 + Ctrl+Shift+R** + descartar lead de prueba `VMVMJG…`
+> (spam_prueba); (2) anunciar F42 al equipo (el reporte vive en Reportes→Comisiones del mes);
+> (3) billing GCP causa raíz; (4) commit+push bóveda `brain-private` (8 archivos: +2 crudos E5
+> + observación App Check en `41`).
+> ✅ **Verificar al retomar**: 1ª corrida del `crmDailyJob` con bloques E4 (12/06 5am: colisiones/
+> drift/wons backfilled) — patrón: `functions_get_logs` + query `crm_alerts` type=daily_digest.
+> ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado.
 >
 > **🚫 Callejones sin salida (NO reintentar)**:
 > (a) **NO custom claims ahora** — reglas Fase 1 usan lookup `usuarios/{uid}`; claims = Fase 5 (§159.3).
@@ -89,3 +97,6 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   el self-review durante la espera encontró 2 bugs; los 23 confirmados del workflow corregidos al
 >   volver). Daily job 5am del 11/06 NO verificado (sesión arrancó a las 00:30 — quedó tarea #1).
 >   🚫 Callejón: NO verificar fusión/supresión live sin sesión del dueño (F39, igual que §185).
+> - **2026-06-12 (3:35am)**: "continua" → **E2E live E5 ejecutado por Claude** (Playwright, no
+>   esperar al dueño): pipeline completo verificado con evidencia (rules→solicitud→lead→contact→
+>   email→Telegram). Commit E5. Pendiente HOY: daily job 5am (tarea #3) + push/merge cliente.

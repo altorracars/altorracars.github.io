@@ -72,15 +72,19 @@ function confirmUrl(solId, token, channel) {
 }
 
 function recordatorioHtml(sol, url, esHoy) {
-  const cuando = (sol.fecha || '') + (sol.hora ? ' a las ' + sol.hora : '');
+  // SEC-06 §187 — nombre/vehiculo/fecha/hora vienen del form público: escapar.
+  const esc = (s) => String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const cuando = esc((sol.fecha || '') + (sol.hora ? ' a las ' + sol.hora : ''));
   return '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
     + '<div style="background:#1a1a2e;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center">'
     + '<h2 style="margin:0;color:#f0c040">ALTORRA CARS</h2>'
     + '<p style="margin:5px 0 0;opacity:0.8">' + (esHoy ? 'Tu cita es HOY' : 'Recordatorio de tu cita') + '</p></div>'
     + '<div style="border:1px solid #ddd;border-top:none;padding:20px;border-radius:0 0 8px 8px">'
-    + '<p>Hola <strong>' + (sol.nombre || 'Cliente') + '</strong>,</p>'
+    + '<p>Hola <strong>' + esc(sol.nombre || 'Cliente') + '</strong>,</p>'
     + '<p>' + (esHoy ? 'Hoy te esperamos' : 'Te esperamos') + ' el <strong>' + cuando + '</strong>'
-    + (sol.vehiculo ? ' para ver el <strong>' + sol.vehiculo + '</strong>' : '') + '.</p>'
+    + (sol.vehiculo ? ' para ver el <strong>' + esc(sol.vehiculo) + '</strong>' : '') + '.</p>'
     + '<p style="text-align:center;margin:24px 0"><a href="' + url + '" '
     + 'style="background:#b89658;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold">'
     + '✅ Confirmar mi cita</a></p>'

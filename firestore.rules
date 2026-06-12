@@ -335,7 +335,7 @@ service cloud.firestore {
                    ['inalcanzable', 'no_califica', 'duplicado', 'ya_compro_en_otra_parte', 'spam_prueba'])
           );
       }
-      allow read:   if isAuthenticated() || hasPermission('crm.read');
+      allow read:   if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
       allow create: if isSuperAdmin() || hasPermission('crm.edit');
       allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && leadStatusUnlocked() && leadStatusV3Ok();
       allow delete: if isSuperAdmin() || hasPermission('crm.delete');
@@ -347,7 +347,7 @@ service cloud.firestore {
     // canónico. Owner FORZADO = quien lo registra. Sin update/delete de cliente
     // (la marca _ingestedAt la pone el server vía Admin SDK).
     match /lead_intake/{intakeId} {
-      allow read: if isAuthenticated() || hasPermission('crm.read');
+      allow read: if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
       allow create: if (isSuperAdmin() || hasPermission('crm.edit') || hasPermission('crm.create'))
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.nombre is string
@@ -381,7 +381,7 @@ service cloud.firestore {
           && resource.data.get('suppressionStatus', '') != 'pendiente_supresion'
           && resource.data.get('_mergedInto', null) == null;
       }
-      allow read:   if isAuthenticated() || hasPermission('crm.read');
+      allow read:   if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
       allow create: if isSuperAdmin() || hasPermission('crm.edit');
       allow update: if (isSuperAdmin() || hasPermission('crm.edit'))
         && contactVersionOk() && contactServerFieldsUntouched() && contactEditable();
@@ -394,7 +394,7 @@ service cloud.firestore {
       // Notas internas del Customer 360 (Fase 2, §159). Admin-gated.
       // Sin este match anidado, Firestore deniega la subcolección por defecto.
       match /crmNotes/{noteId} {
-        allow read:           if isAuthenticated() || hasPermission('crm.read');
+        allow read:           if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
         allow create, update: if isSuperAdmin() || hasPermission('crm.create') || hasPermission('crm.edit');
         allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
       }
@@ -402,7 +402,7 @@ service cloud.firestore {
 
     // ========== ACTIVITIES (CRM canónico — timeline — Fase 1) ==========
     match /activities/{activityId} {
-      allow read:           if isAuthenticated() || hasPermission('crm.read');
+      allow read:           if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
       allow create, update: if isSuperAdmin() || hasPermission('crm.edit');
       allow delete:         if isSuperAdmin() || hasPermission('crm.delete');
     }
@@ -481,7 +481,7 @@ service cloud.firestore {
             .hasOnly(['postventa', 'recibeVehiculo', 'lastActivityAt',
                       'updatedAt', 'updatedBy', '_version'].toSet());
       }
-      allow read:   if isAuthenticated() || hasPermission('crm.read');
+      allow read:   if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
       // F7: el deal nace SOLO en cuadrando_cita, abierto, con valor y owner.
       // E4: y JAMÁS con campos server-only — un commissionSnapshot forjado en
       // el create sobreviviría al ganar (el trigger lo respeta por idempotencia).
@@ -490,8 +490,11 @@ service cloud.firestore {
         && request.resource.data.status == 'open'
         && request.resource.data.amount is number
         && request.resource.data.ownerId is string
+        // E5 review #9: también los flags de idempotencia de alertas — un
+        // create podía sembrarlos y silenciar F26/F28 (el update ya los negaba).
         && !request.resource.data.keys()
-          .hasAny(['wonAt', 'commissionSnapshot', 'retomaVehicleId']);
+          .hasAny(['wonAt', 'commissionSnapshot', 'retomaVehicleId',
+                   '_colisionAlertedAt', '_apartadoVencidoAlertedAt']);
       allow update: if (isSuperAdmin() || hasPermission('crm.edit'))
         && dealStageChangeOk()
         && dealStatusCoherent()
@@ -504,8 +507,23 @@ service cloud.firestore {
     // El form público crea (como `solicitudes`); el trigger onSubscriptionCreated
     // ingiere al canónico. Lectura/gestión solo admin.
     match /subscriptions/{subId} {
-      allow create: if true;
-      allow read:   if isAuthenticated() || hasPermission('crm.read');
+      // SEC-06 §187 — el form escribe EXACTAMENTE 5 claves (home.js:157):
+      // whitelist estricta + tipos (siempre presentes en este creador único).
+      allow create: if request.resource.data.keys().hasOnly([
+          'email', 'source', 'consentGiven', 'page', 'createdAt'
+        ])
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254
+        // review #10: el campo EXISTE para evidenciar consentimiento (1581) —
+        // un registro con false es contradictorio e inútil.
+        && request.resource.data.consentGiven == true
+        && (!('page' in request.resource.data)
+            || (request.resource.data.page is string && request.resource.data.page.size() <= 200))
+        && (!('source' in request.resource.data)
+            || (request.resource.data.source is string && request.resource.data.source.size() <= 40))
+        && (!('createdAt' in request.resource.data)
+            || (request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40));
+      allow read:   if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
       allow update, delete: if isSuperAdmin() || hasPermission('crm.edit');
     }
 
@@ -513,7 +531,7 @@ service cloud.firestore {
     // Cero pérdida: si la ingestión falla, el lead cae aquí. SOLO el Admin
     // SDK escribe (bypassa rules); los admins leen para resolver.
     match /failedIngestions/{failId} {
-      allow read:  if isAuthenticated() || hasPermission('crm.read');
+      allow read:  if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
       allow write: if false; // solo Admin SDK (ingestión)
     }
 
@@ -522,7 +540,11 @@ service cloud.firestore {
     match /citas/{citaId} {
       allow read: if isAuthenticated()
         || hasPermission('appointments.read');
-      allow create: if true; // Public can request appointments
+      // E5 §187 (review #8): colección LEGACY sin NINGÚN escritor (grep js/ +
+      // functions/ + portal = 0) — las citas reales viven en `solicitudes`
+      // kind:'cita'. El create:if true era la regla más permisiva del archivo
+      // (inyección anónima de docs falsos en las vistas admin). Cerrada.
+      allow create: if false;
       allow update: if isEditorOrAbove()
         || hasPermission('appointments.edit');
       allow delete: if isSuperAdmin()
@@ -563,11 +585,61 @@ service cloud.firestore {
       // MF1.1 — Anti-impersonation: if userId is set, it must match the
       // requester's auth uid (allowing anonymous). Otherwise the doc is a
       // guest submission and userId stays null. clientCategory must match.
+      // SEC-06 §187 — whitelist de claves (unión LITERAL del censo de los 5
+      // creadores públicos: contact/vende/financiación/cita/concierge-soft +
+      // computeMeta) + caps SOLO en los campos de texto libre (condicionales:
+      // el soft-lead del concierge puede traer null/ausentes). Si un form
+      // legítimo agrega un campo nuevo, AÑADIRLO AQUÍ en el mismo pase.
+      function solCapOk(f, max) {
+        return !(f in request.resource.data)
+          || request.resource.data[f] == null
+          || (request.resource.data[f] is string && request.resource.data[f].size() <= max);
+      }
+      // E5 review #7: los maps de shape FIJO se whitelistean por subclaves y
+      // los campos no-string se tipan — sin esto, cualquier clave admitía
+      // 1MB de cualquier tipo.
+      function solMapOk(f, allowed) {
+        return !(f in request.resource.data)
+          || request.resource.data[f] == null
+          || (request.resource.data[f] is map
+              && request.resource.data[f].keys().hasOnly(allowed));
+      }
       allow create: if (
         !('userId' in request.resource.data)
         || request.resource.data.userId == null
         || (request.auth != null && request.resource.data.userId == request.auth.uid)
-      );
+      )
+        && request.resource.data.keys().hasOnly([
+          'nombre', 'telefono', 'whatsapp', 'prefijoPais', 'email', 'tipo',
+          'origen', 'kind', 'requiereCita', 'fecha', 'hora', 'vehiculo',
+          'vehiculoId', 'vehiculoPrecio', 'datosExtra', 'comentarios',
+          'mensaje', 'estado', 'observaciones', 'createdAt', 'userId',
+          'userEmail', 'clientCategory', 'source', 'device', 'priority',
+          'tags', 'slaDeadline', 'slaMs', 'sessionId', 'sourcePage',
+          'sourceVehicleId', 'level', 'lastMessageAt'
+        ])
+        // ⚠️ PRESUPUESTO de Rules: máx ~1000 expresiones por evaluación — los
+        // caps por-campo se limitan a los vectores REALES de abuso (textos
+        // largos + shapes de maps/list). Los campos enum diminutos quedan sin
+        // cap individual (el hasOnly ya impide claves nuevas y la ingestión
+        // normaliza); NO añadir más condiciones aquí sin medir en emulador.
+        && solCapOk('nombre', 120)
+        && solCapOk('email', 254)
+        && solCapOk('vehiculo', 160)
+        && solCapOk('mensaje', 3000)
+        && solCapOk('comentarios', 3000)
+        && solCapOk('observaciones', 500)
+        && solCapOk('telefono', 25)
+        && solCapOk('whatsapp', 25)
+        && solCapOk('userEmail', 254)
+        && solCapOk('sourcePage', 200)
+        && (!('tags' in request.resource.data)
+            || (request.resource.data.tags is list && request.resource.data.tags.size() <= 12))
+        && solMapOk('source', ['page', 'cta', 'referrer'])
+        && solMapOk('device', ['type', 'browser', 'os'])
+        && solMapOk('datosExtra', ['marcaVehiculo', 'modeloVehiculo', 'yearVehiculo',
+            'kmVehiculo', 'precioEsperado', 'precioVehiculo', 'cuotaInicial',
+            'plazo', 'ingresos', 'situacionLaboral', 'ciudad']);
       allow update: if isEditorOrAbove()
         || hasPermission('crm.edit')
         || hasPermission('appointments.edit');
@@ -847,23 +919,48 @@ service cloud.firestore {
     // §61.R6 — granularidad: settings.theme/seo/backup + calendar.config.
     match /config/{docId} {
       allow read: if true;
-      // bookedSlots: public can update (atomic slot booking from public forms)
       // counters: editor+ can update
       // calendarConfig: requires calendar.config (settings de slots/turnos)
       // followups, messageTemplates: requires templates.edit
       // everything else: super_admin / settings.* permissions
-      allow write: if isSuperAdmin()
-        || (isEditorOrAbove() && docId in ['counters', 'bookedSlots'])
-        || (docId == 'bookedSlots')
-        || (docId == 'counters' && hasPermission('settings.backup'))
-        || (docId == 'calendarConfig' && hasPermission('calendar.config'))
-        // F21 §184: availability = SSoT de disponibilidad (mismo permiso).
-        || (docId == 'availability' && hasPermission('calendar.config'))
-        || (docId == 'followups' && hasPermission('templates.edit'))
-        || (docId == 'messageTemplates' && hasPermission('templates.edit'))
-        || hasPermission('settings.theme')
-        || hasPermission('settings.seo')
-        || hasPermission('settings.backup');
+      function configAdminWrite() {
+        return isSuperAdmin()
+          || (isEditorOrAbove() && docId in ['counters', 'bookedSlots'])
+          // E5 review #5: reprogramar entre fechas toca 2 claves (release+
+          // reserve) — el staff de citas permissions-only no es "editor".
+          || (docId == 'bookedSlots' && hasPermission('appointments.edit'))
+          || (docId == 'counters' && hasPermission('settings.backup'))
+          || (docId == 'calendarConfig' && hasPermission('calendar.config'))
+          // F21 §184: availability = SSoT de disponibilidad (mismo permiso).
+          || (docId == 'availability' && hasPermission('calendar.config'))
+          || (docId == 'followups' && hasPermission('templates.edit'))
+          || (docId == 'messageTemplates' && hasPermission('templates.edit'))
+          || hasPermission('settings.theme')
+          || hasPermission('settings.seo')
+          || hasPermission('settings.backup');
+      }
+      // SEC-08 §187 — la reserva atómica del form público (citas.js:515) sigue
+      // viva pero ACOTADA: antes `(docId == 'bookedSlots')` a secas permitía
+      // create/update/DELETE sin auth (cualquiera borraba el doc de cupos).
+      // Ahora: auth (anónima del sitio cuenta), jamás delete, y el diff toca
+      // UNA sola clave por request (la tx del form reserva una fecha a la vez;
+      // el doc lo siembra/reconstruye el server — crmDailyJob rebuild F17c).
+      // Riesgo RESIDUAL documentado (review #6): la rama pública no puede
+      // validar el NOMBRE/VALOR de la clave (rules no extraen claves de un
+      // diff) — un anónimo-auth puede corromper UNA fecha por request. Capas
+      // que lo acotan: bound de claves totales (abajo), rebuild nocturno F17c
+      // auto-repara, la tupla server-side (resource_slots E2) protege el
+      // recurso real, y App Check enforce (gate ~16/06) cierra el abuso por
+      // script. Cerrarlo del todo = mover la reserva a callable (rompe el
+      // puente — prohibido).
+      allow create: if configAdminWrite()
+        || (docId == 'bookedSlots' && request.auth != null
+            && request.resource.data.keys().size() == 1);
+      allow update: if configAdminWrite()
+        || (docId == 'bookedSlots' && request.auth != null
+            && request.resource.data.diff(resource.data).affectedKeys().size() == 1
+            && request.resource.data.keys().size() <= 400);
+      allow delete: if isSuperAdmin();
     }
 
     // ========== DEDUP / MERGES / SUPPRESSIONS (E3 §185 — solo server) ==========
@@ -920,11 +1017,15 @@ service cloud.firestore {
     // (cualquier admin que modifique algo dispara invalidación).
     match /system/{docId} {
       allow read: if true;
+      // E5 §187 (review #11): el bootstrap (!exists) exigía CERO auth →
+      // cualquiera sin autenticar squatteaba docs system/* world-readable.
+      // Con auth (la anónima del sitio cuenta) el bootstrap legítimo sigue.
       allow write: if isEditorOrAbove()
         || hasPermission('settings.theme')
         || hasPermission('settings.seo')
         || hasPermission('settings.backup')
-        || !exists(/databases/$(database)/documents/system/$(docId));
+        || (request.auth != null
+            && !exists(/databases/$(database)/documents/system/$(docId)));
     }
 
     // ========== §61.R1 RBAC — PERMISSIONS CATALOG (read-only) ==========

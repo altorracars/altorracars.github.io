@@ -19,7 +19,11 @@ const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN');
  * maxInstances acota el gasto (anti factura runaway — Consejo Externo R2).
  */
 exports.onSolicitudCreated = onDocumentCreated(
-  { document: 'solicitudes/{solicitudId}', region: 'us-central1', maxInstances: 10, secrets: [telegramBotToken] },
+  // §187 retry:true: seguro — ingestLeadTransaction lee el doc ORIGEN dentro
+  // de la tx (no-op en re-entrega) y la alerta usa result.ownerId (null en
+  // retry → no se duplica el push). Sin esto, un fallo transitorio = lead
+  // perdido en silencio (el peor bug posible, F29).
+  { document: 'solicitudes/{solicitudId}', region: 'us-central1', maxInstances: 10, retry: true, secrets: [telegramBotToken] },
   async (event) => {
     const snap = event.data;
     if (!snap) return;
@@ -27,7 +31,7 @@ exports.onSolicitudCreated = onDocumentCreated(
     const solId = event.params.solicitudId;
     const db = admin.firestore();
 
-    // Idempotencia: si ya se ingirió, salir.
+    // Fast-path (la verdad la re-verifica la transacción contra el doc).
     if (sol._ingestedAt) return;
     // F14 §185: una solicitud suprimida (Ley 1581) jamás re-ingresa al canónico.
     if (sol._suppressed === true) return;
@@ -52,12 +56,18 @@ exports.onSolicitudCreated = onDocumentCreated(
         } catch (e) { console.warn('[onSolicitudCreated] alerta no enviada:', e.message); }
       }
     } catch (err) {
-      // Dead-letter: cero pérdida de información (Consejo Externo R4).
-      await db.collection('failedIngestions').add({
-        sourceCollection: 'solicitudes', sourceId: solId,
-        error: String(err && err.message || err),
-        payload: sol, createdAt: new Date().toISOString(), retries: 0, resolved: false,
-      });
+      // Dead-letter con ID DETERMINISTA (§187): con retry:true, un .add()
+      // metía OTRO doc por reintento (flood); set+merge actualiza el mismo.
+      try {
+        await db.collection('failedIngestions').doc('solicitudes_' + solId).set({
+          sourceCollection: 'solicitudes', sourceId: solId,
+          error: String(err && err.message || err),
+          payload: sol, createdAt: new Date().toISOString(), resolved: false,
+          retries: admin.firestore.FieldValue.increment(1),
+        }, { merge: true });
+      } catch (dlqErr) { // review #15: el DLQ jamás enmascara el error original
+        console.error('[dead-letter solicitudes] no registrado:', dlqErr.message, '— original:', String(err && err.message || err));
+      }
       throw err; // relanza → Cloud Functions reintenta con backoff
     }
   }

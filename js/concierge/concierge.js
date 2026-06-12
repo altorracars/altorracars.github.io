@@ -1213,8 +1213,15 @@
             createdAt: new Date().toISOString(),
             lastMessageAt: new Date().toISOString()
         };
+        // §187: caps espejo de las rules — el .catch de abajo es silencioso y
+        // 3 pastes largos del usuario perderían el lead sin rastro.
+        if (typeof lead.nombre === 'string') lead.nombre = lead.nombre.slice(0, 120);
+        if (typeof lead.comentarios === 'string') lead.comentarios = lead.comentarios.slice(0, 3000);
         if (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta) {
-            try { lead = window.AltorraCommSchema.computeMeta(lead); } catch (e) {}
+            // §187 FIX: computeMeta devuelve SOLO {priority,tags,slaDeadline,slaMs}
+            // — hay que MERGEAR (como contact.js:120); antes REEMPLAZABA el lead
+            // y el soft-lead llegaba a Firestore con solo esos 4 campos.
+            try { lead = Object.assign({}, lead, window.AltorraCommSchema.computeMeta(lead)); } catch (e) {}
         }
 
         window.db.collection('solicitudes').add(lead).then(function (ref) {

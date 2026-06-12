@@ -63,7 +63,7 @@ export function mountDetailPanel(root) {
 
   function open(id) {
     const lead = (store.get().leads || []).find((l) => l.id === id);
-    data = { lead: lead || null, contact: null, activities: [], notes: [] };
+    data = { lead: lead || null, contact: null, activities: [], notes: [], loadError: null };
     render();
     if (!lead) return;
 
@@ -74,10 +74,18 @@ export function mountDetailPanel(root) {
       data.notes = getMockNotes(lead.contactId);
       render();
     } else {
-      getContact(lead.contactId).then((c) => { data.contact = c; render(); }).catch(() => {});
-      unsubActs = subscribeActivities(id, (acts) => { data.activities = acts; render(); }, () => {});
+      // §187 (SEC-01 follow-up): antes estos errores se TRAGABAN — un usuario
+      // sin crm.read veía una ficha vacía que mentía. Ahora se rotula.
+      const fail = (err) => {
+        data.loadError = err && err.code === 'permission-denied'
+          ? 'Sin permiso de CRM (crm.read) para ver la ficha completa.'
+          : 'No se pudo cargar parte de la ficha — revisa tu conexión.';
+        render();
+      };
+      getContact(lead.contactId).then((c) => { data.contact = c; render(); }).catch(fail);
+      unsubActs = subscribeActivities(id, (acts) => { data.activities = acts; render(); }, fail);
       if (lead.contactId) {
-        unsubNotes = subscribeNotes(lead.contactId, (notes) => { data.notes = notes; render(); }, () => {});
+        unsubNotes = subscribeNotes(lead.contactId, (notes) => { data.notes = notes; render(); }, fail);
       }
     }
   }
@@ -97,6 +105,12 @@ export function mountDetailPanel(root) {
     aside.append(header(lead));
     aside.append(tabs());
     const body = el('div', { class: 'detail__body' });
+    if (data.loadError) {
+      body.append(el('div', { class: 'u-caption', role: 'alert', style: {
+        padding: '8px 12px', borderRadius: '8px', margin: '0 0 10px',
+        background: 'rgba(229,115,26,0.12)', border: '1px solid rgba(229,115,26,0.45)',
+      }, text: '⚠️ ' + data.loadError }));
+    }
     if (tab === 'resumen') body.append(viewResumen(lead));
     else if (tab === 'comms') body.append(viewComms());
     else if (tab === 'score') body.append(viewScore(lead));
@@ -137,7 +151,8 @@ export function mountDetailPanel(root) {
     const editBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Editar contacto', title: 'Editar contacto' }, ['✏️']) : null;
     if (editBtn) editBtn.addEventListener('click', () => openContactEdit(data.contact, {
       onChanged: () => {
-        if (lead.contactId) getContact(lead.contactId).then((c) => { data.contact = c; render(); }).catch(() => {});
+        if (lead.contactId) getContact(lead.contactId).then((c) => { data.contact = c; render(); })
+          .catch(() => toast('No se pudo recargar el contacto', 'error'));
       },
     }));
 

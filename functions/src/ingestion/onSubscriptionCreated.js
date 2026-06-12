@@ -16,7 +16,9 @@ const POLICY_VERSION = 'v1';
  *  - idempotente (`_ingestedAt`), atómico, dead-letter.
  */
 exports.onSubscriptionCreated = onDocumentCreated(
-  { document: 'subscriptions/{subId}', region: 'us-central1', maxInstances: 10 },
+  // §187 retry:true: upsert por dedup + consent solo-sube — idempotente
+  // material (peor caso: bump espurio de _version/updatedAt).
+  { document: 'subscriptions/{subId}', region: 'us-central1', maxInstances: 10, retry: true },
   async (event) => {
     const snap = event.data;
     if (!snap) return;
@@ -36,6 +38,11 @@ exports.onSubscriptionCreated = onDocumentCreated(
       const wantedKeys = dedupKeysFor(contact);
 
       await db.runTransaction(async (tx) => {
+        // §187 (review #13): PRIMERA lectura = el doc ORIGEN — el payload del
+        // evento es inmutable en re-entregas (retry:true) y su _ingestedAt
+        // miente; sin esto, la rama suprimido/fusión-rota duplicaba contactos.
+        const fresh = await tx.get(snap.ref);
+        if (!fresh.exists || fresh.data()._ingestedAt) return;
         const keySnaps = [];
         for (const k of wantedKeys) {
           keySnaps.push({ key: k, snap: await tx.get(db.collection('dedup').doc(k)) });
@@ -82,11 +89,17 @@ exports.onSubscriptionCreated = onDocumentCreated(
         tx.update(snap.ref, { _ingestedAt: new Date().toISOString() });
       });
     } catch (err) {
-      await db.collection('failedIngestions').add({
-        sourceCollection: 'subscriptions', sourceId: subId,
-        error: String(err && err.message || err),
-        payload: sub, createdAt: new Date().toISOString(), retries: 0, resolved: false,
-      });
+      // §187: ID determinista — con retry:true, .add() inundaría el dead-letter.
+      try {
+        await db.collection('failedIngestions').doc('subscriptions_' + subId).set({
+          sourceCollection: 'subscriptions', sourceId: subId,
+          error: String(err && err.message || err),
+          payload: sub, createdAt: new Date().toISOString(), resolved: false,
+          retries: admin.firestore.FieldValue.increment(1),
+        }, { merge: true });
+      } catch (dlqErr) { // review #15: el DLQ jamás enmascara el error original
+        console.error('[dead-letter subscriptions] no registrado:', dlqErr.message, '— original:', String(err && err.message || err));
+      }
       throw err;
     }
   }

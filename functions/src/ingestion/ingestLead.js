@@ -35,7 +35,26 @@ async function ingestLeadTransaction(db, canonical, sourceRef) {
   const wantedKeys = dedupKeysFor(contact);
 
   let resolvedContactId = fallbackId;
+  let alreadyIngested = false;
+  // §187 (review #12): runTransaction puede RE-EJECUTAR el callback (ABORTED/
+  // contención) y el callback muta `lead` (ownerId de la rotación). Sin este
+  // reset, el 2º intento vería ownerId ya seteado por el intento abortado y
+  // saltaría la rotación — owner de un read stale + puntero sin avanzar.
+  const initialOwnerId = lead.ownerId || null;
+  const initialOwnerName = lead.ownerName || null;
   await db.runTransaction(async (tx) => {
+    lead.ownerId = initialOwnerId;
+    lead.ownerName = initialOwnerName;
+    alreadyIngested = false;
+    // §187 retry-audit: PRIMERA lectura = el doc ORIGEN. Con retry:true una
+    // re-entrega trae el payload del EVENTO (inmutable — su _ingestedAt
+    // miente); la verdad vive en el doc. Si ya se ingirió: no-op total
+    // (cero lead duplicado, cero rotación doble, cero re-alerta).
+    const sourceSnap = await tx.get(sourceRef);
+    if (!sourceSnap.exists || sourceSnap.data()._ingestedAt) {
+      alreadyIngested = true;
+      return;
+    }
     // F37b §179 — owner OBLIGATORIO al ingerir: si el lead llega sin dueño
     // (web), se asigna por round-robin desde config/crmIntake.rotation,
     // DENTRO de la transacción (dos leads simultáneos no repiten turno).
@@ -126,6 +145,9 @@ async function ingestLeadTransaction(db, canonical, sourceRef) {
     tx.update(sourceRef, { _ingestedAt: new Date().toISOString(), _leadId: leadRef.id });
   });
 
+  if (alreadyIngested) {
+    return { alreadyIngested: true, contactId: null, leadId: null, ownerId: null, ownerName: null };
+  }
   return { contactId: resolvedContactId, leadId: leadRef.id, ownerId: lead.ownerId || null, ownerName: lead.ownerName || null };
 }
 

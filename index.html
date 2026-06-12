@@ -817,7 +817,7 @@
                 </div>
                 <div class="cin-end-news-row">
                     <input
-                        type="email" required
+                        type="email" required maxlength="254"
                         placeholder="tu@email.com"
                         class="cin-end-news-input"
                         aria-label="Tu correo electrónico">
@@ -982,7 +982,7 @@
                         <p class="wizard-panel-hint">¿Cómo te contactamos para enviarte la oferta?</p>
                         <div class="form-group">
                             <label class="form-label required" for="vende-nombre">Nombre completo</label>
-                            <input type="text" id="vende-nombre" name="nombre" class="form-input" placeholder="Ej: Juan Pérez" autocomplete="name">
+                            <input type="text" id="vende-nombre" name="nombre" class="form-input" maxlength="120" placeholder="Ej: Juan Pérez" autocomplete="name">
                             <span class="form-error" aria-live="polite"></span>
                         </div>
                         <div class="form-row">
@@ -1008,7 +1008,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label required" for="vende-email">Email</label>
-                                <input type="email" id="vende-email" name="email" class="form-input" placeholder="Ej: correo@ejemplo.com" autocomplete="email">
+                                <input type="email" id="vende-email" name="email" class="form-input" maxlength="254" placeholder="Ej: correo@ejemplo.com" autocomplete="email">
                                 <span class="form-error" aria-live="polite"></span>
                             </div>
                         </div>
@@ -1030,12 +1030,12 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label required" for="vende-marca">Marca</label>
-                                <input type="text" id="vende-marca" name="marca" class="form-input" placeholder="Ej: Chevrolet">
+                                <input type="text" id="vende-marca" name="marca" class="form-input" maxlength="60" placeholder="Ej: Chevrolet">
                                 <span class="form-error" aria-live="polite"></span>
                             </div>
                             <div class="form-group">
                                 <label class="form-label required" for="vende-modelo">Modelo</label>
-                                <input type="text" id="vende-modelo" name="modelo" class="form-input" placeholder="Ej: Spark GT">
+                                <input type="text" id="vende-modelo" name="modelo" class="form-input" maxlength="60" placeholder="Ej: Spark GT">
                                 <span class="form-error" aria-live="polite"></span>
                             </div>
                         </div>
@@ -1073,7 +1073,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="vende-comentarios">Comentarios adicionales</label>
-                            <textarea id="vende-comentarios" name="comentarios" class="form-textarea" placeholder="Estado del vehículo, extras, historial de mantenimiento..."></textarea>
+                            <textarea id="vende-comentarios" name="comentarios" class="form-textarea" maxlength="3000" placeholder="Estado del vehículo, extras, historial de mantenimiento..."></textarea>
                         </div>
                         <div class="wizard-trust-box">
                             <div class="wizard-trust-items">
@@ -1115,7 +1115,7 @@
                 <form id="financiacionForm" novalidate>
                     <div class="form-group">
                         <label class="form-label required" for="fin-nombre">Nombre completo</label>
-                        <input type="text" id="fin-nombre" name="nombre" class="form-input" autocomplete="name" placeholder="Ej: Juan Pérez">
+                        <input type="text" id="fin-nombre" name="nombre" class="form-input" maxlength="120" autocomplete="name" placeholder="Ej: Juan Pérez">
                         <span class="form-error" aria-live="polite"></span>
                     </div>
 
@@ -1142,14 +1142,14 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label required" for="fin-email">Email</label>
-                            <input type="email" id="fin-email" name="email" class="form-input" autocomplete="email" placeholder="Ej: correo@ejemplo.com">
+                            <input type="email" id="fin-email" name="email" class="form-input" maxlength="254" autocomplete="email" placeholder="Ej: correo@ejemplo.com">
                             <span class="form-error" aria-live="polite"></span>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label required" for="fin-vehiculo">Vehículo de interés</label>
-                        <input type="text" id="fin-vehiculo" name="vehiculo-interes" class="form-input" placeholder="Ej: Chevrolet Spark GT 2020">
+                        <input type="text" id="fin-vehiculo" name="vehiculo-interes" class="form-input" maxlength="160" placeholder="Ej: Chevrolet Spark GT 2020">
                         <span class="form-error" aria-live="polite"></span>
                     </div>
 
@@ -1208,7 +1208,7 @@
 
                     <div class="form-group">
                         <label class="form-label" for="fin-comentarios">Comentarios adicionales</label>
-                        <textarea id="fin-comentarios" name="comentarios" class="form-textarea" placeholder="Cuéntanos más sobre tu solicitud..."></textarea>
+                        <textarea id="fin-comentarios" name="comentarios" class="form-textarea" maxlength="3000" placeholder="Cuéntanos más sobre tu solicitud..."></textarea>
                     </div>
 
                     <!-- A.1 (mega-plan v4) — botón submit limpio, sin redirect a WhatsApp -->

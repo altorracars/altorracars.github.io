@@ -18,7 +18,10 @@ const POLICY_VERSION = 'v1';
  * DOCUMENTO y no una callable). Owner = quien lo registró (rules lo fuerzan).
  */
 exports.onLeadIntakeCreated = onDocumentCreated(
-  { document: 'lead_intake/{intakeId}', region: 'us-central1', maxInstances: 10 },
+  // §187 retry:true: seguro porque ingestLeadTransaction ahora lee el doc
+  // ORIGEN dentro de la tx (el _ingestedAt del payload del evento miente
+  // en re-entregas) — un retry post-commit es no-op total.
+  { document: 'lead_intake/{intakeId}', region: 'us-central1', maxInstances: 10, retry: true },
   async (event) => {
     const snap = event.data;
     if (!snap) return;
@@ -26,19 +29,25 @@ exports.onLeadIntakeCreated = onDocumentCreated(
     const intakeId = event.params.intakeId;
     const db = admin.firestore();
 
-    // Idempotencia: si ya se ingirió, salir.
+    // Fast-path (la verdad la re-verifica la transacción contra el doc).
     if (intake._ingestedAt) return;
 
     try {
       const canonical = intakeToCanonical(intake, intakeId, POLICY_VERSION);
       await ingestLeadTransaction(db, canonical, snap.ref);
     } catch (err) {
-      // Dead-letter: cero pérdida (mismo patrón que onSolicitudCreated).
-      await db.collection('failedIngestions').add({
-        sourceCollection: 'lead_intake', sourceId: intakeId,
-        error: String(err && err.message || err),
-        payload: intake, createdAt: new Date().toISOString(), retries: 0, resolved: false,
-      });
+      // Dead-letter con ID DETERMINISTA (§187): con retry:true, un .add()
+      // metía OTRO doc por reintento (flood); set+merge actualiza el mismo.
+      try {
+        await db.collection('failedIngestions').doc('lead_intake_' + intakeId).set({
+          sourceCollection: 'lead_intake', sourceId: intakeId,
+          error: String(err && err.message || err),
+          payload: intake, createdAt: new Date().toISOString(), resolved: false,
+          retries: admin.firestore.FieldValue.increment(1),
+        }, { merge: true });
+      } catch (dlqErr) { // review #15: el DLQ jamás enmascara el error original
+        console.error('[dead-letter lead_intake] no registrado:', dlqErr.message, '— original:', String(err && err.message || err));
+      }
       throw err; // relanza → retry con backoff
     }
   }

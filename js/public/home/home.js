@@ -133,7 +133,9 @@
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
-            var email = ((input && input.value) || '').trim().toLowerCase();
+            // §187: cap espejo de las rules (254) — el catch optimista es
+            // silencioso y un deny perdería la suscripción sin que se note.
+            var email = ((input && input.value) || '').trim().toLowerCase().slice(0, 254);
             if (!email || email.indexOf('@') < 1 || email.lastIndexOf('.') < email.indexOf('@')) {
                 if (input) { input.setAttribute('aria-invalid', 'true'); input.focus(); }
                 return;

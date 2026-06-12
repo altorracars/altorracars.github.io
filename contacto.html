@@ -435,7 +435,7 @@
                 <form class="soft-form" id="contactForm">
                     <label class="soft-field">
                         <span>Nombre completo *</span>
-                        <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre completo">
+                        <input type="text" id="nombre" name="nombre" required maxlength="120" placeholder="Tu nombre completo">
                     </label>
 
                     <div class="soft-field-row">
@@ -464,7 +464,7 @@
 
                     <label class="soft-field">
                         <span>Correo electrónico *</span>
-                        <input type="email" id="email" name="email" required placeholder="correo@ejemplo.com">
+                        <input type="email" id="email" name="email" required maxlength="254" placeholder="correo@ejemplo.com">
                     </label>
 
                     <label class="soft-field">
@@ -481,12 +481,12 @@
 
                     <label class="soft-field">
                         <span>Vehículo de interés</span>
-                        <input type="text" id="vehiculo" name="vehiculo" placeholder="Ej: Chevrolet Onix 2024 o presupuesto aproximado">
+                        <input type="text" id="vehiculo" name="vehiculo" maxlength="160" placeholder="Ej: Chevrolet Onix 2024 o presupuesto aproximado">
                     </label>
 
                     <label class="soft-field">
                         <span>Mensaje *</span>
-                        <textarea id="mensaje" name="mensaje" rows="5" required placeholder="Cuéntanos cómo podemos ayudarte..."></textarea>
+                        <textarea id="mensaje" name="mensaje" rows="5" required maxlength="3000" placeholder="Cuéntanos cómo podemos ayudarte..."></textarea>
                     </label>
 
                     <div>

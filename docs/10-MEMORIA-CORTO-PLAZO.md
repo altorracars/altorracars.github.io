@@ -25,9 +25,9 @@
 > smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema) → dealers (M, decisión
 > D5-03 del dueño) → **decisión financiera (gap 8)** → ④ RBAC/usuarios (departamental §193.4)
 > → cutover (stub redirect, NUNCA borrar admin.html).
-> ✅ Verificar (F39): reseña + banner con imagen + editar marca + editar una lista (#/atributos)
-> + crear un respaldo manual (#/respaldos) → web SIN Ctrl+Shift+R (§190-§192 cacheSignal;
-> listas TTL ≤5 min §194) · cita walk-in · bloqueo real. Daily 13/06: counts con vehiculos/marcas.
+> ✅ **F39 v2 (§198)**: verificación en vivo = CLAUDE, por LOTES. Próximo lote (post-épica
+> vehículos): reseña + banner + marca + lista + respaldo + walk-in + reasignar + ciclo completo
+> de vehículo → web SIN Ctrl+Shift+R → cerrar gates ②/③. Daily 13/06: counts con vehiculos/marcas.
 > ⚖️ Decisiones del dueño §193 (siembra post-panel): bot SIN fallback gratuito + solo Claude
 > (R-1 resuelta) · fase ④ hereda RBAC DEPARTAMENTAL (§193.4, comparar con cerebro Bersaglio).
 > ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
@@ -99,6 +99,8 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   merge #838) → ampliación §193.2 (skills arranque+RESCATE, merge #839) → gap 5 ✅ (§196,
 >   "＋ Nueva cita" walk-in, merge #840) → **gap 7 ✅ (§197)**: acción `update` (observaciones +
 >   reasignar asesor, moveAdvisorBlocks, suite emulador 193 ✓, deploy ✓). Commit local.
->   F39 re-verificado ×4: auditLog VACÍO. **Transversal desbloqueado AGOTADO** — todo lo restante
->   espera F39/decisiones del dueño o la SESIÓN FRESCA de vehículos.
->   **Retomar: "continua"** → gates ②/③ (si F39 hechos) → **vehículos en SESIÓN FRESCA**.
+>   F39 re-verificado ×5: auditLog VACÍO (F39 explicado al dueño en cristiano: SUS 7 pruebas en vivo).
+> - **2026-06-12 (mediodía)**: GC 30-LECCIONES (destilado, f5fdeb2) + M-14 (no recomendar cierre
+>   por nota de plan con presupuesto sobrando — corrección del dueño). **El dueño ORDENÓ arrancar
+>   la ÉPICA DE VEHÍCULOS en esta misma sesión** (~50% presupuesto) → mapeo con agentes en curso.
+>   **Retomar: "continua"** → seguir la épica de vehículos (mapa → diseño → wizard por etapas).

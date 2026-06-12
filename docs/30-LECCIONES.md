@@ -85,28 +85,13 @@
 - Casos validados §119: `admin-upload.html` (sin auth → rules §68 rechazan escrituras), `theme-switcher.js` (comentario "eliminado — tema dark permanente", 0 cargas).
 - **Acción**: cuarentenar a `_legacy/` (reversible) + documentar en `_legacy/README.md`, NO borrar de una.
 
-### L-16 · Inyectar chrome/CSS nuevo en páginas que cargan el tema viejo → conflicto de especificidad + scope de tokens
-- **Síntoma**: inyectas un componente/chrome nuevo (markup + CSS) en páginas que YA cargan un CSS legacy. El componente "no se ve" o se ve roto (posición/fondo/colores del tema viejo), aunque el CSS nuevo cargue.
-- **Causa DOBLE** (SP-5.1.b §127, verificado leyendo CSS):
-  1. **Especificidad**: el tema viejo estiliza por ID (`#header` 1-0-0, `body #header` 1-0-1) o con `!important` (performance-fixes), venciendo al CSS nuevo basado en clases (`.alt-nav` 0-1-0) — sin importar el orden de carga. El nuevo reusa `id="header"` (contrato) → el ID viejo lo pisa.
-  2. **Scope de tokens / data-theme**: el CSS nuevo depende de tokens condicionados (`:root[data-theme="dark"]`). Si la página nueva NO tiene el `data-theme` que el componente espera, los tokens resuelven al valor equivocado (ej. texto oscuro sobre fondo oscuro → ilegible). El index sí tenía `<html data-theme="dark">`; las legacy no.
-- **Receta**:
-  1. **Verificar el contexto de tokens primero**: ¿el componente nuevo depende de `[data-theme]` u otro atributo de scope? Si la página destino no lo tiene, setearlo por JS al inyectar — PERO antes verificar (`grep data-theme` en los CSS viejos) que NO rompa el tema viejo. Si los CSS viejos no reaccionan al atributo, es seguro.
-  2. **Bridge de especificidad**: crear un CSS override cargado ÚLTIMO que gane al tema viejo con especificidad ≥ (combinar ID+clase: `#header.alt-nav` 1-1-0 > `body #header` 1-0-1) + `!important` SOLO donde el viejo use `!important`. No editar el tema viejo (reversibilidad).
-  3. **Layout model**: si el viejo usaba `position: fixed` (placeholder reserva espacio) y el nuevo `sticky`, y el nuevo se inyecta dentro de un contenedor pequeño → sticky no "pega". Usar fixed en el bridge para encajar con el placeholder.
-- **Meta-lección**: inyectar UI nueva donde convive CSS viejo NO es solo "cargar el CSS nuevo" — es ganar la guerra de especificidad + asegurar el scope de tokens. Presupuestar un "bridge" desde el diseño cuando hay coexistencia de temas.
+### L-16 · Inyectar chrome/CSS nuevo en páginas con tema viejo → guerra de especificidad + scope de tokens
+- **Síntoma**: chrome nuevo inyectado en página legacy "no se ve" o sale con colores/posición del tema viejo aunque su CSS cargue. **Causa doble** (§127): (1) el tema viejo estiliza por ID/`!important` y vence a las clases nuevas sin importar el orden de carga; (2) el CSS nuevo depende de tokens scoped (`:root[data-theme="dark"]`) que la página legacy no tiene → tokens resuelven mal.
+- **Receta**: (1) verificar el scope de tokens primero (setear `data-theme` por JS si los CSS viejos no reaccionan a él — grep antes); (2) **bridge de especificidad** cargado ÚLTIMO (`#header.alt-nav` > `body #header`; `!important` solo donde el viejo lo use), sin editar el tema viejo; (3) si el viejo usaba `position:fixed` con placeholder, el bridge usa fixed (sticky no "pega" en contenedor chico). Presupuestar el bridge desde el diseño cuando hay coexistencia de temas.
 
-### L-17 · Vestir un módulo legacy con un tema nuevo: remapear sus tokens `:root` (si los tiene), no reescribir markup
-- **Síntoma/decisión**: te piden migrar un módulo grande (dashboard, panel) a un tema visual nuevo, pero su contenido lo genera JS (cientos/miles de líneas) y reescribir ese render arriesga regresiones funcionales graves.
-- **Insight (SP-5.2.c.2 §131, verificado)**: si el CSS del módulo centraliza sus colores en variables `:root` (ej. `--pf-*`), **remapear esas variables** a la paleta nueva viste TODO el módulo sin tocar una sola regla estructural ni el JS. Palanca de máximo impacto / mínimo riesgo.
-- **Receta**:
-  1. `grep` las definiciones de tokens (`--prefijo-...\s*:`) en el CSS. Si están centralizadas en `:root`, ganaste.
-  2. Capa de override **scoped a un atributo** (`body[data-cin="on"] { --pf-*: ... }`) al final del CSS → reversible (quitar el atributo revierte) y no pisa el `:root` original.
-  3. **Cazar los hardcodeados**: `grep` hex/rgba en reglas (fuera de `:root`) — el remapeo NO los alcanza. Sobrescribir los visibles (texto sobre acento, fondos de inputs/tiles) en la misma capa scoped.
-  4. Mantener SÓLIDOS los tokens que alimentan modales/overlays (no volverlos translúcidos) o se rompe el apilado.
-  5. CERO cambios en el JS → IDs/clases intactos → cero regresión funcional.
-- **Cuándo NO aplica**: si el diseño objetivo exige estructura DISTINTA (no solo recolorear), o si el CSS hardcodea todo sin tokens (ahí toca la guerra de L-16). Distinguir "recolorear" (esta lección) de "rediseñar" (otro esfuerzo).
-- **Meta-lección**: cuando el redesign de referencia es un MOCK más pobre que el módulo real, "réplica exacta" se vuelve destructivo. Vestir > reescribir. Confirmar el alcance con el cliente cuando fidelidad y cero-regresión chocan.
+### L-17 · Vestir un módulo legacy con tema nuevo: remapear sus tokens `:root`, no reescribir markup
+- **Insight (§131)**: si el CSS del módulo centraliza colores en `:root` (ej. `--pf-*`), remapearlos en una capa **scoped a un atributo** (`body[data-cin="on"]{--pf-*:…}`, reversible) viste TODO el módulo sin tocar JS ni estructura. Cazar luego los hex/rgba **hardcodeados** fuera de `:root` (el remapeo no los alcanza) y mantener SÓLIDOS los tokens de modales/overlays (translúcidos rompen el apilado).
+- **Cuándo NO**: si el objetivo exige estructura distinta o el CSS no tiene tokens (→ guerra L-16). Recolorear ≠ rediseñar; cuando el mock de referencia es más pobre que el módulo real, "réplica exacta" se vuelve destructiva — vestir > reescribir, confirmar alcance con el cliente.
 
 ### L-18 · El chrome compartido (header/footer) puede depender de clases de un CSS que NO se inyecta en legacy
 - **Síntoma**: el header/footer se ve distinto entre el index (chrome inline) y las páginas legacy (chrome inyectado por components.js), aunque el MARKUP sea idéntico (snippet 1:1). Ej §133: el badge `.nav-pip` de favoritos tapaba el corazón SOLO en legacy.
@@ -138,10 +123,8 @@
 - **Corrección**: regla en L-10 — **un chequeo que devuelve 0 puede ser falso negativo; verificar los 0-ref uno por uno** antes de asumir. Refuerza RCA §19.
 
 ### M-03 · El cerebro no se auto-alimentaba sin recordatorio explícito
-- **Defecto**: reportado por el cliente — "el cerebro no se está alimentando, no funciona como debería sin que yo tenga que estar recordándolo". Los Reflejos §G.4 (Captura/Frescura/Higiene) describen QUÉ alimentar y CUÁNDO (al cerrar tarea), pero como **principios descriptivos**, no como **checklist accionable**. Sesiones nuevas los leen y aceptan teóricamente, pero al cerrar tareas concretas omiten la consolidación (especialmente bajo presión de "ya casi termino, lo documento después" → nunca se documenta).
-- **Causa**: faltaba un Reflejo con disparador EXPLÍCITO y verificable al cierre — no solo principios al arranque.
-- **Corrección**: nuevo **Reflejo de Cierre (§G.4)** — checklist enforzable que debe pasarse ANTES de declarar una tarea lista: 10/05/99/00/30/cache §4/brain:check. Si falta cualquiera, la tarea NO está cerrada. Anti-patrón "lo documento después" nombrado y bloqueado. ADR §123.
-- **Principio**: los principios descriptivos no bastan para acciones críticas — hace falta convertirlos en checklist accionables en el momento exacto donde fallan.
+- **Defecto** (reportado por el cliente): los Reflejos §G.4 eran principios descriptivos, no checklist — al cerrar tareas se omitía la consolidación ("lo documento después" → nunca).
+- **Corrección**: **Reflejo de Cierre (§G.4)** — checklist enforzable ANTES de declarar lista una tarea (10/05/99/00/30/cache/brain:check); si falta algo, NO está cerrada (ADR §123). **Principio**: lo crítico se convierte en checklist accionable en el momento exacto donde falla, no en doctrina de arranque.
 
 ### M-04 · Iterar fixes sin verificar la fuente de verdad real (no solo el código de aplicación)
 - **Defecto**: durante SP-5.0 rastro saga, las primeras 3 rondas (c, d, e) iteraron sobre el código de aplicación (`historial-visitas.js`, `home-carousels.js`) asumiendo que el bug era ahí. Cada round failed porque la causa raíz real estaba en **el service worker** (stale-while-revalidate servía código viejo en páginas de detalle). Ronda 4 (SP-5.0.f) cazó el bug solo cuando LEÍ el SW.
@@ -150,11 +133,8 @@
 - **Principio**: cuando iteras un fix y el bug persiste, el bug probablemente NO está donde estás mirando. Cambia el lente, no la profundidad. ADR §124.
 
 ### M-05 · El cerebro debe crecer en dominios ESTRATÉGICOS, no solo operacionales
-- **Defecto**: pre-Omni, el cerebro acumulaba memoria operacional (estado/decisiones/gotchas/lecciones de proceso) pero NO acumulaba análisis estratégico especializado (seguridad/legal/UX/SEO/performance/escalabilidad/copy/a11y). Cada sesión nueva re-investigaba estos dominios desde mi contexto pre-entrenado, perdiendo el aprendizaje específico del proyecto Altorra. La carpeta `skills/` existía como knowledge bank externo pero sin protocolo de uso.
-- **Causa**: el sistema de neuronas estaba diseñado para CÓDIGO + PROCESO, no para AUDITORÍAS especializadas. Faltaba un mecanismo para acumular hallazgos de dominio + workflow para combinar framework externo (skills) con findings proyecto-específicos.
-- **Corrección**: **ADR §125** — agregado Trigger 🔵 de Auditoría + registry de Lóbulos de Dominio (`40-LOBULOS-DOMINIO`) + integración con `skills/` externa. Los hallazgos específicos del proyecto se acumulan en lóbulos hijos (`41-SEGURIDAD`, `42-LEGAL`, etc.) que nacen on-demand con contenido real. `skills/` provee el framework general; los lóbulos lo aterrizan al proyecto + capturan las excepciones específicas.
-- **Principio**: el cerebro debe poder crecer en cualquier dirección estratégica relevante al proyecto, no solo capturar bugs históricos. Skills externos (framework genérico) + lóbulos internos (findings proyecto-específicos) = sinergia incremental. Sin esto, el conocimiento estratégico se pierde entre sesiones; con esto, se acumula y profundiza.
-- **Anti-patrón explícitamente rechazado**: crear neuronas vacías por anticipado para "preparar el terreno" — viola §G.4 anti-fragmentación. Las neuronas nacen cuando hay contenido REAL, no como placeholders. El registry (`40-LOBULOS-DOMINIO`) lista las CATEGORÍAS esperadas como mapa, no como contenido prematuro.
+- **Defecto**: el cerebro acumulaba memoria operacional pero NO análisis especializado (seguridad/legal/UX/SEO/perf/a11y) — cada sesión re-investigaba esos dominios desde cero.
+- **Corrección (ADR §125)**: Trigger 🔵 + registry de Lóbulos (`40-LOBULOS-DOMINIO`) + skills externas. Skills = framework genérico; lóbulos hijos (`41`, `42`…) = findings proyecto-específicos, nacen on-demand CON contenido real (anti-patrón rechazado: neuronas vacías "para preparar el terreno" — viola anti-fragmentación §G.4).
 
 ### M-06 · Afirmé "sin desplegar" con `git rev-list origin/main..HEAD` SIN `git fetch` → `origin/main` local stale
 - **Defecto**: le dije al cliente que su trabajo (simulador) NO estaba desplegado, basándome en `git rev-list origin/main..HEAD = 1`. Pero el `origin/main` LOCAL estaba desactualizado (no hice `git fetch`); el cliente YA había pusheado. Afirmé un estado de despliegue FALSO; el cliente me corrigió ("esto es falso ya hice todos los commit y git push").
@@ -219,11 +199,10 @@
 - **Receta**: por cada clase-hook reusada, enumera en preview qué reglas legacy la tocan (`Array.from(document.styleSheets)…el.matches(sel)`) y fija EXPLÍCITAMENTE `background` + estados `:hover/:active` en tu regla cinematic, con especificidad ≥ la legacy (`body[data-cin="on"] .x:hover` 0,3,1 > `body .x:hover` 0,2,1).
 - **Aplica a**: los SP-5.3.x restantes (busqueda/marca/marcas/landings) reusan clases-hook del catálogo → mismo riesgo.
 
-### L-22 · Paleta cinematic oscura era FRÍA (índigo); el cliente la quería NEGRA cálida como el index (§150)
-- **Disparador**: el cliente reporta "un azul que no sé de dónde sale" en el catálogo / "no se ve como el index, son negras no grises". Tarjetas/filtros/dropdowns con tinte índigo.
-- **Causa**: toda la paleta cinematic tenía el canal AZUL dominante: tokens `--cin-bg-elev #15121A` (rgb 21,18,**26**) / `--cin-bg-soft #0E0C10`, + valores fríos **HARDCODEADOS dispersos** (`#100d16` en 4 gradientes de tarjeta; `rgba(26,22,34)`+`rgba(16,13,22)` en paneles de filtro busqueda/detalle/marca; `#15121A` repetido en ~10 sitios: select options, thumbs comparar, panel del dropdown `rgba(28,26,32)`). En el index el púrpura quedaba OCULTO tras imágenes a sangre completa (`.cin-card`); en el catálogo (cuerpos de tarjeta + filtros) se veía. **Misma paleta, distinta visibilidad** → el cliente cree "el index está bien, el catálogo no".
-- **Receta**: (1) de-bluing NO es cambiar 1 token — **grep TODOS los fríos hardcodeados** (`#15121A|#100d16|rgba\(26, ?22, ?34|rgba\(16, ?13, ?22|rgba\(28,26,32`) en `css/home/*`, no solo la definición. (2) El "negro de referencia" del cliente = `--cin-bg #08070A` → las superficies elevadas deben ser **near-black CÁLIDO** (`#0D0B09`, R≥G≥B), NO gris (`#1A1613` se sintió "gris/no negro"). (3) **`--cin-bg` (page bg) NO tocar** — es el negro que el cliente aprueba. (4) `rgba(15,15,25,…)` de baja opacidad (sombras/hovers) son imperceptibles → dejar.
-- **Bonus (dropdown cross-page)**: si un componente del header "no abre en otras páginas", causa típica = su wiring JS vive en `home-chrome.js` (solo carga en index). Fix robusto = **abrirlo por hover/focus con CSS puro** (`.nav-dd-wrap:hover > .nav-dd-pro{display:block}`), NO cargar el JS en 20 páginas.
+### L-22 · "Un azul que no sé de dónde sale" — paleta oscura FRÍA con hardcodeados dispersos (§150)
+- **Causa**: paleta cinematic con canal azul dominante en tokens Y en ~15 valores fríos **hardcodeados** dispersos (`#15121A`, `#100d16`, rgba fríos en filtros/cards/selects). En el index el tinte quedaba oculto tras imágenes; en catálogo se veía → "el index está bien, el catálogo no" siendo la MISMA paleta.
+- **Receta**: de-bluing ≠ cambiar 1 token — **grep TODOS los fríos hardcodeados** en `css/home/*`. Superficies elevadas = near-black **CÁLIDO** (`#0D0B09`, R≥G≥B; un gris `#1A1613` se siente "no negro"). `--cin-bg` (el negro aprobado) NO se toca; rgba de baja opacidad son imperceptibles → dejar.
+- **Bonus**: componente del header que "no abre en otras páginas" = su wiring vive en `home-chrome.js` (solo index) → abrirlo por `:hover/:focus` CSS puro, NO cargar el JS en 20 páginas.
 
 ### L-23 · La regla universal `* { max-width:100% }` (style.css:6450) COLAPSA el `width` explícito de elementos `position:absolute`
 - **Disparador**: un panel/popover/dropdown con `width` fijo (`.nav-dd{width:580px}`) renderiza ANGOSTO (≈ ancho de su contenedor) y su contenido se desborda. El CSS del componente "se ve correcto leyendo el archivo" (§150.d: el dropdown del index).

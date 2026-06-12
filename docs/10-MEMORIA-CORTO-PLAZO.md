@@ -17,16 +17,16 @@
 > en boot, NO regex 5c para el BFS.
 
 > 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0→E5 ✅ en main. E6 EN CURSO**: E6.6 ✅ (§188) →
-> paso 0 ✅ DESPLEGADO (§189) → **fase ② paso 1 ✅: módulo Reseñas en el portal (§190)** —
-> patrón del strangler VALIDADO (data shape-verbatim + RBAC espejo + mock + core/audit.js
-> + nav gated). Preview mock: alta/edición/borrado ✓. SIGUIENTE: **fase ② paso 2 —
-> admin-banners → portal** (M: SOLO posiciones vivas `promocional`+`home_promo` — hero/categoria
-> son write-only sin lector D5-12 ·  upload Storage `banners/` · invalidación vía cacheSignal) →
-> gate de fase (ocultar/readonly reviews+banners del clásico) → ③ (brands/lists/vehicles-L/dealers)
-> → ④ (RBAC/usuarios/auditoría/perfil+Telegram) → cutover (stub redirect, NUNCA borrar admin.html).
-> ✅ Verificar (F39, próxima sesión): **crear una reseña real desde #/resenas** → debe aparecer
-> en el sitio público SIN Ctrl+Shift+R (valida módulo §190 + cacheSignal §189 en un gesto) ·
-> cita interna walk-in pasa rules · onUsuarioBloqueadoSync al 1er bloqueo.
+> paso 0 ✅ (§189) → **fase ② CÓDIGO COMPLETO: Reseñas (§190) + Banners (§191)** — patrón del
+> strangler validado ×2 (shape verbatim + RBAC espejo + mock + audit + Storage/WebP en banners).
+> SIGUIENTE: (1) **gate de cierre de fase ②** (tras F39 live del dueño): ocultar/readonly las
+> secciones Banners y Reseñas del CLÁSICO ("cero ediciones por la vía vieja"); (2) **fase ③**:
+> brands (S) → lists→#/config (S) → **vehicles (L, épica propia: wizard 6 pasos + drafts +
+> smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema)** → dealers (M, decisión
+> de métricas) → backup inventario (S) → **decisión financiera del dueño (gap 8)** → ④ → cutover.
+> ✅ Verificar (F39, próxima sesión): **reseña real desde #/resenas** y **banner real con imagen
+> desde #/banners** → aparecen en la web SIN Ctrl+Shift+R (módulos §190/§191 + cacheSignal §189 +
+> Storage) · cita interna walk-in · onUsuarioBloqueadoSync al 1er bloqueo.
 > ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
 > 2FA portal (R-9) · vista Inicio (gap 3). Gates: F32 móvil · F33b piloto 1 semana · manual.
 > 🚫 Callejones E6.6: NO borrar admin-calendar-config (inyectado en público para el bot,
@@ -81,34 +81,12 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC 2026-06-10: §175-§183 consolidados (ver `00-INDICE` → `99`). Solo lo vivo:
+> GC 2026-06-12: §184-§187 consolidados y podados de aquí (detalle → `00-INDICE` → `99`). Vivo:
 >
-> - **2026-06-10 (madrugada→tarde)**: maratón E0→E2t1 (§177→§182) + relevo §183. Todo en ADRs.
-> - **2026-06-10 (noche)**: "continua" → **E2 tanda 2 COMPLETA (§184)** con review adversarial
->   (9 fixes, 1 crítico) + E2E live. Cache `v20260610181500`. Lecciones L-39/L-40. El dueño YA
->   purgó `_test_sla_e1a` (F39 §180 ✅). Gotcha: emulador zombi en :8081 — matar java antes.
-> - **2026-06-10 (madrugada 11/06)**: "CONTINUA AQUI" (misma sesión) → **E3 COMPLETA (§185)**:
->   índice dedup F40e (no existía — F12/F14 lo asumían) + editar/fusionar + supresión 1581.
->   Review adversarial: 1 CRÍTICO (tombstone con PII post-supresión) + 9 majors — todos
->   corregidos. 139 tests. E2E live del trigger de índice ✓ (1er evento perdido = Eventarc §178).
->   SIN cache bump (L-32). Fusión/supresión live = las verifica el dueño al primer uso (F39).
-> - **2026-06-11 (00:30)**: "listo merge hechos… cerrar y documentar" → **RELEVO por saturación**
->   (2 épicas en una sesión). Merge a main verificado (`4b68f2a`). Próxima sesión: boot normal →
->   verificar 1ª corrida del daily job → **"continúa E4"**. Sin decisiones nuevas del dueño
->   (E6.5/E6.6 de §183 siguen FIRMES).
-> - **2026-06-11 (madrugada-2)**: "continuemos" → **E4 COMPLETA (§186)**. Exploración 5 agentes →
->   IAP → implementación → 169 tests → review adversarial (2 cortes por LÍMITES de sesión/semana:
->   el self-review durante la espera encontró 2 bugs; los 23 confirmados del workflow corregidos al
->   volver). Daily job 5am del 11/06 NO verificado (sesión arrancó a las 00:30 — quedó tarea #1).
->   🚫 Callejón: NO verificar fusión/supresión live sin sesión del dueño (F39, igual que §185).
-> - **2026-06-12 (3:35am)**: "continua" → **E2E live E5 ejecutado por Claude** (Playwright, no
->   esperar al dueño): pipeline completo verificado con evidencia (rules→solicitud→lead→contact→
->   email→Telegram). Commit E5. Pendiente HOY: daily job 5am (tarea #3) + push/merge cliente.
-> - **2026-06-12 (4-5:30am, misma sesión)**: "todo realizado continua" (E5 mergeada PR #832) →
->   **E6 arrancada**: E6.6 auditoría (workflow 16 agentes, 112 hallazgos → §188 + bóveda) + paso 0
->   ejecutado/desplegado (§189, hallazgo: E5 había roto la cita interna → L-41). Daily job 12/06
->   verificado ✓ (`wonsBackfilled:1` = F10 auto-reparó; counts confirman el purge del dueño —
->   verificación live F39 de crmPurgeLead §180 CUMPLIDA).
-> - **2026-06-12 (5:30-6am, misma sesión)**: "continua." (paso 0 mergeado PR #833) → **fase ②
->   paso 1: Reseñas en el portal (§190)** — patrón de migración validado en preview mock (alta/
->   edición/borrado/stats/RBAC). core/audit.js nace (gap 2 §188). Siguiente: banners.
+> - **2026-06-12 (3:35-4am)**: "continua" → **E2E live E5 por Claude** (Playwright contra live;
+>   pipeline completo con evidencia incl. Telegram vía `telegramLastUsedAt`). Commit + merge #832.
+>   Daily job 12/06 ✓ (`wonsBackfilled:1`; counts confirman purge del dueño = F39 §180 cumplida).
+> - **2026-06-12 (4-6am, misma sesión, E6)**: E6.6 auditoría (workflow 16 agentes → §188) →
+>   paso 0 (§189: hallazgo E5-rompió-cita-interna → L-41; deploy + merge #833) → fase ② Reseñas
+>   (§190, merge #834; core/audit.js nace) → fase ② Banners (§191: Storage/WebP core/image.js).
+>   Preview mock ✓ en ambos. Gotcha vigente: emulador zombi en :8081 — matar java antes.

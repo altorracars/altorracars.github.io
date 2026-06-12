@@ -14,6 +14,7 @@ import {
   initializeFirestore, persistentLocalCache, persistentSingleTabManager,
 } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
+import { getStorage } from 'firebase/storage';
 
 export const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyD9MJrON70mPqZxQqhndgQHNkTZUnnaQIs',
@@ -51,3 +52,6 @@ export const db = initializeFirestore(app, {
 
 // Callables del CRM (crmPurgeLead F15, crmRunSlaSweep F37, …).
 export const fns = getFunctions(app, 'us-central1');
+
+// Storage (E6 fase ② §191): uploads de banners/ (rules: auth + <5MB + image/*).
+export const storage = getStorage(app);

@@ -158,6 +158,7 @@ export async function openCitaDetail(ev, { onLead } = {}) {
       sol._tupleConflict ? el('div', { class: 'cita-conflict', text: '⚠️ El cliente confirmó pero el horario CHOCA con otra cita del asesor — reprograma una de las dos.' }) : null,
       sol._requiereReagendar ? el('div', { class: 'cita-conflict', text: '🚗 El carro de esta cita ya no está disponible — ofrece otro o reagenda.' }) : null,
       row('Notas', sol.comentarios || sol.mensaje),
+      row('Observaciones', sol.observaciones),
     ]);
   }
 
@@ -258,6 +259,30 @@ export async function openCitaDetail(ev, { onLead } = {}) {
       );
     });
 
+    // ✏️ Editar / reasignar (gap 7 F23 — sin tocar estado/hora/cupo)
+    const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️ Editar / reasignar' });
+    editBtn.addEventListener('click', async () => {
+      body.replaceChildren(info(), err, el('p', { class: 'u-caption u-muted', text: 'Cambia el asesor o las observaciones sin tocar el estado ni la hora. Reasignar mueve el bloque al asesor nuevo (si está libre).' }));
+      const aSel = await advisorSelect(sol.assignedTo);
+      const obs = el('textarea', { class: 'input', rows: '3', placeholder: 'Observaciones internas de la cita…' });
+      obs.value = sol.observaciones || '';
+      const ok = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: 'Guardar cambios' });
+      const back = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', text: '‹ Volver' });
+      back.addEventListener('click', renderMain);
+      ok.addEventListener('click', () => {
+        const aName = (aSel._advisors || []).find((x) => x.uid === aSel.value)?.nombre || null;
+        run('✏️ Cita actualizada', () => citaAction('update', sol.id, {
+          asesorId: aSel.value || null, asesorName: aName,
+          observaciones: obs.value.trim(),
+        }));
+      });
+      body.append(
+        el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Asesor' }), aSel]),
+        el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Observaciones' }), obs]),
+        el('div', { class: 'nl-actions' }, [back, ok]),
+      );
+    });
+
     // ✖ Cancelar
     const cancelBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✖ Cancelar cita' });
     cancelBtn.addEventListener('click', () => {
@@ -270,7 +295,7 @@ export async function openCitaDetail(ev, { onLead } = {}) {
       body.append(motivo, el('div', { class: 'nl-actions' }, [back, ok]));
     });
 
-    acts.append(wa, confirmBtn, reschedBtn, cancelBtn);
+    acts.append(wa, confirmBtn, reschedBtn, editBtn, cancelBtn);
 
     // Para citas ya confirmadas: cerrar el ciclo del día.
     if (sol.estado !== 'pendiente') {

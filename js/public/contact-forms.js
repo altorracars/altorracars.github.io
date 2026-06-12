@@ -644,6 +644,10 @@ class ContactFormManager {
                 });
             }).catch(function (err) {
                 console.warn('[Solicitudes] Error saving financiacion:', err);
+                // §187 (review #3): liberar el lock anti-double-submit — sin
+                // esto el form quedaba en "Enviando..." para siempre tras un
+                // rechazo (vende SÍ lo hacía; financiación lo olvidaba).
+                self._endSubmit(form);
                 if (window.notify && window.notify.error) {
                     window.notify.error({ title: 'Error', message: 'No pudimos guardar tu solicitud. Verifica tu conexión e inténtalo de nuevo.', duration: 6000 });
                 }

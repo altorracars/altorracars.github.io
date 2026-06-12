@@ -16,7 +16,9 @@ const POLICY_VERSION = 'v1';
  * maxInstances acota el gasto (anti factura runaway).
  */
 exports.onClienteCreated = onDocumentCreated(
-  { document: 'clientes/{uid}', region: 'us-central1', maxInstances: 10 },
+  // §187 retry:true: upsert por dedup + arrayUnion + consent solo-sube —
+  // idempotente material (peor caso: bump espurio de _version/updatedAt).
+  { document: 'clientes/{uid}', region: 'us-central1', maxInstances: 10, retry: true },
   async (event) => {
     const snap = event.data;
     if (!snap) return;
@@ -34,6 +36,11 @@ exports.onClienteCreated = onDocumentCreated(
       const wantedKeys = dedupKeysFor(contact);
 
       await db.runTransaction(async (tx) => {
+        // §187 (review #13): PRIMERA lectura = el doc ORIGEN — el payload del
+        // evento es inmutable en re-entregas (retry:true) y su _crmIngested
+        // miente; sin esto, la rama suprimido/fusión-rota duplicaba contactos.
+        const fresh = await tx.get(snap.ref);
+        if (!fresh.exists || fresh.data()._crmIngested) return;
         const keySnaps = [];
         for (const k of wantedKeys) {
           keySnaps.push({ key: k, snap: await tx.get(db.collection('dedup').doc(k)) });
@@ -77,11 +84,17 @@ exports.onClienteCreated = onDocumentCreated(
         tx.update(snap.ref, { _crmIngested: new Date().toISOString() });
       });
     } catch (err) {
-      await db.collection('failedIngestions').add({
-        sourceCollection: 'clientes', sourceId: uid,
-        error: String(err && err.message || err),
-        payload: cliente, createdAt: new Date().toISOString(), retries: 0, resolved: false,
-      });
+      // §187: ID determinista — con retry:true, .add() inundaría el dead-letter.
+      try {
+        await db.collection('failedIngestions').doc('clientes_' + uid).set({
+          sourceCollection: 'clientes', sourceId: uid,
+          error: String(err && err.message || err),
+          payload: cliente, createdAt: new Date().toISOString(), resolved: false,
+          retries: admin.firestore.FieldValue.increment(1),
+        }, { merge: true });
+      } catch (dlqErr) { // review #15: el DLQ jamás enmascara el error original
+        console.error('[dead-letter clientes] no registrado:', dlqErr.message, '— original:', String(err && err.message || err));
+      }
       throw err; // relanza → reintento con backoff
     }
   }

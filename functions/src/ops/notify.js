@@ -36,11 +36,20 @@ async function sendTelegram(db, token, uid, text, options) {
         inline_keyboard: [[{ text: options.urlLabel || 'Atender ahora', url: options.url }]],
       };
     }
-    const resp = await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+    const send = (body) => fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     });
+    let resp = await send(payload);
+    // SEC-06 §187 — los textos interpolan nombres del FORM PÚBLICO: un '*' o
+    // '`' sin cerrar rompe el parse Markdown (400) y la alerta se perdía en
+    // silencio. Fallback: reintentar UNA vez en texto plano — fea > perdida.
+    if (!resp.ok && resp.status === 400) {
+      const plain = { ...payload };
+      delete plain.parse_mode;
+      resp = await send(plain);
+    }
     if (resp.ok) {
       await db.collection('usuarios').doc(uid).update({ telegramLastUsedAt: new Date().toISOString() });
     }

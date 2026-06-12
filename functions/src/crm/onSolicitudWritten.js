@@ -45,7 +45,9 @@ function citaProjection(sol, solId, startAt, sourceUpdatedAt) {
 }
 
 const onSolicitudWritten = onDocumentWritten(
-  { document: 'solicitudes/{solicitudId}', region: 'us-central1', maxInstances: 10 },
+  // §187 retry:true: proyección con ID determinista + guard de orden
+  // `prev >= updateTime` (B.4) — re-entregas y eventos viejos son no-op.
+  { document: 'solicitudes/{solicitudId}', region: 'us-central1', maxInstances: 10, retry: true },
   async (event) => {
     const after = event.data.after.exists ? event.data.after.data() : null;
     if (!after) return; // delete: la activity histórica se queda (purga = F15/F28)

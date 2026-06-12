@@ -124,20 +124,31 @@ exports.onNewSolicitud = onDocumentCreated({
         return;
     }
 
-    const nombre = sol.nombre || 'Sin nombre';
-    const telefono = sol.telefono || 'No proporcionado';
-    const prefijo = sol.prefijoPais || '';
-    const email = sol.email || 'No proporcionado';
-    const fecha = sol.fecha || 'No aplica';
-    const hora = sol.hora || 'No aplica';
-    const vehiculo = sol.vehiculo || 'General';
-    const tipo = sol.tipo || 'consulta_general';
-    const origen = sol.origen || 'index';
-    const comentarios = sol.comentarios || sol.mensaje || 'Ninguno';
+    // SEC-06 §187 — TODO input del form público se escapa ANTES de entrar al
+    // HTML del email (inyección de HTML en el inbox del admin). Una sola vez,
+    // en el origen; los labels (getTipoLabel/getOrigenLabel) reciben el valor
+    // escapado: si matchea el mapa devuelve el label fijo; si no, el raw ya
+    // viene neutralizado.
+    const escapeHtml = (s) => String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const nombre = escapeHtml(sol.nombre || 'Sin nombre');
+    const telefono = escapeHtml(sol.telefono || 'No proporcionado');
+    const prefijo = escapeHtml(sol.prefijoPais || '');
+    const email = escapeHtml(sol.email || 'No proporcionado');
+    const fecha = escapeHtml(sol.fecha || 'No aplica');
+    const hora = escapeHtml(sol.hora || 'No aplica');
+    const vehiculo = escapeHtml(sol.vehiculo || 'General');
+    const tipo = escapeHtml(sol.tipo || 'consulta_general');
+    const origen = escapeHtml(sol.origen || 'index');
+    const comentarios = escapeHtml(sol.comentarios || sol.mensaje || 'Ninguno');
 
     // Build extra data rows for specific types
     let extraRows = '';
-    const datos = sol.datosExtra || {};
+    const datos = {};
+    Object.keys(sol.datosExtra || {}).forEach(function (k) {
+        datos[k] = escapeHtml(sol.datosExtra[k] == null ? '' : sol.datosExtra[k]);
+    });
     if (tipo === 'financiacion' || tipo === 'financiacion_admin') {
         if (datos.precioVehiculo) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Precio vehiculo</td><td style="padding:8px 0">$' + datos.precioVehiculo + '</td></tr>';
         if (datos.cuotaInicial) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Cuota inicial</td><td style="padding:8px 0">$' + datos.cuotaInicial + '</td></tr>';
@@ -153,7 +164,10 @@ exports.onNewSolicitud = onDocumentCreated({
         if (datos.precioEsperado) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Precio esperado</td><td style="padding:8px 0">$' + datos.precioEsperado + '</td></tr>';
     }
 
-    const subject = 'Nueva solicitud: ' + nombre + ' — ' + getTipoLabel(tipo);
+    // review #18: el subject es un HEADER de texto plano — entidades HTML
+    // ("O&#39;Brien") no se decodifican; usar el crudo sin saltos de línea.
+    const subjectNombre = String(sol.nombre || 'Sin nombre').replace(/[\r\n]+/g, ' ').slice(0, 120);
+    const subject = 'Nueva solicitud: ' + subjectNombre + ' — ' + getTipoLabel(tipo);
 
     const html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
         + '<div style="background:#1a1a2e;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center">'
@@ -241,12 +255,16 @@ exports.onSolicitudStatusChanged = onDocumentUpdated({
         return;
     }
 
-    const nombre = after.nombre || 'Cliente';
-    const fecha = after.fecha || '';
-    const hora = after.hora || '';
-    const vehiculo = after.vehiculo || 'General';
-    const tipoLabel = getTipoLabel(after.tipo);
-    const observaciones = after.observaciones || '';
+    // SEC-06 §187 — escape en el origen (email AL CLIENTE; el form es público).
+    const escapeHtml = (s) => String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const nombre = escapeHtml(after.nombre || 'Cliente');
+    const fecha = escapeHtml(after.fecha || '');
+    const hora = escapeHtml(after.hora || '');
+    const vehiculo = escapeHtml(after.vehiculo || 'General');
+    const tipoLabel = escapeHtml(getTipoLabel(after.tipo));
+    const observaciones = escapeHtml(after.observaciones || '');
 
     // Status-specific email content
     const statusConfig = {
@@ -432,7 +450,10 @@ exports.onVehiclePriceAlert = onDocumentUpdated({
             continue;
         }
 
-        const nombre = clientData.nombre || 'Cliente';
+        // SEC-06 §187 — nombre viene del registro público de cuenta: escapar.
+        const nombre = String(clientData.nombre || 'Cliente')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         const formattedOld = '$' + oldPrice.toLocaleString('es-CO');
         const formattedNew = '$' + newPrice.toLocaleString('es-CO');
         const formattedDrop = '$' + priceDrop.toLocaleString('es-CO');

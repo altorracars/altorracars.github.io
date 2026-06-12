@@ -22,7 +22,9 @@ const { dedupKeysFor, ensureDedupEntries, removeDedupEntries } = require('./cont
  */
 
 const onContactWritten = onDocumentWritten(
-  { document: 'contacts/{contactId}', region: 'us-central1', maxInstances: 10 },
+  // §187 retry:true: el mantenimiento del índice es CONVERGENTE (espejo por
+  // igualdad, create-if-absent, delete por query) — re-ejecutar es no-op.
+  { document: 'contacts/{contactId}', region: 'us-central1', maxInstances: 10, retry: true },
   async (event) => {
     const after = event.data.after.exists ? event.data.after.data() : null;
     const contactId = event.params.contactId;

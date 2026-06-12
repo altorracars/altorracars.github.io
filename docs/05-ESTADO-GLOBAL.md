@@ -3,19 +3,19 @@
 > **Nodo: signos vitales.** AUTO-CARGA (con `CLAUDE.md` + `10`). Tablero, no bitácora: solo señales
 > ACTUALES (pisar, no apilar); lo histórico vive en `99` (ADR). Tope ~25 líneas / ~2.8k chars (§G.5).
 
-| Señal | Valor (última actualización: **2026-06-11 madrugada**) |
+| Señal | Valor (última actualización: **2026-06-12 madrugada**) |
 |---|---|
-| **Build** | 🟢 **CRM §176: E0→E4 COMPLETAS ✅** (§177-§186). E4: post-venta F10 + agregado vehículo F25 (badge 'Apartado' en web) + colisión F26 + Comisiones F42. **FIX: pipeline de páginas estáticas roto desde 25/05** (yml). Pendiente commit local + merge del cliente. Retomar: **"continúa E5"** (blindaje). |
-| **Cache version vigente** | **`v20260611031500`** (§186). SW == cache-manager ✅. Ctrl+Shift+R la 1ª vez. |
-| **Branch activa** | `refactor/estructura` — mergeado a `main` hasta §185 (`4b68f2a` ✓); **E4 (§186) aún sin commit/merge**. Deploys firebase = Claude (§1). |
-| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + **Post-venta** · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · daily/hourly jobs · **22 functions CRM LIVE** (+`crmCrearBorradorRetoma`; `onDealUpdated` ahora con retry). Rules+índice E4 desplegados. |
+| **Build** | 🟢 **CRM §176: E0→E5 COMPLETAS ✅** (§177-§187). E5 **DESPLEGADA + E2E live ✓** (12/06: submit Playwright contra live, ticket `VMVMJG…` — rules aceptan, ingestión+email+Telegram verificados) + **COMMIT local hecho**. Pendiente: push/merge del cliente. Retomar: **"continúa E6"** (cutover). |
+| **Cache version vigente** | **`v20260612041500`** (§187). SW == cache-manager ✅. Ctrl+Shift+R tras merge. |
+| **Branch activa** | `refactor/estructura` — E4 en `main` (PR #830 ✓ + cron `1d29533`). **E5 (§187) commiteada local, pendiente push/merge del cliente**. Deploys firebase = Claude (§1). |
+| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos
 - 🔒 **Blindaje** (canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor · SEC-01 RBAC-read pendiente (→E5) · Legal `42` (gate abogado, F14 en E3 lo necesita).
-- 🟡 **Festivos**: migrados al SSoT SOLO cuando el dueño toque **"🇨🇴 Cargar festivos 2026"** (portal→Disponibilidad). Hasta entonces el validador clásico no avisa festivos (la web tampoco los bloqueaba — ventana benigna, §184.7).
 - 🔴 **Billing GCP se cayó ~2h el 2026-06-09** (recuperado, L-38). **Causa SIN identificar (cliente: console.cloud.google.com/billing)** o se repetirá.
-- 🧹 Cliente: merge tanda 2 + Ctrl+Shift+R + clic festivos + anunciar F42.
-- ✅ Verificar mañana: 1ª corrida `crmDailyJob` 5am (digest F28 v2 en `crm_alerts`; fantasmas feb-abr + basura feb de availability deben desaparecer + reconcile dedup backfillea contactos existentes).
+- 🧹 Cliente: push/merge E5 + Ctrl+Shift+R + descartar lead de prueba `VMVMJG…` (Bandeja → spam_prueba) + anunciar F42. (Festivos ✅ cargados 12/06 — verificado en `config/availability`.)
+- ✅ Verificar HOY 12/06 tras 5am: 1ª corrida `crmDailyJob` con bloques E4 (digest F28 v2 en `crm_alerts`; fantasmas feb-abr fuera + reconcile dedup backfillea).
+- 📊 App Check: 403 de reCAPTCHA al bot del E2E = esperado (monitor OK); gate de enforce con tráfico humano → lóbulo `41`.
 - ⚖️ Texto legal PÚBLICO de supresión/privacidad = gate P4 (abogado, `42-LEGAL`) — el mecanismo F14 ya está live.
 - cron↔cache = patrón conocido (L-02, hija `31-LECCIONES-GIT`).
 

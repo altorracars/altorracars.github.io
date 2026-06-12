@@ -234,7 +234,14 @@ export async function openCitaDetail(ev, { onLead } = {}) {
     const reschedBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🔁 Reprogramar' });
     reschedBtn.addEventListener('click', async () => {
       body.replaceChildren(info(), err, el('p', { class: 'u-caption u-muted', text: 'Al reprogramar, el link viejo de confirmación deja de servir y el cliente debe re-confirmar.' }));
-      const [av, booked] = await Promise.all([fetchAvailability(), fetchBookedSlots()]);
+      // §187: sin catch, un fallo aquí dejaba el modal colgado en silencio.
+      let av, booked;
+      try {
+        [av, booked] = await Promise.all([fetchAvailability(), fetchBookedSlots()]);
+      } catch (e) {
+        fail('No se pudo cargar la disponibilidad — revisa tu conexión y reintenta.');
+        return;
+      }
       const picker = slotPicker(av, booked, {});
       const ok = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '🔁 Mover cita' });
       const back = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', text: '‹ Volver' });
@@ -301,9 +308,17 @@ export async function openCitaCreate(lead, { onDone } = {}) {
   ]);
   const { close } = modal('📅 Agendar cita', lead.fullName || 'Cliente', [body]);
 
-  const [av, booked, aSel, vSel] = await Promise.all([
-    fetchAvailability(), fetchBookedSlots(), advisorSelect(lead.ownerId), vehicleSelect(lead.vehicleOfInterestId),
-  ]);
+  // §187: sin catch, un fallo aquí dejaba el modal colgado en silencio.
+  let av, booked, aSel, vSel;
+  try {
+    [av, booked, aSel, vSel] = await Promise.all([
+      fetchAvailability(), fetchBookedSlots(), advisorSelect(lead.ownerId), vehicleSelect(lead.vehicleOfInterestId),
+    ]);
+  } catch (e) {
+    body.append(err);
+    fail('No se pudo cargar la disponibilidad — revisa tu conexión y vuelve a abrir el diálogo.');
+    return;
+  }
   const picker = slotPicker(av, booked, {});
   const tipo = el('select', { class: 'select' }, [
     el('option', { value: 'visita', text: 'Visita al concesionario' }),

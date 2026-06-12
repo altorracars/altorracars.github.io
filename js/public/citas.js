@@ -199,7 +199,7 @@ class AppointmentSystem {
                             <label class="form-section-label">Tus datos</label>\
                             <div class="appointment-form-group">\
                                 <label class="form-label required">Nombre completo</label>\
-                                <input type="text" name="nombre" class="form-input" required placeholder="Ej: Juan Perez">\
+                                <input type="text" name="nombre" class="form-input" required maxlength="120" placeholder="Ej: Juan Perez">\
                             </div>\
                             <div class="appointment-form-row">\
                                 <div class="appointment-form-group" style="flex:0 0 110px;">\
@@ -224,7 +224,7 @@ class AppointmentSystem {
                             </div>\
                             <div class="appointment-form-group">\
                                 <label class="form-label">Email</label>\
-                                <input type="email" name="email" class="form-input" placeholder="correo@ejemplo.com">\
+                                <input type="email" name="email" class="form-input" maxlength="254" placeholder="correo@ejemplo.com">\
                                 <span class="form-hint">Te notificaremos por correo electronico y WhatsApp</span>\
                             </div>\
                         </div>\
@@ -240,7 +240,7 @@ class AppointmentSystem {
                         </div>\
                         <div class="form-section">\
                             <label class="form-section-label">Comentarios (opcional)</label>\
-                            <textarea name="comentarios" class="form-textarea" rows="2" placeholder="Alguna solicitud especial?"></textarea>\
+                            <textarea name="comentarios" class="form-textarea" rows="2" maxlength="3000" placeholder="Alguna solicitud especial?"></textarea>\
                         </div>\
                         <div class="appointment-notice">\
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">\
@@ -458,6 +458,18 @@ class AppointmentSystem {
         var hora = formData.get('hora');
         var comentarios = formData.get('comentarios') || 'Ninguno';
 
+        // §187 (review #1): validar los caps de las rules ANTES de reservar el
+        // cupo — un create rechazado después de reservar filtra el slot hasta
+        // el rebuild nocturno. Espejo de solCapOk (nombre 120, email 254,
+        // comentarios 3000).
+        if ((nombre && nombre.length > 120) || (email && email.length > 254)
+            || (comentarios && comentarios.length > 3000)) {
+            if (window.notify) window.notify.error({ title: 'Texto demasiado largo', message: 'Acorta el nombre, email o comentarios e intenta de nuevo.', duration: 6000 });
+            else alert('El texto es demasiado largo. Acorta el nombre, email o comentarios.');
+            form._inFlight = false;
+            return;
+        }
+
         var self = this;
         var submitBtn = form.querySelector('.btn-submit-appointment');
         if (submitBtn) {
@@ -465,8 +477,22 @@ class AppointmentSystem {
             submitBtn.textContent = 'Reservando...';
         }
 
+        // §187 (review #0): la reserva exige auth (SEC-08) y la sesión anónima
+        // NO está garantizada (logout explícito la salta — auth.js:1228 — o
+        // auth.js pudo no cargar). Auto-sanar antes de reservar.
+        var authReady = Promise.resolve();
+        try {
+            if (window.auth && !window.auth.currentUser) {
+                authReady = window.auth.signInAnonymously().catch(function () {});
+            }
+        } catch (e) { /* best-effort */ }
+
         // Atomic booking: reserve the slot first, then save the solicitud
-        this.bookSlotAtomically(fecha, hora).then(function() {
+        var slotReserved = false;
+        authReady.then(function() {
+            return self.bookSlotAtomically(fecha, hora);
+        }).then(function() {
+            slotReserved = true;
             var identity = self._identityPayload();
             var src = self._sourcePayload('cita_vehiculo');
             var _wm = function (d) {
@@ -498,6 +524,10 @@ class AppointmentSystem {
             self.showConfirmation(modal, nombre, fecha, hora);
         }).catch(function(err) {
             console.error('[Citas] Error al agendar:', err);
+            // §187 (review #1): si la solicitud falló DESPUÉS de reservar,
+            // liberar el cupo — sin esto el usuario choca con SU propio slot
+            // fantasma al reintentar (hasta el rebuild nocturno).
+            if (slotReserved) self.releaseSlotBestEffort(fecha, hora);
             if (err && err.message === 'SLOT_TAKEN') {
                 alert('Lo sentimos, este horario acaba de ser reservado por otra persona. Por favor selecciona otro horario.');
             } else {
@@ -509,6 +539,25 @@ class AppointmentSystem {
             }
             form._inFlight = false; // MF2.3 release lock on error
         });
+    }
+
+    // §187 (review #1): liberación best-effort del cupo recién reservado
+    // cuando el create de la solicitud es rechazado. Update de UNA clave-fecha
+    // (pasa la rama pública de SEC-08); si falla, el rebuild nocturno F17c
+    // lo sana igual.
+    releaseSlotBestEffort(fecha, hora) {
+        try {
+            var bookedRef = window.db.collection('config').doc('bookedSlots');
+            window.db.runTransaction(function(transaction) {
+                return transaction.get(bookedRef).then(function(doc) {
+                    if (!doc.exists) return;
+                    var daySlots = (doc.data()[fecha] || []).filter(function(h) { return h !== hora; });
+                    var update = {};
+                    update[fecha] = daySlots;
+                    transaction.update(bookedRef, update);
+                });
+            }).catch(function () {});
+        } catch (e) { /* best-effort */ }
     }
 
     // ===== ATOMIC SLOT BOOKING =====

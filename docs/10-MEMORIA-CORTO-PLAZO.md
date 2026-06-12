@@ -17,16 +17,15 @@
 > en boot, NO regex 5c para el BFS.
 
 > 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0→E5 ✅ en main. E6 EN CURSO**: E6.6 ✅ (§188) →
-> paso 0 ✅ (§189) → **fase ② CÓDIGO COMPLETO: Reseñas (§190) + Banners (§191)** — patrón del
-> strangler validado ×2 (shape verbatim + RBAC espejo + mock + audit + Storage/WebP en banners).
-> SIGUIENTE: (1) **gate de cierre de fase ②** (tras F39 live del dueño): ocultar/readonly las
-> secciones Banners y Reseñas del CLÁSICO ("cero ediciones por la vía vieja"); (2) **fase ③**:
-> brands (S) → lists→#/config (S) → **vehicles (L, épica propia: wizard 6 pasos + drafts +
-> smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema)** → dealers (M, decisión
-> de métricas) → backup inventario (S) → **decisión financiera del dueño (gap 8)** → ④ → cutover.
-> ✅ Verificar (F39, próxima sesión): **reseña real desde #/resenas** y **banner real con imagen
-> desde #/banners** → aparecen en la web SIN Ctrl+Shift+R (módulos §190/§191 + cacheSignal §189 +
-> Storage) · cita interna walk-in · onUsuarioBloqueadoSync al 1er bloqueo.
+> paso 0 ✅ (§189) → fase ② código ✅ (Reseñas §190 + Banners §191) → **fase ③ p1 ✅: Marcas
+> (§192)**. Patrón validado ×3. SIGUIENTE: (1) **gate de cierre de fase ②** (tras F39 live del
+> dueño): ocultar/readonly Banners+Reseñas del CLÁSICO; (2) **fase ③ p2: Atributos/listas**
+> (`config/listas` → #/config; lector dynamic-lists.js se MANTIENE); (3) **vehicles — L, ÉPICA
+> PROPIA EN SESIÓN FRESCA** (wizard 6 pasos + drafts + smart-fields + gate CI
+> generate-vehicles.mjs sin diffs de esquema) → dealers (M) → backup (S) → **decisión financiera
+> del dueño (gap 8)** → ④ RBAC/usuarios → cutover (stub redirect, NUNCA borrar admin.html).
+> ✅ Verificar (F39): reseña + banner con imagen + editar una marca desde el portal → web SIN
+> Ctrl+Shift+R (§190/§191/§192 + cacheSignal) · cita walk-in · bloqueo real.
 > ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
 > 2FA portal (R-9) · vista Inicio (gap 3). Gates: F32 móvil · F33b piloto 1 semana · manual.
 > 🚫 Callejones E6.6: NO borrar admin-calendar-config (inyectado en público para el bot,
@@ -86,7 +85,7 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 > - **2026-06-12 (3:35-4am)**: "continua" → **E2E live E5 por Claude** (Playwright contra live;
 >   pipeline completo con evidencia incl. Telegram vía `telegramLastUsedAt`). Commit + merge #832.
 >   Daily job 12/06 ✓ (`wonsBackfilled:1`; counts confirman purge del dueño = F39 §180 cumplida).
-> - **2026-06-12 (4-6am, misma sesión, E6)**: E6.6 auditoría (workflow 16 agentes → §188) →
+> - **2026-06-12 (4-6:30am, misma sesión, E6)**: E6.6 auditoría (workflow 16 agentes → §188) →
 >   paso 0 (§189: hallazgo E5-rompió-cita-interna → L-41; deploy + merge #833) → fase ② Reseñas
->   (§190, merge #834; core/audit.js nace) → fase ② Banners (§191: Storage/WebP core/image.js).
->   Preview mock ✓ en ambos. Gotcha vigente: emulador zombi en :8081 — matar java antes.
+>   (§190, merge #834; core/audit.js nace) → Banners (§191, merge #835: Storage/WebP) → fase ③
+>   Marcas (§192). Preview mock ✓ ×3. Gotcha vigente: emulador zombi :8081 — matar java antes.

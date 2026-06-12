@@ -5,9 +5,9 @@
 
 | Señal | Valor (última actualización: **2026-06-12 madrugada**) |
 |---|---|
-| **Build** | 🟢 **CRM §176: E0→E5 ✅ en main. E6 EN CURSO**: E6.6 ✅ (§188) · paso 0 ✅ (§189) · **fase ② CÓDIGO COMPLETO: Reseñas (§190, en main PR #834) + Banners (§191, commit local)**. Siguiente: gate de fase ② (tras F39 live) + **fase ③** (brands→lists→vehicles-L→dealers). |
+| **Build** | 🟢 **CRM §176: E0→E5 ✅ en main. E6 EN CURSO**: E6.6 ✅ · paso 0 ✅ · fase ② ✅ (§190-§191, en main) · **fase ③ p1 ✅: Marcas (§192, commit local)**. Siguiente: gate fase ② (tras F39) + lists (S) + **vehicles = ÉPICA EN SESIÓN FRESCA**. |
 | **Cache version vigente** | **`v20260612052500`** (§188 paso 0). SW == cache-manager ✅. Ctrl+Shift+R tras merge. |
-| **Branch activa** | `refactor/estructura` — Reseñas en `main` (PR #834 ✓). **Banners (commit local) pendiente push/merge del cliente.** Deploys firebase = Claude (§1). |
+| **Branch activa** | `refactor/estructura` — Banners en `main` (PR #835 ✓). **Marcas (commit local) pendiente push/merge del cliente.** Deploys firebase = Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

@@ -19,6 +19,7 @@ import './styles/contactos.css';
 import './styles/config.css';
 import './styles/reviews.css';
 import './styles/banners.css';
+import './styles/brands.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -35,12 +36,13 @@ import { mountDetailPanel } from './modules/contacts/contacts.ui.js';
 import { mountConfig } from './modules/config/config.ui.js';
 import { mountReviews } from './modules/reviews/reviews.ui.js';
 import { mountBanners } from './modules/banners/banners.ui.js';
+import { mountBrands } from './modules/brands/brands.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, marcas: mountBrands };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

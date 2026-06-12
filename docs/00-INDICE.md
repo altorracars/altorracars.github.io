@@ -285,6 +285,7 @@
 | §189 | **E6 paso 0 EJECUTADO**: cacheSignal ×4 (system/meta llevaba 13 días stale) · onUsuarioBloqueadoSync (bloqueado→Auth disable) + loginAttempts CERRADO + portal expulsa bloqueados · **fix: E5 había ROTO la cita interna** (createdBy no censado → L-41) + kind:'cita' + convert legacy retirado · desc-gen/color-extract fuera. 192 tests. Cache `v20260612052500`. Deploy ✅. F39 live: edición inventario / walk-in / 1er bloqueo | 43310 |
 | §190 | **E6 fase ② p1 — Reseñas en el portal** (1er módulo público migrado, patrón validado): shape VERBATIM del lector público + RBAC reviews.* + mock + **core/audit.js NUEVO** (no perder auditoría; semilla fase ④) + `#/resenas`. Preview mock ✓. F39 live doble: reseña real valida módulo + cacheSignal | 43322 |
 | §191 | **E6 fase ② p2 — Banners (código fase ② COMPLETO)**: solo posiciones VIVAS (promocional limit-3 + home_promo; hero/categoria write-only NO se portan) · **core/image.js** WebP + storage export · `_version` preservado · Ocultar≠Borrar. Preview mock ✓. Gate de fase tras F39: ocultar ambas secciones del clásico. Siguiente: fase ③ | 43334 |
+| §192 | **E6 fase ③ p1 — Marcas en el portal**: docId=slug (en vivo, acentos ok) · `_version`/validVersion preservado · resolvers de logos legacy + LOCAL_LOGOS · upload `cars/brand_logo_*` (WebP 512/SVG) · conteo de vehículos por marca · **guard de borrado con inventario** (mejora vs clásico). Preview mock ✓. Siguiente: lists (S) → vehicles (L, SESIÓN FRESCA) | 43346 |
 
 ---
 

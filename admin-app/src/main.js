@@ -20,6 +20,7 @@ import './styles/config.css';
 import './styles/reviews.css';
 import './styles/banners.css';
 import './styles/brands.css';
+import './styles/lists.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -37,12 +38,13 @@ import { mountConfig } from './modules/config/config.ui.js';
 import { mountReviews } from './modules/reviews/reviews.ui.js';
 import { mountBanners } from './modules/banners/banners.ui.js';
 import { mountBrands } from './modules/brands/brands.ui.js';
+import { mountLists } from './modules/lists/lists.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, marcas: mountBrands };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, marcas: mountBrands, atributos: mountLists };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

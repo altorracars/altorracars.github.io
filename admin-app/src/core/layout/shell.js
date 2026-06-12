@@ -27,6 +27,8 @@ const NAV = [
   { id: 'banners', label: 'Banners', icon: '🖼️', ready: true, perm: 'banners.read' },
   // E6 fase ③ §188: inventario — marcas primero (el form de vehículos las necesita).
   { id: 'marcas', label: 'Marcas', icon: '🏷️', ready: true, perm: 'brands.read' },
+  // E6 fase ③ p2: editor de config/listas (rules: super_admin / settings.* — any-of).
+  { id: 'atributos', label: 'Atributos', icon: '🧩', ready: true, perm: ['settings.theme', 'settings.seo', 'settings.backup'] },
 ];
 
 const TITLES = {
@@ -39,6 +41,7 @@ const TITLES = {
   resenas: 'Reseñas del sitio',
   banners: 'Banners del sitio',
   marcas: 'Marcas del inventario',
+  atributos: 'Atributos del inventario',
 };
 
 export function mountShell(appRoot) {
@@ -49,7 +52,8 @@ export function mountShell(appRoot) {
     el('span', { class: 'sidebar__sub u-caption', text: 'CRM' }),
   ]);
   const nav = el('nav', { class: 'sidebar__nav', 'aria-label': 'Secciones' });
-  NAV.filter((item) => !item.perm || hasPermission(item.perm)).forEach((item) => {
+  // perm: string o array (any-of) — '*' pasa siempre vía hasPermission.
+  NAV.filter((item) => !item.perm || [].concat(item.perm).some(hasPermission)).forEach((item) => {
     const btn = el('button', { class: 'navitem', type: 'button', disabled: !item.ready }, [
       el('span', { class: 'navitem__icon', 'aria-hidden': 'true', text: item.icon }),
       el('span', { class: 'navitem__label', text: item.label }),

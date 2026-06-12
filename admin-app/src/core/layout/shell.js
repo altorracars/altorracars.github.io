@@ -29,6 +29,8 @@ const NAV = [
   { id: 'marcas', label: 'Marcas', icon: '🏷️', ready: true, perm: 'brands.read' },
   // E6 fase ③ p2: editor de config/listas (rules: super_admin / settings.* — any-of).
   { id: 'atributos', label: 'Atributos', icon: '🧩', ready: true, perm: ['settings.theme', 'settings.seo', 'settings.backup'] },
+  // D4-09b: export/restore F34 — el server exige super_admin en los callables.
+  { id: 'respaldos', label: 'Respaldos', icon: '💾', ready: true, perm: 'settings.backup' },
 ];
 
 const TITLES = {
@@ -42,6 +44,7 @@ const TITLES = {
   banners: 'Banners del sitio',
   marcas: 'Marcas del inventario',
   atributos: 'Atributos del inventario',
+  respaldos: 'Respaldos del CRM e inventario',
 };
 
 export function mountShell(appRoot) {

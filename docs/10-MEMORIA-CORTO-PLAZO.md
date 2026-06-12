@@ -17,16 +17,17 @@
 > en boot, NO regex 5c para el BFS.
 
 > 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0→E5 ✅ en main. E6 EN CURSO**: E6.6 ✅ (§188) →
-> paso 0 ✅ (§189) → fase ② código ✅ (Reseñas §190 + Banners §191) → **fase ③: Marcas ✅ (§192,
-> main) + Atributos ✅ (§194, commit local)**. Patrón validado ×4. SIGUIENTE: (1) **gates ②/③**
-> (tras F39 live del dueño — verificado 12/06: auditLog SIN evidencia aún, solo login): ocultar/
-> readonly Banners+Reseñas+Marcas+Atributos del CLÁSICO; (2) **vehicles — L, ÉPICA PROPIA EN
-> SESIÓN FRESCA** (wizard 6 pasos + drafts + smart-fields + gate CI generate-vehicles.mjs sin
-> diffs de esquema) → dealers (M) → backup (S) → **decisión financiera del dueño (gap 8)** →
-> ④ RBAC/usuarios (departamental §193.4) → cutover (stub redirect, NUNCA borrar admin.html).
+> paso 0 ✅ (§189) → fase ② código ✅ (§190-§191) → **fase ③: Marcas §192 + Atributos §194 en
+> main · backup inventario ✅ §195 (ADELANTADO con justificación 195.7; deploy ✓, commit local)**.
+> Patrón validado ×5. SIGUIENTE: (1) **gates ②/③** (tras F39 live del dueño — verificado 12/06
+> ×2: auditLog SIN evidencia, solo login): ocultar/readonly Banners+Reseñas+Marcas+Atributos del
+> CLÁSICO; (2) **vehicles — L, ÉPICA PROPIA EN SESIÓN FRESCA** (wizard 6 pasos + drafts +
+> smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema) → dealers (M, decisión
+> D5-03 del dueño) → **decisión financiera (gap 8)** → ④ RBAC/usuarios (departamental §193.4)
+> → cutover (stub redirect, NUNCA borrar admin.html).
 > ✅ Verificar (F39): reseña + banner con imagen + editar marca + editar una lista (#/atributos)
-> desde el portal → web SIN Ctrl+Shift+R (§190-§192 cacheSignal; listas = TTL ≤5 min §194) ·
-> cita walk-in · bloqueo real.
+> + crear un respaldo manual (#/respaldos) → web SIN Ctrl+Shift+R (§190-§192 cacheSignal;
+> listas TTL ≤5 min §194) · cita walk-in · bloqueo real. Daily 13/06: counts con vehiculos/marcas.
 > ⚖️ Decisiones del dueño §193 (siembra post-panel): bot SIN fallback gratuito + solo Claude
 > (R-1 resuelta) · fase ④ hereda RBAC DEPARTAMENTAL (§193.4, comparar con cerebro Bersaglio).
 > ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
@@ -85,20 +86,17 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC 2026-06-12: §184-§187 consolidados y podados de aquí (detalle → `00-INDICE` → `99`). Vivo:
+> GC 2026-06-12 ×2: §184-§193 consolidados y podados (detalle → `00-INDICE` → `99`). Vivo:
 >
-> - **2026-06-12 (3:35-4am)**: "continua" → **E2E live E5 por Claude** (Playwright contra live;
->   pipeline completo con evidencia incl. Telegram vía `telegramLastUsedAt`). Commit + merge #832.
->   Daily job 12/06 ✓ (`wonsBackfilled:1`; counts confirman purge del dueño = F39 §180 cumplida).
-> - **2026-06-12 (4-6:30am, misma sesión, E6)**: E6.6 auditoría (workflow 16 agentes → §188) →
->   paso 0 (§189: hallazgo E5-rompió-cita-interna → L-41; deploy + merge #833) → fase ② Reseñas
->   (§190, merge #834; core/audit.js nace) → Banners (§191, merge #835: Storage/WebP) → fase ③
->   Marcas (§192, merge #836). Preview mock ✓ ×3. Gotcha: emulador zombi :8081 — matar java.
-> - **2026-06-12 (6:40am, RELEVO pedido por el dueño)**: siembra §193 (bot solo-Claude sin
->   fallback gratuito = R-1 resuelta · fábrica de skills TODO-22 · web CMS-izada TODO-23 · RBAC
->   departamental → fase ④).
+> - **2026-06-12 (3:35-6:40am)**: E2E live E5 ✓ (merge #832, daily 12/06 ✓) → E6.6 auditoría
+>   (§188) → paso 0 (§189, L-41) → Reseñas §190 → Banners §191 → Marcas §192 (merges #833-836)
+>   → siembra §193 (R-1, TODO-22/23, RBAC dep.). Gotcha: emulador zombi :8081 — matar java.
 > - **2026-06-12 (~7:25am, sesión nueva)**: "continua" → gate fase ② verificado (auditLog: solo
 >   login del dueño 11:05Z, SIN F39 aún → gate abierto) → **fase ③ p2 ✅: Atributos (§194)**,
 >   ruta propia `#/atributos` (desviación deliberada del "→ #/config" — razón en §194.2).
->   Preview mock ✓ (13 tarjetas, modal de opciones en uso, validaciones) + build ✓. Commit local.
+>   Preview mock ✓ + build ✓. Merge #837 del dueño.
+> - **2026-06-12 (~8:40am, misma sesión + relevo por cierre accidental de Claude)**: "continua"
+>   → F39 re-verificado (vacío) → **backup inventario ✅ (§195)**: CRM_COLLECTIONS +vehiculos/
+>   marcas, CONFIG_DOCS +listas, módulo `#/respaldos` (restore dry-run-first). Tests 127 ✓ ·
+>   preview mock ✓ · **deploy functions ✓**. Commit local.
 >   **Retomar: "continua"** → gates ②/③ (si F39 del dueño hechos) → **vehículos en SESIÓN FRESCA**.

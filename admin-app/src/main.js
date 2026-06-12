@@ -21,6 +21,7 @@ import './styles/reviews.css';
 import './styles/banners.css';
 import './styles/brands.css';
 import './styles/lists.css';
+import './styles/backup.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -39,12 +40,13 @@ import { mountReviews } from './modules/reviews/reviews.ui.js';
 import { mountBanners } from './modules/banners/banners.ui.js';
 import { mountBrands } from './modules/brands/brands.ui.js';
 import { mountLists } from './modules/lists/lists.ui.js';
+import { mountBackup } from './modules/backup/backup.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, marcas: mountBrands, atributos: mountLists };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, marcas: mountBrands, atributos: mountLists, respaldos: mountBackup };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

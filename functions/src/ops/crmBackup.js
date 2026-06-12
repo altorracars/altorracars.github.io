@@ -20,8 +20,12 @@ const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 const zlib = require('zlib');
 
-const CRM_COLLECTIONS = ['contacts', 'leads', 'deals', 'activities', 'solicitudes', 'subscriptions'];
-const CONFIG_DOCS = ['bookedSlots', 'availability', 'calendarConfig'];
+// D4-09b (§188): vehiculos/marcas entran a la red ANTES de la épica del
+// wizard de vehículos — el daily job (5am) los respalda desde ya. El restore
+// de vehiculos solo dispara onVehiculoWrittenSignal (benigno, throttled 10s);
+// vehicleAggregate escucha deals, no pelea con un restore.
+const CRM_COLLECTIONS = ['contacts', 'leads', 'deals', 'activities', 'solicitudes', 'subscriptions', 'vehiculos', 'marcas'];
+const CONFIG_DOCS = ['bookedSlots', 'availability', 'calendarConfig', 'listas'];
 const MAX_DOCS_PER_COLLECTION = 5000; // backstop free-tier; si se alcanza, el export avisa (no trunca en silencio)
 const BATCH_SIZE = 400;
 

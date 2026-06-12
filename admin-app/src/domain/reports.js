@@ -6,7 +6,7 @@
 // ============================================================
 
 import { channelOf, isClosedStatus, slaState } from './classify.js';
-import { forecast, weighted, OPEN_STAGES } from './pipeline.js';
+import { forecast, weighted, OPEN_STAGES, dealLiquidable } from './pipeline.js';
 import { dayKey } from './agenda.js';
 
 const ms = (iso) => {
@@ -163,6 +163,68 @@ export function trendByDay(rows, days = 30) {
     if (b) b.count++;
   });
   return buckets;
+}
+
+/* ── E4 / F42 — Comisiones desde el CRM ──────────────────────────────────
+ * Política del dueño (aprobada 2026-06-09, anunciada desde E1a): "si no está
+ * registrado en el CRM, no entra a liquidación". Entra = deal GANADO en el
+ * mes con checklist post-venta F10 COMPLETO (dealLiquidable). La base es
+ * commissionSnapshot (congelada server-side al ganar); fallback amount. */
+
+/** 'YYYY-MM' LOCAL del timestamp (mes calendario de Bogotá, no UTC). */
+export function monthKeyOf(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+/** Últimos `count` meses para el selector: [{key:'YYYY-MM', label}]. */
+export function monthOptions(count = 6) {
+  const out = [];
+  const now = new Date();
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const raw = d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+    out.push({ key, label: raw.charAt(0).toUpperCase() + raw.slice(1) });
+  }
+  return out;
+}
+
+/**
+ * F42: liquidación mensual por asesor. `deals` = wons (query dedicada; filtra
+ * el mes por wonAt). Separa LIQUIDABLES (checklist completo) de PENDIENTES
+ * (vendidos con checklist incompleto → aún no entran). `team` resuelve el
+ * nombre desde el ownerId CONGELADO en el snapshot — el ownerName vivo del
+ * deal puede haber sido reasignado después de ganar.
+ */
+export function comisionesPorAsesor(deals, monthKey, team = []) {
+  const won = (deals || []).filter(
+    (d) => d.status === 'won' && monthKeyOf(d.wonAt || d.lastActivityAt) === monthKey
+  );
+  const map = {};
+  won.forEach((d) => {
+    const snap = d.commissionSnapshot || {};
+    const id = snap.ownerId || d.ownerId || '_none';
+    const teamName = (team.find((t) => t.uid === id) || {}).nombre;
+    const row = map[id] || (map[id] = {
+      ownerId: id,
+      ownerName: teamName || d.ownerName || (id === '_none' ? 'Sin asignar' : id),
+      vendidos: 0, liquidables: 0, pendientes: 0,
+      baseLiquidable: 0, basePendiente: 0, deals: [],
+    });
+    const base = Number(snap.amount != null ? snap.amount : d.amount) || 0;
+    const liq = dealLiquidable(d);
+    row.vendidos++;
+    if (liq) { row.liquidables++; row.baseLiquidable += base; }
+    else { row.pendientes++; row.basePendiente += base; }
+    row.deals.push({
+      id: d.id, name: d.name || '', base, liquidable: liq,
+      tipoPago: snap.tipoPago || d.tipoPago || '',
+    });
+  });
+  return Object.values(map)
+    .sort((a, b) => b.baseLiquidable - a.baseLiquidable || b.vendidos - a.vendidos);
 }
 
 /** Opciones del selector de período. value = días (null = Todo). */

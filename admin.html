@@ -903,6 +903,7 @@
                         <select class="search-input" id="vehicleFilterEstado" style="width:auto;min-width:120px;">
                             <option value="">Estado</option>
                             <option value="disponible">Disponible</option>
+                            <option value="apartado">Apartado</option>
                             <option value="reservado">Reservado</option>
                             <option value="vendido">Vendido</option>
                         </select>
@@ -3318,6 +3319,10 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                 <label class="form-label">Estado del vehiculo</label>
                                 <select id="vEstado" class="form-select">
                                     <option value="disponible">Disponible</option>
+                                    <!-- E4 §186: 'apartado' lo gestiona el CRM (agregado de negocios) — disabled:
+                                         se muestra/persiste al editar un apartado, pero no se setea a mano
+                                         (el job nocturno lo revertiria). Hold manual = "Reservado". -->
+                                    <option value="apartado" disabled>Apartado (lo gestiona el CRM)</option>
                                     <option value="reservado">Reservado</option>
                                     <option value="vendido">Vendido</option>
                                     <option value="borrador">Borrador</option>

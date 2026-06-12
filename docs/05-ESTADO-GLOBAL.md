@@ -5,10 +5,10 @@
 
 | Señal | Valor (última actualización: **2026-06-11 madrugada**) |
 |---|---|
-| **Build** | 🟢 **CRM §176: E0→E3 COMPLETAS ✅ LIVE y MERGEADAS** (§177-§185). ⏸️ **Relevo por saturación** → retomar en sesión NUEVA: **"continúa E4"** (F10 post-venta · F25 agregado vehículo · F26 colisión · F42 comisiones — plan en `10` + VEREDICTO bóveda). Cerebro: comité v6 19/21. |
-| **Cache version vigente** | **`v20260610181500`** (§184). SW == cache-manager ✅. Ctrl+Shift+R la 1ª vez. |
-| **Branch activa** | `refactor/estructura` — **TODO mergeado a `main` por el cliente (hasta §185, commit `4b68f2a` ✓ verificado)**. Deploys firebase = Claude (§1). |
-| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 · lead rápido offline · SLA+rotación · **calendario único** (§184) · **CRUD/1581** (editar `_version`, fusión, supresión 72h, índice dedup F40e) · daily/hourly jobs · 21 functions CRM LIVE. |
+| **Build** | 🟢 **CRM §176: E0→E4 COMPLETAS ✅** (§177-§186). E4: post-venta F10 + agregado vehículo F25 (badge 'Apartado' en web) + colisión F26 + Comisiones F42. **FIX: pipeline de páginas estáticas roto desde 25/05** (yml). Pendiente commit local + merge del cliente. Retomar: **"continúa E5"** (blindaje). |
+| **Cache version vigente** | **`v20260611031500`** (§186). SW == cache-manager ✅. Ctrl+Shift+R la 1ª vez. |
+| **Branch activa** | `refactor/estructura` — mergeado a `main` hasta §185 (`4b68f2a` ✓); **E4 (§186) aún sin commit/merge**. Deploys firebase = Claude (§1). |
+| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + **Post-venta** · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · daily/hourly jobs · **22 functions CRM LIVE** (+`crmCrearBorradorRetoma`; `onDealUpdated` ahora con retry). Rules+índice E4 desplegados. |
 
 ## ⚠️ Flags de riesgo activos
 - 🔒 **Blindaje** (canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor · SEC-01 RBAC-read pendiente (→E5) · Legal `42` (gate abogado, F14 en E3 lo necesita).

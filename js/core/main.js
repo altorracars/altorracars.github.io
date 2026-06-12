@@ -587,7 +587,9 @@ function initHeroSearch() {
     function countVehicles(vehicles, labelWords) {
         return vehicles.filter(function(v) {
             if (!v.marca || !v.modelo) return false;
-            if (v.estado && v.estado !== 'disponible') return false;
+            // E4 §186: 'apartado' es visible en el catálogo → el autocomplete
+            // debe contarlo/sugerirlo igual (alineado con database.js).
+            if (v.estado && v.estado !== 'disponible' && v.estado !== 'apartado') return false;
             var h = buildHaystack(v);
             return labelWords.every(function(w) { return wordMatchesInHaystack(w, h); });
         }).length;
@@ -604,7 +606,7 @@ function initHeroSearch() {
         var exact = [], fuzzy = [];
 
         vehicles.forEach(function(v) {
-            if (v.estado && v.estado !== 'disponible') return;
+            if (v.estado && v.estado !== 'disponible' && v.estado !== 'apartado') return;
             if (!v.marca || !v.modelo) return;
 
             var haystack = buildHaystack(v);
@@ -659,7 +661,7 @@ function initHeroSearch() {
                 var lw = r.label.toLowerCase().split(/\s+/);
                 var match = vehicles.filter(function(v) {
                     if (!v.marca || !v.modelo) return false;
-                    if (v.estado && v.estado !== 'disponible') return false;
+                    if (v.estado && v.estado !== 'disponible' && v.estado !== 'apartado') return false;
                     var h = buildHaystack(v);
                     return lw.every(function(w) { return wordMatchesInHaystack(w, h); });
                 })[0];

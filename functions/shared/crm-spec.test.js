@@ -75,6 +75,76 @@ describe('matriz de transiciones del DEAL (D.3)', () => {
   });
 });
 
+describe('E4 §186 — F25 agregado del vehículo', () => {
+  it('algún deal won → vendido (gana sobre apartado)', () => {
+    expect(spec.computeVehicleState([
+      { status: 'won', stageId: 'vendido' },
+      { status: 'open', stageId: 'apartado' },
+    ])).toBe('vendido');
+  });
+  it('open en apartado (sin won) → apartado', () => {
+    expect(spec.computeVehicleState([
+      { status: 'open', stageId: 'apartado' },
+      { status: 'open', stageId: 'negociacion' },
+    ])).toBe('apartado');
+  });
+  it('solo opens fuera de apartado / lost / anulado / vacío → disponible', () => {
+    expect(spec.computeVehicleState([{ status: 'open', stageId: 'negociacion' }])).toBe('disponible');
+    expect(spec.computeVehicleState([{ status: 'lost', stageId: 'perdido' }])).toBe('disponible');
+    expect(spec.computeVehicleState([{ status: 'anulado', stageId: 'apartado' }])).toBe('disponible');
+    expect(spec.computeVehicleState([])).toBe('disponible');
+  });
+  it('shouldWriteVehicleState: vendido actual es TERMINAL (markAsSold sin deal CRM no se des-vende)', () => {
+    expect(spec.shouldWriteVehicleState('vendido', 'disponible')).toBe(false);
+    expect(spec.shouldWriteVehicleState('vendido', 'apartado')).toBe(false);
+  });
+  it('shouldWriteVehicleState: jamás degrada estados MANUALES a disponible', () => {
+    expect(spec.shouldWriteVehicleState('reservado', 'disponible')).toBe(false);
+    expect(spec.shouldWriteVehicleState('borrador', 'disponible')).toBe(false);
+    expect(spec.shouldWriteVehicleState('apartado', 'disponible')).toBe(true); // des-apartar SÍ
+  });
+  it('shouldWriteVehicleState: subir a apartado/vendido siempre escribe (salvo no-op)', () => {
+    expect(spec.shouldWriteVehicleState('disponible', 'apartado')).toBe(true);
+    expect(spec.shouldWriteVehicleState(undefined, 'vendido')).toBe(true);
+    expect(spec.shouldWriteVehicleState('apartado', 'apartado')).toBe(false);
+    expect(spec.shouldWriteVehicleState(undefined, 'disponible')).toBe(false); // default == target
+  });
+});
+
+describe('E4 §186 — F26 colisión comercial', () => {
+  it('2+ opens sobre el mismo vehicleId → grupo; won/lost/sin vehículo no cuentan', () => {
+    const cols = spec.detectCollisions([
+      { id: 'a', status: 'open', vehicleId: 'v1' },
+      { id: 'b', status: 'open', vehicleId: 'v1' },
+      { id: 'c', status: 'won', vehicleId: 'v1' },
+      { id: 'd', status: 'open', vehicleId: 'v2' },
+      { id: 'e', status: 'open' },
+    ]);
+    expect(cols).toEqual([{ vehicleId: 'v1', dealIds: ['a', 'b'] }]);
+  });
+  it('sin colisiones → vacío', () => {
+    expect(spec.detectCollisions([{ id: 'a', status: 'open', vehicleId: 'v1' }])).toEqual([]);
+  });
+});
+
+describe('E4 §186 — F10/F42 checklist y liquidación', () => {
+  it('checklist post-venta: 3 items con id/label/dueDays', () => {
+    expect(spec.POSTVENTA_CHECKLIST.map((i) => i.id)).toEqual(['entrega', 'traspaso_runt', 'tramites']);
+    for (const i of spec.POSTVENTA_CHECKLIST) {
+      expect(typeof i.label).toBe('string');
+      expect(i.dueDays).toBeGreaterThan(0);
+    }
+  });
+  it('dealLiquidable: solo won con checklist COMPLETO', () => {
+    const pvFull = { entrega: true, traspaso_runt: true, tramites: true };
+    expect(spec.dealLiquidable({ status: 'won', postventa: pvFull })).toBe(true);
+    expect(spec.dealLiquidable({ status: 'won', postventa: { ...pvFull, tramites: false } })).toBe(false);
+    expect(spec.dealLiquidable({ status: 'won' })).toBe(false);
+    expect(spec.dealLiquidable({ status: 'open', postventa: pvFull })).toBe(false);
+    expect(spec.dealLiquidable(null)).toBe(false);
+  });
+});
+
 describe('migración LEGACY (F35b, E1b)', () => {
   it('todo estado v2 retirado tiene mapeo de migración', () => {
     for (const s of spec.LEGACY.leadStatuses) {

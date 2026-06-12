@@ -12,6 +12,7 @@ import { dayKey } from '../../domain/agenda.js';
 import {
   PERIODS, periodStartMs, filterByRange,
   periodKpis, currentKpis, funnel, bySource, byStage, byOwner, trendByDay,
+  comisionesPorAsesor, monthOptions,
 } from '../../domain/reports.js';
 import { loadReports } from './reportes.data.js';
 import { getMockTeam } from '../../core/mock.js';
@@ -22,7 +23,8 @@ const cop = (n) => copShort(n) || '$0';
 const dlabel = (d) => `${d.getDate()}/${d.getMonth() + 1}`;
 
 export function mountReportes(root) {
-  const ui = { leads: [], deals: [], loading: true, error: null, capped: false, days: 30 };
+  const MONTHS = monthOptions(6); // E4/F42: selector de mes calendario
+  const ui = { leads: [], deals: [], wons: [], loading: true, error: null, capped: false, days: 30, month: MONTHS[0].key };
   let alive = true;
 
   // ── Toolbar (período + acciones) ──
@@ -66,6 +68,10 @@ export function mountReportes(root) {
       stg: byStage(ui.deals),
       own: byOwner(pLeads, pDeals, store.get().mock ? getMockTeam() : (store.get().team || [])),
       tr: trendByDay(ui.leads, 30),
+      // F42: wons de query dedicada (no el snapshot capado) + team para el
+      // nombre del ownerId congelado en el snapshot de comisión.
+      com: comisionesPorAsesor(ui.wons, ui.month,
+        store.get().mock ? getMockTeam() : (store.get().team || [])),
     };
   }
 
@@ -104,6 +110,7 @@ export function mountReportes(root) {
       sectionStage(m.stg),
       sectionTrend(m.tr),
       sectionTeam(m.own),
+      sectionComisiones(m.com),
     );
   }
 
@@ -179,6 +186,46 @@ export function mountReportes(root) {
     const rows = own.map((r) => [r.ownerName, String(r.leads), String(r.deals), String(r.won), pct(r.winRate), cop(r.pipelineWeighted)]);
     const empty = own.length ? null : 'Sin actividad asignada en el período.';
     return sectionBox('Rendimiento del equipo', 'Por asesor, en el período seleccionado', table(head, rows, empty));
+  }
+
+  // ── E4 / F42 — Comisiones del mes ──
+  function sectionComisiones(com) {
+    const sel = el('select', { class: 'select', 'aria-label': 'Mes de liquidación', style: { maxWidth: '220px' } },
+      MONTHS.map((mo) => {
+        const o = el('option', { value: mo.key }, [mo.label]);
+        if (mo.key === ui.month) o.selected = true;
+        return o;
+      }));
+    sel.addEventListener('change', () => { ui.month = sel.value; render(); });
+
+    const head = ['Asesor', 'Vendidos', '✓ Liquidables', 'Base liquidable', '⏳ Pendientes', 'Base pendiente'];
+    const rows = com.map((r) => [
+      r.ownerName, String(r.vendidos), String(r.liquidables), cop(r.baseLiquidable),
+      String(r.pendientes), cop(r.basePendiente),
+    ]);
+    const tot = com.reduce((a, r) => ({
+      v: a.v + r.vendidos, l: a.l + r.liquidables, bl: a.bl + r.baseLiquidable,
+      p: a.p + r.pendientes, bp: a.bp + r.basePendiente,
+    }), { v: 0, l: 0, bl: 0, p: 0, bp: 0 });
+    const foot = com.length ? ['Total', String(tot.v), String(tot.l), cop(tot.bl), String(tot.p), cop(tot.bp)] : null;
+    const empty = com.length ? null : 'Sin ventas ganadas en el mes seleccionado.';
+
+    const detalle = com.flatMap((r) => r.deals.map((d) => [
+      d.name || d.id, r.ownerName, cop(d.base), d.tipoPago || '—',
+      d.liquidable ? '✓ liquidable' : '⏳ checklist pendiente',
+    ]));
+
+    const content = el('div', {}, [
+      el('div', { class: 'u-row', style: { marginBottom: '10px' } }, [sel]),
+      table(head, rows, empty, foot),
+      detalle.length ? el('details', { style: { marginTop: '10px' } }, [
+        el('summary', { class: 'u-caption u-muted', text: 'Detalle por negocio (' + detalle.length + ')' }),
+        table(['Negocio', 'Asesor', 'Base', 'Pago', 'Estado'], detalle, null),
+      ]) : null,
+    ]);
+    return sectionBox('Comisiones del mes',
+      '"Si no está en el CRM, no entra a liquidación" — solo vendidos con checklist post-venta completo (F42)',
+      content);
   }
 
   // ── Primitivas de presentación ──
@@ -261,6 +308,16 @@ export function mountReportes(root) {
     lines.push(['Asesor', 'Leads', 'Oportunidades', 'Ganados', 'Win rate', 'Pipeline ponderado (COP)']);
     m.own.forEach((r) => lines.push([r.ownerName, r.leads, r.deals, r.won, pct(r.winRate), r.pipelineWeighted]));
 
+    const monthLabel = (MONTHS.find((mo) => mo.key === ui.month) || {}).label || ui.month;
+    sec('Comisiones del mes — ' + monthLabel + ' (F42: solo checklist completo entra a liquidación)');
+    lines.push(['Asesor', 'Vendidos', 'Liquidables', 'Base liquidable (COP)', 'Pendientes', 'Base pendiente (COP)']);
+    m.com.forEach((r) => lines.push([r.ownerName, r.vendidos, r.liquidables, r.baseLiquidable, r.pendientes, r.basePendiente]));
+    lines.push([]);
+    lines.push(['Negocio', 'Asesor', 'Base (COP)', 'Pago', 'Estado']);
+    m.com.forEach((r) => r.deals.forEach((d) => lines.push([
+      d.name || d.id, r.ownerName, d.base, d.tipoPago || '', d.liquidable ? 'liquidable' : 'checklist pendiente',
+    ])));
+
     download(`altorra-reportes-${dayKey(new Date())}.csv`, toCsv(lines));
     toast('Reporte exportado', 'ok');
   }
@@ -271,7 +328,8 @@ export function mountReportes(root) {
     try {
       const data = await loadReports();
       if (!alive) return;
-      ui.leads = data.leads; ui.deals = data.deals; ui.capped = !!data.capped; ui.loading = false;
+      ui.leads = data.leads; ui.deals = data.deals; ui.wons = data.wons || [];
+      ui.capped = !!data.capped; ui.loading = false;
     } catch (e) {
       if (!alive) return;
       ui.loading = false;
@@ -286,7 +344,11 @@ export function mountReportes(root) {
 
 // ── CSV helpers (RFC-4180, BOM UTF-8) ──
 function csvCell(v) {
-  const s = v == null ? '' : String(v);
+  let s = v == null ? '' : String(v);
+  // Anti inyección de fórmulas (E4 review #15): nombres vienen del FORM
+  // PÚBLICO — "=HYPERLINK(...)" se ejecutaría al abrir el CSV en Excel.
+  // Prefijo ' salvo números puros (los montos no se rompen).
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s;
   // RFC-4180: entrecomilla si hay comilla, coma o salto de línea; + ';' por Excel es-CO (separador de lista).
   return /[",\n\r;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }

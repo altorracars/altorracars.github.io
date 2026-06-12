@@ -12,16 +12,23 @@ import { hasPermission } from '../../core/auth.js';
 import { initials, copShort, timeAgo } from '../../domain/format.js';
 import {
   OPEN_STAGES, stageById, probFor, weighted, forecast, totalValue, groupByStage, isRotting,
-  dealTransition, LOST_REASONS,
+  dealTransition, LOST_REASONS, POSTVENTA_CHECKLIST, dealLiquidable, detectCollisions,
 } from '../../domain/pipeline.js';
 import {
   subscribeDeals, updateDealStage, setDealAmount, markWon, markLost,
+  subscribeWonDeals, updatePostventaItem, setRecibeVehiculo, crearBorradorRetoma,
 } from './deals.data.js';
 import { getMockDeals, updateMockDeal } from '../../core/mock.js';
 
 export function mountPipeline(root) {
-  const ui = { deals: [], loading: true, error: null, sub: null, dragId: null };
+  const ui = {
+    deals: [], loading: true, error: null, sub: null, dragId: null,
+    view: 'kanban',                       // E4: 'kanban' | 'postventa'
+    won: [], wonSub: null, wonLoading: true, wonError: null,
+    collisionByDeal: new Map(),           // F26: dealId → tamaño del grupo
+  };
   const canEdit = hasPermission('crm.edit');
+  const liveOverlays = new Set();         // modales vivos → se cierran en cleanup
 
   const bar = el('div', { class: 'pipeline__bar' });
   const board = el('div', { class: 'pipeline__board', role: 'list', 'aria-label': 'Embudo de ventas' });
@@ -150,6 +157,27 @@ export function mountPipeline(root) {
       fields.push(fld('Razón del retroceso *', f.regressReason));
     }
 
+    // F10 (E4): retoma/permuta — solo al GANAR, opcional, plegada (presupuesto
+    // de fricción: el checkbox no añade un prompt, expande el mismo modal).
+    if (stageId === 'vendido') {
+      f.retomaCheck = el('input', { type: 'checkbox', class: 'checkbox' });
+      f.retomaMarca = el('input', { class: 'input', type: 'text', placeholder: 'Marca *' });
+      f.retomaModelo = el('input', { class: 'input', type: 'text', placeholder: 'Modelo' });
+      f.retomaYear = el('input', { class: 'input', type: 'number', min: '1980', max: '2035', placeholder: 'Año' });
+      f.retomaPlaca = el('input', { class: 'input', type: 'text', placeholder: 'Placa', maxlength: '8' });
+      f.retomaValor = el('input', { class: 'input', type: 'number', min: '0', step: '500000', placeholder: 'Valor estimado (COP)' });
+      const detalle = el('div', { class: 'nl-form', hidden: true, style: { marginTop: '8px' } }, [
+        f.retomaMarca, f.retomaModelo, f.retomaYear, f.retomaPlaca, f.retomaValor,
+      ]);
+      f.retomaCheck.addEventListener('change', () => { detalle.hidden = !f.retomaCheck.checked; });
+      fields.push(el('div', {}, [
+        el('label', { class: 'u-row u-row--tight', style: { cursor: 'pointer' } }, [
+          f.retomaCheck, el('span', { text: '🚙 Recibe vehículo en parte de pago (retoma)' }),
+        ]),
+        detalle,
+      ]));
+    }
+
     const err = el('div', { class: 'login__error', role: 'alert', hidden: true });
     const cancel = el('button', { class: 'btn btn--ghost', type: 'button' }, ['Cancelar']);
     const ok = el('button', { class: 'btn btn--gold', type: 'submit' }, ['Mover a ' + stageById(stageId).label]);
@@ -161,7 +189,8 @@ export function mountPipeline(root) {
       ]),
     ]);
     document.body.appendChild(overlay);
-    const close = () => overlay.remove();
+    liveOverlays.add(overlay);
+    const close = () => { liveOverlays.delete(overlay); overlay.remove(); };
     cancel.addEventListener('click', close);
     overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
     form.addEventListener('submit', (e) => {
@@ -184,6 +213,17 @@ export function mountPipeline(root) {
         if (!r) { err.textContent = 'Escribe la razón del retroceso.'; err.hidden = false; return; }
         out.regressReason = r;
       }
+      if (f.retomaCheck && f.retomaCheck.checked) {
+        const marca = f.retomaMarca.value.trim();
+        if (!marca) { err.textContent = 'La marca del vehículo recibido es obligatoria.'; err.hidden = false; return; }
+        out.recibeVehiculo = {
+          marca,
+          modelo: f.retomaModelo.value.trim(),
+          year: Number(f.retomaYear.value) || null,
+          placa: f.retomaPlaca.value.trim().toUpperCase(),
+          valorEstimado: Math.round(Number(f.retomaValor.value) || 0),
+        };
+      }
       close();
       apply(out);
     });
@@ -197,22 +237,34 @@ export function mountPipeline(root) {
 
   // Ganar pasa por la MISMA matriz (gates acumulados hasta vendido).
   async function doWon(deal) {
+    // E4/F42: la base de comisión se congela con el monto al ganar — un won
+    // con $0 quedaría sin vía de corrección (las Rules también lo deniegan).
+    if (!(Number(deal.amount) > 0)) {
+      toast('Ponle el monto al negocio antes de marcarlo ganado (con ese valor se congela la comisión).', 'error');
+      return;
+    }
     const t = dealTransition(deal.stageId, 'vendido');
     if (!t.ok) { toast('Movimiento no válido', 'error'); return; }
+    const prev = { status: deal.status, stageId: deal.stageId };
     const apply = async (gateFields) => {
       patch(deal.id, { status: 'won', ...gateFields });
       if (store.get().mock) { toast('🎉 ¡Venta ganada!', 'ok'); return; }
       try { await markWon(deal.id, deal, gateFields); toast('🎉 ¡Venta ganada!', 'ok'); }
-      catch (e) { toast('No se pudo marcar — revisa los datos requeridos', 'error'); }
+      catch (e) {
+        patch(deal.id, prev); // rollback del optimista (la card vuelve al kanban)
+        toast('No se pudo marcar — revisa los datos requeridos', 'error');
+      }
     };
     if (!t.gates.length) return apply({});
     openGatePrompt(deal, 'vendido', t.gates, apply);
   }
 
   async function doLost(deal, reasonId) {
+    const prev = { status: deal.status, lostReason: deal.lostReason || null };
     patch(deal.id, { status: 'lost', lostReason: reasonId });
     if (store.get().mock) { toast('Marcado perdido', 'info'); return; }
-    try { await markLost(deal.id, reasonId, deal); toast('Marcado perdido', 'info'); } catch (e) { toast('Error', 'error'); }
+    try { await markLost(deal.id, reasonId, deal); toast('Marcado perdido', 'info'); }
+    catch (e) { patch(deal.id, prev); toast('Error', 'error'); }
   }
 
   // ── Render ──
@@ -221,7 +273,18 @@ export function mountPipeline(root) {
     if (ui.error) return renderState('⚠️', 'No se pudo cargar', ui.error);
 
     const open = ui.deals.filter((d) => d.status === 'open');
+
+    // F26 (E4): colisión comercial client-side — el kanban ya tiene TODOS
+    // los deals open en memoria, cero reads extra.
+    ui.collisionByDeal = new Map();
+    for (const col of detectCollisions(open)) {
+      for (const id of col.dealIds) ui.collisionByDeal.set(id, col.dealIds.length);
+    }
+
     renderBar(open);
+
+    if (ui.view === 'postventa') return renderPostventa();
+    board.classList.remove('pipeline__board--list');
     clear(board);
 
     if (!open.length) {
@@ -257,11 +320,34 @@ export function mountPipeline(root) {
     const fc = forecast(open);
     const tv = totalValue(open);
     clear(bar);
+    // E4: toggle Embudo ↔ Post-venta (checklist F10 de los ganados).
+    // La suscripción de wons arranca en start() → el contador es real
+    // también en kanban (subscribeDeals solo trae open).
+    const wonCount = ui.wonLoading ? null : ui.won.length;
+    const viewBtn = (id, label) => {
+      const b = el('button', {
+        class: 'btn btn--sm ' + (ui.view === id ? 'btn--gold' : 'btn--ghost'),
+        type: 'button', 'aria-pressed': ui.view === id ? 'true' : 'false',
+      }, [label]);
+      b.addEventListener('click', () => setView(id));
+      return b;
+    };
     bar.append(
+      el('div', { class: 'pipeline__views', role: 'group', 'aria-label': 'Vista' }, [
+        viewBtn('kanban', '🎯 Embudo'),
+        viewBtn('postventa', '🏁 Post-venta' + (wonCount === null || wonCount === 0 ? '' : ' (' + wonCount + ')')),
+      ]),
       stat('Oportunidades', String(open.length)),
       stat('Valor del embudo', copShort(tv) || '$0'),
       stat('Forecast ponderado', copShort(fc) || '$0', true),
     );
+  }
+
+  function setView(id) {
+    if (ui.view === id) return;
+    ui.view = id;
+    if (id === 'postventa') startWon();
+    render();
   }
   function stat(label, value, hi) {
     return el('div', { class: 'pstat' + (hi ? ' pstat--hi' : '') }, [
@@ -287,6 +373,13 @@ export function mountPipeline(root) {
         rot ? el('span', { class: 'deal-card__rot', title: 'Estancado >14 días', text: '🐌' }) : null,
       ]),
       deal.vehicleName ? el('div', { class: 'u-caption u-muted u-truncate', text: '🚗 ' + deal.vehicleName }) : null,
+      // F26 (E4): warning de colisión comercial — visible en TODOS los deals
+      // del grupo. No bloquea: dos compradores reales pueden competir.
+      ui.collisionByDeal.has(deal.id) ? el('div', {
+        class: 'deal-card__collision u-caption',
+        title: 'Otro negocio activo persigue este mismo carro. Coordinen quién va primero.',
+        text: '🥊 ' + ui.collisionByDeal.get(deal.id) + ' negocios por este carro',
+      }) : null,
       el('div', { class: 'deal-card__row' }, [
         amountEl,
         el('span', { class: 'badge badge--gold', text: `${Math.round(probFor(deal.stageId) * 100)}%` }),
@@ -357,6 +450,199 @@ export function mountPipeline(root) {
     });
   }
 
+  // ── E4 / F10: panel POST-VENTA (checklist del deal ganado + retoma) ──
+
+  function startWon() {
+    if (store.get().mock) {
+      // mock: re-leer SIEMPRE (ganar un deal en demo debe reflejarse al reabrir)
+      ui.won = getMockDeals().filter((d) => d.status === 'won');
+      ui.wonLoading = false; ui.wonError = null;
+      return;
+    }
+    if (ui.wonSub) return;
+    ui.wonSub = subscribeWonDeals({
+      pageSize: 100,
+      onData: (rows) => {
+        // Orden ESTABLE por wonAt (los toggles del checklist bumpean
+        // lastActivityAt y la card saltaría bajo el cursor).
+        ui.won = rows.slice().sort((a, b) =>
+          String(b.wonAt || b.lastActivityAt || '').localeCompare(String(a.wonAt || a.lastActivityAt || '')));
+        ui.wonLoading = false; ui.wonError = null;
+        render();
+      },
+      onError: (err) => {
+        // los errores de onSnapshot son TERMINALES: liberar para poder reintentar
+        if (ui.wonSub) { try { ui.wonSub(); } catch (_) { /* ya muerto */ } }
+        ui.wonSub = null;
+        ui.wonLoading = false;
+        ui.wonError = err && err.code === 'permission-denied'
+          ? 'Sin permiso para ver los ganados.' : 'Revisa tu conexión.';
+        if (ui.view === 'postventa') render();
+      },
+    });
+  }
+
+  function patchWon(id, p) {
+    const i = ui.won.findIndex((d) => d.id === id);
+    if (i === -1) return;
+    ui.won[i] = { ...ui.won[i], ...p };
+    render();
+  }
+
+  async function togglePostventa(deal, itemId, done) {
+    const prev = deal.postventa || {};
+    patchWon(deal.id, { postventa: { ...prev, [itemId]: done } });
+    if (store.get().mock) return;
+    try {
+      await updatePostventaItem(deal.id, itemId, done);
+    } catch (e) {
+      patchWon(deal.id, { postventa: prev });
+      toast('No se pudo guardar el checklist', 'error');
+    }
+  }
+
+  async function doBorradorRetoma(deal, btn) {
+    btn.disabled = true; btn.textContent = 'Creando…';
+    try {
+      const res = await crearBorradorRetoma(deal.id);
+      patchWon(deal.id, { retomaVehicleId: res.vehicleId });
+      toast('Borrador #' + res.vehicleId + ' creado en inventario', 'ok');
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Crear borrador en inventario';
+      toast(e && e.message ? e.message : 'No se pudo crear el borrador', 'error');
+    }
+  }
+
+  function openRetomaPrompt(deal) {
+    const marca = el('input', { class: 'input', type: 'text', placeholder: 'Marca *' });
+    const modelo = el('input', { class: 'input', type: 'text', placeholder: 'Modelo' });
+    const year = el('input', { class: 'input', type: 'number', min: '1980', max: '2035', placeholder: 'Año' });
+    const placa = el('input', { class: 'input', type: 'text', placeholder: 'Placa', maxlength: '8' });
+    const valor = el('input', { class: 'input', type: 'number', min: '0', step: '500000', placeholder: 'Valor estimado (COP)' });
+    const err = el('div', { class: 'login__error', role: 'alert', hidden: true });
+    const cancel = el('button', { class: 'btn btn--ghost', type: 'button' }, ['Cancelar']);
+    const ok = el('button', { class: 'btn btn--gold', type: 'submit' }, ['Guardar retoma']);
+    const form = el('form', { class: 'nl-form' }, [marca, modelo, year, placa, valor, err, el('div', { class: 'nl-actions' }, [cancel, ok])]);
+    const overlay = el('div', { class: 'modal-overlay' }, [
+      el('div', { class: 'modal' }, [
+        el('div', { class: 'modal__head' }, [el('h2', { class: 'modal__title', text: '🚙 Vehículo recibido (retoma)' })]),
+        form,
+      ]),
+    ]);
+    document.body.appendChild(overlay);
+    liveOverlays.add(overlay);
+    const close = () => { liveOverlays.delete(overlay); overlay.remove(); };
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!marca.value.trim()) { err.textContent = 'La marca es obligatoria.'; err.hidden = false; return; }
+      const rv = {
+        marca: marca.value.trim(), modelo: modelo.value.trim(),
+        year: Number(year.value) || null,
+        placa: placa.value.trim().toUpperCase(),
+        valorEstimado: Math.round(Number(valor.value) || 0),
+      };
+      close();
+      const prev = deal.recibeVehiculo || null;
+      patchWon(deal.id, { recibeVehiculo: rv });
+      if (store.get().mock) return;
+      try { await setRecibeVehiculo(deal.id, rv); }
+      catch (e2) { patchWon(deal.id, { recibeVehiculo: prev }); toast('No se pudo guardar', 'error'); }
+    });
+  }
+
+  function renderPostventa() {
+    clear(board);
+    board.classList.add('pipeline__board--list');
+    if (ui.wonError) {
+      const retry = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['↻ Reintentar']);
+      retry.addEventListener('click', () => { ui.wonError = null; ui.wonLoading = true; startWon(); render(); });
+      board.append(el('div', { class: 'state' }, [
+        el('div', { class: 'state__icon', text: '⚠️' }),
+        el('div', { class: 'state__title', text: 'No se pudieron cargar los ganados' }),
+        el('div', { class: 'state__msg', text: ui.wonError }),
+        retry,
+      ]));
+      return;
+    }
+    if (ui.wonLoading) {
+      board.append(el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando ganados…' })]));
+      return;
+    }
+    if (!ui.won.length) {
+      board.append(el('div', { class: 'state' }, [
+        el('div', { class: 'state__icon', text: '🏁' }),
+        el('div', { class: 'state__title', text: 'Sin ventas ganadas aún' }),
+        el('div', { class: 'state__msg', text: 'Cuando marques un negocio como ganado, su checklist de entrega vivirá aquí.' }),
+      ]));
+      return;
+    }
+    ui.won.forEach((deal) => board.append(renderPostventaCard(deal)));
+  }
+
+  function renderPostventaCard(deal) {
+    const liquidable = dealLiquidable(deal);
+    const base = (deal.commissionSnapshot && deal.commissionSnapshot.amount) || deal.amount || 0;
+    const wonDate = (deal.wonAt || deal.lastActivityAt || '').slice(0, 10);
+
+    const checks = POSTVENTA_CHECKLIST.map((item) => {
+      const done = !!(deal.postventa && deal.postventa[item.id]);
+      const cb = el('input', { type: 'checkbox', class: 'checkbox' });
+      cb.checked = done;
+      if (!canEdit) cb.disabled = true;
+      cb.addEventListener('change', () => togglePostventa(deal, item.id, cb.checked));
+      return el('label', { class: 'pv-item' + (done ? ' is-done' : '') }, [
+        cb, el('span', { text: item.label }),
+      ]);
+    });
+
+    // Retoma: datos + borrador (o botón para añadirla).
+    const rv = deal.recibeVehiculo;
+    let retomaEl;
+    if (rv && (rv.marca || rv.placa)) {
+      const kids = [el('span', {
+        class: 'u-caption u-muted',
+        text: '🚙 Retoma: ' + [rv.marca, rv.modelo, rv.placa].filter(Boolean).join(' ')
+          + (rv.valorEstimado ? ' · ' + copShort(rv.valorEstimado) : ''),
+      })];
+      if (deal.retomaVehicleId) {
+        kids.push(el('span', { class: 'badge badge--gold', text: 'Borrador #' + deal.retomaVehicleId + ' ✓' }));
+      } else if (canEdit) {
+        const btn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['Crear borrador en inventario']);
+        btn.addEventListener('click', () => doBorradorRetoma(deal, btn));
+        kids.push(btn);
+      }
+      retomaEl = el('div', { class: 'pv-retoma' }, kids);
+    } else if (canEdit) {
+      const btn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['＋ Retoma']);
+      btn.addEventListener('click', () => openRetomaPrompt(deal));
+      retomaEl = el('div', { class: 'pv-retoma' }, [btn]);
+    }
+
+    return el('article', { class: 'deal-card deal-card--pv', 'data-id': deal.id }, [
+      el('div', { class: 'deal-card__top' }, [
+        el('span', { class: 'avatar avatar--sm', 'aria-hidden': 'true', text: initials(deal.contactName) }),
+        el('span', { class: 'deal-card__name u-grow u-truncate', text: deal.name }),
+        el('span', {
+          class: 'badge ' + (liquidable ? 'badge--gold' : ''),
+          title: liquidable ? 'Checklist completo: entra a liquidación de comisiones (F42)'
+            : 'La comisión se liquida cuando el checklist esté completo',
+          text: liquidable ? '✓ Liquidable' : '⏳ Pendiente',
+        }),
+      ]),
+      el('div', { class: 'u-caption u-muted' }, [
+        el('span', { text: (deal.vehicleName ? '🚗 ' + deal.vehicleName + ' · ' : '') + copShort(base) }),
+        el('span', { class: 'u-faint', text: (deal.tipoPago ? ' · ' + deal.tipoPago : '') + (wonDate ? ' · ganado ' + wonDate : '') }),
+      ]),
+      el('div', { class: 'pv-checklist' }, checks),
+      retomaEl || null,
+      el('div', { class: 'deal-card__foot u-caption u-faint' }, [
+        el('span', { class: 'u-grow u-truncate', text: deal.ownerName ? '👤 ' + deal.ownerName : 'Sin asesor' }),
+      ]),
+    ]);
+  }
+
   // ── Estados ──
   function renderState(icon, title, msg) {
     clear(board);
@@ -379,8 +665,10 @@ export function mountPipeline(root) {
   // ── Carga ──
   function start() {
     if (store.get().mock) {
-      ui.deals = getMockDeals();
-      ui.loading = false; render();
+      ui.deals = getMockDeals().filter((d) => d.status === 'open');
+      ui.loading = false;
+      startWon();
+      render();
       return;
     }
     ui.sub = subscribeDeals({
@@ -392,10 +680,18 @@ export function mountPipeline(root) {
         render();
       },
     });
+    startWon(); // eager: el contador "Post-venta (N)" es real desde el arranque
   }
 
   render(); start();
-  return function cleanup() { if (ui.sub) ui.sub(); ui.sub = null; };
+  return function cleanup() {
+    if (ui.sub) ui.sub(); ui.sub = null;
+    if (ui.wonSub) ui.wonSub(); ui.wonSub = null;
+    // modales/snackbar appendeados a <body> no mueren con el outlet (review #14)
+    liveOverlays.forEach((o) => { try { o.remove(); } catch (_) {} });
+    liveOverlays.clear();
+    if (_undoBar) { try { _undoBar.remove(); } catch (_) {} _undoBar = null; }
+  };
 }
 
 function stageColor(id) {

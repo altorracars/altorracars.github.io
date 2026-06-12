@@ -3619,6 +3619,9 @@ exports.crmSuppressContact = require('./src/crm/contactAdmin').crmSuppressContac
 exports.crmCancelSuppression = require('./src/crm/contactAdmin').crmCancelSuppression;
 exports.onContactWritten = require('./src/crm/onContactWritten').onContactWritten;
 
+// E4 §186 — F10 retoma: borrador del vehículo recibido en parte de pago.
+exports.crmCrearBorradorRetoma = require('./src/crm/retoma').crmCrearBorradorRetoma;
+
 // Disparo manual del sweep de citas (pruebas) — solo super admin.
 exports.crmRunCitaSweep = onCall({
     region: 'us-central1', invoker: 'public', cors: true,

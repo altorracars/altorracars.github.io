@@ -596,6 +596,12 @@ body .badge.badge-oferta {
     box-shadow: 0 3px 10px rgba(231, 76, 60, 0.4);
 }
 
+/* E4 §186/F25: vehículo apartado */
+body .badge.badge-apartado {
+    background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4);
+}
+
 body .badge.badge-destacado {
     background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-secondary) 100%);
     box-shadow: 0 3px 10px rgba(212, 175, 55, 0.4);

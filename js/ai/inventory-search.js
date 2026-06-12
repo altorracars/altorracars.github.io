@@ -279,6 +279,8 @@
         if (v.kilometraje) extras.push(v.kilometraje.toLocaleString('es-CO') + ' km');
         if (v.transmision) extras.push(v.transmision);
         if (v.estado === 'reservado') extras.push('reservado');
+        // E4 §186/F25: el bot no puede ofrecer un apartado como libre
+        if (v.estado === 'apartado') extras.push('apartado (separado con un abono, sujeto a confirmación)');
         var extrasStr = extras.length ? ' · ' + extras.join(', ') : '';
         return '• ' + bits + ' — ' + price + extrasStr;
     }

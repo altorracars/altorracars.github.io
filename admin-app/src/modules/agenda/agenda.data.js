@@ -5,7 +5,7 @@
 // ============================================================
 
 import {
-  collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc,
+  collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc, getDocs, limit,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, fns } from '../../core/firebase.js';
@@ -50,6 +50,15 @@ export async function fetchAvailability() {
 export async function fetchBookedSlots() {
   const s = await getDoc(doc(db, 'config', 'bookedSlots'));
   return s.exists() ? s.data() : {};
+}
+
+/** Leads recientes para el buscador de "Nueva cita" (gap 5 F23-7).
+ *  getDocs por mount del chooser (orderBy un campo = índice automático);
+ *  el filtrado por nombre/teléfono es client-side sobre ≤300 docs. */
+export async function fetchLeadsForCita() {
+  const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(300));
+  const snap = await getDocs(q);
+  return snap.docs.map(withId);
 }
 
 /** Agenda una TAREA simple (activity con dueAt) ligada a un lead. */

@@ -9,8 +9,9 @@ import { store } from '../../core/store.js';
 import {
   WEEKDAYS, MONTHS, monthMatrix, gridRange, groupByDay, dayKey, timeOf, isSameDay,
 } from '../../domain/agenda.js';
+import { hasPermission } from '../../core/auth.js';
 import { subscribeRange } from './agenda.data.js';
-import { openCitaDetail } from './cita-dialog.js';
+import { openCitaDetail, openCitaChooser } from './cita-dialog.js';
 import { getMockAgenda } from '../../core/mock.js';
 
 export function mountAgenda(root) {
@@ -46,6 +47,12 @@ export function mountAgenda(root) {
       el('button', { class: 'btn btn--soft btn--sm', type: 'button', onclick: goToday }, ['Hoy']),
       iconBtn('›', 'Mes siguiente', () => go(1)),
     ]);
+    // Gap 5 (F23-7 §188): crear cita SIN pasar por el 360 — walk-ins incluidos.
+    if (hasPermission('crm.edit')) {
+      const nueva = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nueva cita' });
+      nueva.addEventListener('click', () => openCitaChooser({}));
+      nav.append(nueva);
+    }
     head.append(
       el('h2', { class: 'agenda__title', text: `${MONTHS[ui.month]} ${ui.year}` }),
       nav,

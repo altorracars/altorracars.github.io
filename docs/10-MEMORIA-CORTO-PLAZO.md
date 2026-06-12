@@ -95,9 +95,10 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   login del dueño 11:05Z, SIN F39 aún → gate abierto) → **fase ③ p2 ✅: Atributos (§194)**,
 >   ruta propia `#/atributos` (desviación deliberada del "→ #/config" — razón en §194.2).
 >   Preview mock ✓ + build ✓. Merge #837 del dueño.
-> - **2026-06-12 (~8:40am, misma sesión + relevo por cierre accidental)**: backup inventario ✅
->   (§195: CRM_COLLECTIONS +vehiculos/marcas, +listas, `#/respaldos`, deploy ✓, merge #838) →
->   ampliación §193.2 (fábrica de skills cubre arranque + RESCATE; orden E6-primero ratificado,
->   merge #839) → **gap 5 Agenda ✅ (§196)**: "＋ Nueva cita" con buscador + walk-in sin lead.
->   F39 re-verificado ×3: auditLog VACÍO — gates ②/③ siguen esperando al dueño. Commit local.
->   **Retomar: "continua"** → gates ②/③ (si F39 del dueño hechos) → **vehículos en SESIÓN FRESCA**.
+> - **2026-06-12 (8:40-11am, misma sesión + relevos)**: backup inventario ✅ (§195, deploy ✓,
+>   merge #838) → ampliación §193.2 (skills arranque+RESCATE, merge #839) → gap 5 ✅ (§196,
+>   "＋ Nueva cita" walk-in, merge #840) → **gap 7 ✅ (§197)**: acción `update` (observaciones +
+>   reasignar asesor, moveAdvisorBlocks, suite emulador 193 ✓, deploy ✓). Commit local.
+>   F39 re-verificado ×4: auditLog VACÍO. **Transversal desbloqueado AGOTADO** — todo lo restante
+>   espera F39/decisiones del dueño o la SESIÓN FRESCA de vehículos.
+>   **Retomar: "continua"** → gates ②/③ (si F39 hechos) → **vehículos en SESIÓN FRESCA**.

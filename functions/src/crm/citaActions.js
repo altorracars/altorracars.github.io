@@ -16,7 +16,8 @@ const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN');
  *
  * TODA acción de cita es SERVER-SIDE y TRANSACCIONAL:
  *  - `crmCitaAction` (callable, staff con crm.edit): confirm / reschedule /
- *    cancel / no_show / complete / create (manual) / getConfirmLink.
+ *    cancel / no_show / complete / create (manual) / update (gap 7) /
+ *    getConfirmLink.
  *  - `citaConfirm` (HTTP pública): el cliente toca el link tokenizado desde
  *    WhatsApp/email y la solicitud pasa a 'confirmada' (WhatsApp-first F18).
  *
@@ -99,6 +100,21 @@ function applyTupleRelease(tx, dayRef, dayData, blocks, asesorId, vehicleId) {
     upd[id] = dayData[id].filter((b) => !blocks.includes(b));
   }
   if (Object.keys(upd).length) tx.set(dayRef, upd, { merge: true });
+}
+
+/**
+ * Gap 7 (§188 §4.7) — REASIGNAR asesor de una cita que retiene tupla:
+ * verifica que el ENTRANTE esté libre en los bloques, libera al saliente
+ * y reserva al entrante EN LA MISMA transacción (el vehículo no se toca).
+ * El caller garantiza from !== to → los dos set(merge) escriben claves
+ * distintas y no se pisan. Devuelve los conflictos (vacío = movido).
+ */
+function moveAdvisorBlocks(tx, dayRef, dayData, blocks, fromAsesorId, toAsesorId) {
+  const conflicts = tupleConflicts(dayData, blocks, toAsesorId, null);
+  if (conflicts.length) return conflicts;
+  if (fromAsesorId) applyTupleRelease(tx, dayRef, dayData, blocks, fromAsesorId, null);
+  applyTupleReserve(tx, dayRef, dayData, blocks, toAsesorId, null);
+  return [];
 }
 
 /**
@@ -293,6 +309,48 @@ const crmCitaAction = onCall(
           _tupleConflict: FV.delete(),
           updatedAt: now, updatedBy: staff.uid,
         });
+        return { ok: true };
+      }
+
+      /* update — gap 7 (§188 §4.7): observaciones y/o REASIGNAR asesor sin
+       * tocar estado/fecha/hora/cupo global. El clásico lo tenía (modal
+       * admin-appointments:1159); el portal solo asignaba al confirmar.
+       * confirmedAt/token NO se tocan: el cliente confirmó la HORA, no a
+       * la persona que lo atiende. */
+      if (action === 'update') {
+        if (!ESTADOS_ACTIVOS.includes(sol.estado)) {
+          throw new HttpsError('failed-precondition', 'La cita ya no está activa (' + sol.estado + ').');
+        }
+        const upd = { updatedAt: now, updatedBy: staff.uid };
+        if (typeof p.observaciones === 'string' && p.observaciones !== (sol.observaciones || '')) {
+          upd.observaciones = p.observaciones.slice(0, 2000);
+        }
+        const newAsesor = p.asesorId && p.asesorId !== sol.assignedTo ? p.asesorId : null;
+        if (newAsesor) {
+          if (!sol.fecha) throw new HttpsError('failed-precondition', 'La cita no tiene fecha.');
+          const [daySnap, ovSnap] = await Promise.all([tx.get(dayRefOf(sol.fecha)), tx.get(overridesRefOf(db))]);
+          const ov = advisorOverrideFor(overridesOf(ovSnap), newAsesor, sol.fecha);
+          if (ov) {
+            throw new HttpsError('failed-precondition',
+              (ov.name || 'El asesor') + ' está de ' + (ov.reason || 'ausencia') + ' esa fecha (' + ov.from + ' → ' + ov.to + ').');
+          }
+          // Solo mueve bloques si la cita los RETIENE (pendiente no reserva,
+          // C.2 — al confirmarla después, confirm reserva para el nuevo).
+          if (holdsTuple(sol)) {
+            const conflicts = moveAdvisorBlocks(
+              tx, dayRefOf(sol.fecha), daySnap.exists ? daySnap.data() : {},
+              oldBlocks, sol.assignedTo || null, newAsesor
+            );
+            if (conflicts.length) {
+              throw new HttpsError('already-exists',
+                (p.asesorName || 'El asesor') + ' ya tiene una cita a las ' + conflicts[0].block + '. Elige otro asesor o reprograma.');
+            }
+          }
+          upd.assignedTo = newAsesor;
+          upd.assignedToName = p.asesorName || null;
+        }
+        if (Object.keys(upd).length === 2) return { ok: true, noop: true }; // nada cambió
+        tx.update(solRef, upd);
         return { ok: true };
       }
 
@@ -535,5 +593,5 @@ const citaConfirm = onRequest(
 module.exports = {
   crmCitaAction, citaConfirm,
   // internos puros/transaccionales expuestos para tests (carrera C.5)
-  _internals: { tupleConflicts, applyTupleReserve, applyTupleRelease, reserveTupleTransaction, globalRelease, globalReserve },
+  _internals: { tupleConflicts, applyTupleReserve, applyTupleRelease, reserveTupleTransaction, moveAdvisorBlocks, globalRelease, globalReserve },
 };

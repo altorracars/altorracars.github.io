@@ -58,6 +58,35 @@ describe.skipIf(!EMU)('F19 — carrera de tupla (asesor, vehículo) en bloques d
     ).rejects.toMatchObject({ code: 'TUPLE_TAKEN' });
   });
 
+  // Gap 7 (§188 §4.7): reasignar asesor = mover bloques saliente→entrante.
+  it('gap 7: reasignar mueve los bloques al entrante; choca si está ocupado; el vehículo no se toca', { timeout: 20000 }, async () => {
+    const DAY2 = '2030-02-01';
+    const dayRef = db.collection('resource_slots').doc(DAY2);
+    await dayRef.set({ asesor_ana: ['14:00', '14:30'], asesor_pedro: ['14:00'], vehiculo_kia: ['14:00', '14:30'] });
+
+    // entrante OCUPADO → conflictos y NADA cambia
+    await db.runTransaction(async (tx) => {
+      const data = (await tx.get(dayRef)).data();
+      const conflicts = internals.moveAdvisorBlocks(tx, dayRef, data, ['14:00', '14:30'], 'ana', 'pedro');
+      expect(conflicts.length).toBeGreaterThan(0);
+      expect(conflicts[0].kind).toBe('asesor');
+    });
+    let day = (await dayRef.get()).data();
+    expect(day.asesor_ana).toEqual(['14:00', '14:30']);
+
+    // entrante LIBRE → se mueve; pedro y el vehículo quedan intactos
+    await db.runTransaction(async (tx) => {
+      const data = (await tx.get(dayRef)).data();
+      const conflicts = internals.moveAdvisorBlocks(tx, dayRef, data, ['14:00', '14:30'], 'ana', 'lucia');
+      expect(conflicts).toEqual([]);
+    });
+    day = (await dayRef.get()).data();
+    expect(day.asesor_ana).toEqual([]);
+    expect(day.asesor_lucia).toEqual(['14:00', '14:30']);
+    expect(day.asesor_pedro).toEqual(['14:00']);
+    expect(day.vehiculo_kia).toEqual(['14:00', '14:30']);
+  });
+
   it('liberar bloques deja el recurso reutilizable (ciclo completo)', { timeout: 20000 }, async () => {
     const dayRef = db.collection('resource_slots').doc(DAY);
     await db.runTransaction(async (tx) => {

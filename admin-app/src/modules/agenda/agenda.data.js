@@ -28,7 +28,7 @@ export function subscribeRange(startISO, endISO, onData, onError) {
 /**
  * F18/F19 (ADR §184) — TODA acción de cita va por la callable transaccional
  * (cupos + tupla + token server-side; el cliente jamás escribe eso directo).
- * action: confirm | reschedule | cancel | no_show | complete | create | getConfirmLink
+ * action: confirm | reschedule | cancel | no_show | complete | create | update | getConfirmLink
  */
 export async function citaAction(action, solicitudId, payload) {
   const call = httpsCallable(fns, 'crmCitaAction');

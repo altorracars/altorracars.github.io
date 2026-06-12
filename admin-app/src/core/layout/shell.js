@@ -26,6 +26,7 @@ const NAV = [
   { id: 'resenas', label: 'Reseñas', icon: '⭐', ready: true, perm: 'reviews.read' },
   { id: 'banners', label: 'Banners', icon: '🖼️', ready: true, perm: 'banners.read' },
   // E6 fase ③ §188: inventario — marcas primero (el form de vehículos las necesita).
+  { id: 'vehiculos', label: 'Vehículos', icon: '🚗', ready: true, perm: 'vehicles.read' },
   { id: 'marcas', label: 'Marcas', icon: '🏷️', ready: true, perm: 'brands.read' },
   // E6 fase ③ p2: editor de config/listas (rules: super_admin / settings.* — any-of).
   { id: 'atributos', label: 'Atributos', icon: '🧩', ready: true, perm: ['settings.theme', 'settings.seo', 'settings.backup'] },
@@ -42,6 +43,7 @@ const TITLES = {
   config: 'Disponibilidad de citas',
   resenas: 'Reseñas del sitio',
   banners: 'Banners del sitio',
+  vehiculos: 'Inventario de vehículos',
   marcas: 'Marcas del inventario',
   atributos: 'Atributos del inventario',
   respaldos: 'Respaldos del CRM e inventario',

@@ -103,4 +103,8 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 > - **2026-06-12 (mediodía)**: GC 30-LECCIONES (destilado, f5fdeb2) + M-14 (no recomendar cierre
 >   por nota de plan con presupuesto sobrando — corrección del dueño). **El dueño ORDENÓ arrancar
 >   la ÉPICA DE VEHÍCULOS en esta misma sesión** (~50% presupuesto) → mapeo con agentes en curso.
->   **Retomar: "continua"** → seguir la épica de vehículos (mapa → diseño → wizard por etapas).
+>   Mapa ✅ (7 agentes, crudo+síntesis en bóveda: `2026-06-12-epica-vehiculos-plan.md` — etapas
+>   V1-V6 + 11 decisiones de port cerradas) → **V1 lista ✅ (§199)**: domain/vehicle.js (Smart
+>   Fields verbatim) + `#/vehiculos` (orden canónico, destacar, delete con audit previo).
+>   **Retomar: "continua"** → **V2 wizard** (buildVehicleDoc + create/update tx + features
+>   dinámicas + smart preview) → V3 imágenes → V4 drafts → V5 extras → V6 lote §198 + gates.

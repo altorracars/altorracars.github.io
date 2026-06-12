@@ -1,0 +1,61 @@
+/* ============================================================
+   Vehículos (épica V1) — prefijo veh-; reusa rev-head/rev-modal
+   y lst-warn. Tokens theme-aware; §17 solo transform/opacity.
+   ============================================================ */
+
+.veh { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-1) 0 var(--s-6); }
+
+.veh-filters { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.veh-search { flex: 1; min-width: 220px; max-width: 420px; }
+
+.veh-list { display: flex; flex-direction: column; gap: var(--s-2); }
+
+.veh-row {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke, var(--line));
+  border-radius: var(--r-xl);
+}
+.veh-row__thumb {
+  width: 64px; height: 48px; flex: 0 0 64px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: var(--r-md);
+  overflow: hidden; font-size: 1.4rem;
+}
+.veh-row__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.veh-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.veh-row__title { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; }
+.veh-row__price { display: flex; flex-direction: column; align-items: flex-end; gap: 0; white-space: nowrap; }
+.veh-row__actions { display: flex; gap: var(--s-2); align-items: center; }
+
+.veh-badge {
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 0.74rem; white-space: nowrap;
+  border: 1px solid var(--line);
+}
+.veh-badge--disponible { color: var(--success, #3FB68B); border-color: color-mix(in srgb, var(--success, #3FB68B) 50%, transparent); }
+.veh-badge--apartado, .veh-badge--reservado { color: var(--warning, #F2B544); border-color: color-mix(in srgb, var(--warning, #F2B544) 50%, transparent); }
+.veh-badge--vendido { color: var(--danger, #E85D5D); border-color: color-mix(in srgb, var(--danger, #E85D5D) 50%, transparent); }
+.veh-badge--borrador { opacity: 0.6; }
+.veh-badge--oferta {
+  color: var(--gold-500, #D4A85A);
+  border-color: color-mix(in srgb, var(--gold-500, #D4A85A) 55%, transparent);
+}
+
+.veh-stock { font-size: 0.76rem; }
+.veh-stock.is-warn { color: var(--warning, #F2B544); }
+.veh-stock.is-crit { color: var(--danger, #E85D5D); }
+
+.veh-star {
+  border: 0; background: none; cursor: pointer;
+  font-size: 1.25rem; line-height: 1; padding: 2px 4px;
+  color: var(--line); opacity: 0.8;
+}
+.veh-star:hover { opacity: 1; }
+.veh-star.is-on { color: var(--gold-500, #D4A85A); opacity: 1; }
+
+@media (max-width: 640px) {
+  .veh-row { flex-wrap: wrap; }
+  .veh-row__price { align-items: flex-start; }
+}

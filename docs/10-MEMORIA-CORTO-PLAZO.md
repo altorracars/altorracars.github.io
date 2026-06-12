@@ -17,15 +17,16 @@
 > en boot, NO regex 5c para el BFS.
 
 > 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0→E5 ✅ en main. E6 EN CURSO**: E6.6 ✅ (§188) →
-> paso 0 ✅ (§189) → fase ② código ✅ (Reseñas §190 + Banners §191) → **fase ③ p1 ✅: Marcas
-> (§192)**. Patrón validado ×3. SIGUIENTE: (1) **gate de cierre de fase ②** (tras F39 live del
-> dueño): ocultar/readonly Banners+Reseñas del CLÁSICO; (2) **fase ③ p2: Atributos/listas**
-> (`config/listas` → #/config; lector dynamic-lists.js se MANTIENE); (3) **vehicles — L, ÉPICA
-> PROPIA EN SESIÓN FRESCA** (wizard 6 pasos + drafts + smart-fields + gate CI
-> generate-vehicles.mjs sin diffs de esquema) → dealers (M) → backup (S) → **decisión financiera
-> del dueño (gap 8)** → ④ RBAC/usuarios → cutover (stub redirect, NUNCA borrar admin.html).
-> ✅ Verificar (F39): reseña + banner con imagen + editar una marca desde el portal → web SIN
-> Ctrl+Shift+R (§190/§191/§192 + cacheSignal) · cita walk-in · bloqueo real.
+> paso 0 ✅ (§189) → fase ② código ✅ (Reseñas §190 + Banners §191) → **fase ③: Marcas ✅ (§192,
+> main) + Atributos ✅ (§194, commit local)**. Patrón validado ×4. SIGUIENTE: (1) **gates ②/③**
+> (tras F39 live del dueño — verificado 12/06: auditLog SIN evidencia aún, solo login): ocultar/
+> readonly Banners+Reseñas+Marcas+Atributos del CLÁSICO; (2) **vehicles — L, ÉPICA PROPIA EN
+> SESIÓN FRESCA** (wizard 6 pasos + drafts + smart-fields + gate CI generate-vehicles.mjs sin
+> diffs de esquema) → dealers (M) → backup (S) → **decisión financiera del dueño (gap 8)** →
+> ④ RBAC/usuarios (departamental §193.4) → cutover (stub redirect, NUNCA borrar admin.html).
+> ✅ Verificar (F39): reseña + banner con imagen + editar marca + editar una lista (#/atributos)
+> desde el portal → web SIN Ctrl+Shift+R (§190-§192 cacheSignal; listas = TTL ≤5 min §194) ·
+> cita walk-in · bloqueo real.
 > ⚖️ Decisiones del dueño §193 (siembra post-panel): bot SIN fallback gratuito + solo Claude
 > (R-1 resuelta) · fase ④ hereda RBAC DEPARTAMENTAL (§193.4, comparar con cerebro Bersaglio).
 > ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
@@ -95,5 +96,9 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   Marcas (§192, merge #836). Preview mock ✓ ×3. Gotcha: emulador zombi :8081 — matar java.
 > - **2026-06-12 (6:40am, RELEVO pedido por el dueño)**: siembra §193 (bot solo-Claude sin
 >   fallback gratuito = R-1 resuelta · fábrica de skills TODO-22 · web CMS-izada TODO-23 · RBAC
->   departamental → fase ④). Sesión cerrada en frontera limpia. **Retomar: "continua"** → gate
->   fase ② (si F39 del dueño hechos) + Atributos/listas (S) → **vehículos en sesión fresca**.
+>   departamental → fase ④).
+> - **2026-06-12 (~7:25am, sesión nueva)**: "continua" → gate fase ② verificado (auditLog: solo
+>   login del dueño 11:05Z, SIN F39 aún → gate abierto) → **fase ③ p2 ✅: Atributos (§194)**,
+>   ruta propia `#/atributos` (desviación deliberada del "→ #/config" — razón en §194.2).
+>   Preview mock ✓ (13 tarjetas, modal de opciones en uso, validaciones) + build ✓. Commit local.
+>   **Retomar: "continua"** → gates ②/③ (si F39 del dueño hechos) → **vehículos en SESIÓN FRESCA**.

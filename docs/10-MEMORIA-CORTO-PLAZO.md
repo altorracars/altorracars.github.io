@@ -25,9 +25,9 @@
 > smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema) → dealers (M, decisión
 > D5-03 del dueño) → **decisión financiera (gap 8)** → ④ RBAC/usuarios (departamental §193.4)
 > → cutover (stub redirect, NUNCA borrar admin.html).
-> ✅ Verificar (F39): reseña + banner con imagen + editar marca + editar una lista (#/atributos)
-> + crear un respaldo manual (#/respaldos) → web SIN Ctrl+Shift+R (§190-§192 cacheSignal;
-> listas TTL ≤5 min §194) · cita walk-in · bloqueo real. Daily 13/06: counts con vehiculos/marcas.
+> ✅ **F39 v2 (§198)**: verificación en vivo = CLAUDE, por LOTES. Próximo lote (post-épica
+> vehículos): reseña + banner + marca + lista + respaldo + walk-in + reasignar + ciclo completo
+> de vehículo → web SIN Ctrl+Shift+R → cerrar gates ②/③. Daily 13/06: counts con vehiculos/marcas.
 > ⚖️ Decisiones del dueño §193 (siembra post-panel): bot SIN fallback gratuito + solo Claude
 > (R-1 resuelta) · fase ④ hereda RBAC DEPARTAMENTAL (§193.4, comparar con cerebro Bersaglio).
 > ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·

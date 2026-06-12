@@ -59,3 +59,34 @@
   .veh-row { flex-wrap: wrap; }
   .veh-row__price { align-items: flex-start; }
 }
+
+/* ── Wizard 6 pasos (V2) — §106: modal ancho, body con scroll ── */
+.veh-wiz { max-width: min(1140px, 96vw); width: 96vw; }
+.veh-wiz__body { max-height: 62vh; overflow-y: auto; display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-2) 0; }
+.veh-wiz__sec { display: flex; flex-direction: column; gap: var(--s-3); }
+.veh-wiz__sec[hidden] { display: none; }
+.veh-wiz__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s-3); }
+.veh-wiz__steps { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+.veh-wiz__step {
+  border: 1px solid var(--line); background: none; color: inherit;
+  border-radius: 999px; padding: 4px 12px; font-size: 0.78rem;
+  cursor: pointer; white-space: nowrap; opacity: 0.7;
+}
+.veh-wiz__step.is-active { border-color: var(--gold-500, #D4A85A); color: var(--gold-500, #D4A85A); opacity: 1; }
+.veh-wiz__step.is-done { opacity: 1; }
+.veh-wiz__foot { display: flex; gap: var(--s-2); align-items: center; padding-top: var(--s-2); border-top: 1px solid var(--line); }
+.veh-wiz__check { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.86rem; }
+.veh-wiz__tipo { color: var(--gold-500, #D4A85A); }
+.veh-wiz__warn { color: var(--warning, #F2B544); }
+.veh-wiz__smart { display: flex; flex-direction: column; gap: 4px; padding: var(--s-3); border: 1px dashed var(--line); border-radius: var(--r-md); }
+.veh-wiz__feats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--s-3); }
+.veh-wiz__featcol { display: flex; flex-direction: column; gap: 4px; }
+.veh-wiz__gallery { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.veh-wiz__img { position: relative; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.veh-wiz__img img { width: 120px; height: 80px; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); }
+.veh-wiz__principal {
+  position: absolute; top: 4px; left: 4px;
+  font-size: 0.62rem; padding: 1px 6px; border-radius: 999px;
+  background: var(--gold-500, #D4A85A); color: #1a1310;
+}
+.field-error { outline: 2px solid var(--danger, #E85D5D); }

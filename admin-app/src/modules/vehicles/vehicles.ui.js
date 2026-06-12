@@ -12,7 +12,8 @@ import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { ESTADO_LABELS, TIPO_LABELS, daysInStock, formatPrecio, toTitleCase } from '../../domain/vehicle.js';
 import { subscribeBrands, MOCK_BRANDS } from '../brands/brands.data.js';
-import { subscribeVehicles, toggleDestacado, deleteVehicle, MOCK_VEHICLES } from './vehicles.data.js';
+import { subscribeVehicles, toggleDestacado, deleteVehicle, sortVehicles, MOCK_VEHICLES } from './vehicles.data.js';
+import { openVehicleWizard } from './wizard.js';
 
 export function mountVehicles(root) {
   const ui = { vehicles: [], brandNames: {}, brands: [], q: '', estado: '', sub: null, subBrands: null, loaded: false };
@@ -88,6 +89,11 @@ export function mountVehicles(root) {
 
     const actions = [];
     if (canEdit) {
+      const e1 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️', 'aria-label': 'Editar' });
+      e1.addEventListener('click', () => openWizard(v));
+      actions.push(e1);
+    }
+    if (canEdit) {
       const star = el('button', {
         class: 'veh-star' + (v.destacado ? ' is-on' : ''), type: 'button',
         'aria-label': v.destacado ? 'Quitar de destacados' : 'Destacar',
@@ -145,6 +151,22 @@ export function mountVehicles(root) {
     });
   }
 
+  /* ── Wizard (V2): crear / editar ── */
+  function openWizard(vehicle) {
+    openVehicleWizard({
+      vehicle,
+      vehicles: ui.vehicles,
+      brandNames: ui.brandNames,
+      brands: ui.brands,
+      onDone: (mockDoc) => { // solo demo: lo real llega por onSnapshot
+        const i = ui.vehicles.findIndex((x) => x._docId === mockDoc._docId);
+        if (i >= 0) ui.vehicles[i] = mockDoc; else ui.vehicles.push(mockDoc);
+        ui.vehicles = sortVehicles(ui.vehicles);
+        render();
+      },
+    });
+  }
+
   function render() {
     clear(wrap);
     const search = el('input', { class: 'input veh-search', type: 'search', placeholder: 'Buscar por marca, modelo, código o placa…', value: ui.q });
@@ -156,9 +178,16 @@ export function mountVehicles(root) {
     estadoSel.value = ui.estado;
     estadoSel.addEventListener('change', () => { ui.estado = estadoSel.value; renderList(); });
 
+    const canCreate = hasPermission('vehicles.create');
+    const newBtn = canCreate
+      ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nuevo vehículo' })
+      : null;
+    if (newBtn) newBtn.addEventListener('click', () => openWizard(null));
+
     wrap.append(
       el('div', { class: 'rev-head' }, [
-        el('span', { class: 'u-caption u-muted', text: ui.vehicles.length + ' vehículos en el inventario. Crear y editar llegan en la siguiente etapa del portal — por ahora el clásico sigue siendo la vía de alta.' }),
+        el('span', { class: 'u-caption u-muted', text: ui.vehicles.length + ' vehículos — alimentan el catálogo público y sus páginas (el generador corre cada 4h).' }),
+        newBtn,
       ]),
       el('div', { class: 'veh-filters' }, [search, estadoSel]),
       listRoot,
@@ -196,7 +225,11 @@ export function mountVehicles(root) {
       () => toast('No se pudo cargar el inventario.', 'error'),
     );
     ui.subBrands = subscribeBrands(
-      (list) => { ui.brandNames = Object.fromEntries(list.map((b) => [b.id, b.nombre])); if (ui.loaded) render(); },
+      (list) => {
+        ui.brands = list;
+        ui.brandNames = Object.fromEntries(list.map((b) => [b.id, b.nombre]));
+        if (ui.loaded) render();
+      },
       () => {},
     );
   }

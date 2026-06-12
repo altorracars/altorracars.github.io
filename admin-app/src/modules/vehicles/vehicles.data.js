@@ -9,11 +9,12 @@
 // ============================================================
 
 import {
-  collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc,
+  collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, runTransaction,
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 import { writeAudit } from '../../core/audit.js';
+import { computeChanges } from '../../domain/vehicle.js';
 
 const nowISO = () => new Date().toISOString();
 const me = () => {
@@ -77,6 +78,84 @@ export async function deleteVehicle(v) {
   });
   await deleteDoc(doc(db, 'vehiculos', v._docId));
   writeAudit('vehicle_delete', 'vehiculo ' + v._docId, label);
+}
+
+/* ── Create / Update transaccionales (V2 — contratos del clásico) ── */
+
+/** codigoUnico 'ALT-YYYYMM-NNNN' vía tx sobre config/counters.vehicleCodeSeq
+ *  (admin-vehicles.js:68-84). Los códigos jamás se reúsan, ni en fallo. */
+export async function generateUniqueCode() {
+  const ref = doc(db, 'config', 'counters');
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const seq = ((snap.exists() && snap.data().vehicleCodeSeq) || 0) + 1;
+    tx.set(ref, { vehicleCodeSeq: seq }, { merge: true });
+    const d = new Date();
+    return 'ALT-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0')
+      + '-' + String(seq).padStart(4, '0');
+  });
+}
+
+/** docId candidato = max(id)+1 del cache (admin-vehicles.js:1644). */
+export function getNextId(vehicles) {
+  return vehicles.reduce((m, v) => Math.max(m, Number(v.id) || 0), 0) + 1;
+}
+
+/** Create con tx anti-colisión (admin-vehicles.js:1448-1462): si el docId
+ *  ya existe, reintenta con id+1 (máx 10). _version SIEMPRE 1 en create. */
+export async function createVehicle(vehicleData, candidateId, retries = 10) {
+  let id = candidateId;
+  for (let i = 0; i < retries; i++) {
+    const taken = await runTransaction(db, async (tx) => {
+      const ref = doc(db, 'vehiculos', String(id));
+      const snap = await tx.get(ref);
+      if (snap.exists()) return true;
+      tx.set(ref, { ...vehicleData, id, _version: 1 });
+      return false;
+    });
+    if (!taken) {
+      await logVehicleAction(String(id), {
+        action: 'created', vehicleId: id, changes: computeChanges(null, vehicleData),
+      });
+      writeAudit('vehicle_create', 'vehiculo ' + id, vehicleData.marca + ' ' + vehicleData.modelo);
+      return id;
+    }
+    id += 1;
+  }
+  const err = new Error('No se pudo asignar un ID tras ' + retries + ' intentos.');
+  err.code = 'id-exhausted';
+  throw err;
+}
+
+/** Update con optimistic-lock VERBATIM (admin-vehicles.js:1464-1478):
+ *  compara el _version capturado al ABRIR el form contra el actual en tx
+ *  (jamás increment ciego — pisaría apartado/vendido del CRM, gate de la
+ *  épica) y escribe el SHAPE COMPLETO vía tx.update (no set: preserva los
+ *  campos de venta; no merge parcial: limpia consignaParticular). */
+export async function updateVehicle(vehicleData, id, expectedVersion, oldData) {
+  await runTransaction(db, async (tx) => {
+    const ref = doc(db, 'vehiculos', String(id));
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw Object.assign(new Error('El vehículo ya no existe.'), { code: 'not-found' });
+    const currentVersion = snap.data()._version || 0;
+    if (expectedVersion !== null && currentVersion !== expectedVersion) {
+      const who = snap.data().updatedBy || 'otro usuario';
+      throw Object.assign(
+        new Error('Otro cambio se guardó primero (' + who + '). Recarga el vehículo y reintenta.'),
+        { code: 'version-conflict' });
+    }
+    tx.update(ref, { ...vehicleData, _version: currentVersion + 1 });
+  });
+  await logVehicleAction(String(id), {
+    action: 'edited', vehicleId: id, changes: computeChanges(oldData, vehicleData),
+  });
+  writeAudit('vehicle_update', 'vehiculo ' + id, vehicleData.marca + ' ' + vehicleData.modelo);
+}
+
+/** Concesionarios para el select del paso Comercial ('' = propio). */
+export async function fetchConcesionarios() {
+  const snap = await getDocs(collection(db, 'concesionarios'));
+  return snap.docs.map((d) => ({ id: d.id, nombre: d.data().nombre || d.id }));
 }
 
 /* ── Mock (V1): variedad de estados/edades para ejercitar la lista ── */

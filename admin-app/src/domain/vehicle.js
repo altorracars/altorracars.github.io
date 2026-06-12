@@ -185,3 +185,111 @@ export function formatPrecio(n) {
   if (!Number.isFinite(Number(n)) || Number(n) <= 0) return '—';
   return '$' + Number(n).toLocaleString('es-CO');
 }
+
+/* ── Auditoría: diff de campos (admin-vehicles.js:26-46 VERBATIM) ── */
+
+export const AUDIT_FIELDS = ['marca', 'modelo', 'year', 'tipo', 'categoria', 'precio', 'precioOferta',
+  'kilometraje', 'transmision', 'combustible', 'motor', 'color', 'estado', 'ubicacion',
+  'destacado', 'imagen', 'concesionario', 'oferta', 'featuredOrder'];
+
+export function computeChanges(oldData, newData) {
+  if (!oldData) return [{ field: '(nuevo)', from: null, to: 'creado' }];
+  const changes = [];
+  AUDIT_FIELDS.forEach((field) => {
+    let oldVal = oldData[field]; let newVal = newData[field];
+    if (oldVal === undefined) oldVal = null;
+    if (newVal === undefined) newVal = null;
+    if (typeof oldVal === 'number' && typeof newVal === 'number') {
+      if (oldVal !== newVal) changes.push({ field, from: oldVal, to: newVal });
+    } else if (String(oldVal || '') !== String(newVal || '')) {
+      changes.push({ field, from: oldVal, to: newVal });
+    }
+  });
+  return changes;
+}
+
+export const PLACA_DEFAULT = 'Disponible al contactar'; // sentinel string-literal (el generador lo excluye del VIN)
+export const PLACEHOLDER_IMG = 'multimedia/vehicles/placeholder-car.jpg'; // ruta relativa EXACTA
+
+/**
+ * Réplica PURA de buildVehicleData (admin-vehicles.js:1388-1446): el shape
+ * COMPLETO que se persiste en cada save. `f` = estado del form con nombres
+ * de campo del DOC (no IDs de inputs). Derivados verbatim: tipo←km,
+ * oferta=!!precioOferta, asientos=pasajeros, featuredWeek=destacado,
+ * prioridad PRESERVADA (solo reorder la muta), color TitleCase, defaults
+ * de negocio como strings ('Disponible al contactar', 'Consultar'…).
+ * Cierra con el hook Smart Fields: ''→null SOLO tipo/estado → derive() →
+ * _smartDerived persistido si derivó (paridad de shape con el clásico).
+ */
+export function buildVehicleDoc(f, { id, codigoUnico, existing, who }) {
+  const now = new Date().toISOString();
+  const imagenes = (f.imagenes || []).filter((u) => typeof u === 'string' && u);
+  const imagen = imagenes[0] || PLACEHOLDER_IMG;
+  if (!imagenes.length) imagenes.push(PLACEHOLDER_IMG);
+  if (imagenes.indexOf(imagen) < 0) imagenes.unshift(imagen);
+  const pasajeros = parseInt(f.pasajeros, 10) || 5;
+  const precioOferta = f.precioOferta === '' || f.precioOferta == null ? null : (parseInt(f.precioOferta, 10) || null);
+  const concesionario = f.concesionario || '';
+
+  let doc = {
+    id,
+    codigoUnico: codigoUnico || f.codigoUnico || '',
+    marca: f.marca || '',
+    modelo: String(f.modelo || '').trim(),
+    year: parseInt(f.year, 10) || null,
+    tipo: deriveTipoFromKm(f.kilometraje),
+    categoria: f.categoria || '',
+    precio: parseInt(f.precio, 10) || 0,
+    precioOferta,
+    oferta: !!precioOferta, // derivado — jamás un checkbox directo
+    kilometraje: parseInt(f.kilometraje, 10) || 0,
+    transmision: f.transmision || '',
+    combustible: f.combustible || '',
+    motor: f.motor || '',
+    potencia: f.potencia || '',
+    cilindraje: f.cilindraje || '',
+    traccion: f.traccion || '',
+    direccion: f.direccion || 'Electrica',
+    color: toTitleCase(f.color),
+    puertas: parseInt(f.puertas, 10) || 5,
+    pasajeros,
+    asientos: pasajeros, // SIEMPRE duplicado (lectores legacy)
+    ubicacion: f.ubicacion || 'Cartagena',
+    placa: String(f.placa || '').trim() || PLACA_DEFAULT,
+    codigoFasecolda: f.codigoFasecolda || 'Consultar',
+    revisionTecnica: f.revisionTecnica !== false,
+    peritaje: f.peritaje !== false,
+    estado: f.estado || 'disponible',
+    destacado: !!f.destacado,
+    featuredWeek: !!f.destacado, // espejo legacy con lectores vivos
+    prioridad: existing ? (existing.prioridad || 0) : 0, // solo reorder la muta
+    featuredOrder: f.featuredOrder === '' || f.featuredOrder == null ? null : (parseInt(f.featuredOrder, 10) || null),
+    featuredTag: String(f.featuredTag || '').trim() || null,
+    imagen,
+    imagenes,
+    caracteristicas: (f.caracteristicas || []).filter(Boolean),
+    concesionario,
+    consignaParticular: concesionario === '_particular' ? (f.consignaParticular || '') : '',
+    updatedAt: now,
+    updatedBy: who.email,
+    lastModifiedBy: who.email,
+    lastModifiedByName: who.nombre,
+    lastModifiedAt: now,
+  };
+  if (existing) {
+    if (existing.createdBy) doc.createdBy = existing.createdBy;
+    if (existing.createdByName) doc.createdByName = existing.createdByName;
+    if (existing.createdAt) doc.createdAt = existing.createdAt;
+  } else {
+    doc.createdBy = who.email;
+    doc.createdByName = who.nombre;
+    doc.createdAt = now;
+  }
+  // Hook Smart Fields (K.2): ''→null SOLO tipo/estado, luego derive.
+  if (doc.tipo === '') doc.tipo = null;
+  if (doc.estado === '') doc.estado = null;
+  const smart = derive(doc);
+  doc = smart.result;
+  if (smart.derived.length) doc._smartDerived = smart.derived;
+  return { doc, derived: smart.derived };
+}

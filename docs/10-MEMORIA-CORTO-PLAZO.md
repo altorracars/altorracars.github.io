@@ -99,6 +99,8 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   merge #838) → ampliación §193.2 (skills arranque+RESCATE, merge #839) → gap 5 ✅ (§196,
 >   "＋ Nueva cita" walk-in, merge #840) → **gap 7 ✅ (§197)**: acción `update` (observaciones +
 >   reasignar asesor, moveAdvisorBlocks, suite emulador 193 ✓, deploy ✓). Commit local.
->   F39 re-verificado ×4: auditLog VACÍO. **Transversal desbloqueado AGOTADO** — todo lo restante
->   espera F39/decisiones del dueño o la SESIÓN FRESCA de vehículos.
->   **Retomar: "continua"** → gates ②/③ (si F39 hechos) → **vehículos en SESIÓN FRESCA**.
+>   F39 re-verificado ×5: auditLog VACÍO (F39 explicado al dueño en cristiano: SUS 7 pruebas en vivo).
+> - **2026-06-12 (mediodía)**: GC 30-LECCIONES (destilado, f5fdeb2) + M-14 (no recomendar cierre
+>   por nota de plan con presupuesto sobrando — corrección del dueño). **El dueño ORDENÓ arrancar
+>   la ÉPICA DE VEHÍCULOS en esta misma sesión** (~50% presupuesto) → mapeo con agentes en curso.
+>   **Retomar: "continua"** → seguir la épica de vehículos (mapa → diseño → wizard por etapas).

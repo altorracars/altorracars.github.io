@@ -1,0 +1,63 @@
+/* ============================================================
+   Reseñas (E6 fase ②, §188) — primer módulo público en el portal.
+   Clases nuevas con prefijo rev- (aditivo §17.4); reusa
+   btn/input/select/field/state/chip/avatar del design system y
+   los tokens theme-aware (--surface-card etc. → light/dark OK).
+   Solo transform/opacity en transiciones (§17).
+   ============================================================ */
+
+.rev { display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-1) 0 var(--s-6); }
+
+.rev-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+.rev-stats { display: flex; gap: var(--s-5); }
+.rev-stat { display: flex; flex-direction: column; }
+.rev-stat strong { font-size: 1.15rem; line-height: 1.1; }
+
+.rev-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: var(--s-3);
+}
+
+.rev-card {
+  display: flex; flex-direction: column; gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke, var(--line));
+  border-radius: var(--r-xl);
+}
+.rev-card__top { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+.rev-card__who { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.rev-card__stars { color: var(--gold-500, #D4A85A); letter-spacing: 1px; white-space: nowrap; }
+.rev-card__text { margin: 0; font-size: 0.88rem; line-height: 1.45; color: var(--ink-text-muted); }
+.rev-card__meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.rev-card__actions { display: flex; gap: var(--s-2); justify-content: flex-end; margin-top: auto; }
+
+.chip--gold { color: var(--gold-600, #B8924A); border-color: currentColor; }
+
+/* Modal propio (overlay liviano; el portal no tiene componente modal genérico aún) */
+.rev-modal__overlay {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  padding: var(--s-4);
+}
+.rev-modal {
+  width: min(560px, 100%);
+  max-height: 90vh; overflow: auto;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke, var(--line));
+  border-radius: var(--r-xl);
+  padding: var(--s-5);
+  display: flex; flex-direction: column; gap: var(--s-3);
+}
+.rev-modal--sm { width: min(420px, 100%); }
+.rev-modal__title { margin: 0; font-size: 1.02rem; }
+.rev-modal__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+.rev-modal__text { resize: vertical; min-height: 90px; }
+.rev-modal__actions { display: flex; gap: var(--s-3); justify-content: flex-end; }
+.rev-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
+
+@media (max-width: 560px) {
+  .rev-modal__grid { grid-template-columns: 1fr; }
+}

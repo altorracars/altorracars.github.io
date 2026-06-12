@@ -16,14 +16,16 @@
 > 🚫 Callejones: NO classification-en-manifest, NO checklist-doc-nuevo, NO score LLM, NO brain-diff
 > en boot, NO regex 5c para el BFS.
 
-> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0→E5 ✅ MERGEADAS (E5 = PR #832, 12/06).**
-> **E6 EN CURSO**: E6.6 auditoría ✅ (§188, plan 29 pasos en bóveda) → **paso 0 pre-fase ✅
-> (§189, DESPLEGADO)**: cacheSignal ×4 + onUsuarioBloqueadoSync + loginAttempts cerrado + fix
-> cita interna (E5 la había roto: createdBy — L-41) + kind:'cita' + convert legacy retirado +
-> limpieza. 192 tests. SIGUIENTE: **fase ② strangler** (admin-reviews → portal [S, valida el
-> patrón] → admin-banners [M, solo promocional+home_promo]) → ③ (brands/lists/vehicles-L/dealers)
+> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0→E5 ✅ en main. E6 EN CURSO**: E6.6 ✅ (§188) →
+> paso 0 ✅ DESPLEGADO (§189) → **fase ② paso 1 ✅: módulo Reseñas en el portal (§190)** —
+> patrón del strangler VALIDADO (data shape-verbatim + RBAC espejo + mock + core/audit.js
+> + nav gated). Preview mock: alta/edición/borrado ✓. SIGUIENTE: **fase ② paso 2 —
+> admin-banners → portal** (M: SOLO posiciones vivas `promocional`+`home_promo` — hero/categoria
+> son write-only sin lector D5-12 ·  upload Storage `banners/` · invalidación vía cacheSignal) →
+> gate de fase (ocultar/readonly reviews+banners del clásico) → ③ (brands/lists/vehicles-L/dealers)
 > → ④ (RBAC/usuarios/auditoría/perfil+Telegram) → cutover (stub redirect, NUNCA borrar admin.html).
-> ✅ Verificar (F39, próxima sesión): log `[cacheSignal]` tras la 1ª edición real de inventario ·
+> ✅ Verificar (F39, próxima sesión): **crear una reseña real desde #/resenas** → debe aparecer
+> en el sitio público SIN Ctrl+Shift+R (valida módulo §190 + cacheSignal §189 en un gesto) ·
 > cita interna walk-in pasa rules · onUsuarioBloqueadoSync al 1er bloqueo.
 > ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
 > 2FA portal (R-9) · vista Inicio (gap 3). Gates: F32 móvil · F33b piloto 1 semana · manual.
@@ -107,3 +109,6 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   ejecutado/desplegado (§189, hallazgo: E5 había roto la cita interna → L-41). Daily job 12/06
 >   verificado ✓ (`wonsBackfilled:1` = F10 auto-reparó; counts confirman el purge del dueño —
 >   verificación live F39 de crmPurgeLead §180 CUMPLIDA).
+> - **2026-06-12 (5:30-6am, misma sesión)**: "continua." (paso 0 mergeado PR #833) → **fase ②
+>   paso 1: Reseñas en el portal (§190)** — patrón de migración validado en preview mock (alta/
+>   edición/borrado/stats/RBAC). core/audit.js nace (gap 2 §188). Siguiente: banners.

@@ -22,6 +22,8 @@ const NAV = [
   { id: 'contactos', label: 'Contactos', icon: '👤', ready: true },
   // F21 §184: editor del SSoT de disponibilidad — solo quien lo administra.
   { id: 'config', label: 'Disponibilidad', icon: '⚙️', ready: true, perm: 'calendar.config' },
+  // E6 fase ② §188: primer módulo del sitio público migrado del clásico.
+  { id: 'resenas', label: 'Reseñas', icon: '⭐', ready: true, perm: 'reviews.read' },
 ];
 
 const TITLES = {
@@ -31,6 +33,7 @@ const TITLES = {
   reportes: 'Reportes y KPIs',
   contactos: 'Contactos',
   config: 'Disponibilidad de citas',
+  resenas: 'Reseñas del sitio',
 };
 
 export function mountShell(appRoot) {

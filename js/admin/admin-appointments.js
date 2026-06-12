@@ -884,9 +884,12 @@
                 { label: 'Aprobar', state: 'aprobada', cls: 'btn-success' }
             ];
         } else if (kind === 'lead') {
+            // §188 paso 0.3: retirado "Convertir a solicitud" — copiaba el doc
+            // ENTERO (claves fuera de la whitelist E5 → denegado) y además
+            // re-disparaba la ingestión = lead duplicado. La conversión
+            // canónica vive en el portal (diálogo F7 §181).
             actions = [
-                { label: 'Marcar contactado', state: 'contactado', cls: 'btn-info' },
-                { label: 'Convertir a solicitud', action: 'convert', cls: 'btn-primary' }
+                { label: 'Marcar contactado', state: 'contactado', cls: 'btn-info' }
             ];
         }
         if (!actions.length) return;
@@ -923,27 +926,10 @@
                     sel.value = quickState;
                     sel.dispatchEvent(new Event('change'));
                 }
-            } else if (quickAction === 'convert') {
-                // Lead → Solicitud conversion
-                if (!confirm('¿Convertir este lead en una solicitud? Se creará un nuevo doc.')) return;
-                window.db.collection('solicitudes').add(Object.assign({}, doc, {
-                    kind: 'solicitud',
-                    estado: 'pendiente',
-                    convertedFromLead: doc._docId,
-                    createdAt: new Date().toISOString()
-                })).then(function () {
-                    // Mark original lead as converted
-                    return window.db.collection('solicitudes').doc(doc._docId).update({
-                        estado: 'convertido',
-                        updatedAt: new Date().toISOString()
-                    });
-                }).then(function () {
-                    if (AP.toast) AP.toast('Lead convertido a solicitud');
-                    $('appointmentModal').classList.remove('active');
-                }).catch(function (err) {
-                    if (AP.toast) AP.toast('Error: ' + err.message, 'error');
-                });
             }
+            // §188 paso 0.3: handler 'convert' retirado junto con su botón
+            // (duplicaba el doc completo — denegado por la whitelist E5 y
+            // re-ingestaba el lead). Conversión canónica = diálogo F7 del portal.
         });
     }
 
@@ -1282,6 +1268,10 @@
                 fecha: fecha || '',
                 hora: hora || '',
                 requiereCita: !!(fecha && hora),
+                // §188 paso 0.3: sin kind, citaSweep y el rebuild de las 5am no
+                // ven esta cita (query kind=='cita') y el rebuild BORRABA su
+                // reserva de bookedSlots → ventana real de double-booking.
+                kind: (fecha && hora) ? 'cita' : 'solicitud',
                 estado: $('iaEstado').value || 'confirmada',
                 tipo: $('iaType').value || 'visita',
                 origen: 'admin',

@@ -3829,7 +3829,9 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
      firebase-app-compat.js (que firebase-config.js carga via loadScript). -->
 <script src="js/admin/admin-fcm.js" defer></script>
 <script src="js/admin/admin-telegram.js" defer></script>
-<script src="js/admin/admin-color-extract.js" defer></script>
+<!-- §188 paso 0.4: admin-color-extract.js descargado pero JAMÁS invocado
+     (AltorraColorExtract sin callsites) — tag retirado; el archivo muere
+     con el shell en el cutover. -->
 <script src="js/admin/admin-performance.js" defer></script>
 <!-- §27.2 Inicio productivo — KPIs hero (3 grandes) + NBA dashboard (top 5) -->
 <script src="js/admin/admin-hero-kpis.js" defer></script>

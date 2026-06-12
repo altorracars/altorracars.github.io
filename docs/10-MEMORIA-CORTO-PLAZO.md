@@ -16,18 +16,20 @@
 > 🚫 Callejones: NO classification-en-manifest, NO checklist-doc-nuevo, NO score LLM, NO brain-diff
 > en boot, NO regex 5c para el BFS.
 
-> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0✅ E1a✅ E1b✅ E2✅ E3✅ E4✅ E5✅ (§187)** —
-> Blindaje DESPLEGADO: SEC-01 read estricto · SEC-06 whitelists+caps+escapes (censo literal de los
-> 5 forms; fix soft-lead concierge) · SEC-08 bookedSlots acotado con self-heal de auth + liberación
-> de slot · citas legacy cerrada · retry:true ×6 triggers con guards transaccionales. 189 tests.
-> Review adversarial: 21 confirmados corregidos. Cache `v20260612041500`.
-> ✅ **E2E live E5 HECHO (12/06 3:40am, esta sesión)**: submit Playwright contra
-> `contacto.html` LIVE (datos "PRUEBA E2E E5 (borrar)") → rules E5 aceptaron el form viejo de
-> `main` (no-regresión real) · doc `solicitudes/VMVMJGcn2Gu7iwd6zCuD` · ingestión → lead
-> `a0djMAe5…` + contact con dedupKeys · email admin ✓ · **Telegram entregado** (evidencia:
-> `usuarios/{Daniel}.telegramLastUsedAt == 08:40:07Z`) · festivos ✅ en `config/availability`.
-> **COMMIT E5 hecho** → solo falta: dueño push/merge + Ctrl+Shift+R + descartar lead de prueba
-> (Bandeja → descartado → spam_prueba). App Check 403 al bot = esperado (anotado en lóbulo `41`).
+> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0→E5 ✅ MERGEADAS (E5 = PR #832, 12/06).**
+> **E6 EN CURSO**: E6.6 auditoría ✅ (§188, plan 29 pasos en bóveda) → **paso 0 pre-fase ✅
+> (§189, DESPLEGADO)**: cacheSignal ×4 + onUsuarioBloqueadoSync + loginAttempts cerrado + fix
+> cita interna (E5 la había roto: createdBy — L-41) + kind:'cita' + convert legacy retirado +
+> limpieza. 192 tests. SIGUIENTE: **fase ② strangler** (admin-reviews → portal [S, valida el
+> patrón] → admin-banners [M, solo promocional+home_promo]) → ③ (brands/lists/vehicles-L/dealers)
+> → ④ (RBAC/usuarios/auditoría/perfil+Telegram) → cutover (stub redirect, NUNCA borrar admin.html).
+> ✅ Verificar (F39, próxima sesión): log `[cacheSignal]` tras la 1ª edición real de inventario ·
+> cita interna walk-in pasa rules · onUsuarioBloqueadoSync al 1er bloqueo.
+> ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
+> 2FA portal (R-9) · vista Inicio (gap 3). Gates: F32 móvil · F33b piloto 1 semana · manual.
+> 🚫 Callejones E6.6: NO borrar admin-calendar-config (inyectado en público para el bot,
+> components.js:514) ni dynamic-lists.js ni firebase-messaging-sw.js · NO portar dashboards
+> envenenados (rehacer sobre deals.wonAt) · NO limpiar nodo RTDB presence (functions lo lee 1/min).
 > 🚫 Callejones de E5: NO añadir condiciones a la rule de solicitudes sin medir (límite ~1000
 > expresiones, ya al borde) · NO abrir updates anónimos de solicitudes (bot diferido) · emulador
 > zombi en :8081 (matar java) · suite paralela necesita testTimeout/hookTimeout (ya en config).
@@ -67,9 +69,9 @@
 | **TODO-09..13** | Deuda técnica menor (drafts, CSS muerto, transition:all, substring selectors) | 🔮 | opcional |
 | **TODO-15** | Anomalías skills restantes → `skills-inventory.md` | 🔮 | decisión cliente |
 | **TODO-18** | Blindaje pre-lanzamiento → **ABSORBIDO en E5** (§176). Detalle `41`/`42` | ⏳ → E5 | E3→E4 |
-| **TODO-19** | CRM Fase 5 cutover → **ABSORBIDO en E6** + E6.5/E6.6 (§183) | 🔮 → E6 | tras E5 |
+| **TODO-19** | CRM Fase 5 cutover → **E6 EN CURSO**: E6.6 ✅ §188 → paso 0 pre-fase | ⏳ | — |
 | **TODO-20** | **Comité v6**: quedan T (inmobiliaria) + U (auditoría Nivel-2, sesión fresca) | 🔄 | — |
-| **TODO-21** | **Plan CRM E0→E6** — ledger maestro en VEREDICTO (bóveda). E0✅ E1a✅ E1b✅ E2✅ → **E3** | ⏳ | merge cliente |
+| **TODO-21** | **Plan CRM E0→E6** — ledger en VEREDICTO (bóveda). **E0→E5 ✅ en main** · E6 ⏳ (plan 29 pasos §188) | ⏳ | — |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -100,3 +102,8 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 > - **2026-06-12 (3:35am)**: "continua" → **E2E live E5 ejecutado por Claude** (Playwright, no
 >   esperar al dueño): pipeline completo verificado con evidencia (rules→solicitud→lead→contact→
 >   email→Telegram). Commit E5. Pendiente HOY: daily job 5am (tarea #3) + push/merge cliente.
+> - **2026-06-12 (4-5:30am, misma sesión)**: "todo realizado continua" (E5 mergeada PR #832) →
+>   **E6 arrancada**: E6.6 auditoría (workflow 16 agentes, 112 hallazgos → §188 + bóveda) + paso 0
+>   ejecutado/desplegado (§189, hallazgo: E5 había roto la cita interna → L-41). Daily job 12/06
+>   verificado ✓ (`wonsBackfilled:1` = F10 auto-reparó; counts confirman el purge del dueño —
+>   verificación live F39 de crmPurgeLead §180 CUMPLIDA).

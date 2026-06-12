@@ -3553,6 +3553,18 @@ exports.onSolicitudWritten = require('./src/crm/onSolicitudWritten').onSolicitud
 exports.crmDailyJob = require('./src/ops/crmDailyJob').crmDailyJob;
 exports.crmRunDailyMaintenance = require('./src/ops/crmDailyJob').crmRunDailyMaintenance;
 
+// ========== E6 paso 0 (ADR §188) — pre-fase del strangler ==========
+// 0.1: el público invalida caché por system/meta.lastModified; el único
+// escritor era el admin clásico → mutaciones del portal/triggers dejaban la
+// web stale. Señal server-side en los 4 agregados que el público renderiza.
+exports.onVehiculoWrittenSignal = require('./src/ops/cacheSignal').onVehiculoWrittenSignal;
+exports.onMarcaWrittenSignal = require('./src/ops/cacheSignal').onMarcaWrittenSignal;
+exports.onBannerWrittenSignal = require('./src/ops/cacheSignal').onBannerWrittenSignal;
+exports.onResenaWrittenSignal = require('./src/ops/cacheSignal').onResenaWrittenSignal;
+// 0.2 (R-8): bloqueado flip → disable/enable de la cuenta Auth (el flag deja
+// de ser teatro client-side; el portal además lo chequea en hydrateProfile).
+exports.onUsuarioBloqueadoSync = require('./src/ops/userBlock').onUsuarioBloqueadoSync;
+
 // ========== CRM F37 — vigilante de SLA (ADR §179, E1a) ==========
 // La tarjeta de la Bandeja avisa al ASESOR a los 45/60 min (F4); este sweep
 // escala al RESPONSABLE a las N horas HÁBILES (default 2 — en usados el lead

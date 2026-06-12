@@ -248,6 +248,57 @@ describe.skipIf(!EMU)('Rules E5 — SEC-08: config/bookedSlots acotado sin rompe
   });
 });
 
+describe.skipIf(!EMU)('Rules §188 paso 0 — cita interna del clásico + loginAttempts cerrado', () => {
+  let testEnv, rut;
+  const STAFF = 'staff_uid_paso0';
+
+  beforeAll(async () => {
+    rut = await import('@firebase/rules-unit-testing');
+    testEnv = await rut.initializeTestEnvironment({
+      projectId: 'altorra-rules-188-paso0',
+      firestore: { rules: RULES() },
+    });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc('usuarios/' + STAFF).set({ rol: 'custom', permissions: ['crm.edit'], estado: 'activo' });
+      await ctx.firestore().doc('loginAttempts/victima_x_co').set({ email: 'victima@x.co', intentos: 0, bloqueado: false });
+    });
+  });
+  afterAll(async () => { if (testEnv) await testEnv.cleanup(); });
+
+  // Payload LITERAL de admin-appointments.js saveInternalAppt (§188 paso 0.3):
+  // el 6º escritor que el censo E5 no vio — firma con createdBy y ahora lleva kind.
+  const CITA_INTERNA = {
+    nombre: 'Cliente Walk-in', telefono: '3007654321', whatsapp: '3007654321',
+    prefijoPais: '+57', email: 'No proporcionado', vehiculo: 'Mazda CX-30',
+    fecha: '2030-02-10', hora: '10:00', requiereCita: true, kind: 'cita',
+    estado: 'confirmada', tipo: 'visita', origen: 'admin', observaciones: 'trae cédula',
+    comentarios: '', createdAt: '2026-06-12T05:00:00.000Z', createdBy: 'asesor@altorra.co',
+  };
+
+  it('la cita interna del clásico (con createdBy + kind) PASA la whitelist', async () => {
+    const db = testEnv.authenticatedContext(STAFF).firestore();
+    await rut.assertSucceeds(db.collection('solicitudes').add(CITA_INTERNA));
+  });
+
+  it('el payload del convert legacy (doc copiado con claves de servidor) sigue DENEGADO', async () => {
+    const db = testEnv.authenticatedContext(STAFF).firestore();
+    await rut.assertFails(db.collection('solicitudes').add({
+      ...CITA_INTERNA, _ingestedAt: '2026-06-12T00:00:00Z', _leadId: 'l1',
+      assignedTo: 'uid_x', convertedFromLead: 'abc',
+    }));
+  });
+
+  it('loginAttempts: read/create/update mueren para anónimos Y autenticados (DoS de bloqueo cerrado)', async () => {
+    const anon = testEnv.unauthenticatedContext().firestore();
+    const authed = testEnv.authenticatedContext('cualquiera').firestore();
+    await rut.assertFails(anon.doc('loginAttempts/victima_x_co').get());
+    await rut.assertFails(authed.doc('loginAttempts/victima_x_co').get());
+    await rut.assertFails(anon.doc('loginAttempts/victima_x_co').set({ bloqueado: true }));
+    await rut.assertFails(authed.doc('loginAttempts/victima_x_co').update({ bloqueado: true }));
+    await rut.assertFails(authed.doc('loginAttempts/otro_y_co').set({ email: 'otro@y.co', intentos: 5, bloqueado: true }));
+  });
+});
+
 describe.skipIf(EMU)('Rules E5 (skip)', () => {
   it('requieren emulador — correr con firebase emulators:exec', () => {
     expect(true).toBe(true);

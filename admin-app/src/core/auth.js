@@ -29,6 +29,13 @@ async function hydrateProfile(user) {
   try {
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
     const profile = snap.exists() ? snap.data() : null;
+    if (profile && profile.bloqueado === true) {
+      // §188 paso 0.2 (R-8): el disable server-side de Auth no mata el ID token
+      // ya emitido (≤1h) — sin este check, un bloqueado con sesión viva opera.
+      await signOut(auth);
+      store.set({ user: null, profile: null, permissions: [], ready: true, authError: 'Cuenta bloqueada. Contacta al administrador.' });
+      return;
+    }
     store.set({ user, profile, permissions: permissionsFromProfile(profile), ready: true, authError: null });
   } catch (err) {
     // Lookup falló (red/permiso) — deja la sesión activa con permisos vacíos;

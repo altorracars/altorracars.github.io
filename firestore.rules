@@ -616,7 +616,11 @@ service cloud.firestore {
           'mensaje', 'estado', 'observaciones', 'createdAt', 'userId',
           'userEmail', 'clientCategory', 'source', 'device', 'priority',
           'tags', 'slaDeadline', 'slaMs', 'sessionId', 'sourcePage',
-          'sourceVehicleId', 'level', 'lastMessageAt'
+          'sourceVehicleId', 'level', 'lastMessageAt',
+          // §188 paso 0.3: el censo E5 cubrió los 5 creadores PÚBLICOS y se le
+          // escapó el 6º escritor — la cita interna del clásico
+          // (admin-appointments.js saveInternalAppt) firma con createdBy.
+          'createdBy'
         ])
         // ⚠️ PRESUPUESTO de Rules: máx ~1000 expresiones por evaluación — los
         // caps por-campo se limitan a los vectores REALES de abuso (textos
@@ -633,6 +637,7 @@ service cloud.firestore {
         && solCapOk('whatsapp', 25)
         && solCapOk('userEmail', 254)
         && solCapOk('sourcePage', 200)
+        && solCapOk('createdBy', 254)
         && (!('tags' in request.resource.data)
             || (request.resource.data.tags is list && request.resource.data.tags.size() <= 12))
         && solMapOk('source', ['page', 'cta', 'referrer'])
@@ -648,10 +653,16 @@ service cloud.firestore {
     }
 
     // ========== LOGIN ATTEMPTS (cross-device account locking) ==========
+    // E6 paso 0.2 (§188, cierra SEC-05/R-8): era read/create/update:true —
+    // world-writable: cualquiera enumeraba cuentas o bloqueaba a un admin
+    // seteando bloqueado:true (DoS del login). El lockout client-side era
+    // teatro (el atacante no lo honra); la protección real es (a) la de
+    // Firebase Auth (too-many-requests) y (b) el trigger onUsuarioBloqueadoSync
+    // que deshabilita la cuenta Auth al bloquear. El clásico degrada en
+    // silencio: TODOS sus accesos a esta colección tienen .catch (verificado
+    // admin-auth.js / admin-users.js).
     match /loginAttempts/{emailHash} {
-      allow read: if true;
-      allow create, update: if true;
-      allow delete: if isSuperAdmin();
+      allow read, write: if false;
     }
 
     // ========== AUDIT LOG ==========

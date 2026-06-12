@@ -21,7 +21,11 @@ import {
 import { fetchLists, MOCK_LISTS } from '../lists/lists.data.js';
 import {
   generateUniqueCode, getNextId, createVehicle, updateVehicle, fetchConcesionarios,
+  uploadVehicleImages,
 } from './vehicles.data.js';
+
+// 1px dorado — galería de demo sin red.
+const DEMO_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/dEJWiQAAAABJRU5ErkJggg==';
 
 const FEAT_CATEGORIES = [
   ['featSeguridad', 'Seguridad'], ['featConfort', 'Confort'], ['featTecnologia', 'Tecnología'],
@@ -178,8 +182,38 @@ export async function openVehicleWizard({ vehicle, vehicles, brandNames, brands,
     if (!/^https?:\/\//.test(u) && u.indexOf('multimedia/') !== 0) { toast('URL no válida: usa http(s):// o multimedia/…', 'error'); return; }
     f.imagenes.push(u); urlIn.value = ''; renderGallery();
   });
+  // V3: subida nativa — tanda ordenada alfanumérica, APPEND al final.
+  const fileInput = el('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', multiple: true, class: 'ban-file' });
+  const upStatus = el('span', { class: 'u-caption u-muted', text: '' });
+  const drop = el('div', { class: 'ban-drop' }, [
+    el('span', { text: '📷' }),
+    el('span', { class: 'u-caption u-muted', text: 'Click para subir fotos (JPG/PNG/WebP → WebP 1200px) · máx 2MB c/u · se ordenan por nombre' }),
+  ]);
+  drop.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const files = [...fileInput.files];
+    fileInput.value = '';
+    if (!files.length) return;
+    if (store.get().mock) {
+      files.forEach(() => f.imagenes.push(DEMO_IMG));
+      renderGallery(); toast(files.length + ' foto(s) simuladas (demo)', 'ok');
+      return;
+    }
+    upStatus.textContent = 'Comprimiendo…';
+    try {
+      const { urls, rejected } = await uploadVehicleImages(files, (s) => { upStatus.textContent = s; });
+      f.imagenes.push(...urls); // append al FINAL de la galería existente (contrato)
+      renderGallery();
+      upStatus.textContent = urls.length ? '✓ ' + urls.length + ' foto(s) subidas' : '';
+      if (rejected.length) toast('Rechazadas: ' + rejected.join(' · '), 'error');
+    } catch (e) {
+      upStatus.textContent = '';
+      toast('No se pudieron subir: ' + (e.message || e.code), 'error');
+    }
+  });
   const sec4 = el('div', { class: 'veh-wiz__sec' }, [
-    el('p', { class: 'u-caption u-muted', text: 'La primera foto es la portada del catálogo. Subir archivos desde el equipo llega en la siguiente etapa — por ahora pega URLs (o usa el clásico para subir).' }),
+    el('p', { class: 'u-caption u-muted', text: 'La primera foto es la portada del catálogo. Quitar una foto no borra el archivo (otros vehículos pueden compartirlo).' }),
+    drop, fileInput, upStatus,
     galleryEl,
     el('div', { class: 'cfg-row' }, [urlIn, urlBtn]),
   ]);

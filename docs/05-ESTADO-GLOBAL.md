@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-12 madrugada**) |
 |---|---|
-| **Build** | 🟢 **CRM §176: E0→E5 ✅. E6**: fases ②/③ módulos ✅ (§190-§197, en main). **ÉPICA VEHÍCULOS**: mapa ✅ · V1 lista ✅ §199 · **V2 wizard ✅ §200** (commits locales) · faltan V3 imágenes → V4 drafts → V5 extras → V6 lote §198+gates. Plan/checklist en bóveda. Decisiones dueño: D5-03, gap 6/8. |
+| **Build** | 🟢 **CRM §176: E0→E5 ✅. E6**: fases ②/③ módulos ✅ (§190-§197, en main). **ÉPICA VEHÍCULOS**: mapa ✅ · V1 §199 · V2 wizard §200 · **V3 imágenes ✅ §201** (commits locales) · faltan V4 drafts → V5 extras → V6 lote §198+gates. Plan/checklist en bóveda. Decisiones dueño: D5-03, gap 6/8. |
 | **Cache version vigente** | **`v20260612052500`** (§188 paso 0). SW == cache-manager ✅. Ctrl+Shift+R tras merge. |
 | **Branch activa** | `refactor/estructura` — §193.2-bis en `main` (PR #839 ✓). **Local sin push: gap 5 §196.** Deploys firebase = Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |

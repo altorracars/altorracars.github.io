@@ -43444,3 +43444,10 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 - **200.5/.6**: upload nativo de archivos = V3 (el paso Fotos lo dice; clásico disponible). Archivos: NUEVO wizard.js · MOD domain/vehicle.js, vehicles.data.js, vehicles.ui.js (+Nuevo/+Editar), vehicles.css + dist. Cero rules/functions.
 - **200.7 Siguiente**: V3 imágenes (upload Storage cars/ 1200@0.75 WebP) → V4 drafts → V5 extras → V6 lote §198.
 
+## 201. ADR-201 — Épica vehículos V3: subida nativa de fotos (Storage cars/, contrato del clásico)
+
+- **201.1**: `uploadVehicleImages(files, onStatus)` en vehicles.data.js — tanda ordenada **ALFANUMÉRICA por nombre ANTES de subir** (§104 B.3: portada determinista, no por latencia), resultados por **SLOT** (orden estable), compresión `compressImage(file, {maxWidth:1200, quality:0.75})` (overrides explícitos — los defaults del portal 1920@0.85 son de banners), path **`cars/{Date.now()}_{baseName}.webp`** con baseName del nombre **ORIGINAL** saneado `[^a-zA-Z0-9._-]→'_'` (el Blob del portal no trae .name), contentType image/webp, getDownloadURL como string. Inválidas (tipo o >2MB — el límite REAL; el texto "10MB" del clásico era stale) se rechazan SIN frenar la tanda y se reportan. URLs se APPENDEN al final de la galería (contrato).
+- **201.2**: paso 4 del wizard — drop-zone (reusa ban-drop §191) + status de progreso + nota explícita "quitar una foto no borra el archivo" (huérfanos by-design: duplicados comparten objetos). Mock = data-URI 1px.
+- **201.3 Tests**: mock ✓ (2 archivos → 2 fotos en galería + PRINCIPAL; salto de indicador bloqueado validando el paso ACTUAL = paridad clásico). Subida REAL contra Storage = lote V6 (§198). storage.rules intactas (cars/ ya permite autenticado <5MB image/*). Build ✓, cero errores consola.
+- **201.4 Siguiente**: V4 drafts (shape keys del form CLÁSICO para interop bidireccional) → V5 extras → V6 lote.
+

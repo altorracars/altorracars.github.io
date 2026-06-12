@@ -9,12 +9,14 @@
 // ============================================================
 
 import {
-  collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, runTransaction,
+  collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, setDoc, runTransaction,
 } from 'firebase/firestore';
-import { db } from '../../core/firebase.js';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 import { writeAudit } from '../../core/audit.js';
-import { computeChanges } from '../../domain/vehicle.js';
+import { compressImage } from '../../core/image.js';
+import { computeChanges, sanitizeForFirestore, snapshotHasAnyData } from '../../domain/vehicle.js';
 
 const nowISO = () => new Date().toISOString();
 const me = () => {
@@ -152,11 +154,94 @@ export async function updateVehicle(vehicleData, id, expectedVersion, oldData) {
   writeAudit('vehicle_update', 'vehiculo ' + id, vehicleData.marca + ' ' + vehicleData.modelo);
 }
 
+/* ── Imágenes (V3 — decisión 7 del plan, contrato del clásico) ── */
+
+const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const IMG_MAX_MB = 2; // límite real del clásico (su texto "10MB" era stale)
+
+/** Sube una TANDA de fotos: ordena ALFANUMÉRICO por nombre ANTES de
+ *  subir (§104 B.3 — portadas deterministas, no por latencia de red),
+ *  comprime a WebP 1200px @ 0.75 (overrides: los defaults del portal
+ *  son de banners 1920@0.85), path cars/{ts}_{baseName}.webp con
+ *  baseName del nombre ORIGINAL saneado (el Blob comprimido no trae
+ *  .name). Resultados por SLOT → URLs en orden estable, para APPEND
+ *  al final de la galería. Inválidas se rechazan SIN frenar al resto. */
+export async function uploadVehicleImages(files, onStatus) {
+  const all = [...files];
+  const rejected = [];
+  const list = all.filter((f) => {
+    if (!IMG_TYPES.includes(f.type)) { rejected.push(f.name + ' (formato)'); return false; }
+    if (f.size > IMG_MAX_MB * 1024 * 1024) { rejected.push(f.name + ' (>' + IMG_MAX_MB + 'MB)'); return false; }
+    return true;
+  });
+  list.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+  const slots = new Array(list.length);
+  let done = 0;
+  await Promise.all(list.map(async (file, i) => {
+    const blob = await compressImage(file, { maxWidth: 1200, quality: 0.75 });
+    const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = 'cars/' + Date.now() + '_' + baseName + '.webp';
+    const snap = await uploadBytes(storageRef(storage, path), blob, { contentType: 'image/webp' });
+    slots[i] = await getDownloadURL(snap.ref);
+    done += 1;
+    if (onStatus) onStatus('Subiendo… ' + done + '/' + list.length);
+  }));
+  return { urls: slots.filter(Boolean), rejected };
+}
+
 /** Concesionarios para el select del paso Comercial ('' = propio). */
 export async function fetchConcesionarios() {
   const snap = await getDocs(collection(db, 'concesionarios'));
   return snap.docs.map((d) => ({ id: d.id, nombre: d.data().nombre || d.id }));
 }
+
+/* ── Borradores (V4): usuarios/{uid}/drafts — subcolección PRIVADA
+   por cuenta (rules: solo el dueño). Shape del doc = keys del FORM
+   CLÁSICO (interop bidireccional). Guardado SOLO explícito (§107:
+   autosave/auto-restore eliminados por el dueño). ── */
+
+export const newDraftId = () =>
+  'draft_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+
+const draftsCol = (uid) => collection(db, 'usuarios', uid, 'drafts');
+
+export async function saveDraftDoc(uid, draftId, snap) {
+  await setDoc(doc(draftsCol(uid), draftId), sanitizeForFirestore(snap));
+}
+
+/** PROPAGA el error (§110: el catch silencioso impedía el rollback). */
+export function deleteDraftDoc(uid, draftId) {
+  return deleteDoc(doc(draftsCol(uid), draftId));
+}
+
+/** Listener de borradores: SIN orderBy (excluiría docs sin _savedAt),
+ *  orden y filtro (snapshotHasAnyData) en cliente; retry ÚNICO tras
+ *  1200ms en el primer error (§111: race del token de auth en hard
+ *  refresh → galería vacía silenciosa). */
+export function subscribeDrafts(uid, onData, onError) {
+  let retried = false;
+  let unsub = null;
+  const start = () => {
+    unsub = onSnapshot(draftsCol(uid), (snap) => {
+      retried = false; // presupuesto de retry se renueva con cada snapshot OK
+      const list = snap.docs
+        .map((d) => ({ ...d.data(), _draftId: d.id }))
+        .filter(snapshotHasAnyData)
+        .sort((a, b) => String(b._savedAt || '').localeCompare(String(a._savedAt || '')));
+      onData(list);
+    }, (err) => {
+      if (!retried) {
+        retried = true;
+        setTimeout(() => { if (unsub) unsub(); start(); }, 1200);
+      } else if (onError) onError(err);
+    });
+  };
+  start();
+  return () => { if (unsub) unsub(); };
+}
+
+/** Mock en memoria para los drafts (demo). */
+export const mockDrafts = [];
 
 /* ── Mock (V1): variedad de estados/edades para ejercitar la lista ── */
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();

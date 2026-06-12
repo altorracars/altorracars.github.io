@@ -90,3 +90,13 @@
   background: var(--gold-500, #D4A85A); color: #1a1310;
 }
 .field-error { outline: 2px solid var(--danger, #E85D5D); }
+
+/* ── Borradores (V4) ── */
+.veh-drafts {
+  display: flex; flex-direction: column; gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border: 1px dashed var(--gold-500, #D4A85A);
+  border-radius: var(--r-xl);
+}
+.veh-draft { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.veh-draft__meta { display: flex; flex-direction: column; min-width: 0; }

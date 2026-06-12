@@ -106,6 +106,7 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   Mapa ✅ (7 agentes; crudo+síntesis+checklist en bóveda `2026-06-12-epica-vehiculos-plan.md`)
 >   → **V1 lista ✅ §199** → **V2 wizard ✅ §200** (create/update tx con version-conflict, smart
 >   preview con score exacto, apartado disabled-persistible, fotos=URLs).
->   **Retomar: "continua"** → **V3 imágenes** (upload Storage cars/ 1200@0.75 WebP, baseName del
->   nombre ORIGINAL, append alfanumérico) → V4 drafts (shape keys del form CLÁSICO) → V5 extras
->   (reorder §103, CSV, timeline audit, duplicar) → V6 lote §198 + gates ②/③.
+>   → V3 imágenes ✅ §201 → **V4 drafts ✅ §202** (interop shape clásico, ciclo completo en mock).
+>   **Retomar: "continua"** → **V5 extras** (reorder lista global §103 (count-idx)*10 batch
+>   solo-cambios · CSV verbatim BOM/headers · timeline auditoría + revert solo-super · duplicar
+>   como estado explícito) → **V6 lote en vivo §198** (7 gestos + ciclo vehículo) **+ gates ②/③**.

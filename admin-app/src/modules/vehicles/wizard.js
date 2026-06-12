@@ -17,11 +17,16 @@ import { hasPermission } from '../../core/auth.js';
 import {
   deriveTipoFromKm, TIPO_LABELS, buildVehicleDoc, smartPreview, smartValidate,
   formatSuggestion, PLACA_DEFAULT, PLACEHOLDER_IMG,
+  snapshotsAreDifferent, snapshotHasAnyData,
 } from '../../domain/vehicle.js';
 import { fetchLists, MOCK_LISTS } from '../lists/lists.data.js';
 import {
   generateUniqueCode, getNextId, createVehicle, updateVehicle, fetchConcesionarios,
+  uploadVehicleImages, newDraftId, saveDraftDoc, deleteDraftDoc, mockDrafts,
 } from './vehicles.data.js';
+
+// 1px dorado — galería de demo sin red.
+const DEMO_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/dEJWiQAAAABJRU5ErkJggg==';
 
 const FEAT_CATEGORIES = [
   ['featSeguridad', 'Seguridad'], ['featConfort', 'Confort'], ['featTecnologia', 'Tecnología'],
@@ -32,8 +37,13 @@ const STEP_TITLES = ['1 Vehículo', '2 Specs', '3 Comercial', '4 Fotos', '5 Deta
 
 const isSuper = () => (store.get().permissions || []).includes('*');
 
-export async function openVehicleWizard({ vehicle, vehicles, brandNames, brands, onDone }) {
+export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, brands, onDone, onDraftsChange }) {
   const isEdit = !!vehicle;
+  const uid = (store.get().user || {}).uid;
+  // Contexto de borrador (§107): null = nuevo o edición de publicado.
+  let _draftId = draft ? draft.id : null;
+  let _lastSaved = draft ? draft.snap : null;
+  let _original = null; // baseline de apertura (doble baseline §108)
   const who = (() => {
     const u = store.get().user || {}; const p = store.get().profile || {};
     return { email: u.email || 'unknown', nombre: p.nombre || u.email || 'unknown' };
@@ -178,8 +188,38 @@ export async function openVehicleWizard({ vehicle, vehicles, brandNames, brands,
     if (!/^https?:\/\//.test(u) && u.indexOf('multimedia/') !== 0) { toast('URL no válida: usa http(s):// o multimedia/…', 'error'); return; }
     f.imagenes.push(u); urlIn.value = ''; renderGallery();
   });
+  // V3: subida nativa — tanda ordenada alfanumérica, APPEND al final.
+  const fileInput = el('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', multiple: true, class: 'ban-file' });
+  const upStatus = el('span', { class: 'u-caption u-muted', text: '' });
+  const drop = el('div', { class: 'ban-drop' }, [
+    el('span', { text: '📷' }),
+    el('span', { class: 'u-caption u-muted', text: 'Click para subir fotos (JPG/PNG/WebP → WebP 1200px) · máx 2MB c/u · se ordenan por nombre' }),
+  ]);
+  drop.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const files = [...fileInput.files];
+    fileInput.value = '';
+    if (!files.length) return;
+    if (store.get().mock) {
+      files.forEach(() => f.imagenes.push(DEMO_IMG));
+      renderGallery(); toast(files.length + ' foto(s) simuladas (demo)', 'ok');
+      return;
+    }
+    upStatus.textContent = 'Comprimiendo…';
+    try {
+      const { urls, rejected } = await uploadVehicleImages(files, (s) => { upStatus.textContent = s; });
+      f.imagenes.push(...urls); // append al FINAL de la galería existente (contrato)
+      renderGallery();
+      upStatus.textContent = urls.length ? '✓ ' + urls.length + ' foto(s) subidas' : '';
+      if (rejected.length) toast('Rechazadas: ' + rejected.join(' · '), 'error');
+    } catch (e) {
+      upStatus.textContent = '';
+      toast('No se pudieron subir: ' + (e.message || e.code), 'error');
+    }
+  });
   const sec4 = el('div', { class: 'veh-wiz__sec' }, [
-    el('p', { class: 'u-caption u-muted', text: 'La primera foto es la portada del catálogo. Subir archivos desde el equipo llega en la siguiente etapa — por ahora pega URLs (o usa el clásico para subir).' }),
+    el('p', { class: 'u-caption u-muted', text: 'La primera foto es la portada del catálogo. Quitar una foto no borra el archivo (otros vehículos pueden compartirlo).' }),
+    drop, fileInput, upStatus,
     galleryEl,
     el('div', { class: 'cfg-row' }, [urlIn, urlBtn]),
   ]);
@@ -315,8 +355,97 @@ export async function openVehicleWizard({ vehicle, vehicles, brandNames, brands,
   prevBtn.addEventListener('click', () => goTo(step - 1));
   nextBtn.addEventListener('click', () => goTo(step + 1));
 
+  /* ── Borradores (V4): snapshot con KEYS DEL FORM CLÁSICO ────── */
+  function getSnapshot() {
+    const feats = [...Object.entries(featBoxes).filter(([, cb]) => cb.checked).map(([v]) => v), ...f.legacyFeats];
+    return {
+      vId: vehicle ? String(vehicle.id) : '',
+      vMarca: inp.marca.value, vModelo: inp.modelo.value, vYear: inp.year.value,
+      vTipo: deriveTipoFromKm(inp.kilometraje.value), vCategoria: inp.categoria.value,
+      vPrecio: inp.precio.value, vPrecioOferta: inp.precioOferta.value, vKm: inp.kilometraje.value,
+      vTransmision: inp.transmision.value, vCombustible: inp.combustible.value,
+      vMotor: inp.motor.value, vPotencia: inp.potencia.value, vCilindraje: inp.cilindraje.value,
+      vTraccion: inp.traccion.value, vDireccion: inp.direccion.value, vColor: inp.color.value,
+      vPuertas: inp.puertas.value, vPasajeros: inp.pasajeros.value, vUbicacion: inp.ubicacion.value,
+      vPlaca: inp.placa.value, vFasecolda: inp.codigoFasecolda.value, vEstado: inp.estado.value,
+      vPrioridad: String(vehicle ? (vehicle.prioridad || 0) : 0),
+      vFeaturedOrder: inp.featuredOrder.value, vFeaturedTag: inp.featuredTag.value,
+      vConcesionario: inp.concesionario.value, vConsignaParticular: inp.consignaParticular.value,
+      vDestacado: f.destacado, vOferta: !!inp.precioOferta.value, vFeaturedWeek: f.destacado,
+      vRevision: inp.revisionTecnica.checked, vPeritaje: inp.peritaje.checked,
+      vCaracteristicas: feats.join('\n'),
+      _images: f.imagenes.filter((u) => typeof u === 'string' && u),
+      _savedAt: new Date().toISOString(),
+    };
+  }
+
+  /** Restaura un snapshot al form. km es la fuente de verdad del tipo
+   *  (§E.3: el vTipo guardado se ignora — se re-deriva). */
+  function applyDraftSnapshot(s) {
+    inp.marca.value = s.vMarca || ''; inp.modelo.value = s.vModelo || ''; inp.year.value = s.vYear || '';
+    inp.categoria.value = s.vCategoria || ''; inp.kilometraje.value = s.vKm || '';
+    inp.placa.value = s.vPlaca || ''; inp.codigoFasecolda.value = s.vFasecolda || '';
+    inp.transmision.value = s.vTransmision || ''; inp.combustible.value = s.vCombustible || '';
+    inp.motor.value = s.vMotor || ''; inp.potencia.value = s.vPotencia || ''; inp.cilindraje.value = s.vCilindraje || '';
+    inp.traccion.value = s.vTraccion || ''; inp.direccion.value = s.vDireccion || 'Electrica';
+    inp.color.value = s.vColor || ''; inp.puertas.value = s.vPuertas || '5'; inp.pasajeros.value = s.vPasajeros || '5';
+    inp.precio.value = s.vPrecio || ''; inp.precioOferta.value = s.vPrecioOferta || '';
+    if (s.vEstado && !inp.estado.disabled) inp.estado.value = s.vEstado;
+    inp.ubicacion.value = s.vUbicacion || 'Cartagena';
+    inp.concesionario.value = s.vConcesionario || ''; inp.consignaParticular.value = s.vConsignaParticular || '';
+    inp.revisionTecnica.checked = s.vRevision !== false; inp.peritaje.checked = s.vPeritaje !== false;
+    inp.featuredOrder.value = s.vFeaturedOrder || ''; inp.featuredTag.value = s.vFeaturedTag || '';
+    f.destacado = !!s.vDestacado;
+    f.imagenes = (s._images || []).slice();
+    const lines = String(s.vCaracteristicas || '').split('\n').map((x) => x.trim()).filter(Boolean);
+    Object.values(featBoxes).forEach((cb) => { cb.checked = false; });
+    f.legacyFeats = lines.filter((v) => {
+      if (featBoxes[v]) { featBoxes[v].checked = true; return false; }
+      return true;
+    });
+    refreshTipo(); refreshConsigna(); refreshDestacado(); renderGallery(); refreshSmart();
+  }
+
+  async function saveDraftNow() {
+    const snap = getSnapshot();
+    if (!snapshotHasAnyData(snap)) { toast('Nada que guardar todavía.', 'error'); return false; }
+    const prev = { id: _draftId, last: _lastSaved };
+    _draftId = _draftId || newDraftId();
+    _lastSaved = snap; // OPTIMISTA (§108): contexto primero, write en background
+    toast('💾 Borrador guardado' + (store.get().mock ? ' (demo)' : ''), 'ok');
+    if (store.get().mock) {
+      const i = mockDrafts.findIndex((d) => d._draftId === _draftId);
+      const docSnap = { ...snap, _draftId, _userId: 'demo', _userEmail: who.email };
+      if (i >= 0) mockDrafts[i] = docSnap; else mockDrafts.unshift(docSnap);
+      onDraftsChange && onDraftsChange();
+      return true;
+    }
+    try {
+      await saveDraftDoc(uid, _draftId, { ...snap, _draftId, _userId: uid, _userEmail: who.email });
+      return true;
+    } catch (e) {
+      _draftId = prev.id; _lastSaved = prev.last; // rollback COMPLETO (§111)
+      toast('El borrador NO se guardó: ' + (e.message || e.code), 'error');
+      return false;
+    }
+  }
+
+  function discardCurrentDraft() {
+    if (!_draftId) return;
+    const id = _draftId; _draftId = null;
+    if (store.get().mock) {
+      const i = mockDrafts.findIndex((d) => d._draftId === id);
+      if (i >= 0) mockDrafts.splice(i, 1);
+      onDraftsChange && onDraftsChange();
+    } else {
+      deleteDraftDoc(uid, id).catch(() => {}); // único catch silencioso legítimo (post-publicación)
+    }
+  }
+
   /* ── save (réplica del handler clásico) ── */
   const saveBtn = el('button', { class: 'btn btn--gold', type: 'button', text: isEdit ? 'Guardar cambios' : 'Publicar vehículo' });
+  const draftBtn = el('button', { class: 'btn btn--soft', type: 'button', text: '💾 Borrador' });
+  draftBtn.addEventListener('click', saveDraftNow);
   const cancelBtn = el('button', { class: 'btn btn--soft', type: 'button', text: 'Cancelar' });
 
   saveBtn.addEventListener('click', async () => {
@@ -382,6 +511,7 @@ export async function openVehicleWizard({ vehicle, vehicles, brandNames, brands,
         derived = built.derived;
         await createVehicle(built.doc, candidateId);
       }
+      discardCurrentDraft(); // publicar con éxito borra el borrador en curso
       close();
       toast(isEdit ? '✓ Vehículo actualizado' : '✓ Vehículo publicado — la web lo recoge sola', 'ok');
       if (derived && derived.length) toast('✨ ' + derived.map(formatSuggestion).join(' · '), 'info');
@@ -395,18 +525,42 @@ export async function openVehicleWizard({ vehicle, vehicles, brandNames, brands,
   const body = el('div', { class: 'veh-wiz__body' }, SECTIONS);
   const card = el('div', { class: 'modal veh-wiz' }, [
     el('div', { class: 'modal__head' }, [
-      el('h2', { class: 'modal__title', text: isEdit ? 'Editar: ' + (vehicle.modelo || vehicle.id) : '🚗 Nuevo vehículo' }),
+      el('h2', { class: 'modal__title', text: isEdit ? 'Editar: ' + (vehicle.modelo || vehicle.id) : (draft ? '📝 Borrador' : '🚗 Nuevo vehículo') }),
       progress,
     ]),
     stepsBar, body,
-    el('div', { class: 'veh-wiz__foot' }, [prevBtn, nextBtn, el('span', { style: { flex: '1' } }), cancelBtn, saveBtn]),
+    el('div', { class: 'veh-wiz__foot' }, [prevBtn, nextBtn, el('span', { style: { flex: '1' } }), draftBtn, cancelBtn, saveBtn]),
   ]);
   const overlay = el('div', { class: 'modal-overlay' }, [card]);
   const close = () => { overlay.remove(); window.removeEventListener('keydown', onKey); };
-  const onKey = (e) => { if (e.key === 'Escape') close(); };
+
+  /* Cierre con cambios (§108): igual a CUALQUIERA de los dos baselines
+   * (último guardado / apertura) → cierra sin preguntar; con cambios →
+   * modal Sí/No custom (el confirm() nativo no deja renombrar botones). */
+  function requestClose() {
+    const snap = getSnapshot();
+    if (!snapshotHasAnyData(snap)
+      || (_lastSaved && !snapshotsAreDifferent(snap, _lastSaved))
+      || (_original && !snapshotsAreDifferent(snap, _original))) { close(); return; }
+    const yes = el('button', { class: 'btn btn--gold', type: 'button', text: 'Sí, guardar borrador' });
+    const no = el('button', { class: 'btn btn--soft', type: 'button', text: 'No, descartar' });
+    const ov2 = el('div', { class: 'rev-modal__overlay' }, [
+      el('div', { class: 'rev-modal rev-modal--sm', role: 'alertdialog', 'aria-modal': 'true' }, [
+        el('h3', { class: 'rev-modal__title', text: '¿Guardar lo que llevas como borrador?' }),
+        el('div', { class: 'rev-modal__actions' }, [no, yes]),
+      ]),
+    ]);
+    yes.addEventListener('click', () => { ov2.remove(); saveDraftNow(); close(); }); // optimista: cierra YA
+    no.addEventListener('click', () => { ov2.remove(); close(); });
+    ov2.addEventListener('click', (e) => { if (e.target === ov2) { ov2.remove(); close(); } });
+    document.body.append(ov2);
+  }
+  const onKey = (e) => { if (e.key === 'Escape') requestClose(); };
   window.addEventListener('keydown', onKey);
-  cancelBtn.addEventListener('click', close);
-  overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
+  cancelBtn.addEventListener('click', requestClose);
+  overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) requestClose(); });
   document.body.append(overlay);
+  if (draft) applyDraftSnapshot(draft.snap);
+  _original = getSnapshot(); // baseline de apertura
   goTo(0);
 }

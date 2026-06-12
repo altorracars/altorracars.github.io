@@ -25,6 +25,8 @@ const NAV = [
   // E6 fase ② §188: módulos del sitio público migrados del clásico.
   { id: 'resenas', label: 'Reseñas', icon: '⭐', ready: true, perm: 'reviews.read' },
   { id: 'banners', label: 'Banners', icon: '🖼️', ready: true, perm: 'banners.read' },
+  // E6 fase ③ §188: inventario — marcas primero (el form de vehículos las necesita).
+  { id: 'marcas', label: 'Marcas', icon: '🏷️', ready: true, perm: 'brands.read' },
 ];
 
 const TITLES = {
@@ -36,6 +38,7 @@ const TITLES = {
   config: 'Disponibilidad de citas',
   resenas: 'Reseñas del sitio',
   banners: 'Banners del sitio',
+  marcas: 'Marcas del inventario',
 };
 
 export function mountShell(appRoot) {

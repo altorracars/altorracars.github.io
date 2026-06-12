@@ -5,9 +5,9 @@
 
 | Señal | Valor (última actualización: **2026-06-12 madrugada**) |
 |---|---|
-| **Build** | 🟢 **CRM §176: E0→E5 COMPLETAS ✅** (§177-§187). E5 **DESPLEGADA + E2E live ✓** (12/06: submit Playwright contra live, ticket `VMVMJG…` — rules aceptan, ingestión+email+Telegram verificados) + **COMMIT local hecho**. Pendiente: push/merge del cliente. Retomar: **"continúa E6"** (cutover). |
+| **Build** | 🟢 **CRM §176: E0→E5 ✅ en main** (E5 = PR #832). **E6 EN CURSO**: E6.6 auditoría ✅ (§188) + **paso 0 ✅ DESPLEGADO** (§189: cacheSignal + bloqueo real + fix cita interna que E5 rompió + limpieza) — commit `7644958` pendiente de push/merge. Siguiente: **fase ② strangler** (reviews→portal). |
 | **Cache version vigente** | **`v20260612052500`** (§188 paso 0). SW == cache-manager ✅. Ctrl+Shift+R tras merge. |
-| **Branch activa** | `refactor/estructura` — E4 en `main` (PR #830 ✓ + cron `1d29533`). **E5 (§187) commiteada local, pendiente push/merge del cliente**. Deploys firebase = Claude (§1). |
+| **Branch activa** | `refactor/estructura` — E5 en `main` (PR #832 ✓). **Paso 0 de E6 (`7644958`) local, pendiente push/merge del cliente.** Deploys firebase = Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

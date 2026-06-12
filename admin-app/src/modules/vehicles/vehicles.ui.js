@@ -12,11 +12,14 @@ import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { ESTADO_LABELS, TIPO_LABELS, daysInStock, formatPrecio, toTitleCase } from '../../domain/vehicle.js';
 import { subscribeBrands, MOCK_BRANDS } from '../brands/brands.data.js';
-import { subscribeVehicles, toggleDestacado, deleteVehicle, sortVehicles, MOCK_VEHICLES } from './vehicles.data.js';
+import {
+  subscribeVehicles, toggleDestacado, deleteVehicle, sortVehicles, MOCK_VEHICLES,
+  subscribeDrafts, deleteDraftDoc, mockDrafts,
+} from './vehicles.data.js';
 import { openVehicleWizard } from './wizard.js';
 
 export function mountVehicles(root) {
-  const ui = { vehicles: [], brandNames: {}, brands: [], q: '', estado: '', sub: null, subBrands: null, loaded: false };
+  const ui = { vehicles: [], drafts: [], brandNames: {}, brands: [], q: '', estado: '', sub: null, subBrands: null, subDrafts: null, loaded: false };
   const canEdit = hasPermission('vehicles.edit') || hasPermission('vehicles.create');
   const canDelete = hasPermission('vehicles.delete');
 
@@ -151,20 +154,71 @@ export function mountVehicles(root) {
     });
   }
 
-  /* ── Wizard (V2): crear / editar ── */
-  function openWizard(vehicle) {
+  /* ── Wizard (V2): crear / editar / retomar borrador (V4) ── */
+  function openWizard(vehicle, draft) {
     openVehicleWizard({
-      vehicle,
+      vehicle, draft,
       vehicles: ui.vehicles,
       brandNames: ui.brandNames,
       brands: ui.brands,
+      onDraftsChange: () => { if (store.get().mock) { ui.drafts = mockDrafts.slice(); render(); } },
       onDone: (mockDoc) => { // solo demo: lo real llega por onSnapshot
         const i = ui.vehicles.findIndex((x) => x._docId === mockDoc._docId);
         if (i >= 0) ui.vehicles[i] = mockDoc; else ui.vehicles.push(mockDoc);
         ui.vehicles = sortVehicles(ui.vehicles);
+        ui.drafts = store.get().mock ? mockDrafts.slice() : ui.drafts;
         render();
       },
     });
+  }
+
+  /* ── Panel de borradores (V4 — galería §107) ── */
+  function draftsPanel() {
+    if (!ui.drafts.length) return null;
+    const rows = ui.drafts.map((d) => {
+      const label = [d.vMarca && (ui.brandNames[d.vMarca] || toTitleCase(d.vMarca)), d.vModelo, d.vYear].filter(Boolean).join(' ') || 'Sin título';
+      const sub = d.vId ? 'Editando #' + d.vId : 'Nuevo vehículo';
+      const resume = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: 'Retomar' });
+      resume.addEventListener('click', () => {
+        let vehicle = null;
+        if (d.vId) {
+          vehicle = ui.vehicles.find((v) => String(v.id) === String(d.vId)) || null;
+          if (!vehicle) toast('El vehículo #' + d.vId + ' ya no existe — el borrador se abre como nuevo.', 'info');
+        }
+        openWizard(vehicle, { id: d._draftId, snap: d });
+      });
+      const del = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑', 'aria-label': 'Eliminar borrador' });
+      del.addEventListener('click', async () => {
+        if (!window.confirm('¿Eliminar el borrador "' + label + '"?')) return;
+        const idx = ui.drafts.findIndex((x) => x._draftId === d._draftId);
+        const removed = ui.drafts.splice(idx, 1)[0]; // OPTIMISTA (§110)
+        render();
+        if (store.get().mock) {
+          const mi = mockDrafts.findIndex((x) => x._draftId === d._draftId);
+          if (mi >= 0) mockDrafts.splice(mi, 1);
+          toast('Borrador eliminado (demo)', 'ok');
+          return;
+        }
+        try {
+          await deleteDraftDoc((store.get().user || {}).uid, d._draftId);
+          toast('✓ Borrador eliminado', 'ok');
+        } catch (e) {
+          ui.drafts.splice(idx, 0, removed); render(); // rollback (§110)
+          toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+        }
+      });
+      return el('div', { class: 'veh-draft' }, [
+        el('div', { class: 'veh-draft__meta' }, [
+          el('strong', { text: label }),
+          el('span', { class: 'u-caption u-muted', text: sub + (d._savedAt ? ' · guardado ' + String(d._savedAt).slice(0, 16).replace('T', ' ') : '') }),
+        ]),
+        el('div', { class: 'u-row u-row--tight' }, [resume, del]),
+      ]);
+    });
+    return el('div', { class: 'veh-drafts' }, [
+      el('strong', { class: 'u-caption', text: '📝 Borradores (' + ui.drafts.length + ')' }),
+      ...rows,
+    ]);
   }
 
   function render() {
@@ -189,6 +243,7 @@ export function mountVehicles(root) {
         el('span', { class: 'u-caption u-muted', text: ui.vehicles.length + ' vehículos — alimentan el catálogo público y sus páginas (el generador corre cada 4h).' }),
         newBtn,
       ]),
+      draftsPanel(),
       el('div', { class: 'veh-filters' }, [search, estadoSel]),
       listRoot,
     );
@@ -215,6 +270,7 @@ export function mountVehicles(root) {
 
   if (store.get().mock) {
     ui.vehicles = MOCK_VEHICLES.map((v) => ({ ...v }));
+    ui.drafts = mockDrafts.slice();
     ui.brands = MOCK_BRANDS;
     ui.brandNames = Object.fromEntries(MOCK_BRANDS.map((b) => [b.id, b.nombre]));
     ui.loaded = true; render();
@@ -234,8 +290,17 @@ export function mountVehicles(root) {
     );
   }
 
+  if (!store.get().mock && canEdit && (store.get().user || {}).uid) {
+    // §112: el cleanup por ruta del portal corre solo al CAMBIAR de módulo
+    // (mountRoute guard name===mountedRoute) — sin riesgo de doble-disparo.
+    ui.subDrafts = subscribeDrafts((store.get().user || {}).uid,
+      (list) => { ui.drafts = list; if (ui.loaded) render(); },
+      () => {});
+  }
+
   return function cleanup() {
     if (ui.sub) ui.sub(); ui.sub = null;
     if (ui.subBrands) ui.subBrands(); ui.subBrands = null;
+    if (ui.subDrafts) ui.subDrafts(); ui.subDrafts = null;
   };
 }

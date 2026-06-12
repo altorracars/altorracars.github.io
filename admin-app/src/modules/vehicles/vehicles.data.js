@@ -9,14 +9,14 @@
 // ============================================================
 
 import {
-  collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, runTransaction,
+  collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, setDoc, runTransaction,
 } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 import { writeAudit } from '../../core/audit.js';
 import { compressImage } from '../../core/image.js';
-import { computeChanges } from '../../domain/vehicle.js';
+import { computeChanges, sanitizeForFirestore, snapshotHasAnyData } from '../../domain/vehicle.js';
 
 const nowISO = () => new Date().toISOString();
 const me = () => {
@@ -194,6 +194,54 @@ export async function fetchConcesionarios() {
   const snap = await getDocs(collection(db, 'concesionarios'));
   return snap.docs.map((d) => ({ id: d.id, nombre: d.data().nombre || d.id }));
 }
+
+/* ── Borradores (V4): usuarios/{uid}/drafts — subcolección PRIVADA
+   por cuenta (rules: solo el dueño). Shape del doc = keys del FORM
+   CLÁSICO (interop bidireccional). Guardado SOLO explícito (§107:
+   autosave/auto-restore eliminados por el dueño). ── */
+
+export const newDraftId = () =>
+  'draft_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+
+const draftsCol = (uid) => collection(db, 'usuarios', uid, 'drafts');
+
+export async function saveDraftDoc(uid, draftId, snap) {
+  await setDoc(doc(draftsCol(uid), draftId), sanitizeForFirestore(snap));
+}
+
+/** PROPAGA el error (§110: el catch silencioso impedía el rollback). */
+export function deleteDraftDoc(uid, draftId) {
+  return deleteDoc(doc(draftsCol(uid), draftId));
+}
+
+/** Listener de borradores: SIN orderBy (excluiría docs sin _savedAt),
+ *  orden y filtro (snapshotHasAnyData) en cliente; retry ÚNICO tras
+ *  1200ms en el primer error (§111: race del token de auth en hard
+ *  refresh → galería vacía silenciosa). */
+export function subscribeDrafts(uid, onData, onError) {
+  let retried = false;
+  let unsub = null;
+  const start = () => {
+    unsub = onSnapshot(draftsCol(uid), (snap) => {
+      retried = false; // presupuesto de retry se renueva con cada snapshot OK
+      const list = snap.docs
+        .map((d) => ({ ...d.data(), _draftId: d.id }))
+        .filter(snapshotHasAnyData)
+        .sort((a, b) => String(b._savedAt || '').localeCompare(String(a._savedAt || '')));
+      onData(list);
+    }, (err) => {
+      if (!retried) {
+        retried = true;
+        setTimeout(() => { if (unsub) unsub(); start(); }, 1200);
+      } else if (onError) onError(err);
+    });
+  };
+  start();
+  return () => { if (unsub) unsub(); };
+}
+
+/** Mock en memoria para los drafts (demo). */
+export const mockDrafts = [];
 
 /* ── Mock (V1): variedad de estados/edades para ejercitar la lista ── */
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();

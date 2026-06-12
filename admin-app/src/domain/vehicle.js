@@ -186,6 +186,49 @@ export function formatPrecio(n) {
   return '$' + Number(n).toLocaleString('es-CO');
 }
 
+/* ── Borradores: helpers PUROS (shape = keys del FORM clásico para
+   interop bidireccional durante la coexistencia — admin-vehicles.js
+   :918-985). vCodigoUnico JAMÁS se persiste en el draft. ── */
+
+const SNAP_IGNORE = ['_savedAt', '_userId', '_userEmail', '_draftId'];
+
+/** Compara dos snapshots ignorando metadatos; _images por join(',');
+ *  resto String(a||'')!==String(b||''). Romper esto regresa el bug
+ *  "ya guardé y vuelve a preguntar" (§108). */
+export function snapshotsAreDifferent(a, b) {
+  if (!a || !b) return true;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)].filter((k) => !SNAP_IGNORE.includes(k)));
+  for (const k of keys) {
+    if (k === '_images') {
+      if ((a._images || []).join(',') !== (b._images || []).join(',')) return true;
+    } else if (String(a[k] || '') !== String(b[k] || '')) return true;
+  }
+  return false;
+}
+
+/** ¿El snapshot tiene datos reales? (filtra residuos de la galería y
+ *  bloquea guardar borradores vacíos — admin-vehicles.js:1039-1044). */
+export function snapshotHasAnyData(s) {
+  if (!s) return false;
+  const fields = ['vMarca', 'vModelo', 'vYear', 'vTipo', 'vCategoria', 'vPrecio', 'vKm',
+    'vTransmision', 'vCombustible', 'vMotor', 'vColor'];
+  return fields.some((k) => s[k]) || (Array.isArray(s._images) && s._images.length > 0);
+}
+
+/** Limpia recursivamente undefined de objetos y compacta arrays (§111:
+ *  Firestore rechaza undefined — el draft "desaparecía" al refresh). */
+export function sanitizeForFirestore(v) {
+  if (Array.isArray(v)) return v.filter((x) => x !== undefined).map(sanitizeForFirestore);
+  if (v && typeof v === 'object' && !(v instanceof Date)) {
+    const out = {};
+    for (const k of Object.keys(v)) {
+      if (v[k] !== undefined) out[k] = sanitizeForFirestore(v[k]);
+    }
+    return out;
+  }
+  return v;
+}
+
 /* ── Auditoría: diff de campos (admin-vehicles.js:26-46 VERBATIM) ── */
 
 export const AUDIT_FIELDS = ['marca', 'modelo', 'year', 'tipo', 'categoria', 'precio', 'precioOferta',

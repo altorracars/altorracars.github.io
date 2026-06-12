@@ -1,6 +1,6 @@
 # 📖 Manual del CRM Altorra — para el equipo (sin tecnicismos)
 
-> **Versión 1.0** · 2026-06-09 · Cubre el portal CRM v0.4.1 (Bandeja · Pipeline · Agenda · Reportes · Contactos).
+> **Versión 1.1** · 2026-06-11 · Cubre el portal CRM v0.4.x (Bandeja · Pipeline + Post-venta · Agenda · Reportes + Comisiones · Contactos).
 > **Acceso**: `altorracars.github.io/admin-app/dist/` → inicia sesión con tu cuenta del panel.
 > ℹ️ El CRM evoluciona por sprints (plan §176): este manual se actualiza con cada mejora.
 > Algunos nombres de estados/etapas cambiarán pronto — la versión vigente siempre es la de este archivo.
@@ -89,9 +89,27 @@ Columnas = etapas del proceso real de venta. Cada tarjeta es un negocio. **Arrá
 - ¿Saltas etapas? (walk-in que compra el mismo día) — puedes: el sistema junta los peajes en una sola pregunta.
 - **Deshacer** (10 seg) aparece tras cada movimiento — el arrastre accidental no existe.
 - El header muestra **cuánta plata hay en el pipeline** por etapa y ponderada (con los valores estimados).
-- **Marcar GANADO** 🏆: pide la forma de pago; el carro se marca **vendido** y se baja de la página web solo.
+- **Marcar GANADO** 🏆: pide la forma de pago (y si el cliente **entrega un carro en parte de pago**, márcalo ahí mismo: marca, modelo, placa y valor estimado); el carro se marca **vendido** y se baja de la página web solo.
+- 🟠 Cuando un negocio entra a **Apartado**, el carro aparece en la página web con el badge **“Apartado”** (crea urgencia, no se esconde) y vuelve a “disponible” solo si el apartado se cae.
+- 🥊 **“2 negocios por este carro”**: si dos clientes van detrás del MISMO carro, ambas tarjetas muestran el aviso (y les llega alerta a los asesores). No es un error — dos compradores pueden competir; coordinen quién va primero.
 
 > ⚠️ No dejes negocios “zombies”: si lleva 2 semanas quieto, o lo reactivas o lo marcas perdido con su razón.
+
+---
+
+## 5b. 🏁 Post-venta: vender NO es el final (y aquí se gana la comisión)
+
+En el Pipeline, arriba, está el botón **“🏁 Post-venta”**: la lista de negocios GANADOS con su **checklist de entrega**:
+
+1. ☐ **Entrega del vehículo** (recordatorio a los 3 días)
+2. ☐ **Traspaso / RUNT** (recordatorio a los 15 días)
+3. ☐ **Trámites** (SOAT, impuestos, GPS…)
+
+Cada item te aparece también como tarea en **“Pendientes hoy”**. Marca cada uno cuando esté hecho — el badge pasa de **⏳ Pendiente** a **✓ Liquidable**.
+
+> 🥇 **Regla de la casa (decidida por la gerencia)**: la comisión de una venta **solo entra a liquidación cuando su checklist está completo**. Vendido sin papeles ≠ vendido.
+
+**¿Recibiste un carro en retoma?** En la tarjeta del negocio ganado: si registraste los datos al vender, verás el botón **“Crear borrador en inventario”** — un clic y el carro recibido queda creado como **borrador** (invisible en la web) listo para que le completen fotos y precio en el admin. Si no los registraste, botón **“＋ Retoma”**.
 
 ---
 
@@ -134,6 +152,9 @@ Todas las personas: **Leads**, **Clientes** y **Suscriptores** (newsletter). Bus
 ## 8. Reportes (cómo va el negocio)
 
 KPIs del período, embudo (cuántos entran vs cuántos compran), ventas por canal (¿Instagram trae más que la web?), razones de pérdida y pronóstico ponderado. Botón **Actualizar** para refrescar y **CSV** para Excel.
+
+### 💰 Comisiones del mes (nuevo)
+Al final de Reportes: elige el **mes** y ves, por asesor, cuántas ventas tiene, cuáles ya son **✓ liquidables** (checklist de post-venta completo) y cuáles siguen **⏳ pendientes** — con el valor base de cada una (congelado al momento de la venta: editar el negocio después NO mueve la comisión). El detalle por negocio sale desplegando “Detalle por negocio”, y todo va en el CSV.
 
 ---
 

@@ -450,6 +450,7 @@
 
     var STATUS_LABEL = {
         disponible: 'Disponible',
+        apartado: 'Apartado', // E4 §186/F25: lo escribe el CRM
         reservado: 'Reservado',
         vendido: 'Vendido',
         borrador: 'Borrador'
@@ -485,7 +486,7 @@
         if (d.type === 'status_change') {
             var newLabel = STATUS_LABEL[d.newEstado] || d.newEstado;
             var msg;
-            if (d.newEstado === 'reservado') msg = 'Alguien lo reservo. Si te interesa, contactanos pronto.';
+            if (d.newEstado === 'reservado' || d.newEstado === 'apartado') msg = 'Alguien lo aparto. Si te interesa, contactanos pronto.';
             else if (d.newEstado === 'vendido') msg = 'Este vehiculo ya fue vendido.';
             else if (d.newEstado === 'disponible') msg = 'Volvio a estar disponible.';
             else msg = 'Cambio a: ' + newLabel;

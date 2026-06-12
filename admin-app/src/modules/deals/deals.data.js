@@ -67,17 +67,21 @@ export async function anularConversion(dealId) {
   return res.data;
 }
 
-/** F7/F24 — inventario disponible para el selector del diálogo. */
+/** F7/F24 — inventario para el selector del diálogo. Incluye 'apartado'
+ * (F26: dos compradores reales PUEDEN competir — el warning avisa, no
+ * bloquea); el label lo deja claro para que nadie aparte a ciegas. */
 export async function fetchAvailableVehicles() {
   const snap = await getDocs(query(
-    collection(db, 'vehiculos'), where('estado', '==', 'disponible'), limit(60),
+    collection(db, 'vehiculos'), where('estado', 'in', ['disponible', 'apartado']), limit(60),
   ));
   return snap.docs.map((d) => {
     const v = d.data();
+    const apartado = v.estado === 'apartado';
     return {
       id: d.id,
-      label: [v.marca, v.modelo, v.year].filter(Boolean).join(' '),
+      label: [v.marca, v.modelo, v.year].filter(Boolean).join(' ') + (apartado ? ' · ⚠ apartado' : ''),
       precio: Number(v.precioOferta || v.precio) || 0,
+      apartado,
     };
   }).sort((a, b) => a.label.localeCompare(b.label, 'es'));
 }
@@ -91,12 +95,16 @@ export async function fetchAvailableVehicles() {
 export async function updateDealStage(dealId, stageId, deal = {}, gateFields = {}) {
   const ts = nowISO();
   const st = stageById(stageId);
-  await updateDoc(doc(db, 'deals', dealId), {
+  const patch = {
     ...gateFields,
     stageId, stageName: st.label, probability: st.prob,
     weightedAmount: Math.round((Number(deal.amount) || 0) * st.prob),
     lastActivityAt: ts, updatedAt: ts, updatedBy: currentUid(), _version: increment(1),
-  });
+  };
+  // E4: coherencia status↔etapa (Rules la exigen) — reabrir un perdido
+  // devuelve el deal a 'open' (antes quedaba lost+etapa abierta → invisible).
+  if (deal.status === 'lost' && stageId !== 'perdido') patch.status = 'open';
+  await updateDoc(doc(db, 'deals', dealId), patch);
 }
 
 export async function setDealAmount(dealId, amount, deal = {}) {
@@ -128,4 +136,65 @@ export async function markLost(dealId, reasonId, deal = {}) {
     weightedAmount: 0, lostReason: String(reasonId || 'otro'),
     lastActivityAt: ts, updatedAt: ts, updatedBy: currentUid(), _version: increment(1),
   });
+}
+
+/* ── E4 (§186) — F10 post-venta ─────────────────────────────────────────── */
+
+/**
+ * Deals GANADOS para el panel Post-venta. Reusa el índice existente
+ * deals(status, lastActivityAt) — orderBy('wonAt') excluiría los wons
+ * recién ganados cuyo trigger aún no escribe wonAt.
+ */
+export function subscribeWonDeals({ pageSize = 100, onData, onError }) {
+  const q = query(
+    collection(db, 'deals'),
+    where('status', '==', 'won'),
+    orderBy('lastActivityAt', 'desc'),
+    limit(pageSize)
+  );
+  return onSnapshot(q, (snap) => onData(snap.docs.map(withId)), (err) => onError && onError(err));
+}
+
+/**
+ * Marca/desmarca un item del checklist post-venta (deal.postventa.{item})
+ * y cierra/reabre la tarea-recordatorio determinista del trigger.
+ * Las Rules solo permiten tocar postventa/recibeVehiculo + campos neutros
+ * en un deal vendido (guard E4) — la base de comisión queda intacta.
+ */
+export async function updatePostventaItem(dealId, itemId, done) {
+  const ts = nowISO();
+  await updateDoc(doc(db, 'deals', dealId), {
+    ['postventa.' + itemId]: done === true,
+    lastActivityAt: ts, updatedAt: ts, updatedBy: currentUid(), _version: increment(1),
+  });
+  try {
+    await updateDoc(doc(db, 'activities', 'postventa_' + dealId + '_' + itemId), done
+      ? { status: 'closed', closedAt: ts, closedBy: currentUid() }
+      : { status: 'open', closedAt: null, closedBy: null });
+  } catch (e) {
+    // La tarea puede no existir aún (trigger en vuelo) — el checklist del
+    // deal es la SSoT; la tarea es solo recordatorio.
+  }
+}
+
+/** F10 retoma — guarda/corrige los datos del vehículo recibido. */
+export async function setRecibeVehiculo(dealId, rv) {
+  const ts = nowISO();
+  await updateDoc(doc(db, 'deals', dealId), {
+    recibeVehiculo: {
+      marca: String(rv.marca || '').trim(),
+      modelo: String(rv.modelo || '').trim(),
+      year: Number(rv.year) || null,
+      placa: String(rv.placa || '').trim().toUpperCase(),
+      valorEstimado: Number(rv.valorEstimado) || 0,
+    },
+    lastActivityAt: ts, updatedAt: ts, updatedBy: currentUid(), _version: increment(1),
+  });
+}
+
+/** F10 retoma — crea el borrador en inventario (server-side, idempotente). */
+export async function crearBorradorRetoma(dealId) {
+  const call = httpsCallable(fns, 'crmCrearBorradorRetoma');
+  const res = await call({ dealId });
+  return res.data;
 }

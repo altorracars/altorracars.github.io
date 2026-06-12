@@ -375,12 +375,14 @@ class VehicleDatabase {
             filters.categoria = this.normalizeQuery(filters.categoria);
         }
 
-        // Filter by estado (disponible, reservado, vendido, borrador)
-        // By default, public pages only show 'disponible' vehicles
+        // Filter by estado (disponible, apartado, reservado, vendido, borrador)
+        // By default, public pages show 'disponible' Y 'apartado' (E4 §186/F25:
+        // el apartado sigue visible CON badge — crea urgencia y conserva SEO;
+        // 'reservado' legacy/manual sigue oculto como siempre).
         if (filters.estado) {
             filtered = filtered.filter(v => v.estado === filters.estado);
         } else if (filters._includeAllEstados !== true) {
-            filtered = filtered.filter(v => v.estado === 'disponible' || !v.estado);
+            filtered = filtered.filter(v => v.estado === 'disponible' || v.estado === 'apartado' || !v.estado);
         }
 
         // Filter by type (nuevo, usado) - seminuevo ya mapeado a usado

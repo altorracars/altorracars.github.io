@@ -88,7 +88,32 @@
 
 .icon-btn--xs { width: 26px; height: 26px; font-size: 13px; border-radius: var(--r-xs); }
 
-@media (max-width: 560px) {
-  .pipeline__bar, .pipeline__board { padding-left: var(--s-4); padding-right: var(--s-4); }
-  .pcol { flex-basis: 248px; }
+/* ── E4 §186 ──────────────────────────────────────────────── */
+
+/* Toggle Embudo ↔ Post-venta */
+.pipeline__views { display: flex; gap: var(--s-1); align-items: center; margin-right: var(--s-2); }
+
+/* F26: warning de colisión comercial en la tarjeta */
+.deal-card__collision {
+  padding: 2px var(--s-2); border-radius: var(--r-xs);
+  background: rgba(229,115,26,0.12); border: 1px solid rgba(229,115,26,0.45);
+  color: var(--warning); font-weight: 600;
+}
+
+/* F10: vista Post-venta (lista vertical, no kanban) */
+.pipeline__board--list {
+  flex-direction: column; overflow-x: hidden; overflow-y: auto;
+  align-items: stretch; max-width: 760px;
+}
+.deal-card--pv { cursor: default; }
+.pv-checklist { display: flex; flex-direction: column; gap: var(--s-1); }
+.pv-item {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: var(--s-1) var(--s-2); border-radius: var(--r-xs); cursor: pointer;
+}
+.pv-item:hover { background: var(--surface-card-2); }
+.pv-item.is-done span { text-decoration: line-through; color: var(--ink-text-muted); }
+.pv-retoma {
+  display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap;
+  padding-top: var(--s-1); border-top: 1px dashed var(--surface-stroke);
 }

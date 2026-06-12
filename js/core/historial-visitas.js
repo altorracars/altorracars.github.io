@@ -396,13 +396,13 @@ class VehicleHistory {
                         entityRef: 'rv-vehicle:' + v.id,
                         suppressIfHidden: false  // worth interrupting if visible
                     });
-                } else if (d.type === 'status' && (d.newEstado === 'vendido' || d.newEstado === 'reservado')) {
+                } else if (d.type === 'status' && (d.newEstado === 'vendido' || d.newEstado === 'reservado' || d.newEstado === 'apartado')) {
                     var name2 = self.capitalize(v.marca) + ' ' + v.modelo;
                     window.notifyCenter.notify('inventory_change', {
-                        title: name2 + (d.newEstado === 'vendido' ? ' fue vendido' : ' fue reservado'),
+                        title: name2 + (d.newEstado === 'vendido' ? ' fue vendido' : ' fue apartado'),
                         message: d.newEstado === 'vendido'
                             ? 'Un vehiculo que viste ya no esta disponible.'
-                            : 'Un vehiculo que viste fue reservado por alguien mas.',
+                            : 'Un vehiculo que viste fue apartado por alguien mas.',
                         link: 'busqueda.html',
                         entityRef: 'rv-vehicle:' + v.id
                     });
@@ -425,6 +425,7 @@ class VehicleHistory {
                 cls = 'rv-diff-badge--up';
             } else if (diff.type === 'status') {
                 if (diff.newEstado === 'reservado') { label = 'Reservado ahora'; cls = 'rv-diff-badge--warn'; }
+                else if (diff.newEstado === 'apartado') { label = 'Apartado ahora'; cls = 'rv-diff-badge--warn'; }
                 else if (diff.newEstado === 'vendido') { label = 'Vendido'; cls = 'rv-diff-badge--gone'; }
                 else if (diff.newEstado === 'disponible') { label = 'Volvio disponible'; cls = 'rv-diff-badge--drop'; }
             }

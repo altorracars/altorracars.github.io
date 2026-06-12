@@ -2060,8 +2060,8 @@
         if (!marca && !modelo) { AP.toast('Ingresa al menos marca y modelo para previsualizar', 'error'); return; }
 
         var catLabels = { suv: 'SUV', sedan: 'Sedan', pickup: 'Pickup', hatchback: 'Hatchback', camioneta: 'Camioneta' };
-        var estadoLabels = { disponible: 'Disponible', reservado: 'Reservado', vendido: 'Vendido', borrador: 'Borrador' };
-        var estadoColors = { disponible: '#3fb950', reservado: '#d29922', vendido: '#f85149', borrador: '#8b949e' };
+        var estadoLabels = { disponible: 'Disponible', apartado: 'Apartado', reservado: 'Reservado', vendido: 'Vendido', borrador: 'Borrador' };
+        var estadoColors = { disponible: '#3fb950', apartado: '#f59e0b', reservado: '#d29922', vendido: '#f85149', borrador: '#8b949e' };
 
         var title = marca + ' ' + modelo + ' ' + year;
         var subtitle = (catLabels[categoria] || categoria || '') + (tipo ? ' • ' + AP.toTitleCase(tipo) : '');

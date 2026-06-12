@@ -16,24 +16,23 @@
 > 🚫 Callejones: NO classification-en-manifest, NO checklist-doc-nuevo, NO score LLM, NO brain-diff
 > en boot, NO regex 5c para el BFS.
 
-> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0✅ E1a✅ E1b✅ E2✅ E3✅ (§184+§185)** — Calendario
-> único LIVE (§184) + **CRUD/1581 LIVE (§185)**: índice `dedup/` F40e (E2E live ✓) · editar contacto
-> con `_version` en Rules · fusión resumible `crmMergeContacts` · supresión `crmSuppressContact`
-> (gracia 72h → finalizador del daily job: stub anónimo, tombstones en cascada, snapshot purgado,
-> auditoría por hash). 139 tests emulador. Review adversarial ×2 (E2t2: 9 fixes · E3: 10 fixes,
-> 1 crítico) — TODO corregido pre-commit.
-> **Retomar con: "continúa E4"** = F10 (checklist post-venta del deal ganado: entrega/traspaso RUNT/
-> trámites + retoma) + F25 (estado del vehículo como AGREGADO en transacción + workflow_dispatch al
-> ganar) + F26 (aviso de colisión comercial) + F42 (comisiones). Después: E5 blindaje (TODO-18) →
-> E6 cutover (TODO-19) + E6.5 comité diseño + E6.6 auditoría admin clásico (§183, FIRMES).
-> ⏳ **Cliente**: (1) merge ✓ HECHO (verificado `4b68f2a` en main); (2) Ctrl+Shift+R; (3) **clic
-> "🇨🇴 Cargar festivos 2026"** en portal→Disponibilidad (migración F21 = SU verificación F39);
-> (4) anunciar F42; (5) billing GCP; (6) commit+push de la bóveda `brain-private` (4 archivos:
-> 2 crudos de reviews + README ×2).
-> ✅ **Verificar al retomar** (PRIMERO, antes de E4): 1ª corrida del `crmDailyJob` del 11/06 5am
-> (digest F28 v2 en `crm_alerts`: fantasmas feb-abr eliminados, basura feb de availability purgada,
-> reconcile dedup backfilleando contactos existentes, retención de backups). Patrón: `functions_get_logs`
-> de crmDailyJob + query `crm_alerts` type=daily_digest.
+> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0✅ E1a✅ E1b✅ E2✅ E3✅ E4✅ (§186)** — Post-venta
+> F10 (checklist del ganado + `commissionSnapshot` server-only + retoma con borrador) · F25-completo
+> (vehículo = AGREGADO transaccional; **badge 'Apartado' visible en la web**) · F26 colisión ·
+> F42 Comisiones del mes en Reportes. 169 tests emulador. Review adversarial 4-dim: 23 hallazgos
+> corregidos pre-commit (+2 self-review; top: `retry:true` faltaba en onDealUpdated — Eventarc no
+> reintenta por defecto). **FIX: pipeline de páginas estáticas roto 16 días** (yml ruta cache-manager).
+> Cache `v20260611031500`. Deploy: rules+indexes ✓ · functions (ver estado abajo).
+> **Retomar con: "continúa E5"** = blindaje (P1: SEC-01 lectura canónico, rate-limit forms públicos,
+> App Check, auditoría retry de triggers CRM restantes) + P3 E2E vías de captura. Después: E6 cutover
+> (TODO-19) + E6.5 comité diseño + E6.6 auditoría admin clásico (§183, FIRMES).
+> ⏳ **Cliente**: (1) merge tanda E4 + Ctrl+Shift+R; (2) **clic "🇨🇴 Cargar festivos 2026"** en
+> portal→Disponibilidad (sigue pendiente); (3) anunciar F42 al equipo ("sin CRM no hay comisión" —
+> el reporte ya existe en Reportes→Comisiones del mes); (4) billing GCP causa raíz; (5) commit+push
+> de la bóveda `brain-private` (ahora 6 archivos: +2 crudos E4).
+> ✅ **Verificar al retomar**: 1ª corrida del `crmDailyJob` post-E4 (digest con bloques nuevos:
+> colisiones/drift/wons backfilled + lo de §184: fantasmas feb-abr, reconcile dedup). Patrón:
+> `functions_get_logs` de crmDailyJob + query `crm_alerts` type=daily_digest.
 > ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado
 > (el mecanismo F14 ya está; el copy del panel es interno).
 >
@@ -85,3 +84,8 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 >   (2 épicas en una sesión). Merge a main verificado (`4b68f2a`). Próxima sesión: boot normal →
 >   verificar 1ª corrida del daily job → **"continúa E4"**. Sin decisiones nuevas del dueño
 >   (E6.5/E6.6 de §183 siguen FIRMES).
+> - **2026-06-11 (madrugada-2)**: "continuemos" → **E4 COMPLETA (§186)**. Exploración 5 agentes →
+>   IAP → implementación → 169 tests → review adversarial (2 cortes por LÍMITES de sesión/semana:
+>   el self-review durante la espera encontró 2 bugs; los 23 confirmados del workflow corregidos al
+>   volver). Daily job 5am del 11/06 NO verificado (sesión arrancó a las 00:30 — quedó tarea #1).
+>   🚫 Callejón: NO verificar fusión/supresión live sin sesión del dueño (F39, igual que §185).

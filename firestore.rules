@@ -444,20 +444,59 @@ service cloud.firestore {
                  (ni > oi && (
                     (!(oi <= 2 && ni > 2) || 'huboTestDrive' in request.resource.data)
                     && (!(oi < 4 && ni >= 4) || (request.resource.data.montoApartado is number && request.resource.data.venceEl is string))
-                    && (ni != 5 || request.resource.data.tipoPago in ['contado', 'financiado'])
+                    // E4: ganar exige monto REAL — un won con amount 0 congela
+                    // commissionSnapshot.amount=0 sin vía de corrección (F42)
+                    && (ni != 5 || (request.resource.data.tipoPago in ['contado', 'financiado']
+                        && request.resource.data.amount is number
+                        && request.resource.data.amount > 0))
                  ))
                  || (ni < oi && request.resource.data.regressReason is string && request.resource.data.regressReason.size() > 0)
                ))
             && (oldS != 'perdido' || (request.resource.data.regressReason is string && request.resource.data.regressReason.size() > 0))
           );
       }
+      // E4 §186 — campos SERVER-ONLY: wonAt + commissionSnapshot (base de
+      // liquidación F42, congelada por el trigger al ganar) + retomaVehicleId
+      // (callable crmCrearBorradorRetoma) + flags de idempotencia de alertas
+      // del daily job (pre-setearlos atenuaría alertas F26/F28). Cliente jamás.
+      function dealServerFieldsUntouched() {
+        return !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['wonAt', 'commissionSnapshot', 'retomaVehicleId',
+                   '_colisionAlertedAt', '_apartadoVencidoAlertedAt'].toSet());
+      }
+      // E4 §186 — coherencia status↔stageId: sin esto un cliente podría
+      // fabricar status:'won' sin pasar los gates (y entrar a comisiones F42)
+      // o resucitar un vendido tocando solo status. 'anulado' = server-only.
+      function dealStatusCoherent() {
+        return request.resource.data.status in ['open', 'won', 'lost']
+          && ((request.resource.data.status == 'won') == (request.resource.data.stageId == 'vendido'))
+          && ((request.resource.data.status == 'lost') == (request.resource.data.stageId == 'perdido'));
+      }
+      // E4 §186 / F42 — un deal YA vendido queda CERRADO para el cliente
+      // salvo el checklist post-venta F10 y campos neutros (super admin
+      // conserva la válvula de corrección, menos los server-only de arriba).
+      function vendidoEditOk() {
+        return resource.data.stageId != 'vendido'
+          || request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['postventa', 'recibeVehiculo', 'lastActivityAt',
+                      'updatedAt', 'updatedBy', '_version'].toSet());
+      }
       allow read:   if isAuthenticated() || hasPermission('crm.read');
-      // F7: el deal nace SOLO en cuadrando_cita, con valor estimado y owner.
+      // F7: el deal nace SOLO en cuadrando_cita, abierto, con valor y owner.
+      // E4: y JAMÁS con campos server-only — un commissionSnapshot forjado en
+      // el create sobreviviría al ganar (el trigger lo respeta por idempotencia).
       allow create: if (isSuperAdmin() || hasPermission('crm.edit'))
         && request.resource.data.stageId == 'cuadrando_cita'
+        && request.resource.data.status == 'open'
         && request.resource.data.amount is number
-        && request.resource.data.ownerId is string;
-      allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && dealStageChangeOk();
+        && request.resource.data.ownerId is string
+        && !request.resource.data.keys()
+          .hasAny(['wonAt', 'commissionSnapshot', 'retomaVehicleId']);
+      allow update: if (isSuperAdmin() || hasPermission('crm.edit'))
+        && dealStageChangeOk()
+        && dealStatusCoherent()
+        && dealServerFieldsUntouched()
+        && (isSuperAdmin() || vendidoEditOk());
       allow delete: if isSuperAdmin() || hasPermission('crm.delete');
     }
 

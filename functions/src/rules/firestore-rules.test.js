@@ -166,13 +166,15 @@ describe.skipIf(!EMU)('Rules — F8/F35b deals v3 (gates + matriz) y leads v3', 
     }));
   });
   it('VENDIDO exige tipoPago; vendido es TERMINAL para el cliente', async () => {
-    await rut.assertFails(dbA().doc('deals/d_apartado').update({ stageId: 'vendido' }));
-    await rut.assertSucceeds(dbA().doc('deals/d_apartado').update({ stageId: 'vendido', tipoPago: 'contado' }));
+    // E4 dealStatusCoherent: ganar = stageId vendido + status won JUNTOS (como markWon)
+    await rut.assertFails(dbA().doc('deals/d_apartado').update({ stageId: 'vendido', status: 'won' }));
+    await rut.assertSucceeds(dbA().doc('deals/d_apartado').update({ stageId: 'vendido', status: 'won', tipoPago: 'contado' }));
     await rut.assertFails(dbA().doc('deals/d_vendido').update({ stageId: 'negociacion', regressReason: 'error' }));
   });
   it('PERDIDO exige razón de picklist; retroceso exige regressReason', async () => {
-    await rut.assertFails(dbA().doc('deals/d_cuadrando').update({ stageId: 'perdido' }));
-    await rut.assertSucceeds(dbA().doc('deals/d_cuadrando').update({ stageId: 'perdido', lostReason: 'no_responde' }));
+    // E4 dealStatusCoherent: perder = stageId perdido + status lost JUNTOS (como markLost)
+    await rut.assertFails(dbA().doc('deals/d_cuadrando').update({ stageId: 'perdido', status: 'lost' }));
+    await rut.assertSucceeds(dbA().doc('deals/d_cuadrando').update({ stageId: 'perdido', status: 'lost', lostReason: 'no_responde' }));
     // d_visita quedó en apartado (test anterior): retroceder sin razón falla, con razón pasa
     await rut.assertFails(dbA().doc('deals/d_visita').update({ stageId: 'negociacion' }));
     await rut.assertSucceeds(dbA().doc('deals/d_visita').update({ stageId: 'negociacion', regressReason: 'cliente pidió pausa' }));
@@ -187,6 +189,108 @@ describe.skipIf(!EMU)('Rules — F8/F35b deals v3 (gates + matriz) y leads v3', 
     await rut.assertFails(dbA().doc('leads/l_libre').update({ status: 'perdido' }));
     await rut.assertFails(dbA().doc('leads/l_libre').update({ status: 'descartado' }));
     await rut.assertSucceeds(dbA().doc('leads/l_libre').update({ status: 'descartado', discardReason: 'inalcanzable' }));
+  });
+});
+
+describe.skipIf(!EMU)('Rules — E4 §186 deals: vendido cerrado + server-only + coherencia status', () => {
+  let testEnv, rut;
+  const ADMIN = 'admin_e4';
+  const SUPER = 'super_e4';
+
+  beforeAll(async () => {
+    rut = await import('@firebase/rules-unit-testing');
+    testEnv = await rut.initializeTestEnvironment({
+      projectId: 'altorra-rules-test-e4',
+      firestore: { rules: readFileSync(join(__dir, '../../../firestore.rules'), 'utf8') },
+    });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc('usuarios/' + ADMIN).set({ rol: 'custom', permissions: ['crm.read', 'crm.edit'], estado: 'activo' });
+      await db.doc('usuarios/' + SUPER).set({ rol: 'super_admin', permissions: ['*'], estado: 'activo' });
+      await db.doc('deals/d_won').set({
+        stageId: 'vendido', status: 'won', amount: 50, ownerId: ADMIN, tipoPago: 'contado',
+        wonAt: '2026-06-01T00:00:00.000Z',
+        postventa: { entrega: false, traspaso_runt: false, tramites: false },
+        commissionSnapshot: { amount: 50, tipoPago: 'contado', ownerId: ADMIN, wonAt: '2026-06-01T00:00:00.000Z' },
+        _version: 3,
+      });
+      await db.doc('deals/d_open').set({ stageId: 'negociacion', status: 'open', amount: 70, ownerId: ADMIN, _version: 1 });
+    });
+  });
+  afterAll(async () => { if (testEnv) await testEnv.cleanup(); });
+
+  const dbA = () => testEnv.authenticatedContext(ADMIN).firestore();
+  const dbS = () => testEnv.authenticatedContext(SUPER).firestore();
+
+  it('F10: marcar el checklist post-venta de un vendido PASA (campos whitelisted)', async () => {
+    await rut.assertSucceeds(dbA().doc('deals/d_won').update({
+      'postventa.entrega': true, lastActivityAt: 'x', updatedAt: 'x', updatedBy: ADMIN, _version: 4,
+    }));
+    await rut.assertSucceeds(dbA().doc('deals/d_won').update({
+      recibeVehiculo: { marca: 'mazda', modelo: '3', placa: 'ABC123', valorEstimado: 30 },
+      updatedAt: 'x', _version: 5,
+    }));
+  });
+
+  it('F42: el cliente NO altera amount/tipoPago/ownerId de un deal YA vendido', async () => {
+    await rut.assertFails(dbA().doc('deals/d_won').update({ amount: 999, _version: 6 }));
+    await rut.assertFails(dbA().doc('deals/d_won').update({ tipoPago: 'financiado', _version: 6 }));
+    await rut.assertFails(dbA().doc('deals/d_won').update({ ownerId: 'otro', _version: 6 }));
+  });
+
+  it('server-only: wonAt y commissionSnapshot intocables (open Y vendido, hasta para super)', async () => {
+    await rut.assertFails(dbA().doc('deals/d_open').update({ wonAt: '2026-01-01' }));
+    await rut.assertFails(dbA().doc('deals/d_open').update({ commissionSnapshot: { amount: 1 } }));
+    await rut.assertFails(dbA().doc('deals/d_won').update({ wonAt: 'otro', _version: 6 }));
+    await rut.assertFails(dbS().doc('deals/d_won').update({ commissionSnapshot: { amount: 1 } }));
+    await rut.assertFails(dbA().doc('deals/d_open').update({ retomaVehicleId: '99' }));
+  });
+
+  it('super admin conserva la válvula de corrección sobre un vendido (campos normales)', async () => {
+    await rut.assertSucceeds(dbS().doc('deals/d_won').update({ amount: 55 }));
+  });
+
+  it('coherencia: NO se fabrica status won sin etapa vendido (ni anulado desde el cliente)', async () => {
+    await rut.assertFails(dbA().doc('deals/d_open').update({ status: 'won' }));
+    await rut.assertFails(dbA().doc('deals/d_open').update({ status: 'anulado' }));
+    await rut.assertFails(dbA().doc('deals/d_open').update({ status: 'lost' })); // sin stageId perdido
+  });
+
+  it('create exige status open (no se puede nacer ganado)', async () => {
+    await rut.assertFails(dbA().collection('deals').add({
+      stageId: 'cuadrando_cita', amount: 1, ownerId: ADMIN, status: 'won',
+    }));
+  });
+
+  it('create NO acepta campos server-only (anti-forja de base de comisión)', async () => {
+    await rut.assertFails(dbA().collection('deals').add({
+      stageId: 'cuadrando_cita', amount: 1, ownerId: ADMIN, status: 'open',
+      commissionSnapshot: { amount: 999999999 },
+    }));
+    await rut.assertFails(dbA().collection('deals').add({
+      stageId: 'cuadrando_cita', amount: 1, ownerId: ADMIN, status: 'open',
+      wonAt: '2026-01-01T00:00:00.000Z',
+    }));
+  });
+
+  it('flags de alerta del daily job son server-only (no se pre-atenúan alertas F26/F28)', async () => {
+    await rut.assertFails(dbA().doc('deals/d_open').update({ _colisionAlertedAt: '2999-01-01' }));
+    await rut.assertFails(dbA().doc('deals/d_open').update({ _apartadoVencidoAlertedAt: '2999-01-01' }));
+  });
+
+  it('ganar con amount 0 → denegado (la base de comisión no puede nacer en 0)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc('deals/d_cero').set({
+        stageId: 'apartado', status: 'open', amount: 0, ownerId: ADMIN,
+        montoApartado: 1000000, venceEl: '2026-06-13T18:00:00.000Z', _version: 1,
+      });
+    });
+    await rut.assertFails(dbA().doc('deals/d_cero').update({
+      stageId: 'vendido', status: 'won', tipoPago: 'contado',
+    }));
+    await rut.assertSucceeds(dbA().doc('deals/d_cero').update({
+      stageId: 'vendido', status: 'won', tipoPago: 'contado', amount: 45000000,
+    }));
   });
 });
 

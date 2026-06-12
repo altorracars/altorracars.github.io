@@ -404,6 +404,7 @@
 
         ESTADO_LABELS: {
             disponible: { text: 'Disponible', cls: 'badge-success' },
+            apartado:   { text: 'Apartado',   cls: 'badge-warning' }, // E4 §186/F25: lo escribe el CRM (agregado de deals)
             reservado:  { text: 'Reservado',  cls: 'badge-warning' },
             vendido:    { text: 'Vendido',    cls: 'badge-danger' },
             borrador:   { text: 'Borrador',   cls: 'badge-muted' }

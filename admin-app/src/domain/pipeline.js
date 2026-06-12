@@ -116,6 +116,38 @@ export function groupByStage(deals) {
   return groups;
 }
 
+/* ── E4 (§186): post-venta F10 · colisión F26 · liquidación F42 ──────────
+ * ESPEJO de functions/shared/crm-spec.js (el test de paridad lo afirma). */
+
+export const POSTVENTA_CHECKLIST = [
+  { id: 'entrega',       label: 'Entrega del vehículo',           dueDays: 3 },
+  { id: 'traspaso_runt', label: 'Traspaso / RUNT',                dueDays: 15 },
+  { id: 'tramites',      label: 'Trámites (SOAT, impuestos, GPS)', dueDays: 15 },
+];
+
+/** F26: 2+ deals ABIERTOS sobre el mismo vehicleId → [{vehicleId, dealIds}]. */
+export function detectCollisions(deals) {
+  const byVehicle = {};
+  for (const d of deals || []) {
+    if (!d || d.status !== 'open' || !d.vehicleId) continue;
+    (byVehicle[d.vehicleId] = byVehicle[d.vehicleId] || []).push(d.id || null);
+  }
+  const out = [];
+  for (const vehicleId of Object.keys(byVehicle)) {
+    if (byVehicle[vehicleId].length > 1) {
+      out.push({ vehicleId, dealIds: byVehicle[vehicleId] });
+    }
+  }
+  return out;
+}
+
+/** F42: deal GANADO con checklist post-venta completo = entra a liquidación. */
+export function dealLiquidable(deal) {
+  if (!deal || deal.status !== 'won') return false;
+  const pv = deal.postventa || {};
+  return POSTVENTA_CHECKLIST.every((item) => pv[item.id] === true);
+}
+
 /**
  * Construye los campos de negocio de un deal a partir de un lead.
  * F7 §181: `extras` viene del diálogo canónico de conversión —

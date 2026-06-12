@@ -65,6 +65,12 @@ function getBadge(vehicle) {
 function getVehicleBadges(vehicle) {
     const badges = [];
 
+    // 0. E4 §186/F25: Apartado MÁXIMA prioridad (urgencia: alguien ya dejó
+    // un monto por este carro — el agregado del CRM escribe el estado).
+    if (vehicle.estado === 'apartado') {
+        badges.push({ class: 'badge-apartado', text: 'Apartado' });
+    }
+
     // 1. Badge de oferta PRIMERO (prioridad visual)
     if (vehicle.oferta || vehicle.precioOferta) {
         badges.push({ class: 'badge-oferta', text: 'Oferta' });

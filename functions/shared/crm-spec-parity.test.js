@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest';
 import spec from './crm-spec.js';
 import {
   PIPELINE_STAGES, LOST_STAGE, STAGE_GATES, LOST_REASONS, dealTransition,
+  POSTVENTA_CHECKLIST, detectCollisions, dealLiquidable,
 } from '../../admin-app/src/domain/pipeline.js';
 import { LEAD_STATUSES, DISCARD_REASONS } from '../../admin-app/src/domain/classify.js';
 
@@ -31,6 +32,35 @@ describe('PARIDAD spec ↔ portal — etapas del deal', () => {
   });
   it('mismas razones de pérdida', () => {
     expect(LOST_REASONS.map((r) => r.id)).toEqual(spec.LOST_REASONS);
+  });
+});
+
+describe('PARIDAD spec ↔ portal — E4 (F10/F26/F42)', () => {
+  it('mismo checklist post-venta (ids, labels, dueDays)', () => {
+    expect(POSTVENTA_CHECKLIST).toEqual(spec.POSTVENTA_CHECKLIST);
+  });
+  it('detectCollisions devuelve LO MISMO en ambos lados', () => {
+    const deals = [
+      { id: 'a', status: 'open', vehicleId: 'v1' },
+      { id: 'b', status: 'open', vehicleId: 'v1' },
+      { id: 'c', status: 'won', vehicleId: 'v1' },
+      { id: 'd', status: 'open', vehicleId: 'v2' },
+      { id: 'e', status: 'open', vehicleId: 'v2' },
+      { id: 'f', status: 'open' },
+    ];
+    expect(detectCollisions(deals)).toEqual(spec.detectCollisions(deals));
+  });
+  it('dealLiquidable devuelve LO MISMO en ambos lados (matriz de casos)', () => {
+    const cases = [
+      { status: 'won', postventa: { entrega: true, traspaso_runt: true, tramites: true } },
+      { status: 'won', postventa: { entrega: true, traspaso_runt: false, tramites: true } },
+      { status: 'won' },
+      { status: 'open', postventa: { entrega: true, traspaso_runt: true, tramites: true } },
+      null,
+    ];
+    for (const c of cases) {
+      expect({ c, r: dealLiquidable(c) }).toEqual({ c, r: spec.dealLiquidable(c) });
+    }
   });
 });
 

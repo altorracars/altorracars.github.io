@@ -260,7 +260,11 @@ function generatePage(template, v, slug) {
             '@type': 'Offer',
             price: precio,
             priceCurrency: 'COP',
-            availability: 'https://schema.org/InStock',
+            // E4 §186/F25: apartado = alguien dejó un monto pero el carro
+            // sigue publicado con badge → LimitedAvailability (no InStock).
+            availability: v.estado === 'apartado'
+                ? 'https://schema.org/LimitedAvailability'
+                : 'https://schema.org/InStock',
             itemCondition,
             seller: {
                 '@type': 'AutoDealer',
@@ -596,13 +600,15 @@ async function main() {
     const snap = await getDocs(collection(db, 'vehiculos'));
     const allVehicles = snap.docs.map(d => d.data());
 
-    // Filter: only "disponible" vehicles get pages
+    // Filter: "disponible" Y "apartado" get pages (E4 §186/F25: el apartado
+    // sigue publicado CON badge — urgencia + conserva el SEO acumulado;
+    // vendido/reservado/borrador siguen sin página, como siempre).
     const vehicles = allVehicles.filter(v => {
         const estado = v.estado || 'disponible';
-        return estado === 'disponible';
+        return estado === 'disponible' || estado === 'apartado';
     });
 
-    console.log(`[generate] ${allVehicles.length} total, ${vehicles.length} disponibles.`);
+    console.log(`[generate] ${allVehicles.length} total, ${vehicles.length} publicables (disponible+apartado).`);
 
     // Read template
     const template = readFileSync(join(ROOT, 'detalle-vehiculo.html'), 'utf-8');

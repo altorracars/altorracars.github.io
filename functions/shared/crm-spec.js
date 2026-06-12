@@ -77,6 +77,22 @@ const APARTADO_DEFAULT_HOURS = 72;
 /* ── Política de expiración de citas (F19/F20, se opera en E2) ─────────── */
 const HOLD_EXPIRY_HOURS_BEFORE_START = 3; // pendiente sin confirmar a T-3h → caducada
 
+/* ── F10 (E4) — Checklist post-venta del deal GANADO ───────────────────────
+ * Booleanos en deal.postventa.{id} + activity-recordatorio automática al
+ * ganar con ID determinista `postventa_{dealId}_{id}` (dueDays desde wonAt).
+ * El checklist completo es condición de liquidación (F42 → dealLiquidable). */
+const POSTVENTA_CHECKLIST = [
+  { id: 'entrega',       label: 'Entrega del vehículo',           dueDays: 3 },
+  { id: 'traspaso_runt', label: 'Traspaso / RUNT',                dueDays: 15 },
+  { id: 'tramites',      label: 'Trámites (SOAT, impuestos, GPS)', dueDays: 15 },
+];
+
+/* ── F25 (E4) — Estado del vehículo como AGREGADO de sus deals ─────────────
+ * 'disponible'/'apartado'/'vendido' los gestiona el CRM (recálculo);
+ * 'reservado'/'borrador' son MANUALES (legacy/admin) y el agregado no los pisa. */
+const VEHICLE_STATES = ['disponible', 'apartado', 'vendido', 'reservado', 'borrador'];
+const CRM_MANAGED_VEHICLE_STATES = ['disponible', 'apartado', 'vendido'];
+
 /* ── Regla sourceUpdatedAt (B.4): updateTime del evento; aplicar solo si
  *    nuevo > almacenado; IGUAL = retry del mismo write → descartar. ───── */
 
@@ -152,11 +168,80 @@ function dealTransition(from, to) {
   return { ok: true, needsReason: true, gates: [], recalcVehicle: from === 'apartado' };
 }
 
+/* ═══ Helpers E4 (F25 / F26 / F42) ═══ */
+
+/**
+ * F25: estado AGREGADO del vehículo a partir de TODOS sus deals.
+ * Algún deal ganado → 'vendido' (terminal); algún deal open en 'apartado'
+ * → 'apartado'; si no → 'disponible'. lost/anulado no cuentan.
+ */
+function computeVehicleState(deals) {
+  let hasWon = false;
+  let hasApartado = false;
+  for (const d of deals || []) {
+    if (!d) continue;
+    if (d.status === 'won') hasWon = true;
+    else if (d.status === 'open' && d.stageId === 'apartado') hasApartado = true;
+  }
+  if (hasWon) return 'vendido';
+  if (hasApartado) return 'apartado';
+  return 'disponible';
+}
+
+/**
+ * F25: ¿el recálculo puede escribir `target` sobre el estado actual?
+ *  - 'vendido' actual es TERMINAL para el agregado (markAsSold legacy puede
+ *    vender SIN deal CRM — el recálculo jamás "des-vende"; revertir = admin).
+ *  - degradar a 'disponible' solo desde 'apartado' (jamás pisar los estados
+ *    manuales 'reservado'/'borrador').
+ *  - subir a 'apartado'/'vendido': el CRM manda.
+ */
+function shouldWriteVehicleState(current, target) {
+  const cur = current || 'disponible';
+  if (cur === target) return false;
+  if (cur === 'vendido') return false;
+  if (target === 'disponible') return cur === 'apartado';
+  return true;
+}
+
+/**
+ * F26: detecta colisiones comerciales — 2+ deals ACTIVOS (open) sobre el
+ * mismo vehicleId. No bloquea (dos compradores reales pueden competir);
+ * devuelve [{ vehicleId, dealIds }] para warning UI + alerta F38.
+ */
+function detectCollisions(deals) {
+  const byVehicle = {};
+  for (const d of deals || []) {
+    if (!d || d.status !== 'open' || !d.vehicleId) continue;
+    (byVehicle[d.vehicleId] = byVehicle[d.vehicleId] || []).push(d.id || null);
+  }
+  const out = [];
+  for (const vehicleId of Object.keys(byVehicle)) {
+    if (byVehicle[vehicleId].length > 1) {
+      out.push({ vehicleId, dealIds: byVehicle[vehicleId] });
+    }
+  }
+  return out;
+}
+
+/**
+ * F42: ¿el deal entra a liquidación de comisiones? Política del dueño
+ * (aprobada 2026-06-09): "si no está registrado en el CRM, no entra" —
+ * deal GANADO con checklist post-venta F10 completo.
+ */
+function dealLiquidable(deal) {
+  if (!deal || deal.status !== 'won') return false;
+  const pv = deal.postventa || {};
+  return POSTVENTA_CHECKLIST.every((item) => pv[item.id] === true);
+}
+
 module.exports = {
   LEAD_STATUSES, DISCARD_REASONS, LEAD_TRANSITIONS,
   DEAL_STAGES, DEAL_LOST, LOST_REASONS, STAGE_GATES,
   APARTADO_DEFAULT_HOURS, HOLD_EXPIRY_HOURS_BEFORE_START, LEGACY,
+  POSTVENTA_CHECKLIST, VEHICLE_STATES, CRM_MANAGED_VEHICLE_STATES,
   stageIndex, isValidLeadStatus, isValidDealStage,
   isValidDiscardReason, isValidLostReason,
   isLeadLocked, canLeadTransition, dealTransition,
+  computeVehicleState, shouldWriteVehicleState, detectCollisions, dealLiquidable,
 };

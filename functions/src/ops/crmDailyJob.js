@@ -8,6 +8,9 @@ const zlib = require('zlib');
 const { buildExportData } = require('./crmBackup');
 const { computeStartAt } = require('../../shared/business-hours');
 const { blocksFor } = require('../../shared/cita-blocks');
+const { detectCollisions } = require('../../shared/crm-spec');
+const { recalcVehicleState } = require('../crm/vehicleAggregate');
+const { applyWonSideEffects } = require('../crm/dealWon');
 const { infoAlert, criticalAlert } = require('./notify');
 
 const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN');
@@ -338,10 +341,29 @@ async function runDailyMaintenance(db, deps) {
     }
     report.apartadosVencidos = alertados;
 
+    // Cerrados PAGINADOS por documentId (review E4 #3): un limit(500) sin
+    // orden congela los mismos 500 para siempre cuando el histórico crezca —
+    // y de aquí salen el backfill F42, el drift F25 y el invariante de
+    // huérfanos (misma receta del bloque b).
+    const cerrados = [];
+    {
+      let lastId = null;
+      for (let page = 0; page < 12; page++) {
+        let q = db.collection('deals')
+          .where('status', 'in', ['won', 'lost'])
+          .orderBy(admin.firestore.FieldPath.documentId())
+          .limit(300);
+        if (lastId) q = q.startAfter(lastId);
+        const snap = await q.get();
+        cerrados.push(...snap.docs);
+        if (snap.size < 300) break;
+        lastId = snap.docs[snap.docs.length - 1].id;
+      }
+    }
+
     // Lead convertido ↔ deal existe (requiere juicio → solo reporte).
     const dealIds = new Set(abiertos.map((d) => d.id));
-    const cerradosSnap = await db.collection('deals').where('status', 'in', ['won', 'lost']).limit(500).get();
-    cerradosSnap.docs.forEach((d) => dealIds.add(d.id));
+    cerrados.forEach((d) => dealIds.add(d.id));
     const convSnap = await db.collection('leads').where('status', '==', 'convertido').limit(500).get();
     const huerfanos = [];
     convSnap.docs.forEach((l) => {
@@ -349,6 +371,90 @@ async function runDailyMaintenance(db, deps) {
       if (!dealId || !dealIds.has(dealId)) huerfanos.push(l.id);
     });
     report.invariantes = { leadsConvertidos: convSnap.size, sinDeal: huerfanos.slice(0, 10) };
+
+    // ── E4/F26: colisión comercial — 2+ deals ABIERTOS sobre el mismo carro.
+    // NO bloquea (dos compradores reales pueden competir): alerta al owner de
+    // cada deal + copia al CEO ("grupal" F38), una vez por deal (flag).
+    // try/catch por bloque (review E4 #8): un fallo aquí no mata el resto.
+    try {
+      let alertadas = 0;
+      const openDeals = abiertos.map((d) => ({ id: d.id, ref: d.ref, ...d.data() }));
+      for (const col of detectCollisions(openDeals)) {
+        const grupo = openDeals.filter((x) => col.dealIds.includes(x.id));
+        const nuevos = grupo.filter((x) => !x._colisionAlertedAt);
+        if (!nuevos.length) continue; // grupo ya alertado (sin deals nuevos)
+        const nombre = grupo.map((x) => x.vehicleName).find(Boolean) || ('vehículo ' + col.vehicleId);
+        const destinos = new Set(
+          grupo.map((x) => x.ownerId).filter(Boolean).concat(deps.ceoUid ? [deps.ceoUid] : [])
+        );
+        for (const uid of destinos) {
+          await criticalAlert(db, tgToken, {
+            targetUid: uid,
+            text: '🥊 *Colisión comercial*\n' + grupo.length + ' negocios ACTIVOS sobre ' + nombre
+              + '\n' + grupo.map((x) => '· ' + (x.name || x.id)).join('\n')
+              + '\nNo es un error: dos compradores pueden competir. Coordinen quién va primero.',
+            url: 'https://altorracars.github.io/admin-app/dist/#/pipeline', urlLabel: 'Abrir Pipeline',
+            type: 'colision_comercial', meta: { vehicleId: col.vehicleId, dealIds: col.dealIds },
+          });
+        }
+        for (const x of nuevos) {
+          await x.ref.update({ _colisionAlertedAt: nowIso });
+        }
+        alertadas++;
+      }
+      report.colisionesComerciales = alertadas;
+    } catch (e) {
+      console.error('[crmDailyJob] colisiones F26:', e);
+      report.colisionesComerciales = 'ERROR: ' + e.message;
+    }
+
+    // ── E4/F25: drift del agregado del vehículo — derivable → AUTO-REPARAR
+    // (recalcVehicleState respeta vendido-terminal y estados manuales).
+    // Cubre el cambio de vehicleId sin cambio de etapa y cualquier pisada
+    // manual del form viejo sobre un estado gestionado por el CRM.
+    try {
+      let reparados = 0;
+      const vehIds = new Set();
+      abiertos.forEach((d) => { const v = d.data().vehicleId; if (v) vehIds.add(String(v)); });
+      // won Y lost: un vehículo atascado en 'apartado' cuyo deal terminó lost
+      // (trigger caído) solo se repara si su vehicleId entra al set.
+      cerrados.forEach((d) => {
+        const v = d.data().vehicleId;
+        if (v) vehIds.add(String(v));
+      });
+      // y TODO vehículo actualmente 'apartado' (review E4 #1): cubre deals
+      // ANULADOS (fuera de open/won/lost) y BORRADOS — sin esto, un carro
+      // quedaría 'apartado' en la web para siempre sin vía de reparación.
+      const apartadosSnap = await db.collection('vehiculos')
+        .where('estado', '==', 'apartado').limit(300).get();
+      apartadosSnap.docs.forEach((d) => vehIds.add(d.id));
+      for (const vid of vehIds) {
+        const r = await recalcVehicleState(db, vid, nowIso);
+        if (r.changed) reparados++;
+      }
+      report.vehiculosDriftReparados = reparados;
+    } catch (e) {
+      console.error('[crmDailyJob] drift F25:', e);
+      report.vehiculosDriftReparados = 'ERROR: ' + e.message;
+    }
+
+    // ── E4/F10+F42: wons sin commissionSnapshot (pre-E4 o trigger caído) →
+    // backfill con la MISMA función del trigger (idempotente, proyección
+    // interna sin side-effects de cara al cliente).
+    try {
+      let wonsBackfilled = 0;
+      for (const d of cerrados) {
+        const deal = d.data();
+        if (deal.status !== 'won' || deal.commissionSnapshot) continue;
+        const wonAt = deal.wonAt || deal.lastActivityAt || deal.updatedAt || nowIso;
+        await applyWonSideEffects(db, d.id, deal, wonAt);
+        wonsBackfilled++;
+      }
+      report.wonsBackfilled = wonsBackfilled;
+    } catch (e) {
+      console.error('[crmDailyJob] backfill wons F10/F42:', e);
+      report.wonsBackfilled = 'ERROR: ' + e.message;
+    }
   }
 
   // ── e) digest informativo (F38) ──
@@ -363,7 +469,10 @@ async function runDailyMaintenance(db, deps) {
       + ' · apartados vencidos: ' + report.apartadosVencidos
       + (report.supresionesEjecutadas ? ' · supresiones 1581 ejecutadas: ' + report.supresionesEjecutadas : '')
       + (report.dedup.colisiones ? ' · ⚠️ colisiones dedup (fusionar a mano): ' + report.dedup.colisiones : '')
-      + (report.invariantes.sinDeal.length ? ' · ⚠️ convertidos sin deal: ' + report.invariantes.sinDeal.length : ''),
+      + (report.invariantes.sinDeal.length ? ' · ⚠️ convertidos sin deal: ' + report.invariantes.sinDeal.length : '')
+      + (report.colisionesComerciales ? ' · 🥊 colisiones comerciales: ' + report.colisionesComerciales : '')
+      + (report.vehiculosDriftReparados ? ' · estado de vehículos auto-reparado: ' + report.vehiculosDriftReparados : '')
+      + (report.wonsBackfilled ? ' · wons backfilled (F10/F42): ' + report.wonsBackfilled : ''),
     meta: report,
   });
 

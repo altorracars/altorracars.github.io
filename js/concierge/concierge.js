@@ -3826,6 +3826,7 @@
 
         var statusBadge = '';
         if (vc.estado === 'reservado') statusBadge = '<span class="cnc-vcard-status cnc-vcard-status--reservado">Reservado</span>';
+        else if (vc.estado === 'apartado') statusBadge = '<span class="cnc-vcard-status cnc-vcard-status--reservado">Apartado</span>'; // E4 §186 (reusa estilo)
         else if (vc.estado === 'vendido') statusBadge = '<span class="cnc-vcard-status cnc-vcard-status--vendido">Vendido</span>';
 
         // §86 — En carousel, agregar clase --snap para scroll-snap-align

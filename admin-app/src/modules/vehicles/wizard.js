@@ -525,7 +525,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   const body = el('div', { class: 'veh-wiz__body' }, SECTIONS);
   const card = el('div', { class: 'modal veh-wiz' }, [
     el('div', { class: 'modal__head' }, [
-      el('h2', { class: 'modal__title', text: isEdit ? 'Editar: ' + (vehicle.modelo || vehicle.id) : (draft ? '📝 Borrador' : '🚗 Nuevo vehículo') }),
+      el('h2', { class: 'modal__title', text: isEdit ? 'Editar: ' + (vehicle.modelo || vehicle.id) : (draft && draft.id ? '📝 Borrador' : '🚗 Nuevo vehículo') }),
       progress,
     ]),
     stepsBar, body,

@@ -10,6 +10,11 @@
 
 ## 🎯 Foco actual
 
+> 🤖 **MODELO: Opus 4.8 — Fable 5 NO disponible (2026-06-12).** Se continúa el plan de Fable
+> marcando lo de Opus para revisión al volver: commits → footer `Modelo: Opus 4.8 …`; ADR/
+> bitácora/lecciones → tag `⟦OPUS-4.8 · rev-Fable⟧`; al volver Fable → `grep -rn "OPUS-4.8" docs/`.
+> Detalle → `05` + memoria `project_model_opus_fallback`. 🚫 NO neurona nueva; NO en `CLAUDE.md`.
+
 > 🧠 **MACRO-PROYECTO — Cerebro auto-evaluable v6** (2026-06-09). Comité v6 decidió los 7 puntos;
 > **19/21 ✅ (A-S)** · ⏳ **T** (re-verificar inmobiliaria) + **U** (1ª auditoría Nivel-2, sesión fresca).
 > Checklist ÚNICO → bóveda `specs/2026-06-09-comite-v6-…VEREDICTO.md`. Bóveda en GitHub privado ✓.
@@ -22,9 +27,17 @@
 > Patrón validado ×5. SIGUIENTE: (1) **gates ②/③** (tras F39 live del dueño — verificado 12/06
 > ×2: auditLog SIN evidencia, solo login): ocultar/readonly Banners+Reseñas+Marcas+Atributos del
 > CLÁSICO; (2) **vehicles — L, ÉPICA PROPIA EN SESIÓN FRESCA** (wizard 6 pasos + drafts +
-> smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema) → dealers (M, decisión
-> D5-03 del dueño) → **decisión financiera (gap 8)** → ④ RBAC/usuarios (departamental §193.4)
-> → cutover (stub redirect, NUNCA borrar admin.html).
+> smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema) → **dealers (M): FASE 1 ✅
+> §204** (port verbatim aliados, commit local) · FASE 2 gated → **decisión financiera (gap 8)** →
+> ④ RBAC/usuarios (departamental §193.4) → cutover (stub redirect, NUNCA borrar admin.html).
+> 🤝 **dealers FASE 2 — D5-03 (decide el dueño, ⟦OPUS-4.8⟧)**: enriquecer modelo (activo /
+> createdAt / tipoAliado / nit-PII / notas / **esquemaComision = gap 8 financiero**). Preguntas
+> abiertas: (a) ¿enunciado literal de D5-03 (bóveda)? (b) ¿alcance: solo CRUD o tabs de métricas/
+> operaciones? (c) ¿activar delete con aviso de huérfanos? (d) comisión ¿en aliado/vehículo/deal
+> (commissionSnapshot §186.2)? (e) ¿formalizar '_particular' como entidad o dejar sentinel? (f)
+> nit/2º contacto = gate Habeas Data (`42`). Trigger 🛰️ (decisión cara) → consejo Gemini si hay tokens.
+> 🚫 Callejón dealers: NO reusar `brands.slugify()` (NFD rompe docId acentuado) · NO `_version`
+> (rules de concesionarios no exigen validVersion) · NO portar vistas reporte (van a reportes/pipeline).
 > ✅ **F39 v2 (§198)**: verificación en vivo = CLAUDE, por LOTES. Próximo lote (post-épica
 > vehículos): reseña + banner + marca + lista + respaldo + walk-in + reasignar + ciclo completo
 > de vehículo → web SIN Ctrl+Shift+R → cerrar gates ②/③. Daily 13/06: counts con vehiculos/marcas.
@@ -87,17 +100,8 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC 2026-06-12 ×2: §184-§193 consolidados y podados (detalle → `00-INDICE` → `99`). Vivo:
+> GC 2026-06-12 ×3: §184-§204 consolidados y podados (detalle → `00-INDICE` → `99`). Vivo:
 >
-> - **2026-06-12 (3:35-6:40am)**: E2E live E5 ✓ (merge #832, daily 12/06 ✓) → E6.6 auditoría
->   (§188) → paso 0 (§189, L-41) → Reseñas §190 → Banners §191 → Marcas §192 (merges #833-836)
->   → siembra §193 (R-1, TODO-22/23, RBAC dep.). Gotcha: emulador zombi :8081 — matar java.
-> - **2026-06-12 (7:25am-mediodía)**: Atributos §194 (#837) → backup §195 (deploy ✓, #838) →
->   skills rescate §193.2-bis (#839) → walk-in §196 (#840) → reasignar §197 (emulador 193 ✓,
->   deploy ✓, #841) → F39 v2 §198 → M-14 + GC. auditLog sin F39 ×5 — gates se cierran en V6.
-> - **2026-06-12 (tarde, orden del dueño)**: **ÉPICA VEHÍCULOS V1-V5 COMPLETA** (§199-§203):
->   mapa 7 agentes (bóveda `2026-06-12-epica-vehiculos-plan.md`) → lista → wizard tx → fotos →
->   drafts (+TODO-24 comité post-cutover) → extras. 9 commits locales pendientes de merge.
->   **Retomar: "continua" (sesión FRESCA, tras merge + deploy de Pages)** → **V6 LOTE EN VIVO
->   §198**: 7 gestos + ciclo completo de vehículo (crear→editar→foto→web/CI sin diffs) →
->   cerrar gates ②/③ del clásico + decidir gate fase ③ con el dueño.
+> - **2026-06-12**: épica vehículos V1-V5 (§199-§203) + **dealers FASE 1 ⟦OPUS-4.8⟧ (§204)** —
+>   commits locales SIN merge. **Retomar (sesión fresca, tras merge + deploy de Pages)**: V6 lote
+>   en vivo §198 (7 gestos + ciclo completo de vehículo) + verificar aliados en vivo → gates ②/③.

@@ -20,6 +20,7 @@ import './styles/config.css';
 import './styles/reviews.css';
 import './styles/banners.css';
 import './styles/brands.css';
+import './styles/dealers.css';
 import './styles/lists.css';
 import './styles/backup.css';
 import './styles/vehicles.css';
@@ -40,6 +41,7 @@ import { mountConfig } from './modules/config/config.ui.js';
 import { mountReviews } from './modules/reviews/reviews.ui.js';
 import { mountBanners } from './modules/banners/banners.ui.js';
 import { mountBrands } from './modules/brands/brands.ui.js';
+import { mountDealers } from './modules/dealers/dealers.ui.js';
 import { mountLists } from './modules/lists/lists.ui.js';
 import { mountBackup } from './modules/backup/backup.ui.js';
 import { mountVehicles } from './modules/vehicles/vehicles.ui.js';
@@ -48,7 +50,7 @@ const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, vehiculos: mountVehicles, marcas: mountBrands, atributos: mountLists, respaldos: mountBackup };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

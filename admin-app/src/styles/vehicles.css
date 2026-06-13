@@ -100,3 +100,12 @@
 }
 .veh-draft { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
 .veh-draft__meta { display: flex; flex-direction: column; min-width: 0; }
+
+/* ── V5: reorder + auditoría ── */
+.veh-row__pos { flex: 0 0 28px; text-align: right; }
+.veh-audit { display: flex; flex-direction: column; gap: var(--s-2); max-height: 50vh; overflow-y: auto; }
+.veh-audit__row {
+  display: flex; flex-direction: column; gap: 2px;
+  padding-bottom: var(--s-2); border-bottom: 1px dashed var(--line);
+}
+.veh-audit__row:last-child { border-bottom: 0; }

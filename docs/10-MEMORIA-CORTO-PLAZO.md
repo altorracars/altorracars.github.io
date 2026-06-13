@@ -92,22 +92,12 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 > - **2026-06-12 (3:35-6:40am)**: E2E live E5 ✓ (merge #832, daily 12/06 ✓) → E6.6 auditoría
 >   (§188) → paso 0 (§189, L-41) → Reseñas §190 → Banners §191 → Marcas §192 (merges #833-836)
 >   → siembra §193 (R-1, TODO-22/23, RBAC dep.). Gotcha: emulador zombi :8081 — matar java.
-> - **2026-06-12 (~7:25am, sesión nueva)**: "continua" → gate fase ② verificado (auditLog: solo
->   login del dueño 11:05Z, SIN F39 aún → gate abierto) → **fase ③ p2 ✅: Atributos (§194)**,
->   ruta propia `#/atributos` (desviación deliberada del "→ #/config" — razón en §194.2).
->   Preview mock ✓ + build ✓. Merge #837 del dueño.
-> - **2026-06-12 (8:40-11am, misma sesión + relevos)**: backup inventario ✅ (§195, deploy ✓,
->   merge #838) → ampliación §193.2 (skills arranque+RESCATE, merge #839) → gap 5 ✅ (§196,
->   "＋ Nueva cita" walk-in, merge #840) → **gap 7 ✅ (§197)**: acción `update` (observaciones +
->   reasignar asesor, moveAdvisorBlocks, suite emulador 193 ✓, deploy ✓). Commit local.
->   F39 re-verificado ×5: auditLog VACÍO (F39 explicado al dueño en cristiano: SUS 7 pruebas en vivo).
-> - **2026-06-12 (mediodía)**: GC 30-LECCIONES (destilado, f5fdeb2) + M-14 (no recomendar cierre
->   por nota de plan con presupuesto sobrando — corrección del dueño). **El dueño ORDENÓ arrancar
->   la ÉPICA DE VEHÍCULOS en esta misma sesión** (~50% presupuesto) → mapeo con agentes en curso.
->   Mapa ✅ (7 agentes; crudo+síntesis+checklist en bóveda `2026-06-12-epica-vehiculos-plan.md`)
->   → **V1 lista ✅ §199** → **V2 wizard ✅ §200** (create/update tx con version-conflict, smart
->   preview con score exacto, apartado disabled-persistible, fotos=URLs).
->   → V3 imágenes ✅ §201 → **V4 drafts ✅ §202** (interop shape clásico, ciclo completo en mock).
->   **Retomar: "continua"** → **V5 extras** (reorder lista global §103 (count-idx)*10 batch
->   solo-cambios · CSV verbatim BOM/headers · timeline auditoría + revert solo-super · duplicar
->   como estado explícito) → **V6 lote en vivo §198** (7 gestos + ciclo vehículo) **+ gates ②/③**.
+> - **2026-06-12 (7:25am-mediodía)**: Atributos §194 (#837) → backup §195 (deploy ✓, #838) →
+>   skills rescate §193.2-bis (#839) → walk-in §196 (#840) → reasignar §197 (emulador 193 ✓,
+>   deploy ✓, #841) → F39 v2 §198 → M-14 + GC. auditLog sin F39 ×5 — gates se cierran en V6.
+> - **2026-06-12 (tarde, orden del dueño)**: **ÉPICA VEHÍCULOS V1-V5 COMPLETA** (§199-§203):
+>   mapa 7 agentes (bóveda `2026-06-12-epica-vehiculos-plan.md`) → lista → wizard tx → fotos →
+>   drafts (+TODO-24 comité post-cutover) → extras. 9 commits locales pendientes de merge.
+>   **Retomar: "continua" (sesión FRESCA, tras merge + deploy de Pages)** → **V6 LOTE EN VIVO
+>   §198**: 7 gestos + ciclo completo de vehículo (crear→editar→foto→web/CI sin diffs) →
+>   cerrar gates ②/③ del clásico + decidir gate fase ③ con el dueño.

@@ -9,7 +9,7 @@
 // ============================================================
 
 import {
-  collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, setDoc, runTransaction,
+  collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, setDoc, runTransaction, writeBatch,
 } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../core/firebase.js';
@@ -193,6 +193,95 @@ export async function uploadVehicleImages(files, onStatus) {
 export async function fetchConcesionarios() {
   const snap = await getDocs(collection(db, 'concesionarios'));
   return snap.docs.map((d) => ({ id: d.id, nombre: d.data().nombre || d.id }));
+}
+
+/* ── V5: reorder global · CSV · auditoría/revert ── */
+
+/** Reorder §103 VERBATIM: la lista ORDENADA completa (ignora filtros)
+ *  recibe prioridad secuencial descendente (count-idx)*10; se persiste
+ *  por batch SOLO lo que cambió (+updatedAt/By + _version+1 sin tx —
+ *  semántica aceptada del clásico). */
+export async function saveReorder(orderedList) {
+  const who = me();
+  const now = nowISO();
+  const batch = writeBatch(db);
+  let changed = 0;
+  orderedList.forEach((v, idx) => {
+    const target = (orderedList.length - idx) * 10;
+    if ((v.prioridad || 0) === target) return;
+    batch.update(doc(db, 'vehiculos', v._docId), {
+      prioridad: target, updatedAt: now, updatedBy: who.email, _version: (v._version || 0) + 1,
+    });
+    changed += 1;
+  });
+  if (changed) await batch.commit();
+  writeAudit('vehicles_reorder', 'inventario', changed + ' posiciones');
+  return changed;
+}
+
+/** CSV del inventario — headers/filename/BOM/quoting VERBATIM del
+ *  clásico (admin-table-utils.js:210-258). */
+export function exportVehiclesCSV(vehicles, dealerNames) {
+  const headers = ['Codigo', 'Marca', 'Modelo', 'Ano', 'Tipo', 'Categoria', 'Precio', 'Precio Oferta',
+    'Estado', 'Kilometraje', 'Transmision', 'Combustible', 'Motor', 'Color', 'Destacado', 'Origen',
+    'Creado Por', 'Fecha Creacion', 'Modificado Por', 'Fecha Modificacion'];
+  const rows = vehicles.map((v) => {
+    let origen = 'Propio';
+    if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
+      origen = (dealerNames && dealerNames[v.concesionario]) || v.concesionario;
+    } else if (v.concesionario === '_particular' && v.consignaParticular) {
+      origen = 'Consigna: ' + v.consignaParticular;
+    }
+    return [
+      v.codigoUnico || '', v.marca || '', v.modelo || '', v.year || '',
+      v.tipo || '', v.categoria || '', v.precio || '', v.precioOferta || '',
+      v.estado || 'disponible', v.kilometraje || '', v.transmision || '',
+      v.combustible || '', v.motor || '', v.color || '',
+      v.destacado ? 'Si' : 'No', origen,
+      v.createdByName || v.createdBy || '', v.createdAt || '',
+      v.lastModifiedByName || v.lastModifiedBy || '', v.lastModifiedAt || '',
+    ];
+  });
+  let csv = '﻿' + headers.join(',') + '\n';
+  rows.forEach((row) => {
+    csv += row.map((cell) => {
+      let val = cell == null ? '' : String(cell);
+      if (val.indexOf(',') >= 0 || val.indexOf('"') >= 0 || val.indexOf('\n') >= 0) {
+        val = '"' + val.replace(/"/g, '""') + '"';
+      }
+      return val;
+    }).join(',') + '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vehiculos_altorra_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Timeline de auditoría del vehículo (subcolección; sin orderBy server
+ *  — el clásico ordena por timestamp NUMBER desc, limit 50 en cliente). */
+export async function fetchVehicleAudit(docId) {
+  const snap = await getDocs(collection(db, 'vehiculos', docId, 'auditLog'));
+  return snap.docs.map((d) => ({ ...d.data(), _id: d.id }))
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+    .slice(0, 50);
+}
+
+/** Revert (SOLO super, gated en UI): restaura los valores 'from' de un
+ *  entry 'edited' + _version+1 + log 'reverted' (clásico :2368-2504). */
+export async function revertAuditEntry(v, entry) {
+  const who = me();
+  const patch = { updatedAt: nowISO(), updatedBy: who.email, _version: (v._version || 0) + 1 };
+  (entry.changes || []).forEach((c) => { if (c.field && c.field !== '(nuevo)') patch[c.field] = c.from ?? null; });
+  await updateDoc(doc(db, 'vehiculos', v._docId), patch);
+  await logVehicleAction(v._docId, {
+    action: 'reverted', vehicleId: v.id || null,
+    changes: (entry.changes || []).map((c) => ({ field: c.field, from: c.to, to: c.from })),
+  });
+  writeAudit('vehicle_revert', 'vehiculo ' + v._docId, 'entry ' + (entry._id || ''));
 }
 
 /* ── Borradores (V4): usuarios/{uid}/drafts — subcolección PRIVADA

@@ -79,6 +79,7 @@
 | **TODO-21** | **Plan CRM E0→E6** — ledger en VEREDICTO (bóveda). **E0→E5 ✅ en main** · E6 ⏳ (plan 29 pasos §188) | ⏳ | — |
 | **TODO-22** | **Fábrica de skills web** (frontend/backend/framework; arranque + **RESCATE de webs monolíticas**, ampliado 12/06) §193.2 | 🔮 | post-panel (orden ratificado) |
 | **TODO-23** | **Web pública CMS-izada** (mismo diseño, estructura escalable, todo editable por panel) §193.3 | 🔮 | post-panel + TODO-22 |
+| **TODO-24** | **Comité BORRADORES** (rediseño profesional de drafts; el clásico era malo — dueño 12/06) §202.5 | 🔮 | post-cutover, ANTES de TODO-23 |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

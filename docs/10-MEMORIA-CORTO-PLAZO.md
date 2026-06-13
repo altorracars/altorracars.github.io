@@ -10,6 +10,17 @@
 
 ## 🎯 Foco actual
 
+> 🤖 **MODELO DE TRABAJO (2026-06-12): Opus 4.8 — Fable 5 NO disponible.** Por orden del
+> dueño se CONTINÚA con todo lo que Fable investigó/proyectó/planeó (redesign TOTAL, specs en
+> `docs/superpowers/specs/` + bóveda), pero **dejando trazado lo que hace Opus para revisión
+> cuando Fable vuelva** (el dueño avisará). Convención:
+> • **Commits** → footer extra `Modelo: Opus 4.8 — pendiente revisión Fable 5 (no disponible).`
+> • **ADR (§NN) / bitácora / lecciones** generados ahora → tag `⟦OPUS-4.8 · rev-Fable⟧`.
+> • Al volver Fable → `grep -rn "OPUS-4.8" docs/` (+ `git log --grep="Modelo: Opus 4.8"`) = lista
+>   de revisión completa. Es política TEMPORAL → vive aquí + `05` + memoria; **NO** en `CLAUDE.md`.
+> 🚫 Callejón: NO crear neurona/lóbulo nuevo para esto (anti-fragmentación) — el marcador greppable
+> ES el registro; cuando Fable cierre la revisión, consolidar como ADR en `99`.
+
 > 🧠 **MACRO-PROYECTO — Cerebro auto-evaluable v6** (2026-06-09). Comité v6 decidió los 7 puntos;
 > **19/21 ✅ (A-S)** · ⏳ **T** (re-verificar inmobiliaria) + **U** (1ª auditoría Nivel-2, sesión fresca).
 > Checklist ÚNICO → bóveda `specs/2026-06-09-comite-v6-…VEREDICTO.md`. Bóveda en GitHub privado ✓.

@@ -28,6 +28,8 @@ const NAV = [
   // E6 fase ③ §188: inventario — marcas primero (el form de vehículos las necesita).
   { id: 'vehiculos', label: 'Vehículos', icon: '🚗', ready: true, perm: 'vehicles.read' },
   { id: 'marcas', label: 'Marcas', icon: '🏷️', ready: true, perm: 'brands.read' },
+  // E6 fase ③ §204: aliados/concesionarios (port verbatim; modelo CRM ampliado = D5-03). ⟦OPUS-4.8 · rev-Fable⟧
+  { id: 'aliados', label: 'Aliados', icon: '🤝', ready: true, perm: 'dealers.read' },
   // E6 fase ③ p2: editor de config/listas (rules: super_admin / settings.* — any-of).
   { id: 'atributos', label: 'Atributos', icon: '🧩', ready: true, perm: ['settings.theme', 'settings.seo', 'settings.backup'] },
   // D4-09b: export/restore F34 — el server exige super_admin en los callables.
@@ -45,6 +47,7 @@ const TITLES = {
   banners: 'Banners del sitio',
   vehiculos: 'Inventario de vehículos',
   marcas: 'Marcas del inventario',
+  aliados: 'Aliados / Concesionarios',
   atributos: 'Atributos del inventario',
   respaldos: 'Respaldos del CRM e inventario',
 };

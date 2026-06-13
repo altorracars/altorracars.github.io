@@ -24,7 +24,9 @@ const zlib = require('zlib');
 // wizard de vehículos — el daily job (5am) los respalda desde ya. El restore
 // de vehiculos solo dispara onVehiculoWrittenSignal (benigno, throttled 10s);
 // vehicleAggregate escucha deals, no pelea con un restore.
-const CRM_COLLECTIONS = ['contacts', 'leads', 'deals', 'activities', 'solicitudes', 'subscriptions', 'vehiculos', 'marcas'];
+// §204: 'concesionarios' entra a la red ANTES de operar aliados desde el portal
+// nuevo (red de seguridad antes de enriquecer el modelo en FASE 2). ⟦OPUS-4.8 · rev-Fable⟧
+const CRM_COLLECTIONS = ['contacts', 'leads', 'deals', 'activities', 'solicitudes', 'subscriptions', 'vehiculos', 'marcas', 'concesionarios'];
 const CONFIG_DOCS = ['bookedSlots', 'availability', 'calendarConfig', 'listas'];
 const MAX_DOCS_PER_COLLECTION = 5000; // backstop free-tier; si se alcanza, el export avisa (no trunca en silencio)
 const BATCH_SIZE = 400;

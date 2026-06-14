@@ -50,10 +50,8 @@
 > E6.6 auditoría admin clásico (§183, FIRMES). Gates heredados: App Check enforce (observar →
 > ~16-23/06, estado canónico en lóbulo `41-SEGURIDAD` bóveda) · SEC-05 loginAttempts (diferido) ·
 > SEC-07/09 (P2).
-> ⏳ **Cliente**: (1) **push/merge E5 + Ctrl+Shift+R** + descartar lead de prueba `VMVMJG…`
-> (spam_prueba); (2) anunciar F42 al equipo (el reporte vive en Reportes→Comisiones del mes);
-> (3) billing GCP causa raíz; (4) commit+push bóveda `brain-private` (8 archivos: +2 crudos E5
-> + observación App Check en `41`).
+> ⏳ **Cliente**: push/merge mis commits locales (`545f254` restructura + `5d93a21` parche legal) ·
+> descartar lead prueba `VMVMJG…` (spam) · anunciar F42 al equipo · billing GCP causa raíz (→`05`).
 > ✅ **Verificar al retomar**: 1ª corrida del `crmDailyJob` con bloques E4 (12/06 5am: colisiones/
 > drift/wons backfilled) — patrón: `functions_get_logs` + query `crm_alerts` type=daily_digest.
 > ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado.
@@ -85,10 +83,11 @@
 | **TODO-20** | **Comité v6**: quedan T (inmobiliaria) + U (auditoría Nivel-2, sesión fresca) | 🔄 | — |
 | **TODO-21** | **Plan CRM E0→E6** — ledger en VEREDICTO (bóveda). **E0→E5 ✅ en main** · E6 ⏳ (plan 29 pasos §188) | ⏳ | — |
 | **TODO-22** | **Fábrica de skills web** (frontend/backend/framework; arranque + **RESCATE de webs monolíticas**, ampliado 12/06) §193.2 | 🔮 | post-panel (orden ratificado) |
-| **TODO-23** | **Web pública CMS-izada** (mismo diseño, estructura escalable, todo editable por panel) §193.3 | 🔮 | post-panel + TODO-22 |
+| **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — TODAS las secciones editables (index/nosotros/contacto/banners/columnas + editor de bloques tipados; SSG extendido; seguridad Gemini). Gran plan → bóveda `2026-06-14-web-dinamismo-cms-plan.md` · skill `cms-dinamico`. Bugs: demo-cuando-vacío, lentitud SPA-feel | 🔮 plan ✅ | bucket "al final" · escaneo+comité+Gemini al arrancar |
 | **TODO-24** | **Comité BORRADORES** (rediseño profesional de drafts; el clásico era malo — dueño 12/06) §202.5 | 🔮 | post-cutover, ANTES de TODO-23 |
 | **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS-4.8⟧** (aliado/consigna/propio + comisiones) — comité×3 + Gemini Pro High + dueño → **DISEÑO FROZEN** (bóveda `…restructura-comercial…` sec.9: tenancy+economics ortogonal · snapshot array versionado · onWrite espejo · F42 profitOf). Implementa al FINAL | 🔄 decidido·impl pend | al FINAL · 🔥 parche legal JSON-LD ✅ interim §205 · pendiente menor: confirmar aliado-neto-constante + fórmula fiscal (contador) |
 | **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable/comercial en panel admin) — consultar cerebro+repo **Bersaglio** AL implementar. Detalle bóveda `2026-06-13-restructura-comercial-…` §8 | 🔒 **ÚLTIMA fase** | después de TODO lo documentado/planeado HOY (E6 cutover + TODO-21..25 + redesign) |
+| **TODO-27** | **Alta de usuarios = invite flow seguro ⟦OPUS-4.8⟧** (token+transacción, anti-enumeración; reemplaza el alta vieja) — diseño Gemini en bóveda `2026-06-14-web-dinamismo-cms-plan.md §6.4`. Sugerir skill portable | 🔮 | DESPUÉS del dinamismo (orden dueño) |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -96,8 +95,7 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC 2026-06-12 ×3: §184-§204 consolidados y podados (detalle → `00-INDICE` → `99`). Vivo:
->
-> - **2026-06-12**: épica vehículos V1-V5 (§199-§203) + **dealers FASE 1 ⟦OPUS-4.8⟧ (§204)** —
->   commits locales SIN merge. **Retomar (sesión fresca, tras merge + deploy de Pages)**: V6 lote
->   en vivo §198 (7 gestos + ciclo completo de vehículo) + verificar aliados en vivo → gates ②/③.
+> GC ×4 (12-14/06): §184-§205 consolidados (detalle → `00` → `99`). Vivo:
+> - **13-14/06 ⟦OPUS-4.8⟧**: dealers FASE 1 (§204) + backup `concesionarios` desplegado + restructura
+>   comercial FROZEN (bóveda §9) + parche legal JSON-LD (§205) + plan dinamismo web (bóveda TODO-23).
+>   **Mergeado.** Pendiente: V6 verificación en vivo (necesita sesión del dueño) → gates ②/③.

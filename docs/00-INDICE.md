@@ -299,6 +299,7 @@
 | §203 | **Épica vehículos V5 — extras**: reorder GLOBAL §103 batch solo-cambios · CSV verbatim 20 cols · historial + ↩ revert solo-super · duplicar sin setTimeout. **V1-V5 COMPLETAS — resta V6 lote en vivo (requiere merge desplegado)** | 43462 |
 | §204 | **Épica dealers FASE 1 ⟦OPUS-4.8⟧** — port verbatim de aliados al portal (slug del clásico NO brands-NFD; sin _version/delete) + `concesionarios` al backup. FASE 2 = restructura (TODO-25). Verificado mock; build ✓ | 43471 |
 | §205 | **Gate legal JSON-LD ⟦OPUS-4.8⟧** — placa+seller=AutoDealer solo si `esPropio`; carros de terceros los omiten (Habeas Data + garantía solidaria Ley 1480). Fix interim en `generate-vehicles.mjs` | 43484 |
+| §206 | **Auditoría Nivel-2 del cerebro ⟦OPUS-4.8⟧** (ítem U comité v6; 29 agentes) — diagnóstico: costo de boot (34743c>31500) + monolitos (30 al 98%, 00 sobre cap), §G load-bearing (143 refs). Plan A0-A10: shard 30→33, crear 11-GOBERNANZA (gated cross-repo §G template ×3 + Gemini). A0 fix regex SSoT ✅ | 43496 |
 
 ---
 

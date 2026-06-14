@@ -236,6 +236,14 @@ function generatePage(template, v, slug) {
         ? 'https://schema.org/UsedCondition'
         : 'https://schema.org/NewCondition';
 
+    // §205 Gate legal: SOLO los vehículos PROPIOS de Altorra publican placa (VIN) y declaran
+    // a Altorra como vendedor (AutoDealer). Para aliados/consignas (carros de TERCEROS):
+    // publicar la placa = exposición Habeas Data (Ley 1581), y declarar seller=Altorra =
+    // garantía solidaria (Ley 1480 art.7-8) sobre carro ajeno. Interim sobre el campo
+    // `concesionario` actual; la restructura comercial lo reemplaza por tipoTenencia +
+    // autorización por-titular (datosVehiculoPublicos). ⟦OPUS-4.8 · rev-Fable⟧
+    const esPropio = !v.concesionario || v.concesionario === '';
+
     const carSchema = {
         '@context': 'https://schema.org',
         '@type': 'Car',
@@ -283,8 +291,13 @@ function generatePage(template, v, slug) {
     // Campos condicionales — solo si hay datos reales
     if (bodyType) carSchema.bodyType = bodyType;
     if (driveConfig) carSchema.driveWheelConfiguration = driveConfig;
-    if (v.placa && v.placa !== 'Disponible al contactar') {
+    if (esPropio && v.placa && v.placa !== 'Disponible al contactar') {
         carSchema.vehicleIdentificationNumber = String(v.placa);
+    }
+    // §205: carro de TERCERO (aliado/consigna) → omitir seller=AutoDealer Altorra del Offer
+    // (no afirmar venta directa de un carro ajeno). El Offer conserva precio/disponibilidad.
+    if (!esPropio) {
+        delete carSchema.offers.seller;
     }
     if (v.cilindraje || v.potencia) {
         carSchema.vehicleEngine = {

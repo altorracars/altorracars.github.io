@@ -30,14 +30,8 @@
 > smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema) → **dealers (M): FASE 1 ✅
 > §204** (port verbatim aliados, commit local) · FASE 2 gated → **decisión financiera (gap 8)** →
 > ④ RBAC/usuarios (departamental §193.4) → cutover (stub redirect, NUNCA borrar admin.html).
-> 🤝 **dealers FASE 2 — D5-03 (decide el dueño, ⟦OPUS-4.8⟧)**: enriquecer modelo (activo /
-> createdAt / tipoAliado / nit-PII / notas / **esquemaComision = gap 8 financiero**). Preguntas
-> abiertas: (a) ¿enunciado literal de D5-03 (bóveda)? (b) ¿alcance: solo CRUD o tabs de métricas/
-> operaciones? (c) ¿activar delete con aviso de huérfanos? (d) comisión ¿en aliado/vehículo/deal
-> (commissionSnapshot §186.2)? (e) ¿formalizar '_particular' como entidad o dejar sentinel? (f)
-> nit/2º contacto = gate Habeas Data (`42`). Trigger 🛰️ (decisión cara) → consejo Gemini si hay tokens.
-> 🚫 Callejón dealers: NO reusar `brands.slugify()` (NFD rompe docId acentuado) · NO `_version`
-> (rules de concesionarios no exigen validVersion) · NO portar vistas reporte (van a reportes/pipeline).
+> 🤝 **dealers: FASE 1 ✅ §204 · FASE 2 = restructura comercial (3 entidades+comisiones) FROZEN** (comité+Gemini, TODO-25, bóveda §9) — va al FINAL.
+> 🚫 Callejón dealers FASE 1: NO `brands.slugify()` (NFD) · NO `_version` · NO portar vistas reporte.
 > ✅ **F39 v2 (§198)**: verificación en vivo = CLAUDE, por LOTES. Próximo lote (post-épica
 > vehículos): reseña + banner + marca + lista + respaldo + walk-in + reasignar + ciclo completo
 > de vehículo → web SIN Ctrl+Shift+R → cerrar gates ②/③. Daily 13/06: counts con vehiculos/marcas.
@@ -93,6 +87,8 @@
 | **TODO-22** | **Fábrica de skills web** (frontend/backend/framework; arranque + **RESCATE de webs monolíticas**, ampliado 12/06) §193.2 | 🔮 | post-panel (orden ratificado) |
 | **TODO-23** | **Web pública CMS-izada** (mismo diseño, estructura escalable, todo editable por panel) §193.3 | 🔮 | post-panel + TODO-22 |
 | **TODO-24** | **Comité BORRADORES** (rediseño profesional de drafts; el clásico era malo — dueño 12/06) §202.5 | 🔮 | post-cutover, ANTES de TODO-23 |
+| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS-4.8⟧** (aliado/consigna/propio + comisiones) — comité×3 + Gemini Pro High + dueño → **DISEÑO FROZEN** (bóveda `…restructura-comercial…` sec.9: tenancy+economics ortogonal · snapshot array versionado · onWrite espejo · F42 profitOf). Implementa al FINAL | 🔄 decidido·impl pend | al FINAL · pendiente menor: confirmar aliado-neto-constante + fórmula fiscal (contador) + 🔥 parche legal JSON-LD (¿ya o al final?) |
+| **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable/comercial en panel admin) — consultar cerebro+repo **Bersaglio** AL implementar. Detalle bóveda `2026-06-13-restructura-comercial-…` §8 | 🔒 **ÚLTIMA fase** | después de TODO lo documentado/planeado HOY (E6 cutover + TODO-21..25 + redesign) |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

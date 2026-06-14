@@ -297,8 +297,8 @@
 | §201 | **Épica vehículos V3 — subida nativa de fotos**: tanda ALFANUMÉRICA pre-subida + slots estables · WebP 1200@0.75 (overrides; defaults del portal=banners) · path `cars/{ts}_{baseName}.webp` con baseName del nombre ORIGINAL · límite real 2MB (el "10MB" del clásico era stale) · rechazos sin frenar tanda · quitar foto ≠ borrar archivo. Mock ✓; subida real = lote V6 | 43447 |
 | §202 | **Épica vehículos V4 — borradores**: `usuarios/{uid}/drafts` shape = KEYS DEL FORM CLÁSICO (interop) · explícito OPTIMISTA + rollback · DOBLE baseline al cerrar · retomar RE-DERIVA tipo · publicar borra draft · retry 1200ms. **§202.5: comité de rediseño de borradores post-cutover (TODO-24)** | 43454 |
 | §203 | **Épica vehículos V5 — extras**: reorder GLOBAL §103 batch solo-cambios · CSV verbatim 20 cols · historial + ↩ revert solo-super · duplicar sin setTimeout. **V1-V5 COMPLETAS — resta V6 lote en vivo (requiere merge desplegado)** | 43462 |
-| §204 | **Épica dealers FASE 1 ⟦OPUS-4.8⟧** — port VERBATIM de aliados/concesionarios al portal (módulo `dealers/`, 8 campos, slug del clásico NO brands-NFD, sin _version, sin delete) + `concesionarios` al backup. FASE 2 (modelo CRM ampliado / comisión = gap 8) GATED por D5-03 del dueño. Verificado mock; build ✓ | 43471 |
-| §205 | **Gate legal JSON-LD ⟦OPUS-4.8⟧** — placa(VIN)+seller=AutoDealer solo si `esPropio` (`concesionario===''`); carros de TERCEROS omiten placa (Habeas Data) y seller (garantía solidaria Ley 1480). Fix interim en `generate-vehicles.mjs`; treatment completo en restructura. SIN cache bump | 43484 |
+| §204 | **Épica dealers FASE 1 ⟦OPUS-4.8⟧** — port verbatim de aliados al portal (slug del clásico NO brands-NFD; sin _version/delete) + `concesionarios` al backup. FASE 2 = restructura (TODO-25). Verificado mock; build ✓ | 43471 |
+| §205 | **Gate legal JSON-LD ⟦OPUS-4.8⟧** — placa+seller=AutoDealer solo si `esPropio`; carros de terceros los omiten (Habeas Data + garantía solidaria Ley 1480). Fix interim en `generate-vehicles.mjs` | 43484 |
 
 ---
 

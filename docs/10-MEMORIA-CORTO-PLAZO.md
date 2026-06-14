@@ -21,24 +21,16 @@
 > 🚫 Callejones: NO classification-en-manifest, NO checklist-doc-nuevo, NO score LLM, NO brain-diff
 > en boot, NO regex 5c para el BFS.
 
-> 🏗️ **CRM — plan E0→E6 (§176, TODO-21). E0→E5 ✅ en main. E6 EN CURSO**: E6.6 ✅ (§188) →
-> paso 0 ✅ (§189) → fase ② código ✅ (§190-§191) → **fase ③: Marcas §192 + Atributos §194 en
-> main · backup inventario ✅ §195 (ADELANTADO con justificación 195.7; deploy ✓, commit local)**.
-> Patrón validado ×5. SIGUIENTE: (1) **gates ②/③** (tras F39 live del dueño — verificado 12/06
-> ×2: auditLog SIN evidencia, solo login): ocultar/readonly Banners+Reseñas+Marcas+Atributos del
-> CLÁSICO; (2) **vehicles — L, ÉPICA PROPIA EN SESIÓN FRESCA** (wizard 6 pasos + drafts +
-> smart-fields + gate CI generate-vehicles.mjs sin diffs de esquema) → **dealers (M): FASE 1 ✅
-> §204** (port verbatim aliados, commit local) · FASE 2 gated → **decisión financiera (gap 8)** →
-> ④ RBAC/usuarios (departamental §193.4) → cutover (stub redirect, NUNCA borrar admin.html).
-> 🤝 **dealers: FASE 1 ✅ §204 · FASE 2 = restructura comercial (3 entidades+comisiones) FROZEN** (comité+Gemini, TODO-25, bóveda §9) — va al FINAL.
+> 🏗️ **CRM E0→E6 (§176, TODO-21). E0→E5 ✅. E6**: fases ②/③ ✅ (reseñas/banners/marcas/atributos/
+> backup §190-195) + **vehículos** (§199-203) + **dealers FASE 1** (§204) — todo MERGEADO. **SIGUIENTE
+> del cutover**: V6 verificación en vivo (necesita dueño) → **gates ②/③** (ocultar/readonly los módulos
+> ya portados en el CLÁSICO) → ④ RBAC/usuarios departamental (§193.4) → cutover (stub redirect, NUNCA
+> borrar admin.html). dealers FASE 2 = restructura comercial FROZEN (TODO-25, bóveda §9), va al FINAL.
 > 🚫 Callejón dealers FASE 1: NO `brands.slugify()` (NFD) · NO `_version` · NO portar vistas reporte.
-> ✅ **F39 v2 (§198)**: verificación en vivo = CLAUDE, por LOTES. Próximo lote (post-épica
-> vehículos): reseña + banner + marca + lista + respaldo + walk-in + reasignar + ciclo completo
-> de vehículo → web SIN Ctrl+Shift+R → cerrar gates ②/③. Daily 13/06: counts con vehiculos/marcas.
-> ⚖️ Decisiones del dueño §193 (siembra post-panel): bot SIN fallback gratuito + solo Claude
-> (R-1 resuelta) · fase ④ hereda RBAC DEPARTAMENTAL (§193.4, comparar con cerebro Bersaglio).
-> ⚠️ Decisiones del DUEÑO antes del cutover: bot ALTOR (R-1) · semántica financiera (gap 8) ·
-> 2FA portal (R-9) · vista Inicio (gap 3). Gates: F32 móvil · F33b piloto 1 semana · manual.
+> ✅ **F39 v2 (§198)**: verificación en vivo = CLAUDE por LOTES. **Lote V6 pendiente**: reseña+banner+
+> marca+lista+respaldo+walk-in+reasignar + ciclo completo de vehículo → web sin Ctrl+Shift+R → cerrar gates ②/③.
+> ⚠️ Decisiones del dueño antes del cutover (§193): bot ALTOR R-1 (sin fallback, solo Claude) · semántica
+> financiera gap 8 · 2FA portal R-9 · vista Inicio gap 3 · fase ④ RBAC departamental §193.4 (cf. cerebro Bersaglio). Gates: F32 móvil · F33b piloto 1sem · manual.
 > 🚫 Callejones E6.6: NO borrar admin-calendar-config (inyectado en público para el bot,
 > components.js:514) ni dynamic-lists.js ni firebase-messaging-sw.js · NO portar dashboards
 > envenenados (rehacer sobre deals.wonAt) · NO limpiar nodo RTDB presence (functions lo lee 1/min).

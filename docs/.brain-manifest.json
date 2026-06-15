@@ -52,7 +52,7 @@
   ],
   "ssotFacts": [
     {
-      "regex": "v20d{12}",
+      "regex": "v?\\d{14}",
       "owner": "docs/05-ESTADO-GLOBAL.md",
       "scan": [
         "docs/10-MEMORIA-CORTO-PLAZO.md"
@@ -70,8 +70,8 @@
     }
   ],
   "deepAudit": {
-    "last": "2026-06-09",
-    "coveredHeaderCount": null,
+    "last": "2026-06-14",
+    "coveredHeaderCount": 240,
     "maxAdrGap": 12,
     "maxDays": 30,
     "_que": "comite v6 = linea base; 1a auditoria Nivel-2 = item U del checklist"

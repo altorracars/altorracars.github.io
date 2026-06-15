@@ -29,8 +29,9 @@
 | Tu situación / síntoma | Ve a |
 |---|---|
 | ¿Dónde vive un módulo / ruta / flujo / componente? | 🗺️ `20-ESPACIAL` |
-| Voy a mover/renombrar archivos, refactor de estructura | 🔧 `31-LECCIONES-GIT` L-04 + 🧪 `30-LECCIONES` L-05/L-06 + 🗺️ `20-ESPACIAL` |
+| Voy a mover/renombrar archivos, refactor de estructura | 🔧 `31-LECCIONES-GIT` L-04 + 🧪 `30-LECCIONES` L-06/L-07/L-10 (cargador JS + generador + CSS dinámico) + 🗺️ `20-ESPACIAL` |
 | Conflicto al fusionar / cache / cron `[skip ci]` / toda op git | 🔧 `31-LECCIONES-GIT` (hija de 30: L-01..L-04) + `CLAUDE.md §4` |
+| ¿Está desplegado? / antes de afirmar qué hay en PRODUCCIÓN / "ya pusheé" | 🧪 `30-LECCIONES` M-06/M-09/**M-16** (`git fetch` + `git log origin/main` SIEMPRE; la fila Producción de `05` NO es autoritativa) + `CLAUDE.md §3.3` |
 | Errores `403` de Firebase / referer localhost / E2E de forms | 🧪 `30-LECCIONES` L-08 (ampliada §175: E2E solo live; stub `window.db` para UI) |
 | Functions muertas / "billing is disabled" / la ingestión no corre | 🧪 `30-LECCIONES` L-38 (logs ANTES de tocar código; Eventarc re-entrega) |
 | Rediseño de página rompe JS sin errores en consola | 🧪 `30-LECCIONES` L-37 (clases eliminadas vs callsites JS) |
@@ -300,6 +301,7 @@
 | §204 | **Épica dealers FASE 1 ⟦OPUS-4.8⟧** — port verbatim de aliados al portal (slug del clásico NO brands-NFD; sin _version/delete) + `concesionarios` al backup. FASE 2 = restructura (TODO-25). Verificado mock; build ✓ | 43471 |
 | §205 | **Gate legal JSON-LD ⟦OPUS-4.8⟧** — placa+seller=AutoDealer solo si `esPropio`; carros de terceros los omiten (Habeas Data + garantía solidaria Ley 1480). Fix interim en `generate-vehicles.mjs` | 43484 |
 | §206 | **Auditoría Nivel-2 del cerebro ⟦OPUS-4.8⟧** (ítem U comité v6; 29 agentes) — diagnóstico: costo de boot (34743c>31500) + monolitos (30 al 98%, 00 sobre cap), §G load-bearing (143 refs). Plan A0-A10: shard 30→33, crear 11-GOBERNANZA (gated cross-repo §G template ×3 + Gemini). A0 fix regex SSoT ✅ | 43496 |
+| §207 | **Auditoría Nivel-2: ¿el lazo funciona o es teatro? ⟦OPUS-4.8⟧** (50 agentes, 9 sondas + verify L-34; 37/40 confirmados) — veredicto: el lazo MECANIZA o es TEATRO (confirma M-10). Reincidencia raíz 05/10-mienten-sobre-git → M-16; reconciliado + GC pareado este turno; 4 curas = gate kernel ×3 (TODO-29); template 1.1.0 sin enforcement → Gemini. | 43510 |
 
 ---
 

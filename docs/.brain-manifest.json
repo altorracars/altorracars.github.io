@@ -74,11 +74,11 @@
     }
   ],
   "deepAudit": {
-    "last": "2026-06-14",
+    "last": "2026-06-15",
     "coveredHeaderCount": 240,
     "maxAdrGap": 12,
     "maxDays": 30,
-    "_que": "comite v6 = linea base; 1a auditoria Nivel-2 = item U del checklist"
+    "_que": "comite v6 = linea base; Nivel-2 #1 = item U (§206); Nivel-2 #2 = falencias del lazo (§207, M-16, TODO-29)"
   },
   "orphanAllowlist": [],
   "ignoreDirs": [

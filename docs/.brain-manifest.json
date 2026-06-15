@@ -80,8 +80,5 @@
     "maxDays": 30,
     "_que": "comite v6 = linea base; Nivel-2 #1 = item U (§206); Nivel-2 #2 = falencias del lazo (§207, M-16, TODO-29)"
   },
-  "orphanAllowlist": [],
-  "ignoreDirs": [
-    "bersaglio-design"
-  ]
+  "orphanAllowlist": []
 }

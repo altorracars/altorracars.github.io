@@ -162,6 +162,12 @@
 - **Receta**: medir SIEMPRE con `node -e "console.log(require('fs').readFileSync(f,'utf8').length)"` y comparar contra el cap del manifest (fijado con la MISMA unidad). Mide con la regla del gate que vas a satisfacer, no con otra.
 - **Por qué importa (§206)**: el acantilado de `30` se fijó en "58820c = 98%" con `.length`; con `wc -m` el número y la decisión de shard habrían sido otros.
 
+### M-16 · El lazo de auto-corrección funciona cuando MECANIZA (gate); es teatro cuando deja el fix en doctrina — la cura de una REINCIDENCIA es un gate, no un reflejo ⟦OPUS-4.8 · rev-Fable⟧
+- **Defecto (auditoría Nivel-2 §207, 2026-06-15)**: la auditoría previa (Nivel-2 del 14/06) marcó el defecto "los nodos de boot 05/10 mienten sobre el estado git" como **REINCIDENTE con meta-lección OBLIGATORIA** — y aun así (a) el defecto siguió vivo al día siguiente y (b) la meta-lección mandada (ESTA, M-16) **nunca se escribió** (la lista paraba en M-15). Doble fallo del lazo: ni el fix ni el corrector-del-fix se ejecutaron. Familia M-06/M-09/M-11/M-13 recurriendo otra vez.
+- **Causa raíz (evidencia dura, no impresión)**: el patrón es nítido — TODO lo que el §206 ató a un check del linter (shards, GC del 10, caps) SOBREVIVIÓ y se cerró con `.length`; TODO lo que dejó en "el próximo yo se acordará de reconciliar 05/10" RECAYÓ completo. El honor no escala entre sesiones sin memoria. Es la confirmación EMPÍRICA de **M-10**: el lazo funciona en la medida EXACTA en que mecaniza.
+- **Corrección**: (1) cuando una auditoría manda una meta-lección o fix-de-doctrina, ESCRIBIRLO ESE turno (M-03, no "después"). (2) Toda reincidencia (defecto que vuelve pese a tener "corrección" documentada) declara que su cura-por-doctrina FALLÓ → su única cura real es un **GATE en el kernel** (TODO-29: boot/cache-vs-`origin/main`, anclas §G). (3) El gate es cross-repo (kernel ×3) → coordinar con el canon `bersaglio`, jamás cars-only (fork silencioso).
+- **Principio**: una reincidencia NO se cura repitiendo la doctrina que ya falló; se cura subiéndola un nivel — de honor a determinismo. Si genuinamente no puede mecanizarse, se marca **[HONOR] explícito + ritual barato**, nunca se finge cobertura.
+
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md`

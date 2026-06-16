@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **Opus 4.8** (Fable 5 caído, 2026-06-12): marcar commits footer `Modelo: Opus 4.8` + ADR/lecciones tag `⟦OPUS-4.8 · rev-Fable⟧`; al volver → `grep -rn OPUS-4.8 docs/`. Detalle → `05` + memoria `project_model_opus_fallback`. 🚫 NO neurona; NO `CLAUDE.md`.
+> 🤖 **Opus 4.8** (Fable 5 caído): commits footer `Modelo: Opus 4.8` + ADR/lecciones tag `⟦OPUS-4.8 · rev-Fable⟧`. Convención/causa = dueño `05` (no re-explicar aquí).
 
 > 🧠 **MACRO-PROYECTO — Cerebro auto-evaluable v6** (2026-06-09): **20/21 ✅** · resta **T** (re-verificar
 > inmobiliaria). **U** (auditoría Nivel-2) ✅ §206 → des-saturación A5/A6/A7/A9 ✅ §206.7; resta **A1-A2**
@@ -20,22 +20,14 @@
 > del cutover**: V6 verificación en vivo (necesita dueño) → **gates ②/③** (ocultar/readonly los módulos
 > ya portados en el CLÁSICO) → ④ RBAC/usuarios departamental (§193.4) → cutover (stub redirect, NUNCA
 > borrar admin.html). dealers FASE 2 = restructura comercial FROZEN (TODO-25, bóveda §9), va al FINAL.
-> 🚫 Callejón dealers FASE 1: NO `brands.slugify()` (NFD) · NO `_version` · NO portar vistas reporte.
 > ✅ **F39 v2 (§198)**: verificación en vivo = CLAUDE por LOTES. **Lote V6 pendiente**: reseña+banner+
 > marca+lista+respaldo+walk-in+reasignar + ciclo completo de vehículo → web sin Ctrl+Shift+R → cerrar gates ②/③.
 > ⚠️ Decisiones dueño pre-cutover (§193): bot ALTOR R-1 (solo Claude) · gap 8 financiero · 2FA R-9 · vista Inicio gap 3 · fase ④ RBAC dept §193.4 (cf. Bersaglio). Gates: F32 móvil · F33b piloto · manual.
-> 🚫 Callejones E6.6: NO borrar admin-calendar-config (inyectado en público para el bot,
-> components.js:514) ni dynamic-lists.js ni firebase-messaging-sw.js · NO portar dashboards
-> envenenados (rehacer sobre deals.wonAt) · NO limpiar nodo RTDB presence (functions lo lee 1/min).
-> 🚫 Callejones de E5: NO añadir condiciones a la rule de solicitudes sin medir (límite ~1000
-> expresiones, ya al borde) · NO abrir updates anónimos de solicitudes (bot diferido) · emulador
-> zombi en :8081 (matar java) · suite paralela necesita testTimeout/hookTimeout (ya en config).
+> 🚫 **Callejones de trabajo CERRADO** (dealers F1 · E6.6 · E5) → detalle en §204/§188/§187 (no re-derivar: NFD-slug · admin-calendar-config/dynamic-lists/fcm-sw inyectados VIVOS · dashboards envenenados→deals.wonAt · RTDB presence lo lee functions 1/min · límite ~1000 exprs de Rules · emulador zombi :8081 mata java).
 > **Retomar con: "continúa E6"** = cutover (strangler: inventario/público/RBAC al portal + F32 +
 > F33b piloto + manual + checklists F39) + E6.5 comité diseño + E6.6 auditoría clásico (§183, FIRMES).
 > Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05 (diferido) · SEC-07/09 (P2).
-> ⏳ **Cliente**: push/merge commits locales (restructura + parche legal) · descartar lead prueba
-> `VMVMJG…` (spam) · anunciar F42 · billing GCP causa raíz (→`05`). Si falta: revisar 1ª corrida
-> `crmDailyJob` E4 (`functions_get_logs` + `crm_alerts` type=daily_digest).
+> ⏳ **Cliente**: descartar lead prueba `VMVMJG…` (spam) · anunciar F42 · billing GCP causa raíz (→`05`). (Código TODO en `main`, PR #856 — nada pendiente de merge.)
 > ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado.
 >
 > **🚫 Callejones sin salida (NO reintentar)**:
@@ -71,6 +63,7 @@
 | **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable/comercial en panel admin) — consultar cerebro+repo **Bersaglio** AL implementar. Detalle bóveda `2026-06-13-restructura-comercial-…` §8 | 🔒 **ÚLTIMA fase** | después de TODO lo documentado/planeado HOY (E6 cutover + TODO-21..25 + redesign) |
 | **TODO-27** | **Alta de usuarios = invite flow seguro ⟦OPUS-4.8⟧** (token+transacción, anti-enumeración; reemplaza el alta vieja) — diseño Gemini en bóveda `2026-06-14-web-dinamismo-cms-plan.md §6.4`. Sugerir skill portable | 🔮 | DESPUÉS del dinamismo (orden dueño) |
 | **TODO-28** | **Cerebro des-saturación (§206) ⟦OPUS-4.8⟧** — A0/A5/A6/A7/A9 ✅ §206.7. Gemini 2ª opinión ✅ §206.8 → **A1-A4 revisado** (diseño congelado, bóveda `…a1a4-revisado-post-gemini.md`): eje trigger-vs-mecánica · **NO borrar caps** · **template bump v1.2.0 ×3 desde canon bersaglio** (cars-only = fork silencioso). **Resta**: ejecutar ×3 — pendiente luz verde sobre bersaglio (¿chat paralelo?); beneficio modesto, salud actual no lo exige. | 🔄 | coordinación ×3 bersaglio |
+| **TODO-29** | **Cerebro: endurecer el lazo (Nivel-2 §207) ⟦OPUS-4.8⟧** — reincidencias cuya cura ES gate, no doctrina (M-16); todas en el kernel `brain-check.mjs` (×3, mismo canon que TODO-28): boot/cache-vs-`origin/main` · techo duro de boot · anclas §G. + contrato-template→Gemini · shard 99a/99b · `ignoreDirs` (manifest cars ✅ §207.8, resta kernel). → §207 + bóveda. | 🔄 | kernel ×3 → bersaglio |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -78,6 +71,6 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC ×5 (12-15/06): §184-§206 consolidados (→ `00`/`99`). Vivo:
-> - **15/06 ⟦OPUS-4.8⟧**: des-saturación cerebro §206.7 — A5 shard 30→33 · A6 comprimir 00 · A7 GC 10 · A9 M-15. Resta A1-A2 (`11-GOBERNANZA`) 🔒 gated.
-> - **Pendiente del cutover** (§204/§205 mergeados): V6 verificación en vivo (necesita sesión del dueño) → cerrar gates ②/③.
+> GC ×6 (12-15/06): §184-§207 consolidados (→ `00`/`99`). Vivo:
+> - **15/06 Auditoría Nivel-2 (§207, 50 agentes) ⟦OPUS-4.8⟧**: lazo = teatro cuando deja el fix en doctrina → **M-16**; reconciliado 05/10 vs git real (todo en `main` PR#856, cache al día → `05`, rama FF a main); 4 gates de cura = kernel ×3 → **TODO-29**. (Antes: des-saturación §206.7; A1-A2 gated.)
+> - **Pendiente del cutover**: V6 verificación en vivo (necesita dueño) → cerrar gates ②/③.

@@ -72,5 +72,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 ## 📝 Bitácora (efímera)
 
 > GC ×6 (12-15/06): §184-§207 consolidados (→ `00`/`99`). Vivo:
-> - **15/06 Auditoría Nivel-2 (§207, 50 agentes) ⟦OPUS-4.8⟧**: lazo = teatro cuando deja el fix en doctrina → **M-16**; reconciliado 05/10 vs git real (todo en `main` PR#856, cache al día → `05`, rama FF a main); 4 gates de cura = kernel ×3 → **TODO-29**. (Antes: des-saturación §206.7; A1-A2 gated.)
+> - **15/06 Auditoría Nivel-2 ⟦OPUS-4.8⟧** — los **3 cerebros auditados** (cars §207 · bersaglio §82 · inmob §12) + harmonizados (kernel idéntico ×3): lazo = teatro si deja el fix en doctrina → **M-16**; 05/10 reconciliados vs git; 4 gates de cura = kernel ×3 → **TODO-29** + pasada Gemini unificada.
 > - **Pendiente del cutover**: V6 verificación en vivo (necesita dueño) → cerrar gates ②/③.

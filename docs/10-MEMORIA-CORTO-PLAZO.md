@@ -54,7 +54,7 @@
 | **TODO-15** | Anomalías skills restantes → `skills-inventory.md` | 🔮 | decisión cliente |
 | **TODO-18** | Blindaje pre-lanzamiento → **ABSORBIDO en E5** (§176). Detalle `41`/`42` | ⏳ → E5 | E3→E4 |
 | **TODO-19** | CRM Fase 5 cutover → **E6 EN CURSO**: E6.6 ✅ §188 → paso 0 pre-fase | ⏳ | — |
-| **TODO-20** | **Comité v6**: resta T (re-verificar inmobiliaria); U (Nivel-2) ✅ §206 | 🔄 | — |
+| **TODO-20** | **Comité v6 → 21/21** (checklist A-U): T (Nivel-2 inmobiliaria) hecho §12-inmob/§207.11 · U §206/§207. Resta el follow-up cross-repo (TODO-28/29 via Gemini) | 🔄 | cross-repo |
 | **TODO-21** | **Plan CRM E0→E6** — ledger en VEREDICTO (bóveda). **E0→E5 ✅ en main** · E6 ⏳ (plan 29 pasos §188) | ⏳ | — |
 | **TODO-22** | **Fábrica de skills web** (frontend/backend/framework; arranque + **RESCATE de webs monolíticas**, ampliado 12/06) §193.2 | 🔮 | post-panel (orden ratificado) |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — TODAS las secciones editables (index/nosotros/contacto/banners/columnas + editor de bloques tipados; SSG extendido; seguridad Gemini). Gran plan → bóveda `2026-06-14-web-dinamismo-cms-plan.md` · skill `cms-dinamico`. Bugs: demo-cuando-vacío, lentitud SPA-feel | 🔮 plan ✅ | bucket "al final" · escaneo+comité+Gemini al arrancar |

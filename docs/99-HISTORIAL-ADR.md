@@ -43593,3 +43593,25 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 **.6 Archivos**: MOD `index.html` (slot promo + nav reseñas inline desktop/móvil), `snippets/header.html` (nav reseñas desktop/móvil), `js/public/home/home-carousels.js` (initBrands), `service-worker.js` + `js/core/cache-manager.js` (cache bump). INTACTOS: `reviews.js`, `main.js`, `database.js`, `resenas.html`, `marcas.html`, el renderer de home_promo.
 
 **.7 Doctrina + cache**: cache BUMP §4 `v20260617174623` (cambio de comportamiento en JS público servido por SWR). Va a prod al **push del dueño** (GitHub Pages). FOLLOW-UP: restaurar la sección de testimonios del home en estilo cinematic (decisión de diseño del dueño); hoy las reseñas ya son visibles vía nav. **Deliberación**: 3 sondas paralelas — síntesis en este ADR.
+
+## 212. ADR-212 — FIX de seguridad: el DUEÑO es INAMOVIBLE enforced server-side (huecos fatales cazados por el pase adversarial de ④ RBAC) ⟦OPUS-4.8 · rev-Fable⟧
+
+> Contexto: pase adversarial (consejo externo §15 + comité, workflow `wuue9vkhr`, 6 agentes) sobre el diseño de ④ RBAC departamental. El ángulo de SEGURIDAD verificó contra el CÓDIGO REAL que el "dueño INAMOVIBLE" (requisito central §193.4) NO estaba enforced server-side. CRUDO en bóveda `2026-06-17-RBAC-adversarial-review-CRUDO.json`.
+
+**.1 Causa raíz (RCA §19, reconfirmada con lectura propia)**: 2 huecos FATALES pre-existentes (heredados, NO de ④):
+- **Usuarios** (`firestore.rules:199-200`): `allow update: if isSuperAdmin() || hasPermission('users.edit') || <self-update>` — `users.edit` permitía escribir CUALQUIER doc `usuarios/{uid}` SIN cláusula target≠CEO. Cualquier titular de `users.edit` (un rol departamental que ④ reparte) podía degradar el rol del dueño, vaciar sus permisos o `bloqueado:true`. El "throw si target es owner" que el diseño asumía en las CFs NO existe (`updateUserRoleV2`/`deleteManagedUserV2` solo verifican el CALLER, no el TARGET); y la asignación RBAC moderna es write DIRECTO contra rules, sin pasar por CF.
+- **Roles** (`firestore.rules:1100-1103`): `roles` update/delete con `roles.edit`/`roles.delete` SIN proteger `isSystem`. Un titular de `roles.edit` podía quitarle '*' al rol `system_super_admin` (lockout global del dueño) o borrarlo; la cadena §71 onRoleUpdated lo propagaría. El comentario de onRoleDeleted ("lo bloquean las rules") asumía un enforcement inexistente.
+
+**.2 Solución estructural** (firestore.rules = la ÚNICA frontera de autorización; defensa-en-profundidad real ≠ UI+UI):
+- Usuarios update: la rama de gestión admin se gatea con `&& !(esDocDelDueño)`, donde dueño = `resource.data.roleId == 'system_super_admin' || '*' in resource.data.permissions` (sobre el doc EXISTENTE = anti-spoof, no se burla cambiando roleId en la misma escritura). El doc del dueño SOLO se edita por self-update (whitelist diff-keys, que no incluye rol/permisos).
+- Roles update/delete: `&& resource.data.get('isSystem', false) == false` → los system roles son INMUTABLES desde el cliente (solo el CF `seedSystemRoles` via Admin SDK los toca).
+
+**.3 No-regresión**: la gestión normal de usuarios/roles NO-dueño sigue viva; el self-update del perfil del dueño sigue vivo; el CF seed sigue sembrando system roles. Probado en emulador.
+
+**.4 Tests**: NUEVO `functions/src/rules/firestore-rules-212-owner.test.js` (7 tests emulador): users.edit NO bloquea/degrada al dueño ✓ · self-update del dueño ✓ · **REGRESIÓN** users.edit SÍ gestiona no-dueño ✓ · roles.edit NO edita system_super_admin ✓ · roles.delete NO borra system_super_admin ✓ · **REGRESIÓN** roles.edit SÍ edita rol custom ✓. Suite completa **205/205, exit 0**. Rules DEPLOYADAS a prod.
+
+**.5 Anti-patterns evitados**: confiar en UI/CF como frontera (la frontera son las rules); construir ④ sobre la premisa falsa "guard del dueño ✅" (el pase adversarial la refutó); chequear el `'*'`/roleId sobre el doc INCOMING (spoofeable) → se chequea sobre `resource.data` EXISTENTE.
+
+**.6 Archivos**: MOD `firestore.rules` (usuarios update owner-guard + roles isSystem-guard). NUEVO `functions/src/rules/firestore-rules-212-owner.test.js`. Follow-up de defensa-en-profundidad (no urgente, solo explotable por un 2º super_admin que no debería existir): owner-guard en las CFs `updateUserRoleV2`/`deleteManagedUserV2`.
+
+**.7 Doctrina + lóbulo**: lóbulo `41-SEGURIDAD` (Trigger 🔵). Deploy `firebase deploy --only firestore:rules` (Claude §1). Sin cache bump (rules server-side). Es **PREREQUISITO de ④ RBAC** (que reparte users.edit/roles.edit a gerentes departamentales). **Deliberación**: pase adversarial `wuue9vkhr` — CRUDO en bóveda. Resto de la síntesis adversarial para la impl de ④ (dual-portal = rules-son-la-frontera, NO la UI · budget de rules a MEDIR en emulador · `dataScope` con `critical:true` en auditLog).

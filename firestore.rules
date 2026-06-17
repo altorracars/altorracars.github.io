@@ -196,8 +196,16 @@ service cloud.firestore {
       // editar otros usuarios (rol, bloqueado, etc). Self-update con
       // whitelist diff-keys sigue funcionando para cualquier user
       // autenticado (independiente de su role).
-      allow update: if isSuperAdmin()
-        || hasPermission('users.edit')
+      // §212 ANTI-TAKEOVER: la gestión por admin (super_admin / users.edit) NUNCA
+      // aplica al doc del DUEÑO (roleId 'system_super_admin' o permissions con '*')
+      // — solo el propio dueño lo edita vía self-update. Antes NO estaba enforced
+      // (hueco FATAL del pase adversarial ④ RBAC): cualquier users.edit podía
+      // degradar/vaciar/bloquear al CEO. El check es sobre resource.data (doc EXISTENTE)
+      // → anti-spoof (no se puede burlar cambiando roleId en la misma escritura).
+      allow update: if
+        ( (isSuperAdmin() || hasPermission('users.edit'))
+          && !(resource.data.get('roleId', '') == 'system_super_admin'
+               || ('*' in resource.data.get('permissions', []))) )
         || (request.auth.uid == userId &&
             request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly([
@@ -1097,10 +1105,14 @@ service cloud.firestore {
         || hasPermission('roles.read');
       allow create: if isSuperAdmin()
         || hasPermission('roles.create');
-      allow update: if isSuperAdmin()
-        || hasPermission('roles.edit');
-      allow delete: if isSuperAdmin()
-        || hasPermission('roles.delete');
+      // §212: los system roles (CEO 'system_super_admin' con '*') son INMUTABLES desde
+      // el cliente — solo el CF seedSystemRoles (Admin SDK) los toca. Antes cualquier
+      // roles.edit/roles.delete podía editar/borrar el rol del dueño (hueco FATAL; el
+      // comentario de onRoleDeleted asumía este bloqueo que NO existía).
+      allow update: if (isSuperAdmin() || hasPermission('roles.edit'))
+        && resource.data.get('isSystem', false) == false;
+      allow delete: if (isSuperAdmin() || hasPermission('roles.delete'))
+        && resource.data.get('isSystem', false) == false;
     }
 
     // Default: deny everything else

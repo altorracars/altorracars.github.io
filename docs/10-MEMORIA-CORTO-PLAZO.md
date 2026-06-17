@@ -54,7 +54,7 @@
 | **TODO-15** | Anomalías skills restantes → `skills-inventory.md` | 🔮 | decisión cliente |
 | **TODO-18** | Blindaje pre-lanzamiento → **ABSORBIDO en E5** (§176). Detalle `41`/`42` | ⏳ → E5 | E3→E4 |
 | **TODO-19** | CRM Fase 5 cutover → **E6 EN CURSO**: E6.6 ✅ §188 → paso 0 pre-fase | ⏳ | — |
-| **TODO-20** | **Comité v6**: resta T (re-verificar inmobiliaria); U (Nivel-2) ✅ §206 | 🔄 | — |
+| **TODO-20** | **Comité v6 → 21/21** (A-U): T (Nivel-2 inmob) §12-inmob/§207.11 · U §206/§207. Follow-up cross-repo → TODO-28/29 | 🔄 | — |
 | **TODO-21** | **Plan CRM E0→E6** — ledger en VEREDICTO (bóveda). **E0→E5 ✅ en main** · E6 ⏳ (plan 29 pasos §188) | ⏳ | — |
 | **TODO-22** | **Fábrica de skills web** (frontend/backend/framework; arranque + **RESCATE de webs monolíticas**, ampliado 12/06) §193.2 | 🔮 | post-panel (orden ratificado) |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — TODAS las secciones editables (index/nosotros/contacto/banners/columnas + editor de bloques tipados; SSG extendido; seguridad Gemini). Gran plan → bóveda `2026-06-14-web-dinamismo-cms-plan.md` · skill `cms-dinamico`. Bugs: demo-cuando-vacío, lentitud SPA-feel | 🔮 plan ✅ | bucket "al final" · escaneo+comité+Gemini al arrancar |
@@ -72,5 +72,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 ## 📝 Bitácora (efímera)
 
 > GC ×6 (12-15/06): §184-§207 consolidados (→ `00`/`99`). Vivo:
-> - **15/06 Auditoría Nivel-2 (§207, 50 agentes) ⟦OPUS-4.8⟧**: lazo = teatro cuando deja el fix en doctrina → **M-16**; reconciliado 05/10 vs git real (todo en `main` PR#856, cache al día → `05`, rama FF a main); 4 gates de cura = kernel ×3 → **TODO-29**. (Antes: des-saturación §206.7; A1-A2 gated.)
-> - **Pendiente del cutover**: V6 verificación en vivo (necesita dueño) → cerrar gates ②/③.
+> - **15/06 Auditoría Nivel-2 ⟦OPUS-4.8⟧** — los **3 cerebros auditados** (cars §207 · bersaglio §82 · inmob §12) + harmonizados (kernel idéntico ×3): lazo = teatro si deja el fix en doctrina → **M-16**; 05/10 reconciliados vs git; 4 gates de cura = kernel ×3 → **TODO-29** + pasada Gemini unificada.

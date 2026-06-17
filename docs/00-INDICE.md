@@ -304,6 +304,7 @@
 | §207 | **Auditoría Nivel-2: ¿el lazo funciona o es teatro? ⟦OPUS-4.8⟧** (50 agentes, 9 sondas + verify L-34; 37/40 confirmados) — veredicto: el lazo MECANIZA o es TEATRO (confirma M-10). Reincidencia raíz 05/10-mienten-sobre-git → M-16; reconciliado + GC pareado este turno; 4 curas = gate kernel ×3 (TODO-29); template 1.1.0 sin enforcement → Gemini. | 43510 |
 | §208 | **Gemini UNIFICADO integrado ⟦OPUS-4.8⟧** (anti-anclaje, 3/3 superiores): A=Núcleo Delimitado (hash solo el bloque DOCTRINA ×3, desbloquea split §G) · B=abolir estado-git en `05` → inyectar live en boot (revierte los git-gates) · C=Doble Llave + Staging para código-dinero. | 43527 |
 | §209 | **Verif. INICIAL técnica lote V6 + fix blocker walk-in ⟦OPUS-4.8⟧** (workflow 17 agentes verify→refute): 6/8 limpias; blocker `createManualLead`→permission-denied (regresión SEC-06 §187, REINCIDENCIA L-41) → fix rama admin §209 (`crm.edit`+`_createdByUid` anti-spoof, append-only, público intacto) + new-lead optimista + reasignar rollback §3.6. Test e6 5/5; suite 198/198. | 43537 |
+| §210 | **Strangler E6: gates ②/③ (5/6) ⟦OPUS-4.8⟧** — nuevo `js/admin/admin-cutover-gates.js` (aditivo/reversible, Ocultar≠Borrar) oculta+redirige al portal las secciones clásicas portadas (reseñas·banners·marcas·atributos·aliados) en 3 superficies (sidebar/group-tabs/hash). Vehículos EXCLUIDO hasta V6 live (R-12/R-13). Diseño: agente Plan mapeó §188. node -c ✓; verif viva = dueño; staged para push. | 43555 |
 
 ---
 

@@ -3758,6 +3758,11 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
      patrón .crm-tabstrip de CRM para consistencia de UX. Carga tras
      admin-section-router.js para suscribirse a section changes. -->
 <script src="js/admin/admin-group-tabs.js" defer></script>
+<!-- §210 ADR-210 — Strangler E6 gates ②/③: oculta+redirige al portal nuevo las
+     secciones YA portadas (reseñas/banners/marcas/atributos/aliados). ADITIVO y
+     REVERSIBLE (Ocultar≠Borrar). Carga tras router+group-tabs. NO incluye
+     vehículos hasta el lote V6 EN VIVO (R-12/R-13). -->
+<script src="js/admin/admin-cutover-gates.js" defer></script>
 <!-- §36.1 — Mi Perfil (avatar upload + cargo + cédula one-time-edit) -->
 <script src="js/admin/admin-profile.js" defer></script>
 <script src="js/admin/admin-activity-feed.js" defer></script>

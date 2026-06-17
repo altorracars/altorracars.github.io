@@ -7,7 +7,7 @@
 |---|---|
 | **Build** | 🟢 **CRM E0→E5 ✅. E6** ②/③ ✅ + **Vehículos V1-V5** (§199-203) + **Dealers FASE 1** (§204) + **des-saturación cerebro** (§206-207) — **TODO EN MAIN** (PR #856, 06-15). Resta: **V6 verificación EN VIVO** (necesita dueño) → gates ②/③. Dealers FASE 2 gated (TODO-25). |
 | **Cache version vigente** | **`v20260615041622`** (CI auto-bump 06-15, en producción). SW == cache-manager ✅. Ctrl+Shift+R tras merge. |
-| **Branch activa** | `refactor/estructura` sincronizada con `main` (FF a `261122c`). Todo el trabajo está en `main`; 0 commits propios pendientes. Deploys firebase = Claude (§1). |
+| **Branch activa** | `refactor/estructura` (HEAD `aa97c14`). **Hay commits de cerebro sin pushear** (el dueño pushea + PR a `main`); `main` = producción. Verificar vs git real antes de afirmar (§3.3). Deploys firebase = Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

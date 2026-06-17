@@ -12,20 +12,16 @@
 
 > 🤖 **Opus 4.8** (Fable 5 caído): commits footer `Modelo: Opus 4.8` + ADR/lecciones tag `⟦OPUS-4.8 · rev-Fable⟧`. Convención/causa = dueño `05` (no re-explicar aquí).
 
-> 🧠 **MACRO-PROYECTO — Cerebro auto-evaluable v6** (2026-06-09): **20/21 ✅** · resta **T** (re-verificar
-> inmobiliaria). **U** (auditoría Nivel-2) ✅ §206 → des-saturación A5/A6/A7/A9 ✅ §206.7; resta **A1-A2**
-> (`11-GOBERNANZA`/split §G) 🔒 GATED: template ×3 → canon `bersaglio` + Gemini. Checklist → bóveda VEREDICTO (privado ✓).
+> 🧠 **Cerebro v6 = 21/21 ✅** · 3 cerebros auditados Nivel-2 (cars §207 · bersaglio §82 · inmob §12) · **Gemini UNIFICADO ✅ §208** (A Núcleo-Delimitado · B abolir-git-en-`05` · C Doble-Llave+Staging). Hardening A/B/C = **TODO-28/29/30** (kernel/hook ×3 desde canon `bersaglio` + Staging del dueño) — diseño-listo, ventana dedicada, NO urgente.
 
 > 🏗️ **CRM E0→E6 (§176, TODO-21). E0→E5 ✅. E6**: fases ②/③ ✅ (§190-195) + **vehículos** (§199-203) + **dealers FASE 1** (§204) — todo MERGEADO. **SIGUIENTE
 > del cutover**: V6 verificación en vivo (necesita dueño) → **gates ②/③** (ocultar/readonly los módulos
 > ya portados en el CLÁSICO) → ④ RBAC/usuarios departamental (§193.4) → cutover (stub redirect, NUNCA
 > borrar admin.html). dealers FASE 2 = restructura comercial FROZEN (TODO-25, bóveda §9), va al FINAL.
-> ✅ **F39 v2 (§198)**: verificación en vivo = CLAUDE por LOTES. **Lote V6 pendiente**: reseña+banner+
-> marca+lista+respaldo+walk-in+reasignar + ciclo completo de vehículo → web sin Ctrl+Shift+R → cerrar gates ②/③.
-> ⚠️ Decisiones dueño pre-cutover (§193): bot ALTOR R-1 (solo Claude) · gap 8 financiero · 2FA R-9 · vista Inicio gap 3 · fase ④ RBAC dept §193.4 (cf. Bersaglio). Gates: F32 móvil · F33b piloto · manual.
-> 🚫 **Callejones de trabajo CERRADO** (dealers F1 · E6.6 · E5) → detalle en §204/§188/§187 (no re-derivar: NFD-slug · admin-calendar-config/dynamic-lists/fcm-sw inyectados VIVOS · dashboards envenenados→deals.wonAt · RTDB presence lo lee functions 1/min · límite ~1000 exprs de Rules · emulador zombi :8081 mata java).
-> **Retomar con: "continúa E6"** = cutover (strangler: inventario/público/RBAC al portal + F32 +
-> F33b piloto + manual + checklists F39) + E6.5 comité diseño + E6.6 auditoría clásico (§183, FIRMES).
+> 🎯 **RETOMAR AQUÍ = continuar E6 cutover.** Acuerdo de verificación (memoria `feedback-verification-division` · §198 F39 v2): **Claude hace la verificación INICIAL (técnica: código/tests/preview); si OK AVANZA; el DUEÑO verifica TODO en vivo al FINAL.** Lote V6 (reseña·banner·marca·lista·respaldo·walk-in·reasignar·ciclo-vehículo) → si la inicial pasa, cerrar **gates ②/③** (readonly/ocultar admin clásico, stub redirect, NO borrar) → ④ RBAC (§193.4) → cutover.
+> ⚠️ Decisiones dueño pre-cutover → §193 (bot ALTOR R-1 · gap 8 financiero · 2FA · vista Inicio · RBAC ④ §193.4). Gates: F32 móvil · F33b piloto · manual.
+> 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187 (NFD-slug · admin-calendar-config/dynamic-lists/fcm-sw inyectados VIVOS · dashboards→deals.wonAt · ~1000 exprs Rules · emulador :8081).
+> Strangler/cutover detalle → §188 (plan 29 pasos) + §183 (E6.5 comité diseño · E6.6 auditoría clásico, FIRMES).
 > Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05 (diferido) · SEC-07/09 (P2).
 > ⏳ **Cliente**: descartar lead prueba `VMVMJG…` (spam) · anunciar F42 · billing GCP causa raíz (→`05`). (Código TODO en `main`, PR #856 — nada pendiente de merge.)
 > ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado.

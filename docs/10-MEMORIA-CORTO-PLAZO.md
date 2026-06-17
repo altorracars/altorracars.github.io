@@ -66,5 +66,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC ×7 (12-17/06): §184-§208 consolidados (→ `00`/`99`). Vivo:
-> - **15-17/06 ⟦OPUS-4.8⟧**: **3 cerebros auditados Nivel-2** (§207 · §82 · §12-inmob) + harmonizados (kernel ×3) · **Gemini UNIFICADO integrado §208** (A Núcleo Delimitado · B abolir-git-en-`05` · C Doble-Llave+Staging) → ejecución ×3 = TODO-28/29/30.
+> GC ×8 (12-17/06): §184-**§209** consolidados (→ `00`/`99`). Vivo:
+> - **17/06 ⟦OPUS-4.8⟧**: verif. INICIAL V6 (workflow 17 ag.) + fix walk-in blocker/reasignar → **§209** (rules deployadas). PREV 15-17/06: 3 cerebros auditados Nivel-2 (§207·§82·§12-inmob) · Gemini UNIFICADO **§208** (A/B/C) → ejecución ×3 = TODO-28/29/30.

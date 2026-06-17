@@ -27,7 +27,7 @@
     brands:  'marcas',
     lists:   'atributos',
     dealers: 'aliados',
-    // vehicles: 'vehiculos',  // ⛔ pendiente lote V6 EN VIVO (R-12/R-13)
+    vehicles: 'vehiculos',  // §210→6/6 (17/06): R-13 (paridad esquema CI generate-vehicles) + R-12 (venta=Pipeline server, recalcVehicleState) verificados + dueño verificó creación en vivo. Vender = Pipeline.
   };
   var PORTAL_BASE = '/admin-app/dist/#/';
 

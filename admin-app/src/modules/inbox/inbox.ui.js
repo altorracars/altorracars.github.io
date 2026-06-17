@@ -104,21 +104,30 @@ export function mountInbox(root) {
 
   // ── Acciones de datos (real vs mock) ──
   async function doAssign(lead, owner) {
+    const prevOwnerId = lead.ownerId || null;       // §3.6 rollback: dueño previo
+    const prevOwnerName = lead.ownerName || null;
     patchLead(lead.id, { ownerId: owner ? owner.uid : null, ownerName: owner ? owner.nombre : null });
     if (store.get().mock) { toast(owner ? `Asignado a ${owner.nombre}` : 'Sin asignar', 'ok'); return; }
     try {
       await assignLead(lead.id, owner);
       toast(owner ? `Asignado a ${owner.nombre}` : 'Sin asignar', 'ok');
-    } catch (e) { toast('No se pudo asignar', 'error'); }
+    } catch (e) {
+      patchLead(lead.id, { ownerId: prevOwnerId, ownerName: prevOwnerName }); // rollback (la UI no miente)
+      toast('No se pudo asignar', 'error');
+    }
   }
 
   async function doStatus(lead, status, extra = {}) {
+    const prevStatus = lead.status;                 // §3.6 rollback: estado previo
     patchLead(lead.id, { status, ...extra, lastActivityAt: new Date().toISOString() });
     if (store.get().mock) { toast(`Estado → ${statusMeta(status).label}`, 'ok'); return; }
     try {
       await setLeadStatus(lead.id, status, lead, extra);
       toast(`Estado → ${statusMeta(status).label}`, 'ok');
-    } catch (e) { toast('No se pudo cambiar el estado', 'error'); }
+    } catch (e) {
+      patchLead(lead.id, { status: prevStatus });   // rollback (incl. guard de lead convertido)
+      toast('No se pudo cambiar el estado', 'error');
+    }
   }
 
   function doWhatsapp(lead, anchor) {

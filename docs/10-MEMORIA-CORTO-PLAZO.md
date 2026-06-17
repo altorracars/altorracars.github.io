@@ -14,11 +14,9 @@
 
 > 🧠 **Cerebro v6 = 21/21 ✅** · 3 cerebros auditados Nivel-2 (cars §207 · bersaglio §82 · inmob §12) · **Gemini UNIFICADO ✅ §208** (A Núcleo-Delimitado · B abolir-git-en-`05` · C Doble-Llave+Staging). Hardening A/B/C = **TODO-28/29/30** (kernel/hook ×3 desde canon `bersaglio` + Staging del dueño) — diseño-listo, ventana dedicada, NO urgente.
 
-> 🏗️ **CRM E0→E6 (§176, TODO-21). E0→E5 ✅. E6**: fases ②/③ ✅ (§190-195) + **vehículos** (§199-203) + **dealers FASE 1** (§204) — todo MERGEADO. **SIGUIENTE
-> del cutover**: V6 verificación en vivo (necesita dueño) → **gates ②/③** (ocultar/readonly los módulos
-> ya portados en el CLÁSICO) → ④ RBAC/usuarios departamental (§193.4) → cutover (stub redirect, NUNCA
-> borrar admin.html). dealers FASE 2 = restructura comercial FROZEN (TODO-25, bóveda §9), va al FINAL.
-> 🎯 **RETOMAR AQUÍ = continuar E6 cutover.** Acuerdo de verificación (memoria `feedback-verification-division` · §198 F39 v2): **Claude hace la verificación INICIAL (técnica: código/tests/preview); si OK AVANZA; el DUEÑO verifica TODO en vivo al FINAL.** Lote V6 (reseña·banner·marca·lista·respaldo·walk-in·reasignar·ciclo-vehículo) → si la inicial pasa, cerrar **gates ②/③** (readonly/ocultar admin clásico, stub redirect, NO borrar) → ④ RBAC (§193.4) → cutover.
+> 🏗️ **CRM E0→E6 (§176, TODO-21). E0→E5 ✅. E6**: fases ②/③ ✅ (§190-195) + **vehículos** (§199-203) + **dealers FASE 1** (§204) — todo MERGEADO.
+> 🎯 **RETOMAR = E6 cutover.** Verif. INICIAL técnica del lote V6 + fix de sus 2 hallazgos = **HECHO (ADR §209, 17/06**; crudo+síntesis bóveda `2026-06-17-verificacion-V6-*`): 6/8 limpias; **walk-in blocker** (`createManualLead`→`solicitudes` permission-denied para TODOS, regresión SEC-06 §187 / **REINCIDENCIA L-41**) → **rama admin rules §209** (`crm.edit`+`_createdByUid` anti-spoof, append-only, público INTACTO) + new-lead optimista; **reasignar** rollback §3.6. **Rules DEPLOYADAS** (firebase ✓ · emulador e6 5/5 · suite 198/198 · build Vite ✓ · cache NO bump §3.8). ⏳ **Falta**: el dueño hace **`git push`+merge a main** del commit del fix (code new-lead/inbox/dist) + su **verificación EN VIVO** del lote (acuerdo verif-división `feedback-verification-division` · §198 F39 v2).
+> **SIGUIENTE tras verificación viva**: cerrar **gates ②/③** (ocultar/readonly clásico, stub redirect, NUNCA borrar admin.html) → ④ RBAC (§193.4) → cutover. dealers FASE 2 = restructura FROZEN (TODO-25, bóveda §9), al FINAL.
 > ⚠️ Decisiones dueño pre-cutover → §193 (bot ALTOR R-1 · gap 8 financiero · 2FA · vista Inicio · RBAC ④ §193.4). Gates: F32 móvil · F33b piloto · manual.
 > 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187 (NFD-slug · admin-calendar-config/dynamic-lists/fcm-sw inyectados VIVOS · dashboards→deals.wonAt · ~1000 exprs Rules · emulador :8081).
 > Strangler/cutover detalle → §188 (plan 29 pasos) + §183 (E6.5 comité diseño · E6.6 auditoría clásico, FIRMES).

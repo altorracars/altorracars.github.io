@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-15**) |
 |---|---|
-| **Build** | 🟢 **CRM E0→E5 ✅. E6** ②/③ ✅ + Vehículos V1-V5 + Dealers FASE 1 — **EN MAIN**. **Verif. INICIAL V6 + fix HECHO (ADR §209)**: walk-in blocker (`createManualLead` permission-denied, regresión SEC-06/L-41) → **rama admin rules §209 DEPLOYADA**; reasignar rollback §3.6. e6 5/5 · 198/198 · build ✓ · cache NO bump. ⏳ dueño `git push`+merge del fix + verif EN VIVO → luego gates ②/③. Dealers F2 gated (TODO-25). |
+| **Build** | 🟢 **CRM E0→E5 ✅. E6** ②/③ ✅ + Vehículos V1-V5 + Dealers FASE 1 — **EN MAIN**. **Verif. INICIAL V6 + fix HECHO (ADR §209)**: walk-in blocker (`createManualLead` permission-denied, regresión SEC-06/L-41) → **rama admin rules §209 DEPLOYADA**; reasignar rollback §3.6. **§210 gates ②/③ 5/6 staged** (`admin-cutover-gates.js`; vehículos tras V6). e6 5/5·198/198·sin bump. ⏳ dueño push+merge (fix+gate) + verif EN VIVO → tras V6: vehículos + ④ RBAC. Dealers F2 gated. |
 | **Cache version vigente** | **`v20260615041622`** (CI auto-bump 06-15, en producción). SW == cache-manager ✅. Ctrl+Shift+R tras merge. |
 | **Branch activa** | `refactor/estructura` (HEAD `aa97c14`). **Hay commits de cerebro sin pushear** (el dueño pushea + PR a `main`); `main` = producción. Verificar vs git real antes de afirmar (§3.3). Deploys firebase = Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |

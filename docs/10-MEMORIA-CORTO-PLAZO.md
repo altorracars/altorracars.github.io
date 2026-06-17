@@ -62,8 +62,9 @@
 | **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS-4.8⟧** (aliado/consigna/propio + comisiones) — comité×3 + Gemini Pro High + dueño → **DISEÑO FROZEN** (bóveda `…restructura-comercial…` sec.9: tenancy+economics ortogonal · snapshot array versionado · onWrite espejo · F42 profitOf). Implementa al FINAL | 🔄 decidido·impl pend | al FINAL · 🔥 parche legal JSON-LD ✅ interim §205 · pendiente menor: confirmar aliado-neto-constante + fórmula fiscal (contador) |
 | **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable/comercial en panel admin) — consultar cerebro+repo **Bersaglio** AL implementar. Detalle bóveda `2026-06-13-restructura-comercial-…` §8 | 🔒 **ÚLTIMA fase** | después de TODO lo documentado/planeado HOY (E6 cutover + TODO-21..25 + redesign) |
 | **TODO-27** | **Alta de usuarios = invite flow seguro ⟦OPUS-4.8⟧** (token+transacción, anti-enumeración; reemplaza el alta vieja) — diseño Gemini en bóveda `2026-06-14-web-dinamismo-cms-plan.md §6.4`. Sugerir skill portable | 🔮 | DESPUÉS del dinamismo (orden dueño) |
-| **TODO-28** | **Cerebro des-saturación (§206) ⟦OPUS-4.8⟧** — A0/A5/A6/A7/A9 ✅ §206.7. Gemini 2ª opinión ✅ §206.8 → **A1-A4 revisado** (diseño congelado, bóveda `…a1a4-revisado-post-gemini.md`): eje trigger-vs-mecánica · **NO borrar caps** · **template bump v1.2.0 ×3 desde canon bersaglio** (cars-only = fork silencioso). **Resta**: ejecutar ×3 — pendiente luz verde sobre bersaglio (¿chat paralelo?); beneficio modesto, salud actual no lo exige. | 🔄 | coordinación ×3 bersaglio |
-| **TODO-29** | **Cerebro: endurecer el lazo (Nivel-2 §207) ⟦OPUS-4.8⟧** — reincidencias cuya cura ES gate, no doctrina (M-16); todas en el kernel `brain-check.mjs` (×3, mismo canon que TODO-28): boot/cache-vs-`origin/main` · techo duro de boot · anclas §G. + contrato-template→Gemini · shard 99a/99b · `ignoreDirs` (manifest cars ✅ §207.8, resta kernel). → §207 + bóveda. | 🔄 | kernel ×3 → bersaglio |
+| **TODO-28** | **Split §G / des-saturación (§206) ⟦OPUS-4.8⟧** — A0/A5/A6/A7/A9 ✅ §206.7. **Diseño RESUELTO por Gemini §208.1**: el split procede con **Núcleo Delimitado** (`<!-- KERNEL DOCTRINE -->` byte-hasheado ×3; fuera, libre per-repo). Resta ejecutar A1-A4 ×3 desde canon bersaglio. | 🔄 | ejecución ×3 |
+| **TODO-29** | **Endurecer el lazo (§207) ⟦OPUS-4.8⟧** — **REVISADO por Gemini §208.2**: los git-gates SE SUSTITUYEN por "abolir estado dinámico en `05`" → SessionStart hook inyecta git-state live en boot + `05` deja de afirmar git/deploy. Kernel/hook ×3 desde canon. (Aún: shard 99a/99b · `ignoreDirs`-KNOWN_KEYS.) | 🔄 | kernel/hook ×3 |
+| **TODO-30** | **Doctrina despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS-4.8⟧** — gate técnico IA (invariantes/tests BLOQUEANTES en CI) + acceptance de Kary en **STAGING** (no prod) + dueño autoriza prod. CORTAR pases directos a prod de código-dinero. **Requiere que el dueño monte Staging**. Aplica cars (F42/comisiones/§TODO-25) + bersaglio (cartera). | 🔮 | Staging (dueño) |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -71,5 +72,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC ×6 (12-15/06): §184-§207 consolidados (→ `00`/`99`). Vivo:
-> - **15/06 Auditoría Nivel-2 ⟦OPUS-4.8⟧** — los **3 cerebros auditados** (cars §207 · bersaglio §82 · inmob §12) + harmonizados (kernel idéntico ×3): lazo = teatro si deja el fix en doctrina → **M-16**; 05/10 reconciliados vs git; 4 gates de cura = kernel ×3 → **TODO-29** + pasada Gemini unificada.
+> GC ×7 (12-17/06): §184-§208 consolidados (→ `00`/`99`). Vivo:
+> - **15-17/06 ⟦OPUS-4.8⟧**: **3 cerebros auditados Nivel-2** (§207 · §82 · §12-inmob) + harmonizados (kernel ×3) · **Gemini UNIFICADO integrado §208** (A Núcleo Delimitado · B abolir-git-en-`05` · C Doble-Llave+Staging) → ejecución ×3 = TODO-28/29/30.

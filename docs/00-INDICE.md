@@ -303,6 +303,7 @@
 | §206 | **Auditoría Nivel-2 del cerebro ⟦OPUS-4.8⟧** (ítem U comité v6; 29 agentes) — diagnóstico: costo de boot (34743c>31500) + monolitos (30 al 98%, 00 sobre cap), §G load-bearing (143 refs). Plan A0-A10: shard 30→33, crear 11-GOBERNANZA (gated cross-repo §G template ×3 + Gemini). A0 fix regex SSoT ✅ | 43496 |
 | §207 | **Auditoría Nivel-2: ¿el lazo funciona o es teatro? ⟦OPUS-4.8⟧** (50 agentes, 9 sondas + verify L-34; 37/40 confirmados) — veredicto: el lazo MECANIZA o es TEATRO (confirma M-10). Reincidencia raíz 05/10-mienten-sobre-git → M-16; reconciliado + GC pareado este turno; 4 curas = gate kernel ×3 (TODO-29); template 1.1.0 sin enforcement → Gemini. | 43510 |
 | §208 | **Gemini UNIFICADO integrado ⟦OPUS-4.8⟧** (anti-anclaje, 3/3 superiores): A=Núcleo Delimitado (hash solo el bloque DOCTRINA ×3, desbloquea split §G) · B=abolir estado-git en `05` → inyectar live en boot (revierte los git-gates) · C=Doble Llave + Staging para código-dinero. | 43527 |
+| §209 | **Verif. INICIAL técnica lote V6 + fix blocker walk-in ⟦OPUS-4.8⟧** (workflow 17 agentes verify→refute): 6/8 limpias; blocker `createManualLead`→permission-denied (regresión SEC-06 §187, REINCIDENCIA L-41) → fix rama admin §209 (`crm.edit`+`_createdByUid` anti-spoof, append-only, público intacto) + new-lead optimista + reasignar rollback §3.6. Test e6 5/5; suite 198/198. | 43537 |
 
 ---
 

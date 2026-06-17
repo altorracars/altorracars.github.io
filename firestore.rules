@@ -644,7 +644,49 @@ service cloud.firestore {
         && solMapOk('device', ['type', 'browser', 'os'])
         && solMapOk('datosExtra', ['marcaVehiculo', 'modeloVehiculo', 'yearVehiculo',
             'kmVehiculo', 'precioEsperado', 'precioVehiculo', 'cuotaInicial',
-            'plazo', 'ingresos', 'situacionLaboral', 'ciudad']);
+            'plazo', 'ingresos', 'situacionLaboral', 'ciudad'])
+        // ── §209 Vía ADMIN — captura manual del portal nuevo (createManualLead,
+        //    admin-app/src/modules/capture/capture.data.js). El censo SEC-06 §187
+        //    cubrió los creadores PÚBLICOS y se saltó este escritor admin (2º
+        //    olvidado tras §188-0.3 createBy) → permission-denied para todos.
+        //    Esta rama NO afloja la vía pública (INTACTA arriba): exige crm.edit
+        //    + que el tag _createdByUid sea el PROPIO uid (anti-spoof), y solo
+        //    entonces admite las 3 claves admin (consentGiven/_manual/_createdByUid)
+        //    + source con campaign/traffic. ⚠️ Si añades una clave a la whitelist
+        //    pública, REVÍSALA también aquí — las dos ramas evolucionan juntas.
+        || (
+          request.auth != null
+          && hasPermission('crm.edit')
+          && request.resource.data._createdByUid == request.auth.uid
+          && request.resource.data.keys().hasOnly([
+            'nombre', 'telefono', 'whatsapp', 'prefijoPais', 'email', 'tipo',
+            'origen', 'kind', 'requiereCita', 'fecha', 'hora', 'vehiculo',
+            'vehiculoId', 'vehiculoPrecio', 'datosExtra', 'comentarios',
+            'mensaje', 'estado', 'observaciones', 'createdAt', 'userId',
+            'userEmail', 'clientCategory', 'source', 'device', 'priority',
+            'tags', 'slaDeadline', 'slaMs', 'sessionId', 'sourcePage',
+            'sourceVehicleId', 'level', 'lastMessageAt', 'createdBy',
+            'consentGiven', '_manual', '_createdByUid'
+          ])
+          && solCapOk('nombre', 120)
+          && solCapOk('email', 254)
+          && solCapOk('vehiculo', 160)
+          && solCapOk('mensaje', 3000)
+          && solCapOk('comentarios', 3000)
+          && solCapOk('observaciones', 500)
+          && solCapOk('telefono', 25)
+          && solCapOk('whatsapp', 25)
+          && solCapOk('userEmail', 254)
+          && solCapOk('sourcePage', 200)
+          && solCapOk('createdBy', 254)
+          && (!('tags' in request.resource.data)
+              || (request.resource.data.tags is list && request.resource.data.tags.size() <= 12))
+          && solMapOk('source', ['page', 'cta', 'referrer', 'campaign', 'traffic'])
+          && solMapOk('device', ['type', 'browser', 'os'])
+          && solMapOk('datosExtra', ['marcaVehiculo', 'modeloVehiculo', 'yearVehiculo',
+              'kmVehiculo', 'precioEsperado', 'precioVehiculo', 'cuotaInicial',
+              'plazo', 'ingresos', 'situacionLaboral', 'ciudad'])
+        );
       allow update: if isEditorOrAbove()
         || hasPermission('crm.edit')
         || hasPermission('appointments.edit');

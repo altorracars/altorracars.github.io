@@ -97,20 +97,24 @@ export function openNewLeadForm() {
     if (!data.nombre) return fail('Escribe el nombre del cliente.');
     if (!data.email && !data.telefono) return fail('Necesitas al menos un correo o un teléfono (para no duplicar el contacto).');
 
-    save.disabled = true; save.textContent = 'Guardando…';
-    try {
-      if (store.get().mock) {
-        addMockLead(data);
-        window.dispatchEvent(new CustomEvent('altorra:leads-dirty'));
-      } else {
-        await createManualLead(data);
-      }
+    if (store.get().mock) {
+      addMockLead(data);
+      window.dispatchEvent(new CustomEvent('altorra:leads-dirty'));
       toast('✓ Lead agregado a la Bandeja', 'ok');
       close();
-    } catch (e2) {
-      save.disabled = false; save.textContent = 'Agregar lead';
-      fail('No se pudo agregar. Intenta de nuevo.');
+      return;
     }
+    // OPTIMISTA (igual que ⚡ Lead rápido): NO esperamos el ack del servidor —
+    // la persistencia local encola y sincroniza sola. Si el server RECHAZA, lo
+    // decimos con su code (ya NO enmascaramos el error como un genérico).
+    createManualLead(data).catch((e2) => {
+      console.error('[new-lead] rechazo del servidor:', e2);
+      toast('El lead "' + data.nombre + '" fue RECHAZADO al guardar: ' + (e2.code || e2.message), 'error');
+    });
+    toast(navigator.onLine
+      ? '✓ Lead agregado — aparecerá en la Bandeja en segundos'
+      : '📴 Guardado local — se enviará al volver la señal', 'ok');
+    close();
   });
 
   function fail(msg) { err.textContent = msg; err.hidden = false; return false; }

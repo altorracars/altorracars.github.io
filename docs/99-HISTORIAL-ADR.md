@@ -43569,3 +43569,27 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 **.6 Archivos / alcance**: NUEVO `js/admin/admin-cutover-gates.js`; MOD `admin.html` (1 `<script>` aditivo). **Gate ② completo + gate ③ parcial (5/6)**. ⛔ **Vehículos EXCLUIDO hasta el lote V6 EN VIVO** (R-12 doble escritor `vehiculos.estado` / `markAsSold` no-portado + R-13 paridad de esquema con el CI `scripts/generate-vehicles.mjs` cada 4h — §198.2/§203.6). El backup (§195) vive dentro de `settings`, que tiene otras funciones vivas hasta fase ④ → NO se oculta `settings`. INTACTOS: todo `js/admin` clásico, router, group-tabs, auth.
 
 **.7 Doctrina + cache**: cache NO bumpeado (`admin.html` network-first, no precacheado; el `.js` nuevo auto-busted por URL nueva). Deploy: a prod SOLO al push del dueño (staged). **Deliberación**: agente Plan (mapeo §188 + mecanismo + 14 riesgos) — síntesis en este ADR + bóveda `2026-06-12-e66-...`. SIGUIENTE: dueño verifica EN VIVO el lote V6 → añadir `vehicles:'vehiculos'` a `MIGRATED` (gate ③ completo) → ④ RBAC §193.4 → cutover (paso 24+: stub redirect global, NO borrar admin.html).
+
+## 211. ADR-211 — Fixes de render del SITIO PÚBLICO (reseñas / banner promocional / carrusel marcas) surgidos en la verificación V6 ⟦OPUS-4.8 · rev-Fable⟧
+
+> Contexto: el dueño verificó EN VIVO el lote V6 (gates ②/③ ya en prod). Atributos+Aliados OK; reportó 3 fallos de RENDER en el sitio PÚBLICO. Diagnóstico: 3 sondas en paralelo. NINGUNO es del cutover (§209/§210) — son de la capa pública (independiente del admin).
+
+**.1 Causa raíz (RCA §19, 3 sondas)**:
+- **Reseñas no visibles**: el reader `js/public/reviews.js` + `resenas.html` funcionan (shape verbatim, rule `read:true`), pero (a) el header NUNCA enlazó `resenas.html` y (b) la sección de testimonios del home (`#testimonials-section` + `renderTestimonialsSection`) la BORRÓ el rediseño SP-1 (commit 7cc7c07). → REGRESIÓN SP-1 (las reseñas eran públicas antes).
+- **Banner promocional no renderiza**: `loadPromoBanners()` (`main.js:408-449`) corre pero aborta — su slot `#promoBannerSection`/`#promoBannerWrapper` NO existe en `index.html` (lo borró SP-1; el spec pedía "dejar loadPromoBanners intacto" pero el port estático no reincorporó el slot). Query/shape/CSS OK. El `home_promo` (financiación, renderer aparte) sí funciona. → REGRESIÓN SP-1.
+- **Carrusel de marcas roto** (~9, se reinicia, no infinito): `initBrands` rendea con `whenDbReady`, que dispara en el paso de CACHE de `vehicleDB.load()` (`database.js:60` setea loaded=true ANTES del fetch) → primer render con el set VIEJO de localStorage. El listener realtime descarta su 1er snapshot (`database.js:237`) → no corrige el fetch inicial. Expuesto al agregar marcas nuevas. → bug latente de timing.
+
+**.2 Solución estructural** (sitio público, ADITIVO, sin renombrar IDs §17.4):
+- Reseñas: link "Reseñas"→`resenas.html` en el nav desktop+móvil de `snippets/header.html` Y el header inline de `index.html` (sync 1:1, ADR §126). Hace alcanzable el `resenas.html` existente.
+- Banner promocional: re-insertado el slot `#promoBannerSection`/`#promoBannerWrapper` en `index.html` (IDs = contrato de `main.js`; `display:none` hasta que loadPromoBanners lo muestre). JS/CSS ya existían.
+- Carrusel marcas: `initBrands` ahora hace `vehicleDB.load(true).then(renderBrands)` (force-refetch) tras el render de cache → re-render con datos frescos (re-llamar `load()` sin force hace early-return, `database.js:49`).
+
+**.3 No-regresión**: cero cambio a `reviews.js` / `loadPromoBanners` / la lógica reader de `home-carousels` (solo wiring/markup/timing); `home_promo` (financiación) intacto; `marcas.html` intacto. IDs/clases preservados.
+
+**.4 Tests**: `node -c` ✓ (home-carousels, SW, cache-manager). Verificación de render = EN VIVO del dueño tras push (los 3 dependen de datos Firestore reales; el carrusel requiere cache stale para reproducir). Diagnóstico citado con file:line por 3 sondas.
+
+**.5 Anti-patterns evitados**: tocar el reader/renderer (no era ahí); restaurar la sección de testimonios a las apuradas sin diseño cinematic (→ follow-up); el fix `load().then` SIN force (early-return → seguía stale) → corregido a `load(true)`.
+
+**.6 Archivos**: MOD `index.html` (slot promo + nav reseñas inline desktop/móvil), `snippets/header.html` (nav reseñas desktop/móvil), `js/public/home/home-carousels.js` (initBrands), `service-worker.js` + `js/core/cache-manager.js` (cache bump). INTACTOS: `reviews.js`, `main.js`, `database.js`, `resenas.html`, `marcas.html`, el renderer de home_promo.
+
+**.7 Doctrina + cache**: cache BUMP §4 `v20260617174623` (cambio de comportamiento en JS público servido por SWR). Va a prod al **push del dueño** (GitHub Pages). FOLLOW-UP: restaurar la sección de testimonios del home en estilo cinematic (decisión de diseño del dueño); hoy las reseñas ya son visibles vía nav. **Deliberación**: 3 sondas paralelas — síntesis en este ADR.

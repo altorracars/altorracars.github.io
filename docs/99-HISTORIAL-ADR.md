@@ -43569,3 +43569,67 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 **.6 Archivos / alcance**: NUEVO `js/admin/admin-cutover-gates.js`; MOD `admin.html` (1 `<script>` aditivo). **Gate ② completo + gate ③ parcial (5/6)**. ⛔ **Vehículos EXCLUIDO hasta el lote V6 EN VIVO** (R-12 doble escritor `vehiculos.estado` / `markAsSold` no-portado + R-13 paridad de esquema con el CI `scripts/generate-vehicles.mjs` cada 4h — §198.2/§203.6). El backup (§195) vive dentro de `settings`, que tiene otras funciones vivas hasta fase ④ → NO se oculta `settings`. INTACTOS: todo `js/admin` clásico, router, group-tabs, auth.
 
 **.7 Doctrina + cache**: cache NO bumpeado (`admin.html` network-first, no precacheado; el `.js` nuevo auto-busted por URL nueva). Deploy: a prod SOLO al push del dueño (staged). **Deliberación**: agente Plan (mapeo §188 + mecanismo + 14 riesgos) — síntesis en este ADR + bóveda `2026-06-12-e66-...`. SIGUIENTE: dueño verifica EN VIVO el lote V6 → añadir `vehicles:'vehiculos'` a `MIGRATED` (gate ③ completo) → ④ RBAC §193.4 → cutover (paso 24+: stub redirect global, NO borrar admin.html).
+
+## 211. ADR-211 — Fixes de render del SITIO PÚBLICO (reseñas / banner promocional / carrusel marcas) surgidos en la verificación V6 ⟦OPUS-4.8 · rev-Fable⟧
+
+> Contexto: el dueño verificó EN VIVO el lote V6 (gates ②/③ ya en prod). Atributos+Aliados OK; reportó 3 fallos de RENDER en el sitio PÚBLICO. Diagnóstico: 3 sondas en paralelo. NINGUNO es del cutover (§209/§210) — son de la capa pública (independiente del admin).
+
+**.1 Causa raíz (RCA §19, 3 sondas)**:
+- **Reseñas no visibles**: el reader `js/public/reviews.js` + `resenas.html` funcionan (shape verbatim, rule `read:true`), pero (a) el header NUNCA enlazó `resenas.html` y (b) la sección de testimonios del home (`#testimonials-section` + `renderTestimonialsSection`) la BORRÓ el rediseño SP-1 (commit 7cc7c07). → REGRESIÓN SP-1 (las reseñas eran públicas antes).
+- **Banner promocional no renderiza**: `loadPromoBanners()` (`main.js:408-449`) corre pero aborta — su slot `#promoBannerSection`/`#promoBannerWrapper` NO existe en `index.html` (lo borró SP-1; el spec pedía "dejar loadPromoBanners intacto" pero el port estático no reincorporó el slot). Query/shape/CSS OK. El `home_promo` (financiación, renderer aparte) sí funciona. → REGRESIÓN SP-1.
+- **Carrusel de marcas roto** (~9, se reinicia, no infinito): `initBrands` rendea con `whenDbReady`, que dispara en el paso de CACHE de `vehicleDB.load()` (`database.js:60` setea loaded=true ANTES del fetch) → primer render con el set VIEJO de localStorage. El listener realtime descarta su 1er snapshot (`database.js:237`) → no corrige el fetch inicial. Expuesto al agregar marcas nuevas. → bug latente de timing.
+
+**.2 Solución estructural** (sitio público, ADITIVO, sin renombrar IDs §17.4):
+- Reseñas: link "Reseñas"→`resenas.html` en el nav desktop+móvil de `snippets/header.html` Y el header inline de `index.html` (sync 1:1, ADR §126). Hace alcanzable el `resenas.html` existente.
+- Banner promocional: re-insertado el slot `#promoBannerSection`/`#promoBannerWrapper` en `index.html` (IDs = contrato de `main.js`; `display:none` hasta que loadPromoBanners lo muestre). JS/CSS ya existían.
+- Carrusel marcas: `initBrands` ahora hace `vehicleDB.load(true).then(renderBrands)` (force-refetch) tras el render de cache → re-render con datos frescos (re-llamar `load()` sin force hace early-return, `database.js:49`).
+
+**.3 No-regresión**: cero cambio a `reviews.js` / `loadPromoBanners` / la lógica reader de `home-carousels` (solo wiring/markup/timing); `home_promo` (financiación) intacto; `marcas.html` intacto. IDs/clases preservados.
+
+**.4 Tests**: `node -c` ✓ (home-carousels, SW, cache-manager). Verificación de render = EN VIVO del dueño tras push (los 3 dependen de datos Firestore reales; el carrusel requiere cache stale para reproducir). Diagnóstico citado con file:line por 3 sondas.
+
+**.5 Anti-patterns evitados**: tocar el reader/renderer (no era ahí); restaurar la sección de testimonios a las apuradas sin diseño cinematic (→ follow-up); el fix `load().then` SIN force (early-return → seguía stale) → corregido a `load(true)`.
+
+**.6 Archivos**: MOD `index.html` (slot promo + nav reseñas inline desktop/móvil), `snippets/header.html` (nav reseñas desktop/móvil), `js/public/home/home-carousels.js` (initBrands), `service-worker.js` + `js/core/cache-manager.js` (cache bump). INTACTOS: `reviews.js`, `main.js`, `database.js`, `resenas.html`, `marcas.html`, el renderer de home_promo.
+
+**.7 Doctrina + cache**: cache BUMP §4 `v20260617174623` (cambio de comportamiento en JS público servido por SWR). Va a prod al **push del dueño** (GitHub Pages). FOLLOW-UP: restaurar la sección de testimonios del home en estilo cinematic (decisión de diseño del dueño); hoy las reseñas ya son visibles vía nav. **Deliberación**: 3 sondas paralelas — síntesis en este ADR.
+
+## 212. ADR-212 — FIX de seguridad: el DUEÑO es INAMOVIBLE enforced server-side (huecos fatales cazados por el pase adversarial de ④ RBAC) ⟦OPUS-4.8 · rev-Fable⟧
+
+> Contexto: pase adversarial (consejo externo §15 + comité, workflow `wuue9vkhr`, 6 agentes) sobre el diseño de ④ RBAC departamental. El ángulo de SEGURIDAD verificó contra el CÓDIGO REAL que el "dueño INAMOVIBLE" (requisito central §193.4) NO estaba enforced server-side. CRUDO en bóveda `2026-06-17-RBAC-adversarial-review-CRUDO.json`.
+
+**.1 Causa raíz (RCA §19, reconfirmada con lectura propia)**: 2 huecos FATALES pre-existentes (heredados, NO de ④):
+- **Usuarios** (`firestore.rules:199-200`): `allow update: if isSuperAdmin() || hasPermission('users.edit') || <self-update>` — `users.edit` permitía escribir CUALQUIER doc `usuarios/{uid}` SIN cláusula target≠CEO. Cualquier titular de `users.edit` (un rol departamental que ④ reparte) podía degradar el rol del dueño, vaciar sus permisos o `bloqueado:true`. El "throw si target es owner" que el diseño asumía en las CFs NO existe (`updateUserRoleV2`/`deleteManagedUserV2` solo verifican el CALLER, no el TARGET); y la asignación RBAC moderna es write DIRECTO contra rules, sin pasar por CF.
+- **Roles** (`firestore.rules:1100-1103`): `roles` update/delete con `roles.edit`/`roles.delete` SIN proteger `isSystem`. Un titular de `roles.edit` podía quitarle '*' al rol `system_super_admin` (lockout global del dueño) o borrarlo; la cadena §71 onRoleUpdated lo propagaría. El comentario de onRoleDeleted ("lo bloquean las rules") asumía un enforcement inexistente.
+
+**.2 Solución estructural** (firestore.rules = la ÚNICA frontera de autorización; defensa-en-profundidad real ≠ UI+UI):
+- Usuarios update: la rama de gestión admin se gatea con `&& !(esDocDelDueño)`, donde dueño = `resource.data.roleId == 'system_super_admin' || '*' in resource.data.permissions` (sobre el doc EXISTENTE = anti-spoof, no se burla cambiando roleId en la misma escritura). El doc del dueño SOLO se edita por self-update (whitelist diff-keys, que no incluye rol/permisos).
+- Roles update/delete: `&& resource.data.get('isSystem', false) == false` → los system roles son INMUTABLES desde el cliente (solo el CF `seedSystemRoles` via Admin SDK los toca).
+
+**.3 No-regresión**: la gestión normal de usuarios/roles NO-dueño sigue viva; el self-update del perfil del dueño sigue vivo; el CF seed sigue sembrando system roles. Probado en emulador.
+
+**.4 Tests**: NUEVO `functions/src/rules/firestore-rules-212-owner.test.js` (7 tests emulador): users.edit NO bloquea/degrada al dueño ✓ · self-update del dueño ✓ · **REGRESIÓN** users.edit SÍ gestiona no-dueño ✓ · roles.edit NO edita system_super_admin ✓ · roles.delete NO borra system_super_admin ✓ · **REGRESIÓN** roles.edit SÍ edita rol custom ✓. Suite completa **205/205, exit 0**. Rules DEPLOYADAS a prod.
+
+**.5 Anti-patterns evitados**: confiar en UI/CF como frontera (la frontera son las rules); construir ④ sobre la premisa falsa "guard del dueño ✅" (el pase adversarial la refutó); chequear el `'*'`/roleId sobre el doc INCOMING (spoofeable) → se chequea sobre `resource.data` EXISTENTE.
+
+**.6 Archivos**: MOD `firestore.rules` (usuarios update owner-guard + roles isSystem-guard). NUEVO `functions/src/rules/firestore-rules-212-owner.test.js`. Follow-up de defensa-en-profundidad (no urgente, solo explotable por un 2º super_admin que no debería existir): owner-guard en las CFs `updateUserRoleV2`/`deleteManagedUserV2`.
+
+**.7 Doctrina + lóbulo**: lóbulo `41-SEGURIDAD` (Trigger 🔵). Deploy `firebase deploy --only firestore:rules` (Claude §1). Sin cache bump (rules server-side). Es **PREREQUISITO de ④ RBAC** (que reparte users.edit/roles.edit a gerentes departamentales). **Deliberación**: pase adversarial `wuue9vkhr` — CRUDO en bóveda. Resto de la síntesis adversarial para la impl de ④ (dual-portal = rules-son-la-frontera, NO la UI · budget de rules a MEDIR en emulador · `dataScope` con `critical:true` en auditLog).
+
+## 213. ADR-213 — ④a PASO 0: capa CF del dueño-INAMOVIBLE (completa §212 server-side) ⟦OPUS-4.8 · rev-Fable⟧
+
+> El blueprint de ④a (agente Plan, bóveda `2026-06-18-RBAC-4a-blueprint.md`) detectó que §212 cerró 2 de 3 capas: faltaba la capa Cloud Functions. Es el PASO 0 de la implementación de ④a RBAC departamental (§193.4).
+
+**.1 Causa raíz (RCA §19, verificada)**: `verifySuperAdmin()` (`functions/index.js:706-723`) reconocía al dueño SOLO por el campo legacy `rol==='super_admin'` — no por `roleId==='system_super_admin'` ni `'*' in permissions`. Footgun latente: el día que R8 limpie `rol`, todo `verifySuperAdmin` deja de reconocer al dueño. Y `updateUserRoleV2`(`:849`)/`deleteManagedUserV2`(`:816`) verificaban solo el CALLER (vía verifySuperAdmin), SIN guard de que el TARGET no fuera el dueño → un 2º super_admin (si existiera) podía degradarlo/borrarlo por CF.
+
+**.2 Solución estructural**: helper `isOwnerData(d)` (dueño = `rol==='super_admin' || roleId==='system_super_admin' || '*' in permissions`); `verifySuperAdmin` usa `!isOwnerData(callerData)`; `updateUserRoleV2` + `deleteManagedUserV2` hacen `throw` si `isOwnerData(targetDoc)`. Defensa-en-profundidad sobre el owner-guard de rules §212 (que ya cierra el vector REAL del write directo `admin-users.js:588`).
+
+**.3 No-regresión**: aditivo (guards que solo lanzan); el dueño pasa los 3 checks como antes; un `'*'`-holder (= el CEO en la práctica) ahora también es reconocido como super-admin (correcto, ya tiene acceso total). Cero cambio a otras CFs.
+
+**.4 Tests**: `node -c` ✓. Deploy functions ✓ ("Deploy complete", 27 functions). Test de callable en emulador = follow-up (las rules-tests §212, 7/7, ya prueban el vector real del write directo).
+
+**.5 Anti-patterns evitados**: dejar la capa CF con detección legacy-only (footgun R8); duplicar la lógica de owner-detection (→ helper `isOwnerData` único).
+
+**.6 Archivos**: MOD `functions/index.js` (`isOwnerData` + `verifySuperAdmin` + las 2 CFs de gestión).
+
+**.7 Doctrina + siguiente**: lóbulo `41-SEGURIDAD`. Deploy functions (Claude §1). Es PASO 0 de la implementación de ④a (blueprint en bóveda). SIGUIENTE: PASO 1 (catálogo+seeder Departamentos/nivel) → 2 (backfill) → 3 (colección `departments/`+rules) → 4 (sec-users) → 5 (§71 nivel) → 6 (dual-portal). **④b (data-scoping) GATEADO** por Gemini (consejo externo §15) + decisión de negocio del dueño (¿visibilidad de datos o solo agrupación? — el adversario notó que Bersaglio retrocedió a roles planos; decidir con ④a visible).

@@ -1153,7 +1153,15 @@
         }
 
         whenDbReady(function () {
-            renderBrands();
+            renderBrands(); // render inmediato con cache (LCP)
+            // §211: whenDbReady dispara en el paso de CACHE (database.js:60 setea
+            // loaded=true ANTES del fetch de Firestore) → el primer render puede
+            // traer un set de marcas VIEJO. Forzamos un re-render con los datos
+            // FRESCOS: el listener realtime descarta su 1er snapshot (database.js:237)
+            // así que NO cubre este primer fetch — load(true) lo trae y re-renderiza.
+            if (window.vehicleDB && typeof window.vehicleDB.load === 'function') {
+                window.vehicleDB.load(true).then(renderBrands).catch(function () {});
+            }
             if (window.vehicleDB && typeof window.vehicleDB.onChange === 'function') {
                 window.vehicleDB.onChange(function (changeType) {
                     if (changeType === 'brands') renderBrands();

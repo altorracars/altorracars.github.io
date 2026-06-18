@@ -113,7 +113,11 @@
         { id: 'templates.delete', name: 'Eliminar plantillas', description: 'Borrar plantillas', category: 'Configuración', resource: 'templates', action: 'delete' },
         { id: 'settings.theme', name: 'Cambiar tema', description: 'Cambiar tema visual del admin', category: 'Configuración', resource: 'settings', action: 'theme' },
         { id: 'settings.seo', name: 'Configurar SEO', description: 'Regenerar páginas SEO + GitHub token', category: 'Configuración', resource: 'settings', action: 'seo', critical: true },
-        { id: 'settings.backup', name: 'Backup/Restore', description: 'Exportar/importar respaldo de datos', category: 'Configuración', resource: 'settings', action: 'backup', critical: true }
+        { id: 'settings.backup', name: 'Backup/Restore', description: 'Exportar/importar respaldo de datos', category: 'Configuración', resource: 'settings', action: 'backup', critical: true },
+
+        // 🏢 Departamentos (2) — §193.4 ④a
+        { id: 'departments.read', name: 'Ver departamentos', description: 'Ver la lista de departamentos del CRM', category: 'Departamentos', resource: 'departments', action: 'read' },
+        { id: 'departments.manage', name: 'Gestionar departamentos', description: 'Crear, editar, eliminar departamentos y asignar personas', category: 'Departamentos', resource: 'departments', action: 'manage', critical: true }
     ];
 
     // ========== SYSTEM ROLES (1 inmutable — §69 R7) ==========
@@ -141,7 +145,8 @@
             isDefault: false,
             color: '#b89658',
             icon: 'crown',
-            permissions: ['*']
+            permissions: ['*'],
+            nivel: 100 // §193.4 ④a — autoridad máxima (default inicial del rol; el nivel real es per-usuario)
         }
         // §69 R7 — Editor y Viewer ELIMINADOS del catálogo.
         // Si el cliente quiere roles específicos para asesores/lectores,
@@ -195,7 +200,7 @@
     // ========== EXPONER API ==========
 
     window.AltorraRBACCatalog = {
-        version: '1.0.0',
+        version: '1.1.0',
         permissions: PERMISSIONS_CATALOG,
         systemRoles: SYSTEM_ROLES,
         legacyMapping: LEGACY_TO_ROLE_ID,

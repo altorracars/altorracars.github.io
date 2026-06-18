@@ -43615,3 +43615,21 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 **.6 Archivos**: MOD `firestore.rules` (usuarios update owner-guard + roles isSystem-guard). NUEVO `functions/src/rules/firestore-rules-212-owner.test.js`. Follow-up de defensa-en-profundidad (no urgente, solo explotable por un 2º super_admin que no debería existir): owner-guard en las CFs `updateUserRoleV2`/`deleteManagedUserV2`.
 
 **.7 Doctrina + lóbulo**: lóbulo `41-SEGURIDAD` (Trigger 🔵). Deploy `firebase deploy --only firestore:rules` (Claude §1). Sin cache bump (rules server-side). Es **PREREQUISITO de ④ RBAC** (que reparte users.edit/roles.edit a gerentes departamentales). **Deliberación**: pase adversarial `wuue9vkhr` — CRUDO en bóveda. Resto de la síntesis adversarial para la impl de ④ (dual-portal = rules-son-la-frontera, NO la UI · budget de rules a MEDIR en emulador · `dataScope` con `critical:true` en auditLog).
+
+## 213. ADR-213 — ④a PASO 0: capa CF del dueño-INAMOVIBLE (completa §212 server-side) ⟦OPUS-4.8 · rev-Fable⟧
+
+> El blueprint de ④a (agente Plan, bóveda `2026-06-18-RBAC-4a-blueprint.md`) detectó que §212 cerró 2 de 3 capas: faltaba la capa Cloud Functions. Es el PASO 0 de la implementación de ④a RBAC departamental (§193.4).
+
+**.1 Causa raíz (RCA §19, verificada)**: `verifySuperAdmin()` (`functions/index.js:706-723`) reconocía al dueño SOLO por el campo legacy `rol==='super_admin'` — no por `roleId==='system_super_admin'` ni `'*' in permissions`. Footgun latente: el día que R8 limpie `rol`, todo `verifySuperAdmin` deja de reconocer al dueño. Y `updateUserRoleV2`(`:849`)/`deleteManagedUserV2`(`:816`) verificaban solo el CALLER (vía verifySuperAdmin), SIN guard de que el TARGET no fuera el dueño → un 2º super_admin (si existiera) podía degradarlo/borrarlo por CF.
+
+**.2 Solución estructural**: helper `isOwnerData(d)` (dueño = `rol==='super_admin' || roleId==='system_super_admin' || '*' in permissions`); `verifySuperAdmin` usa `!isOwnerData(callerData)`; `updateUserRoleV2` + `deleteManagedUserV2` hacen `throw` si `isOwnerData(targetDoc)`. Defensa-en-profundidad sobre el owner-guard de rules §212 (que ya cierra el vector REAL del write directo `admin-users.js:588`).
+
+**.3 No-regresión**: aditivo (guards que solo lanzan); el dueño pasa los 3 checks como antes; un `'*'`-holder (= el CEO en la práctica) ahora también es reconocido como super-admin (correcto, ya tiene acceso total). Cero cambio a otras CFs.
+
+**.4 Tests**: `node -c` ✓. Deploy functions ✓ ("Deploy complete", 27 functions). Test de callable en emulador = follow-up (las rules-tests §212, 7/7, ya prueban el vector real del write directo).
+
+**.5 Anti-patterns evitados**: dejar la capa CF con detección legacy-only (footgun R8); duplicar la lógica de owner-detection (→ helper `isOwnerData` único).
+
+**.6 Archivos**: MOD `functions/index.js` (`isOwnerData` + `verifySuperAdmin` + las 2 CFs de gestión).
+
+**.7 Doctrina + siguiente**: lóbulo `41-SEGURIDAD`. Deploy functions (Claude §1). Es PASO 0 de la implementación de ④a (blueprint en bóveda). SIGUIENTE: PASO 1 (catálogo+seeder Departamentos/nivel) → 2 (backfill) → 3 (colección `departments/`+rules) → 4 (sec-users) → 5 (§71 nivel) → 6 (dual-portal). **④b (data-scoping) GATEADO** por Gemini (consejo externo §15) + decisión de negocio del dueño (¿visibilidad de datos o solo agrupación? — el adversario notó que Bersaglio retrocedió a roles planos; decidir con ④a visible).

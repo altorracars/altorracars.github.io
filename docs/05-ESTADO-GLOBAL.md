@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-15**) |
 |---|---|
-| **Build** | 🟢 **CRM E6 cutover: gates ②/③ COMPLETOS (6/6)** (§209+§210+§211 + merge L-02, en branch, pend. push). Vender=Pipeline (financiero=TODO-25). **④ RBAC: pase adversarial HECHO → §212 FIX SEGURIDAD DEPLOYADO** (dueño INAMOVIBLE enforced server-side: owner-guard usuarios + isSystem-guard roles; era hueco fatal pre-existente) → SIGUIENTE: implementar ④. Dealers F2 gated (TODO-25). |
+| **Build** | 🟢 **CRM E6 cutover gates 6/6** (§209-§211 + merge L-02, en branch pend. push). Vender=Pipeline (financiero=TODO-25). **④ RBAC EN IMPLEMENTACIÓN**: §212 (rules) + §213 (CF) = dueño INAMOVIBLE enforced 3-capas **DEPLOYADO**; blueprint ④a en bóveda; **PASO 0 hecho → PASO 1-6 pendientes**. ④b (data-scoping) gateado por Gemini+negocio. Dealers F2 gated (TODO-25). |
 | **Cache version vigente** | **`v20260617182813`** (§211 fixes web pública, bumpeado sobre el cron-CI `v20260617181537` al resolver el merge L-02; efecto al push del dueño). SW == cache-manager ✅. Ctrl+Shift+R. |
 | **Branch activa** | `refactor/estructura` (HEAD `aa97c14`). **Hay commits de cerebro sin pushear** (el dueño pushea + PR a `main`); `main` = producción. Verificar vs git real antes de afirmar (§3.3). Deploys firebase = Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |

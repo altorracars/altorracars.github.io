@@ -703,6 +703,18 @@ function mapAuthError(error, fallbackAction) {
         { code: code || 'unknown', originalMessage: message });
 }
 
+// §213 (④a PASO 0) — detección CANÓNICA del dueño/super-admin. Reconoce las 3
+// formas (legacy `rol` + `roleId` del system role + wildcard '*' en permissions)
+// para que la capa CF iguale el owner-guard de rules §212 y NO se rompa el día que
+// se limpie el campo legacy `rol` (R8). El dueño es INAMOVIBLE (§193.4).
+function isOwnerData(d) {
+    return !!d && (
+        d.rol === 'super_admin'
+        || d.roleId === 'system_super_admin'
+        || (Array.isArray(d.permissions) && d.permissions.includes('*'))
+    );
+}
+
 async function verifySuperAdmin(auth) {
     if (!auth || !auth.uid) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesion.');
@@ -715,7 +727,7 @@ async function verifySuperAdmin(auth) {
     }
 
     const callerData = callerDoc.data();
-    if (callerData.rol !== 'super_admin') {
+    if (!isOwnerData(callerData)) {
         throw new HttpsError('permission-denied', 'Solo un Super Admin puede realizar esta accion.');
     }
 
@@ -827,6 +839,11 @@ exports.deleteManagedUserV2 = onCall(callableOptionsV2, async (request) => {
     }
 
     const userDoc = await db.collection('usuarios').doc(uid).get();
+    // §213 — el dueño es INAMOVIBLE: ninguna CF lo elimina (defensa-en-profundidad
+    // sobre el owner-guard de rules §212; verifySuperAdmin solo valida el CALLER).
+    if (userDoc.exists && isOwnerData(userDoc.data())) {
+        throw new HttpsError('permission-denied', 'El dueño (Super Admin) es INAMOVIBLE: no se puede eliminar.');
+    }
     if (userDoc.exists) {
         await db.collection('usuarios').doc(uid).delete();
     }
@@ -863,6 +880,10 @@ exports.updateUserRoleV2 = onCall(callableOptionsV2, async (request) => {
     const userDoc = await db.collection('usuarios').doc(uid).get();
     if (!userDoc.exists) {
         throw new HttpsError('not-found', 'Usuario no encontrado.');
+    }
+    // §213 — el dueño es INAMOVIBLE: su rol no se cambia por CF (defensa-en-profundidad).
+    if (isOwnerData(userDoc.data())) {
+        throw new HttpsError('permission-denied', 'El dueño (Super Admin) es INAMOVIBLE: su rol no se puede cambiar.');
     }
 
     const updateData = {

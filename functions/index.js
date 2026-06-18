@@ -2574,7 +2574,7 @@ exports.getTelegramWebhookStatus = onCall({
 // (Sprint R7 agregará helper que detecta drift.)
 // ============================================================
 
-const RBAC_CATALOG_VERSION = '1.0.0';
+const RBAC_CATALOG_VERSION = '1.1.0';
 
 const RBAC_PERMISSIONS = [
     // 🚗 Inventario (14)
@@ -2670,7 +2670,11 @@ const RBAC_PERMISSIONS = [
     { id: 'templates.delete', name: 'Eliminar plantillas',       description: 'Borrar plantillas',                         category: 'Configuración', resource: 'templates', action: 'delete' },
     { id: 'settings.theme',   name: 'Cambiar tema',              description: 'Cambiar tema visual del admin',             category: 'Configuración', resource: 'settings',  action: 'theme' },
     { id: 'settings.seo',     name: 'Configurar SEO',            description: 'Regenerar páginas SEO + GitHub token',      category: 'Configuración', resource: 'settings',  action: 'seo',    critical: true },
-    { id: 'settings.backup',  name: 'Backup/Restore',            description: 'Exportar/importar respaldo de datos',       category: 'Configuración', resource: 'settings',  action: 'backup', critical: true }
+    { id: 'settings.backup',  name: 'Backup/Restore',            description: 'Exportar/importar respaldo de datos',       category: 'Configuración', resource: 'settings',  action: 'backup', critical: true },
+
+    // 🏢 Departamentos (2) — §193.4 ④a
+    { id: 'departments.read',   name: 'Ver departamentos',       description: 'Ver la lista de departamentos del CRM',     category: 'Departamentos', resource: 'departments', action: 'read' },
+    { id: 'departments.manage', name: 'Gestionar departamentos', description: 'Crear, editar, eliminar departamentos y asignar personas', category: 'Departamentos', resource: 'departments', action: 'manage', critical: true }
 ];
 
 // §69 R7 — Reducido a UN solo system role: CEO. Editor + Viewer
@@ -2686,7 +2690,8 @@ const RBAC_SYSTEM_ROLES = [
         isDefault: false,
         color: '#b89658',
         icon: 'crown',
-        permissions: ['*']
+        permissions: ['*'],
+        nivel: 100 // §193.4 ④a — autoridad máxima (default inicial del rol; el nivel real es per-usuario)
     }
     // §69 R7 — Editor y Viewer ELIMINADOS del seeder.
 ];
@@ -2758,6 +2763,7 @@ exports.seedSystemRoles = onCall(callableOptionsV2, async (request) => {
                     existing.description !== role.description ||
                     existing.color !== role.color ||
                     existing.icon !== role.icon ||
+                    (existing.nivel !== role.nivel) || // §193.4 ④a — nivel del system role
                     JSON.stringify(existing.permissions || []) !== JSON.stringify(role.permissions);
                 if (needsUpdate) {
                     batch2.set(docRef, {
@@ -2765,6 +2771,7 @@ exports.seedSystemRoles = onCall(callableOptionsV2, async (request) => {
                         description: role.description,
                         color: role.color,
                         icon: role.icon,
+                        nivel: role.nivel, // §193.4 ④a
                         permissions: role.permissions,
                         isSystem: true,
                         updatedAt: new Date().toISOString(),

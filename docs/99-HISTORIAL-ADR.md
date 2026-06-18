@@ -43633,3 +43633,19 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 **.6 Archivos**: MOD `functions/index.js` (`isOwnerData` + `verifySuperAdmin` + las 2 CFs de gestión).
 
 **.7 Doctrina + siguiente**: lóbulo `41-SEGURIDAD`. Deploy functions (Claude §1). Es PASO 0 de la implementación de ④a (blueprint en bóveda). SIGUIENTE: PASO 1 (catálogo+seeder Departamentos/nivel) → 2 (backfill) → 3 (colección `departments/`+rules) → 4 (sec-users) → 5 (§71 nivel) → 6 (dual-portal). **④b (data-scoping) GATEADO** por Gemini (consejo externo §15) + decisión de negocio del dueño (¿visibilidad de datos o solo agrupación? — el adversario notó que Bersaglio retrocedió a roles planos; decidir con ④a visible).
+
+## 214. ADR-214 — FIX gate §210: no ENCERRAR al dueño fuera del clásico (deep-link/restore a sección migrada) ⟦OPUS-4.8 · rev-Fable⟧
+
+> Reportado por el dueño: entrar a `admin.html` lo redirigía a `/admin-app/dist/#/banners` y NO podía llegar a Usuarios/Roles.
+
+**.1 Causa raíz (RCA §19)**: el gate §210 (`admin-cutover-gates.js`) `guardHash()` hacía `window.location.replace(portalUrl)` cuando el hash resolvía a una sección MIGRADA. Pero el clásico RESTAURA la última sección visitada al cargar (ej. 'banners', migrada) → el gate sacaba al dueño al portal nuevo en cada carga. Y **Usuarios/Roles/Config NO se portaron al portal nuevo** → el dueño quedaba ENCERRADO fuera del clásico, que AÚN necesita. El gate asumía (mal) que el clásico está 100% deprecado.
+
+**.2 Solución**: `guardHash()` ahora, ante un landing migrado por hash, navega a una sección SEGURA del clásico (`AltorraSections.go('dashboard')`) en vez de redirigir al portal. El funnel real al portal sigue vivo en los CLICKS explícitos (`attachClickGuard`, intacto). Workaround inmediato dado al dueño: `admin.html#/users` (no migrada → sin redirect).
+
+**.3 No-regresión**: CSS-hide + click-guard INTACTOS; solo el hash-guard cambia (de redirect-portal a go-dashboard). Sin loop (dashboard no migrada).
+
+**.4 Tests**: `node -c` ✓. Verificación viva = dueño (tras push + Ctrl+Shift+R).
+
+**.5 Doctrina (lección de arquitectura, → 30/41)**: un gate de cutover NO debe redirigir al portal de forma que ENCIERRE al usuario fuera de las secciones del clásico AÚN NO portadas (admin-config: users/roles/settings). El cutover es PARCIAL — el portal nuevo carece de gestión de usuarios/roles. Reabre la decisión: ¿portar admin-config al portal nuevo o mantenerlo en el clásico? (afecta dónde vive la UI de ④a).
+
+**.6 Archivos + cache**: MOD `js/admin/admin-cutover-gates.js` (guardHash). Cache: SIN bump manual (cron + Ctrl+Shift+R, L-02/L-03). Va a prod al push del dueño.

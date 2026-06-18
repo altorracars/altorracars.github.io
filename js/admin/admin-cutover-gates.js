@@ -84,7 +84,18 @@
   function guardHash() {
     var section = hashSection();
     if (!isMigrated(section)) return false;
-    window.location.replace(portalUrl(section));
+    // §214 FIX: NUNCA sacar al usuario del clásico hacia el portal por un
+    // deep-link/restauración de sección. El clásico TODAVÍA es necesario
+    // (Usuarios/Roles/Config NO se portaron al portal nuevo) y restaura la
+    // última sección visitada — que puede ser una migrada (ej. banners). El
+    // redirect al portal dejaba al dueño ENCERRADO fuera del clásico. En su
+    // lugar lo mandamos a una sección SEGURA del clásico (dashboard). El funnel
+    // real al portal sigue vivo en los CLICKS explícitos (attachClickGuard).
+    if (window.AltorraSections && typeof window.AltorraSections.go === 'function') {
+      window.AltorraSections.go('dashboard');
+    } else {
+      try { history.replaceState(null, '', location.pathname + location.search + '#/dashboard'); } catch (e) {}
+    }
     return true;
   }
 

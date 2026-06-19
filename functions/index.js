@@ -3417,8 +3417,15 @@ exports.onUserRoleAssigned = onDocumentUpdated('usuarios/{uid}', async (event) =
     const permsDrift = JSON.stringify(after.permissions || []) !== JSON.stringify(role.permissions || []);
     // §114 — cargo es espejo read-only del rol: debe igualar role.name
     const cargoDrift = after.cargo !== role.name;
+    // §193.4 ④a PASO 5 — nivel es autoridad per-USUARIO, NO espejo del rol: se
+    // SIEMBRA con el default del rol solo si el usuario aún no tiene nivel (caso
+    // típico: roleId asignado desde Firestore Console, sin pasar por la UI que
+    // escribe nivel). NUNCA se pisa en resync (a diferencia de cargo). Helper puro/testeable.
+    const { computeNivelSeedOnAssign } = require('./shared/rbac-foundation');
+    const nivelSeed = computeNivelSeedOnAssign(after, role); // {} | { nivel }
+    const nivelMissing = nivelSeed.nivel !== undefined;
 
-    if (!nameDrift && !permsDrift && !cargoDrift) return;
+    if (!nameDrift && !permsDrift && !cargoDrift && !nivelMissing) return;
 
     try {
         await event.data.after.ref.update({
@@ -3428,7 +3435,10 @@ exports.onUserRoleAssigned = onDocumentUpdated('usuarios/{uid}', async (event) =
             permissions: role.permissions || [],
             permissionsUpdatedAt: new Date().toISOString(),
             _resyncedAt: new Date().toISOString(),
-            _resyncedBy: 'onUserRoleAssigned'
+            _resyncedBy: 'onUserRoleAssigned',
+            // §193.4 ④a PASO 5 — agrega { nivel } SOLO si faltaba (spread vacío = no-op).
+            // No cambia roleId → el guard anti-loop (before.roleId === after.roleId) sigue intacto.
+            ...nivelSeed
         });
         console.log(`[onUserRoleAssigned] §71 uid=${uid} sync con role ${after.roleId} OK`);
     } catch (err) {

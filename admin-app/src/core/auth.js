@@ -25,6 +25,18 @@ function permissionsFromProfile(profile) {
   return [];
 }
 
+// §193.4 ④a PASO 6 — materializa la fundación departamental para la UI (cosmética).
+// Defaults idénticos al estado vacío del store → comportamiento intacto si faltan
+// los campos. profile=null devuelve los defaults (limpia estado tras logout/bloqueo).
+function rbacFromProfile(profile) {
+  return {
+    nivel: (profile && Number.isFinite(profile.nivel)) ? profile.nivel : 10,
+    departmentId: (profile && profile.departmentId) || null,
+    departmentName: (profile && profile.departmentName) || '',
+    dataScope: (profile && profile.dataScope) || 'all',
+  };
+}
+
 async function hydrateProfile(user) {
   try {
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
@@ -33,15 +45,15 @@ async function hydrateProfile(user) {
       // §188 paso 0.2 (R-8): el disable server-side de Auth no mata el ID token
       // ya emitido (≤1h) — sin este check, un bloqueado con sesión viva opera.
       await signOut(auth);
-      store.set({ user: null, profile: null, permissions: [], ready: true, authError: 'Cuenta bloqueada. Contacta al administrador.' });
+      store.set({ user: null, profile: null, permissions: [], ...rbacFromProfile(null), ready: true, authError: 'Cuenta bloqueada. Contacta al administrador.' });
       return;
     }
-    store.set({ user, profile, permissions: permissionsFromProfile(profile), ready: true, authError: null });
+    store.set({ user, profile, permissions: permissionsFromProfile(profile), ...rbacFromProfile(profile), ready: true, authError: null });
   } catch (err) {
     // Lookup falló (red/permiso) — deja la sesión activa con permisos vacíos;
     // la UI degradará a solo-lectura y mostrará el aviso.
     console.warn('[auth] no se pudo hidratar el perfil:', err);
-    store.set({ user, profile: null, permissions: [], ready: true });
+    store.set({ user, profile: null, permissions: [], ...rbacFromProfile(null), ready: true });
   }
 }
 
@@ -49,7 +61,7 @@ export function initAuth() {
   setPersistence(auth, browserLocalPersistence).catch(() => {});
   onAuthStateChanged(auth, (user) => {
     if (user) hydrateProfile(user);
-    else store.set({ user: null, profile: null, permissions: [], ready: true });
+    else store.set({ user: null, profile: null, permissions: [], ...rbacFromProfile(null), ready: true });
   });
 }
 

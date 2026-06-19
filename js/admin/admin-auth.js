@@ -1299,6 +1299,11 @@
                             AP.currentUserRole = null;
                             AP.currentUserPermissions = []; // §61.R1
                             AP.currentUserRoleId = null;    // §61.R1
+                            // §193.4 ④a PASO 6 — limpia fundación departamental (defaults)
+                            AP.currentUserNivel = 10;
+                            AP.currentUserDepartmentId = null;
+                            AP.currentUserDepartmentName = '';
+                            AP.currentUserDataScope = 'all';
                             _2faVerified = false;
                             clearSessionStart();
                             stopInactivityTracking();
@@ -1464,6 +1469,14 @@
                 AP.currentUserProfile._docId = authUser.uid;
                 AP.currentUserRole = AP.currentUserProfile.rol;
 
+                // §193.4 ④a PASO 6 — materializa fundación departamental (cosmética;
+                // la frontera de seguridad son las rules + CFs, no estos campos).
+                AP.currentUserNivel = (typeof AP.currentUserProfile.nivel === 'number' && isFinite(AP.currentUserProfile.nivel))
+                    ? AP.currentUserProfile.nivel : 10;
+                AP.currentUserDepartmentId = AP.currentUserProfile.departmentId || null;
+                AP.currentUserDepartmentName = AP.currentUserProfile.departmentName || '';
+                AP.currentUserDataScope = AP.currentUserProfile.dataScope || 'all';
+
                 // §61.R1 — Hidratación de permissions atómicas
                 // Source of truth: AP.currentUserProfile.permissions[] denormalizado
                 // Fallback (legacy users pre-migración): mapear desde currentUserRole via catálogo
@@ -1620,6 +1633,11 @@
         AP.currentUserRole = null;
         AP.currentUserPermissions = []; // §61.R1
         AP.currentUserRoleId = null;    // §61.R1
+        // §193.4 ④a PASO 6 — limpia fundación departamental (defaults)
+        AP.currentUserNivel = 10;
+        AP.currentUserDepartmentId = null;
+        AP.currentUserDepartmentName = '';
+        AP.currentUserDataScope = 'all';
         stopInactivityTracking();
         stopPresence();
         clearSessionStart();

@@ -34,6 +34,11 @@
         currentUserRole: null,                  // legacy field, kept for retrocompat (R8 lo elimina)
         currentUserPermissions: [],             // §61.R1 — permissions atómicas del user actual
         currentUserRoleId: null,                // §61.R1 — id del role asignado (system_X o custom)
+        // §193.4 ④a PASO 6 — fundación departamental materializada (cosmética; rules=frontera).
+        currentUserNivel: 10,                   // autoridad per-usuario (CEO=100 / resto=10)
+        currentUserDepartmentId: null,          // id del depto (dept_<slug>) | null
+        currentUserDepartmentName: '',          // espejo del nombre (mostrar sin lookup)
+        currentUserDataScope: 'all',            // 'all' | 'dept' | 'own' (enforce = ④b)
         INACTIVITY_TIMEOUT_MS: 30 * 60 * 1000,   // 30 minutos sin actividad → cerrar sesión
         INACTIVITY_WARNING_MS: 28 * 60 * 1000,   // aviso 2 minutos antes del cierre
         SESSION_MAX_MS:         8 * 60 * 60 * 1000, // 8 horas máximas por sesión absoluta

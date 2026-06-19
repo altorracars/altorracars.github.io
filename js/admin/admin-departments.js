@@ -211,6 +211,40 @@
         ]);
     }
 
+    // §219 — Selector VISUAL de ícono (reemplaza el input de texto "lucide"): el dueño
+    // hace clic en un ícono en vez de teclear su nombre técnico. Set curado y relevante a
+    // departamentos (nombres Lucide verificados). El valor sigue en #deptIcon (ahora hidden)
+    // → saveDept lo lee SIN cambios (patrón §104: sustituir control manteniendo el callsite).
+    // Estilos inline (sin CSS nuevo): brand gold #b89658 marca el activo. Los botones son
+    // type="button" (contenido interactivo) → aunque field() los envuelva en <label>, el
+    // spec impide que el label dispare doble-activación al clickear un botón descendiente.
+    var DEPT_ICONS = ['building-2', 'briefcase', 'trending-up', 'megaphone', 'wrench', 'truck',
+        'users', 'calculator', 'banknote', 'headset', 'shield', 'star', 'car-front', 'package',
+        'clipboard-list', 'phone', 'scale', 'target'];
+
+    function iconOptStyle(active) {
+        return 'display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;'
+            + 'border-radius:10px;cursor:pointer;background:transparent;'
+            + 'border:2px solid ' + (active ? '#b89658' : 'rgba(127,127,127,.35)') + ';'
+            + 'color:' + (active ? '#b89658' : 'inherit') + ';transition:border-color .15s,color .15s';
+    }
+
+    function iconPicker(selected) {
+        var sel = (typeof selected === 'string' && selected) ? selected : 'building-2';
+        var list = DEPT_ICONS.slice();
+        if (list.indexOf(sel) === -1) list.unshift(sel); // preserva un ícono guardado fuera del set
+        var hidden = el('input', { type: 'hidden', id: 'deptIcon', value: sel });
+        var grid = el('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;margin-top:4px' },
+            list.map(function (name) {
+                return el('button', {
+                    type: 'button', 'data-action': 'pick-dept-icon', 'data-icon': name,
+                    class: 'dept-icon-opt', 'aria-label': name, title: name,
+                    style: iconOptStyle(name === sel)
+                }, ico(name));
+            }));
+        return el('div', {}, [hidden, grid]);
+    }
+
     function openModal(mode, deptId) {
         if (!canManage()) { toast('Solo con permiso departments.manage', 'error'); return; }
         _state.currentMode = mode;
@@ -222,7 +256,7 @@
         var grid = el('div', { class: 'roles-modal-grid' }, [
             field('Nombre', el('input', { type: 'text', id: 'deptName', maxlength: '60', value: d.name || '' }), false, true),
             field('Color', el('div', { class: 'roles-modal-color-row' }, el('input', { type: 'color', id: 'deptColor', value: /^#[0-9a-fA-F]{6}$/.test(d.color || '') ? d.color : '#b89658' })), false, false),
-            field('Icono (lucide)', el('input', { type: 'text', id: 'deptIcon', maxlength: '40', value: d.icon || 'building-2', placeholder: 'building-2' })),
+            field('Icono', iconPicker(d.icon), true),
             field('Nivel', el('input', { type: 'number', id: 'deptNivel', min: '0', max: '100', value: String(d.nivel == null ? 10 : d.nivel) })),
             field('Descripción', el('textarea', { id: 'deptDesc', maxlength: '200', rows: '3', value: d.description || '' }), true),
             field('Activo', el('input', { type: 'checkbox', id: 'deptActive', checked: d.active !== false }), true)
@@ -329,6 +363,16 @@
                 case 'delete-dept': e.preventDefault(); deleteDept(btn.getAttribute('data-dept-id')); break;
                 case 'save-dept': e.preventDefault(); saveDept(); break;
                 case 'close-dept-modal': e.preventDefault(); closeModal(); break;
+                case 'pick-dept-icon': { // §219 — selector visual de ícono
+                    e.preventDefault();
+                    var picked = btn.getAttribute('data-icon');
+                    if ($('deptIcon')) $('deptIcon').value = picked;
+                    var opts = document.querySelectorAll('#deptModal .dept-icon-opt');
+                    for (var oi = 0; oi < opts.length; oi++) {
+                        opts[oi].setAttribute('style', iconOptStyle(opts[oi].getAttribute('data-icon') === picked));
+                    }
+                    break;
+                }
             }
         });
     }

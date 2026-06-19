@@ -66,5 +66,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 ## 📝 Bitácora (efímera)
 
 > GC ×11 (12-19/06): §184-§218 consolidados + L-43 (→`00`/`99`/`30`). Vivo:
-> - **19/06 §219 — ④a PASO 5+6 (④a COMPLETO)**: seed `nivel` solo-si-falta (`computeNivelSeedOnAssign` +7 tests→16/16, `onUserRoleAssigned` desplegada) + paridad dual-portal (cosmética). Pase adversarial 3/3 SAFE (crudo→bóveda). SIGUIENTE: ④b (gateado, ver foco) o bucket TODO-22..27.
+> - **19/06 §219 — ④a PASO 5+6 (④a COMPLETO)**: seed `nivel` solo-si-falta (`computeNivelSeedOnAssign` +7 tests→16/16, `onUserRoleAssigned` desplegada) + paridad dual-portal (cosmética). Pase adversarial 3/3 SAFE (crudo→bóveda). + **§219.8 selector visual de ícono** en modal deptos (feedback dueño; `admin-departments.js`). SIGUIENTE: ④b (gateado, ver foco) o bucket TODO-22..27.
 > - **19/06 maratón** (8 commits cars+1 inmob, PR #865+#868): ④a PASO 2-4 (§215/§216/§218) · §217 FIX seguridad · doctrina git §2 (M-12) · Antigravity read-only (§15) · E6 cutover 6/6 (§209-214) · Gemini UNIFICADO §208. Detalle → ADRs.

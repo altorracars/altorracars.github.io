@@ -6,8 +6,8 @@
 | Señal | Valor (última actualización: **2026-06-19**) |
 |---|---|
 | **Build** | 🟢 **E6 cutover 6/6 + §214** DEPLOYADO. **④ RBAC ④a EN IMPLEMENTACIÓN** (detalle → `10`/§215): §212/§213 dueño INAMOVIBLE 3-capas + **PASO 0-4 + §217 deployados** (backfill + rules+UI `departments/` + no-mint-dueño §217 + asignación depto/nivel/scope a usuarios + CF `userCount` §218); **SIGUIENTE PASO 5-6** pend. ④b gateado (Gemini+negocio). Vender=Pipeline. dealers F2 gated (TODO-25). |
-| **Cache version vigente** | **`v20260618035745`** (= la del cron-CI; el cron es el DUEÑO del bump → ya NO bumpeo manual en la rama, evita el conflicto recurrente L-02/L-03; §211 se invalida en el próximo bump del cron ≤4h o con Ctrl+Shift+R). SW == cache-manager ✅. |
-| **Branch activa** | `refactor/estructura` == `main` (**MERGEADO 19/06: PR #865 `a875819`** trae PASO 2/3a + §211/§214 + doctrina §2 a producción). Pend dueño: **Ctrl+Shift+R + 1 clic "Backfill niveles"**. **commit+push=Claude · merge=dueño en web** (§2). deploys firebase=Claude (§1). Verificado vs git 19/06 (§3.3). |
+| **Cache version vigente** | **`v20260619041711`** (= la del cron-CI tras el merge; el cron es el DUEÑO del bump → ya NO bumpeo manual en la rama, evita L-02/L-03; se invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Branch activa** | `refactor/estructura` == `main` = `bc58234` (**MERGEADO 19/06: PR #868** — ④a PASO 2-4 + §217 + §216 + gobernanza + doctrina §2, TODO en producción). Pend dueño: **Ctrl+Shift+R + crear Departamentos + asignarlos a usuarios + 1 clic "Backfill niveles"**. **commit+push=Claude · merge=dueño en web** (§2). deploys firebase=Claude (§1). Verificado vs git 19/06 (§3.3). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

@@ -33,6 +33,13 @@ export const store = createStore({
   user: null,          // firebase user (o mock)
   profile: null,       // doc usuarios/{uid}
   permissions: [],     // [] | ['*'] | ['crm.read', ...]
+  // §193.4 ④a PASO 6 — fundación departamental materializada para la UI.
+  // Cosmética: la frontera de seguridad son las rules + CFs, NO estos campos
+  // (que se hoistean del profile igual que `permissions`). dataScope = enforce ④b.
+  nivel: 10,           // autoridad per-usuario (CEO=100 / resto=10)
+  departmentId: null,  // id del depto (dept_<slug>) | null
+  departmentName: '',  // espejo del nombre, para mostrar sin lookup
+  dataScope: 'all',    // 'all' | 'dept' | 'own' (escrito en ④a, enforce en ④b)
   team: [],            // lista de asesores (para asignar)
   theme: 'light',
   mock: false,         // modo demo sin Firebase (?mock=1)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeRbacFoundationUpdate } from './rbac-foundation.js';
+import { computeRbacFoundationUpdate, computeNivelSeedOnAssign } from './rbac-foundation.js';
 
 // §193.4 ④a PASO 2 — decisión PURA del backfill de fundación RBAC (ADR §215).
 
@@ -62,5 +62,43 @@ describe('computeRbacFoundationUpdate — robustez de entrada', () => {
       .toEqual({ nivel: 10, departmentId: null, departmentName: '', dataScope: 'all' });
     expect(computeRbacFoundationUpdate(undefined, true).updates)
       .toEqual({ nivel: 100, departmentId: null, departmentName: '', dataScope: 'all' });
+  });
+});
+
+// §193.4 ④a PASO 5 — siembra de `nivel` al asignar rol (onUserRoleAssigned, ADR §219).
+describe('computeNivelSeedOnAssign — siembra solo si falta', () => {
+  it('usuario SIN nivel + rol con nivel → siembra el nivel del rol', () => {
+    expect(computeNivelSeedOnAssign({ rol: 'asesor' }, { name: 'Asesor', nivel: 60 }))
+      .toEqual({ nivel: 60 });
+  });
+
+  it('usuario SIN nivel + rol SIN nivel → cae al DEFAULT_NIVEL (10)', () => {
+    expect(computeNivelSeedOnAssign({ rol: 'asesor' }, { name: 'Asesor' }))
+      .toEqual({ nivel: 10 });
+  });
+
+  it('usuario SIN nivel + rol CEO (100) → siembra 100', () => {
+    expect(computeNivelSeedOnAssign({}, { name: 'Super Admin', nivel: 100 }))
+      .toEqual({ nivel: 100 });
+  });
+
+  it('usuario CON nivel asignado a mano → NO se pisa (idempotente)', () => {
+    expect(computeNivelSeedOnAssign({ nivel: 40 }, { name: 'Asesor', nivel: 10 }))
+      .toEqual({});
+  });
+
+  it('nivel 0 es valor legítimo ya seteado → NO se re-escribe', () => {
+    expect(computeNivelSeedOnAssign({ nivel: 0 }, { name: 'Asesor', nivel: 10 }))
+      .toEqual({});
+  });
+
+  it('§215.7 — role.nivel string ("60") NO se normaliza en ④a → DEFAULT (10)', () => {
+    expect(computeNivelSeedOnAssign({}, { name: 'Asesor', nivel: '60' }))
+      .toEqual({ nivel: 10 });
+  });
+
+  it('robustez: userData null + rol con nivel → siembra; roleData null → DEFAULT', () => {
+    expect(computeNivelSeedOnAssign(null, { nivel: 50 })).toEqual({ nivel: 50 });
+    expect(computeNivelSeedOnAssign(undefined, null)).toEqual({ nivel: 10 });
   });
 });

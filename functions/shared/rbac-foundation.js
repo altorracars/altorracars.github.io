@@ -60,4 +60,33 @@ function computeRbacFoundationUpdate(data, isOwner) {
     return { updates, anomaly };
 }
 
-module.exports = { computeRbacFoundationUpdate, DATA_SCOPES, CEO_NIVEL, DEFAULT_NIVEL };
+// §193.4 ④a — INVARIANTE DE GUARDIÁN (no borrar; pase adversarial §219):
+// `nivel` NO es owner-gate ni autoridad enforced en ④a. isOwnerData (functions/index.js
+// §213) decide por permissions:['*'], NUNCA por nivel; por eso sembrar nivel aquí es
+// inocuo hoy. ⚠️ ④b, ANTES de meter `nivel` en enforcement, DEBE añadir un floor
+// server-side (un actor solo asigna/crea roles de nivel < el suyo, y acotar role.nivel
+// en rules) — si no, este seed se vuelve escalada real (concern adversarial §219).
+/**
+ * §193.4 ④a PASO 5 — al asignar/cambiar el rol de un usuario, sembrar `nivel`
+ * (autoridad per-USUARIO) con el default del rol SOLO si el usuario aún no tiene
+ * uno. NUNCA pisa un nivel ya seteado — a diferencia de `cargo`, que es espejo
+ * read-only del rol y SÍ se resincroniza en cada cambio (onUserRoleAssigned, §114).
+ * Así un resync nunca degrada una autoridad asignada a mano (HALLAZGO 2 del blueprint ④a).
+ *
+ * Convención "ausente" idéntica a computeRbacFoundationUpdate: solo `=== undefined`
+ * dispara la siembra; `null`/`0` son valores legítimos ya seteados → se respetan.
+ * §215.7 — en ④a NO se normaliza un `role.nivel` no numérico (p.ej. string '60'):
+ * se cae al DEFAULT_NIVEL. La coerción a int es responsabilidad de ④b (al comparar autoridad).
+ *
+ * @param {object} userData  doc.data() del usuario tras el cambio (after)
+ * @param {object} roleData  doc.data() del rol recién asignado
+ * @returns {{nivel?: number}} parche parcial; `{}` = no tocar nivel (idempotente)
+ */
+function computeNivelSeedOnAssign(userData, roleData) {
+    const u = userData || {};
+    if (u.nivel !== undefined) return {}; // ya tiene autoridad → jamás pisar
+    const roleNivel = roleData && roleData.nivel;
+    return { nivel: Number.isFinite(roleNivel) ? roleNivel : DEFAULT_NIVEL };
+}
+
+module.exports = { computeRbacFoundationUpdate, computeNivelSeedOnAssign, DATA_SCOPES, CEO_NIVEL, DEFAULT_NIVEL };

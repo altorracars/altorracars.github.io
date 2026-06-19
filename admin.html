@@ -690,6 +690,10 @@
                 <button class="nav-item" data-section="roles">
                     <i data-lucide="shield-check"></i><span>Roles</span>
                 </button>
+                <!-- §215 ④a — Departamentos (RBAC departamental) -->
+                <button class="nav-item" data-section="departments">
+                    <i data-lucide="building-2"></i><span>Departamentos</span>
+                </button>
                 <button class="nav-item" data-section="lists">
                     <i data-lucide="list-tree"></i><span>Atributos</span>
                 </button>
@@ -2123,6 +2127,23 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                 <div class="roles-empty">
                     <div class="roles-empty-icon"><i data-lucide="loader-2" class="roles-spinner"></i></div>
                     <h3 class="roles-empty-title">Cargando roles...</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- §215 ④a — Departamentos (RBAC departamental) -->
+        <div id="sec-departments" class="section" data-workspace-color="neutral">
+            <div class="page-header">
+                <div>
+                    <h1><i data-lucide="building-2"></i> Departamentos</h1>
+                    <p class="page-subtitle">Organizá a tu equipo en departamentos (ej. Comercial, Administrativo, Marketing, Dirección). Base del control de acceso por área.</p>
+                </div>
+            </div>
+            <div id="departmentsContainer" class="roles-container">
+                <!-- Render dinámico desde js/admin/admin-departments.js -->
+                <div class="roles-empty">
+                    <div class="roles-empty-icon"><i data-lucide="loader-2" class="roles-spinner"></i></div>
+                    <h3 class="roles-empty-title">Cargando departamentos...</h3>
                 </div>
             </div>
         </div>
@@ -3800,6 +3821,8 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin/admin-users.js" defer></script>
 <!-- §61.R2 RBAC — UI sec-roles CRUD -->
 <script src="js/admin/admin-roles.js" defer></script>
+<!-- §215 ④a RBAC — UI sec-departments CRUD -->
+<script src="js/admin/admin-departments.js" defer></script>
 <script src="js/admin/admin-appointments.js" defer></script>
 <script src="js/admin/admin-crm.js" defer></script>
 <script src="js/admin/admin-predictive.js" defer></script>

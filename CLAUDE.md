@@ -187,7 +187,7 @@ Cuando se dispara un trigger, leer el nodo correspondiente deja de ser opcional:
   (`41`,`42`…) CON contenido REAL, nunca vacío (§G.4); (4) capturar findings + QUÉ skill usé. Persiste.
   **⚖️ Legal SIEMPRE = jurisdicción Colombia**: verificar fuentes primarias oficiales (workflow/agentes), NUNCA publicar contenido legal sin revisión de abogado (skill `legal-colombia` + lóbulo `42-LEGAL`).
 - **🛰️ Trigger de Decisión Fuerte**: ANTES de una decisión cara de revertir (arquitectura, modelo de
-  datos, seguridad/legal, fork 50/50, op irreversible) considera crítica adversarial de **Gemini vía Antigravity** → cuándo + matriz de modelo + anti-anclaje en `docs/15-CONSEJO-EXTERNO.md`. Sin tokens → solo + lo marco.
+  datos, seguridad/legal, fork 50/50, op irreversible) considera crítica adversarial de **Gemini vía Antigravity** (**asesora, NUNCA edita; YO decido+implemento**) → cuándo/modelo/anti-anclaje en `docs/15`. Sin tokens → solo + lo marco.
 
 **Enrutamiento semántico**: ante una duda, NO escanees el cerebro. Ve al
 `docs/00-INDICE.md` (capa "síntoma/tema → neurona") que te dice EXACTAMENTE qué

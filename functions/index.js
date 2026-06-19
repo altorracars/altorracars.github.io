@@ -2955,6 +2955,35 @@ exports.backfillNivelesRBAC = onCall(callableOptionsV2, async (request) => {
 });
 
 // ============================================================
+// §193.4 ④a PASO 4 — userCount de departamentos (server-side, ADR §216/§66)
+// ============================================================
+// Ajusta departments/{deptId}.userCount con FieldValue.increment cuando un usuario
+// cambia de departmentId. Server-side (Admin SDK) → autoritativo + transaccional;
+// funciona aunque el editor no tenga departments.manage. Hace REAL el guard §66 (no
+// borrar un depto con usuarios). NO-op si departmentId no cambió (fires en todo write
+// de usuario pero sale barato). Las dos updates toleran que el depto no exista (.catch).
+exports.onUserDeptChanged = onDocumentWritten({
+    document: 'usuarios/{uid}',
+    region: 'us-central1'
+}, async (event) => {
+    const before = event.data.before && event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after && event.data.after.exists ? event.data.after.data() : null;
+    const oldDept = before ? (before.departmentId || null) : null;
+    const newDept = after ? (after.departmentId || null) : null;
+    if (oldDept === newDept) return; // sin cambio de depto → no-op
+
+    const FieldValue = admin.firestore.FieldValue;
+    const ops = [];
+    if (oldDept) ops.push(db.collection('departments').doc(oldDept)
+        .update({ userCount: FieldValue.increment(-1) })
+        .catch((e) => console.warn('[onUserDeptChanged] dec ' + oldDept, e.code || e.message)));
+    if (newDept) ops.push(db.collection('departments').doc(newDept)
+        .update({ userCount: FieldValue.increment(1) })
+        .catch((e) => console.warn('[onUserDeptChanged] inc ' + newDept, e.code || e.message)));
+    await Promise.all(ops);
+});
+
+// ============================================================
 // §61.R4 — MIGRATE LEGACY USERS (RBAC Migration)
 // ============================================================
 // Callable super_admin-only que migra todos los usuarios pre-RBAC

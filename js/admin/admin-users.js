@@ -457,6 +457,10 @@
         $('saveUser').textContent = 'Crear Usuario';
         // §61.R3 — Popular dropdown dinámico de roles
         populateRolesDropdown();
+        // §193.4 ④a PASO 4 — depto/nivel/scope (defaults para alta)
+        populateDepartmentsDropdown('');
+        $('uNivel').value = '';
+        $('uDataScope').value = 'all';
         openUserModal();
     });
 
@@ -471,6 +475,32 @@
         u2faCheck.addEventListener('change', function() {
             $('u2FAPhoneGroup').style.display = this.checked ? '' : 'none';
         });
+    }
+
+    // §193.4 ④a PASO 4 — pobla el dropdown de departamentos desde departments/.
+    // DOM-safe (createElement/textContent, sin innerHTML). data-name lleva el nombre
+    // para espejar departmentName en el doc del usuario al guardar.
+    function populateDepartmentsDropdown(selectedId) {
+        var sel = $('uDepartmentId');
+        if (!sel) return;
+        sel.length = 1; // conserva solo "— Sin departamento —"
+        if (!window.db) return;
+        window.db.collection('departments').limit(50).get().then(function (snap) {
+            var depts = [];
+            snap.forEach(function (d) {
+                var x = d.data() || {};
+                if (x.active !== false) { x._docId = d.id; depts.push(x); }
+            });
+            depts.sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'es'); });
+            depts.forEach(function (d) {
+                var opt = document.createElement('option');
+                opt.value = d._docId;
+                opt.textContent = d.name || d._docId;
+                opt.setAttribute('data-name', d.name || '');
+                sel.appendChild(opt);
+            });
+            if (selectedId) sel.value = selectedId;
+        }).catch(function (e) { console.warn('[AdminUsers] §193.4 populateDepartmentsDropdown:', e && e.code); });
     }
 
     // ========== EDIT USER ==========
@@ -502,6 +532,10 @@
             selectedRoleId = window.AltorraRBACCatalog.legacyMapping[u.rol] || null;
         }
         populateRolesDropdown(selectedRoleId);
+        // §193.4 ④a PASO 4 — poblar depto/nivel/scope del doc (CEO nunca llega aquí, guard arriba)
+        populateDepartmentsDropdown(u.departmentId || '');
+        $('uNivel').value = (u.nivel == null ? '' : u.nivel);
+        $('uDataScope').value = u.dataScope || 'all';
         $('uPasswordGroup').style.display = 'none';
         $('uPassword').required = false;
         $('saveUser').textContent = 'Guardar Cambios';
@@ -560,12 +594,27 @@
         // §114 — cargo = roleName: el CARGO del perfil es espejo read-only del
         // rol del sistema, auto-asignado al crear/asignar el rol. La Cloud
         // Function onUserRoleAssigned/onRoleUpdated lo mantiene autoritativo.
+        // §193.4 ④a PASO 4 — campos de fundación departamental (write directo, vía admin).
+        // NO están en el self-update whitelist de las rules → solo el admin los escribe.
+        var deptSel = $('uDepartmentId');
+        var deptId = deptSel ? deptSel.value : '';
+        var deptOpt = (deptSel && deptSel.selectedOptions) ? deptSel.selectedOptions[0] : null;
+        var deptName = (deptId && deptOpt) ? (deptOpt.getAttribute('data-name') || deptOpt.textContent || '') : '';
+        var nivelRaw = parseInt($('uNivel').value, 10);
+        var nivelVal = isNaN(nivelRaw) ? 10 : Math.max(0, Math.min(100, nivelRaw));
+        var dataScopeVal = $('uDataScope').value || 'all';
+
         var rbacData = {
             roleId: roleId,
             roleName: roleData.name || roleId,
             cargo: roleData.name || roleId,
             permissions: Array.isArray(roleData.permissions) ? roleData.permissions.slice() : [],
-            permissionsUpdatedAt: new Date().toISOString()
+            permissionsUpdatedAt: new Date().toISOString(),
+            // §193.4 ④a — fundación departamental
+            departmentId: deptId || null,
+            departmentName: deptName,
+            nivel: nivelVal,
+            dataScope: dataScopeVal
         };
 
         if (isEdit) {

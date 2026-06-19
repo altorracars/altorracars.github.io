@@ -1115,6 +1115,21 @@ service cloud.firestore {
         && resource.data.get('isSystem', false) == false;
     }
 
+    // ========== DEPARTMENTS (§215 ④a — catálogo departamental) ==========
+    // Espejo de roles/. El CEO ('*' o super_admin legacy) siempre pasa; el resto
+    // por permiso departments.read/manage. Los helpers de nivel/depto/scope para
+    // el SCOPING de datos llegan en ④b (no aquí — ④a solo establece la colección).
+    match /departments/{deptId} {
+      allow read: if isSuperAdmin()
+        || hasPermission('departments.read')
+        || hasPermission('departments.manage');
+      allow create: if isSuperAdmin() || hasPermission('departments.manage');
+      allow update: if isSuperAdmin() || hasPermission('departments.manage');
+      // §66 — no borrar un departamento con usuarios asignados (userCount>0).
+      allow delete: if (isSuperAdmin() || hasPermission('departments.manage'))
+        && resource.data.get('userCount', 0) == 0;
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;

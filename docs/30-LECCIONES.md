@@ -146,11 +146,11 @@
 - **Corrección**: §3.3 generalizada a "evidencia antes de afirmar CUALQUIER hecho" + gate (citar evidencia del turno o decir "no verificado"). Per M-10, lo verificable (huérfanas/frescura/caps) ya vive en `brain:check`; el git/SessionStart hook lo hará automático.
 - **Principio**: el ALCANCE de una doctrina es tan importante como la doctrina misma. Y doctrina sola no basta (M-10) → la red dura es el determinismo (linter + hooks); la doctrina es el respaldo.
 
-### M-12 · SIEMPRE entregar summary+descripción de commit al dejar el árbol sucio (recidiva 2026-06-05)
-- **Defecto**: el cliente commitea en GitHub Desktop; §2 dice "SIEMPRE entrégale el mensaje listo" — pero REPETIDAMENTE cerré turnos con docs/código modificados diciendo "commitéalo cuando quieras" SIN el mensaje. El cliente lo señaló molesto ("SIEMPRE OLVIDAS").
-- **Causa**: tratar el mensaje de commit como paso opcional/posterior, no como parte obligatoria de TODO turno que ensucia el árbol. Familia de M-03 ("lo documento después").
-- **Corrección (regla dura)**: si al cerrar un turno `git status` no está limpio (código o docs), el turno NO está completo hasta entregar **summary + descripción** listos para pegar. Parte del Reflejo de Cierre §G.4.
-- **Principio**: el cliente NO redacta mensajes de commit — se los doy SIEMPRE. Cambio sin su mensaje = trabajo a medias para él.
+### M-12 · Claude COMMITEA Y PUSHEA al cerrar trabajo — el dueño SOLO mergea en web (recidiva AGRAVADA 2026-06-19)
+- **Defecto (2026-06-05)**: cerraba turnos con árbol sucio sin entregar el mensaje de commit. **REINCIDENCIA AGRAVADA 2026-06-19 ⟦OPUS-4.8⟧**: aun entregando el mensaje, seguía pidiéndole al dueño que ÉL commiteara/pusheara ("push/merge son tuyos"). Me corrigió molesto: *"los commit y los push los haces TÚ, yo SOLO hago el merge en GitHub web"*. La regla de raíz (un §2 stale) ERA el error.
+- **Causa**: §2 decía "push y merge a main = SIEMPRE el cliente" — doctrina OBSOLETA. El dueño no quiere redactar ni ejecutar git: quiere que Claude commitee+pushee y él solo apruebe el merge en web.
+- **Corrección (regla dura, §2 REESCRITO 2026-06-19)**: al cerrar trabajo VERIFICADO, Claude **commitea Y pushea** la rama él mismo (`git add` específico + footer Co-Authored + `Modelo:`); el dueño SOLO mergea a `main` en GitHub web. Árbol sucio sin commitear+pushear = turno incompleto (Reflejo de Cierre §G.4). Cruza con `feedback_auto_deploy_crm` (memoria).
+- **Principio**: el dueño APRUEBA (merge), no OPERA (git). Entregar un mensaje "para que él commitee" es la regresión, no la solución.
 
 ### M-13 · Una "cura" se verifica en la capa que el BOOT lee, con grep — no se declara en el historial (recidiva RECURSIVA 2026-06-09)
 - **Defecto**: el ADR §171.7 declaró "añadí el Reflejo de Captura de Deliberación a §G.4" — pero `grep CLAUDE.md = 0 matches`. La cura vivía SOLO en §171 (historial on-demand que un boot fresco NUNCA lee, §G.1). El comité de Validación Final (Mandato 3, §172) lo cazó y se NEGÓ a certificar.

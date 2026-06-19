@@ -55,6 +55,12 @@
 - **Ampliación (E2E §175, 2026-06-09)**: el bloqueo también tumba **App Check** (`appCheck/throttled` 403 con backoff de 1 DÍA) e Installations; el submit del form de contacto en preview local ni siquiera completó. **E2E de captura/forms = SOLO contra el dominio live** (`main`); para verificar lógica de UI sin red, stubear `window.db` en el preview (probado §175: stub de `.add()` resuelto ejercita el handler real).
 - **Implicación de prueba**: en localhost NO se prueba login/Auth ni writes de formularios. Lo que SÍ: archivos (0 `404`), Firestore público de LECTURA, render, snippets.
 
+### L-43 · La ADC de esta máquina está ligada a `bersaglio-jewelry` → scripts Admin SDK contra `altorra-cars` dan `PERMISSION_DENIED` (IAM, NO rules) ⟦OPUS-4.8 · rev-Fable⟧
+- **Síntoma**: `node functions/<script>.mjs` (Admin SDK + ADC) contra altorra-cars aborta con `7 PERMISSION_DENIED: Missing or insufficient permissions`, aunque el MISMO patrón corre bien en bersaglio (`backfill-claims.mjs`).
+- **Causa (verificada §215)**: `~/AppData/Roaming/gcloud/application_default_credentials.json` trae `quota_project_id: bersaglio-jewelry` y `gcloud auth list` = sin cuentas → la ADC se montó SOLO para bersaglio; ese principal no es IAM-member con acceso Firestore en altorra-cars. El Admin SDK **BYPASSA las security rules** → un `PERMISSION_DENIED` del Admin SDK es SIEMPRE IAM del principal, jamás reglas.
+- **3 planos de auth (no confundir, L-23)**: (1) `firebase login` (CLI deploys, `altorracarssale@`) ≠ (2) **ADC** (lo que usa el Admin SDK en scripts `node`) ≠ (3) security rules (irrelevante para Admin SDK). Un script `node` standalone usa (2), no (1).
+- **Receta**: para correr un script admin contra altorra-cars desde esta máquina, el dueño re-autentica ADC con cuenta autorizada: `gcloud auth application-default login` + `gcloud auth application-default set-quota-project altorra-cars`. **Alternativa preferible** para mutaciones de prod (callejón e + precedente `seedSystemRoles`): empaquetar el backfill como **callable 1-clic** (corre con la SA de Functions, sin ADC ni terminal).
+
 ---
 
 ## 🗂️ Validación de código muerto

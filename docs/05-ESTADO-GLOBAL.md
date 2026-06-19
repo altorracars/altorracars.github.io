@@ -5,9 +5,9 @@
 
 | Señal | Valor (última actualización: **2026-06-18**) |
 |---|---|
-| **Build** | 🟢 **E6 cutover gates 6/6 + §214** (fix gate: ya NO encierra al dueño fuera del clásico) — en branch, pend. push. Vender=Pipeline (financiero=TODO-25). **④ RBAC EN IMPLEMENTACIÓN**: §212+§213 = dueño INAMOVIBLE enforced 3-capas **DEPLOYADO**; blueprint ④a en bóveda; **PASO 0+1 (catálogo Departamentos+nivel) HECHOS → PASO 2-6 pendientes**. ④b gateado (Gemini+negocio). Dealers F2 gated (TODO-25). |
+| **Build** | 🟢 **E6 cutover gates 6/6 + §214** (fix gate: ya NO encierra al dueño fuera del clásico) — en branch, pend. push. Vender=Pipeline (financiero=TODO-25). **④ RBAC EN IMPLEMENTACIÓN**: §212+§213 = dueño INAMOVIBLE enforced 3-capas **DEPLOYADO**; blueprint ④a en bóveda; **PASO 0+1+2 deployados** (PASO 2 §215 = callable `backfillNivelesRBAC`, vía elegida tras bloqueo ADC→bersaglio L-43; botón en sec-roles live al push + 1 clic del dueño); **PASO 3-6 pend**. ④b gateado (Gemini+negocio). Dealers F2 gated (TODO-25). |
 | **Cache version vigente** | **`v20260618035745`** (= la del cron-CI; el cron es el DUEÑO del bump → ya NO bumpeo manual en la rama, evita el conflicto recurrente L-02/L-03; §211 se invalida en el próximo bump del cron ≤4h o con Ctrl+Shift+R). SW == cache-manager ✅. |
-| **Branch activa** | `refactor/estructura` (HEAD `5f4fb79`). **9 commits sin pushear** (el dueño pushea + merge a `main`; rama MERGEABLE — cache=la del cron); `main` = producción. Verificar vs git real (§3.3). Deploys firebase = Claude (§1). |
+| **Branch activa** | `refactor/estructura` (HEAD `f7ad4d7`). **ahead 2 de origin** (`5f4fb79`+`f7ad4d7`; el dueño YA pusheó hasta `e67375c`) — pend. push+merge del dueño (rama MERGEABLE — cache=la del cron); `main` = producción. Verificado vs git real 18/06 (§3.3). Deploys firebase = Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

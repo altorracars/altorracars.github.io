@@ -5,9 +5,9 @@
 
 | Señal | Valor (última actualización: **2026-06-19**) |
 |---|---|
-| **Build** | 🟢 **E6 cutover 6/6** DEPLOYADO. **④ RBAC ④a COMPLETO (PASO 0-6)** (detalle → `10`/§219): dueño INAMOVIBLE 3-capas (§212/§213) + backfill + departments + §217 no-mint + asignación+`userCount` (§218) + **seed `nivel` §219 (`onUserRoleAssigned` desplegada) + paridad dual-portal**. **PEND dueño**: Ctrl+Shift+R + crear Departamentos + asignarlos + 1 clic Backfill + merge web. **④b GATEADO** (Gemini+negocio; **floor server-side antes de enforce `nivel`** §219). Vender=Pipeline. dealers F2 (TODO-25). |
+| **Build** | 🟢 **E6 cutover 6/6** DEPLOYADO. **④ RBAC ④a COMPLETO (PASO 0-6)** (detalle → `10`/§219): dueño INAMOVIBLE 3-capas (§212/§213) + backfill + departments + §217 no-mint + asignación+`userCount` (§218) + **seed `nivel` §219 + paridad dual-portal + §219.8 selector visual ícono**. **④a CONFIG DUEÑO ✅** (backfill + 4 deptos + Francisco→Dirección, `userCount` verificado en Firestore). Pend solo merge §219.8. **④b GATEADO** (Gemini+negocio; **floor server-side antes de enforce `nivel`** §219). Vender=Pipeline. dealers F2 (TODO-25). |
 | **Cache version vigente** | **`v20260619041711`** (= la del cron-CI tras el merge; el cron es el DUEÑO del bump → ya NO bumpeo manual en la rama, evita L-02/L-03; se invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
-| **Branch activa** | `refactor/estructura` AHEAD de `main`=`bc58234`: **§219 (④a PASO 5-6) commiteado+pusheado, pend merge dueño** (PR #865+#868 ya en main). `onUserRoleAssigned` desplegada por Claude. **commit+push=Claude · merge=dueño en web** (§2). deploys firebase=Claude (§1). Verificado vs git 19/06 (§3.3). |
+| **Branch activa** | `refactor/estructura`: **§219 MERGEADO por dueño** (b60b9a6); **§219.8 picker (`caa336b`) pusheado, pend merge**. `onUserRoleAssigned` desplegada. **commit+push=Claude · merge=dueño en web** (§2). deploys firebase=Claude (§1). Verificado vs git 19/06 (§3.3). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario único · CRUD · daily/hourly jobs · 22 functions CRM (**retry:true ×6**) · Rules E5 LIVE. App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

@@ -188,6 +188,7 @@
                 //     roleId (necesitan migración R4)
                 _state.hasLegacyUsersWithSystemRoleId = false;
                 _state.hasLegacyUsersWithoutRoleId = false;
+                _state.hasUsersNeedingBackfill = false; // §215 ④a
                 snap.forEach(function (doc) {
                     var data = doc.data() || {};
                     var roleId = data.roleId;
@@ -199,6 +200,13 @@
                     // legacy editor/viewer (susceptibles de migración R4)
                     if (!roleId && (data.rol === 'editor' || data.rol === 'viewer')) {
                         _state.hasLegacyUsersWithoutRoleId = true;
+                    }
+                    // §215 ④a — usuario sin la fundación RBAC → habilita "Backfill
+                    // niveles". Paridad EXACTA con los 4 campos que siembra el helper
+                    // computeRbacFoundationUpdate (incl. departmentName).
+                    if (data.nivel === undefined || data.dataScope === undefined ||
+                        data.departmentId === undefined || data.departmentName === undefined) {
+                        _state.hasUsersNeedingBackfill = true;
                     }
                     if (!roleId) {
                         // Legacy fallback: mapear desde rol
@@ -222,6 +230,7 @@
                 _state.userCounts = {};
                 _state.hasLegacyUsersWithSystemRoleId = false;
                 _state.hasLegacyUsersWithoutRoleId = false;
+                _state.hasUsersNeedingBackfill = false; // §215 ④a
                 return {};
             });
     }
@@ -237,19 +246,22 @@
     // §73.4 — También trackea `seedSystem` flag para detectar si el botón
     // "Resembrar sistema" cambió visibilidad (cuando ceoExists pasa de
     // false a true tras un seed manual, o vice versa).
-    var _lastRenderedHeaderState = { cleanup: null, migrate: null, seedSystem: null };
+    var _lastRenderedHeaderState = { cleanup: null, migrate: null, seedSystem: null, backfill: null };
     function refreshHeaderIfLegacyChanged() {
         var currentCleanup = !!(_state.hasLegacyDocs || _state.hasLegacyUsersWithSystemRoleId);
         var currentMigrate = !!_state.hasLegacyUsersWithoutRoleId;
         var currentSeedSystem = _state.firstSnapshotReceived && !_state.ceoExists;
+        var currentBackfill = _state.firstSnapshotReceived && !!_state.hasUsersNeedingBackfill; // §215 ④a
         if (_lastRenderedHeaderState.cleanup === currentCleanup
             && _lastRenderedHeaderState.migrate === currentMigrate
-            && _lastRenderedHeaderState.seedSystem === currentSeedSystem) {
+            && _lastRenderedHeaderState.seedSystem === currentSeedSystem
+            && _lastRenderedHeaderState.backfill === currentBackfill) {
             return; // sin cambios, no re-render
         }
         _lastRenderedHeaderState.cleanup = currentCleanup;
         _lastRenderedHeaderState.migrate = currentMigrate;
         _lastRenderedHeaderState.seedSystem = currentSeedSystem;
+        _lastRenderedHeaderState.backfill = currentBackfill;
         var oldHeader = document.querySelector('#rolesContainer .roles-header');
         if (!oldHeader) return; // header no presente (renderEmpty u otra cosa)
         oldHeader.outerHTML = renderRolesHeader();
@@ -287,6 +299,10 @@
         // Durante loading inicial (firstSnapshotReceived=false), también
         // se oculta para evitar flicker.
         var showSeedSystem = _state.firstSnapshotReceived && !_state.ceoExists;
+        // §215 ④a — "Backfill niveles" visible si hay usuarios sin la fundación
+        // RBAC (nivel/dataScope/departmentId). Auto-oculta cuando todos la
+        // tienen (mismo patrón de auto-hide que "Migrar legacy").
+        var showBackfillNiveles = _state.firstSnapshotReceived && !!_state.hasUsersNeedingBackfill;
 
         var html = '<div class="roles-header">' +
             '<div class="roles-header-stats">' +
@@ -301,6 +317,10 @@
         if (showMigrateLegacy) {
             html += '<button class="alt-btn alt-btn--ghost" data-action="migrate-legacy" title="Migra usuarios pre-existentes (legacy) al sistema dinámico de roles. Idempotente — re-ejecutable sin riesgo.">' +
                 '<i data-lucide="users-round"></i> Migrar legacy</button>';
+        }
+        if (showBackfillNiveles) {
+            html += '<button class="alt-btn alt-btn--ghost" data-action="backfill-niveles" title="Siembra nivel/departamento/alcance (RBAC ④a) en los usuarios que aún no los tienen. Idempotente — no toca datos existentes.">' +
+                '<i data-lucide="layers"></i> Backfill niveles</button>';
         }
         if (showSeedSystem) {
             html += '<button class="alt-btn alt-btn--ghost" data-action="seed-system-roles" title="Inicializa el catálogo de permisos + el rol CEO en Firestore. Idempotente.">' +
@@ -938,6 +958,72 @@
     }
 
     // ════════════════════════════════════════════════════════════════
+    // §215 ④a PASO 2 — Backfill de fundación RBAC (nivel/depto/scope)
+    // ════════════════════════════════════════════════════════════════
+    // Idempotente y no destructivo (callable backfillNivelesRBAC corre con la
+    // SA de Functions). Tras aplicar, re-detecta pendientes → el botón se
+    // auto-oculta si ya no quedan usuarios sin la fundación.
+
+    // Helper DOM-safe para el contenido icono+texto del botón (sin innerHTML;
+    // labels estáticos, pero lo construimos con nodos para no abrir vector XSS).
+    function setBackfillBtnContent(btn, iconName, label, iconClass) {
+        btn.textContent = '';
+        var ic = document.createElement('i');
+        ic.setAttribute('data-lucide', iconName);
+        if (iconClass) ic.className = iconClass;
+        btn.appendChild(ic);
+        btn.appendChild(document.createTextNode(' ' + label));
+    }
+
+    function backfillNiveles() {
+        if (!isSuperAdmin()) {
+            toast('Solo super_admin puede ejecutar el backfill de niveles', 'error');
+            return;
+        }
+        if (!window.functions) {
+            toast('Cloud Functions no disponibles', 'error');
+            return;
+        }
+
+        var btns = document.querySelectorAll('[data-action="backfill-niveles"]');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].disabled = true;
+            setBackfillBtnContent(btns[i], 'loader-2', 'Aplicando...', 'roles-spinner');
+        }
+        refreshIcons();
+
+        console.log('[AdminRoles] §215 ④a backfillNivelesRBAC invoked');
+        window.functions.httpsCallable('backfillNivelesRBAC')()
+            .then(function (result) {
+                var data = result && result.data;
+                console.log('[AdminRoles] §215 backfillNivelesRBAC result:', data);
+                var n = (data && data.updated) || 0;
+                var sk = (data && data.skipped) || 0;
+                var anom = (data && data.anomalies && data.anomalies.length) || 0;
+                var summary = n + ' actualizado(s), ' + sk + ' ya completo(s)' +
+                    (anom ? ', ' + anom + ' anomalía(s) — revisar consola' : '') + '.';
+                toast('Backfill de niveles aplicado. ' + summary, 'success');
+                // Re-detectar → auto-oculta el botón si ya no quedan pendientes
+                refreshUserCounts().then(refreshHeaderIfLegacyChanged);
+            })
+            .catch(function (err) {
+                console.error('[AdminRoles] §215 backfillNivelesRBAC error:', err);
+                var msg = (window.AP && window.AP.parseCallableError)
+                    ? window.AP.parseCallableError(err)
+                    : (err.message || err.code || 'Error desconocido');
+                toast('Error en el backfill: ' + msg, 'error');
+            })
+            .finally(function () {
+                var btns = document.querySelectorAll('[data-action="backfill-niveles"]');
+                for (var i = 0; i < btns.length; i++) {
+                    btns[i].disabled = false;
+                    setBackfillBtnContent(btns[i], 'layers', 'Backfill niveles');
+                }
+                refreshIcons();
+            });
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // §61.R4 — Legacy users migration (preview + execute)
     // ════════════════════════════════════════════════════════════════
 
@@ -1495,6 +1581,10 @@
                     e.preventDefault();
                     seedSystemRoles();
                     break;
+                case 'backfill-niveles':
+                    e.preventDefault();
+                    backfillNiveles();
+                    break;
                 case 'migrate-legacy':
                     e.preventDefault();
                     migrateLegacyUsers();
@@ -1627,6 +1717,7 @@
         openCreateModal: openCreateModal,
         openEditModal: openEditModal,
         seedSystemRoles: seedSystemRoles,
+        backfillNiveles: backfillNiveles,
         _state: function () { return _state; }
     };
 

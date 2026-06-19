@@ -2853,6 +2853,108 @@ exports.seedSystemRoles = onCall(callableOptionsV2, async (request) => {
 });
 
 // ============================================================
+// §193.4 ④a PASO 2 — Backfill de fundación RBAC departamental (ADR §215)
+// ============================================================
+// Callable super_admin-only que siembra nivel/departmentId/departmentName/
+// dataScope en usuarios/{uid} SIN tocar campos existentes (idempotente, no
+// destructivo). Dueño (isOwnerData, §213) ⇒ nivel 100 INAMOVIBLE; resto ⇒ 10
+// solo si falta. Aserción: todo dueño termina en nivel 100.
+//
+// Vía 1-clic (no ADC) porque la ADC local está ligada a otro proyecto (L-43);
+// corre con la SA de Functions. Lógica de decisión = shared/rbac-foundation.js
+// (misma que el script fallback functions/backfill-niveles.mjs). Soporta
+// { dryRun: true } para previsualizar el plan sin escribir.
+exports.backfillNivelesRBAC = onCall(callableOptionsV2, async (request) => {
+    await verifySuperAdmin(request.auth);
+    const { computeRbacFoundationUpdate } = require('./shared/rbac-foundation');
+    const dryRun = !!(request.data && request.data.dryRun === true);
+
+    const result = {
+        success: true,
+        dryRun: dryRun,
+        scanned: 0,
+        updated: 0,
+        skipped: 0,
+        owners: 0,
+        anomalies: [],
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        const snap = await db.collection('usuarios').get();
+        result.scanned = snap.size;
+
+        const ownerNivelFinal = []; // {uid, nivel} proyectado → aserción de invariante
+        let batch = db.batch();
+        let batchCount = 0;
+
+        for (const doc of snap.docs) {
+            const data = doc.data() || {};
+            const isOwner = isOwnerData(data);
+            const { updates, anomaly } = computeRbacFoundationUpdate(data, isOwner);
+
+            if (anomaly) result.anomalies.push({ uid: doc.id, issue: anomaly });
+
+            // nivel final PROYECTADO (vale igual en dryRun y en aplicar)
+            const nivelFinal = updates.nivel !== undefined ? updates.nivel : data.nivel;
+            if (isOwner) {
+                result.owners++;
+                ownerNivelFinal.push({ uid: doc.id, nivel: nivelFinal });
+            }
+
+            if (Object.keys(updates).length === 0) {
+                result.skipped++;
+                continue;
+            }
+            result.updated++;
+            if (dryRun) continue;
+
+            batch.update(doc.ref, updates);
+            batchCount++;
+            if (batchCount === 450) { // < cap 500 de Firestore, con margen
+                await batch.commit();
+                batch = db.batch();
+                batchCount = 0;
+            }
+        }
+        if (!dryRun && batchCount > 0) await batch.commit();
+
+        // Invariante §193.4: el dueño es INAMOVIBLE en nivel 100. Si falla, ABORTAR
+        // (failed-precondition) en vez de reportar éxito con el dueño degradado.
+        // En dryRun se valida la DECISIÓN proyectada; en aplicar se RE-LEE el estado
+        // PERSISTIDO (paridad con backfill-niveles.mjs) → red de seguridad real
+        // contra un write fallido o una degradación concurrente, no solo la intención.
+        let ownersBad;
+        if (dryRun) {
+            ownersBad = ownerNivelFinal.filter((o) => o.nivel !== 100);
+        } else {
+            ownersBad = [];
+            for (const o of ownerNivelFinal) {
+                const fresh = (await db.collection('usuarios').doc(o.uid).get()).data();
+                if (!fresh || fresh.nivel !== 100) {
+                    ownersBad.push({ uid: o.uid, nivel: fresh ? fresh.nivel : '(borrado)' });
+                }
+            }
+        }
+        result.invariantOwnerNivel100 = ownersBad.length === 0;
+        if (ownersBad.length) {
+            throw new HttpsError('failed-precondition',
+                'INVARIANTE VIOLADO: dueño(s) no quedan en nivel 100: ' +
+                ownersBad.map((o) => o.uid + '=' + o.nivel).join(', '));
+        }
+        if (result.owners === 0) {
+            result.warning = 'No se encontró ningún doc de dueño (revisar a mano).';
+        }
+        return result;
+    } catch (err) {
+        if (err instanceof HttpsError) throw err;
+        throw new HttpsError('internal',
+            'Error en el backfill de niveles RBAC: ' + (err.message || String(err)),
+            { code: err.code || 'unknown', originalMessage: err.message || String(err) });
+    }
+});
+
+// ============================================================
 // §61.R4 — MIGRATE LEGACY USERS (RBAC Migration)
 // ============================================================
 // Callable super_admin-only que migra todos los usuarios pre-RBAC

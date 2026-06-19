@@ -3,11 +3,11 @@
 > **Nodo: signos vitales.** AUTO-CARGA (con `CLAUDE.md` + `10`). Tablero, no bitácora: solo señales
 > ACTUALES (pisar, no apilar); lo histórico vive en `99` (ADR). Tope ~25 líneas / ~2.8k chars (§G.5).
 
-| Señal | Valor (última actualización: **2026-06-18**) |
+| Señal | Valor (última actualización: **2026-06-19**) |
 |---|---|
-| **Build** | 🟢 **E6 cutover gates 6/6 + §214** (fix gate: ya NO encierra al dueño fuera del clásico) — en branch, pend. push. Vender=Pipeline (financiero=TODO-25). **④ RBAC EN IMPLEMENTACIÓN**: §212+§213 = dueño INAMOVIBLE enforced 3-capas **DEPLOYADO**; blueprint ④a en bóveda; **PASO 0+1 (catálogo Departamentos+nivel) HECHOS → PASO 2-6 pendientes**. ④b gateado (Gemini+negocio). Dealers F2 gated (TODO-25). |
+| **Build** | 🟢 **E6 cutover 6/6 + §214** DEPLOYADO. **④ RBAC ④a EN IMPLEMENTACIÓN** (detalle → `10`/§215): §212/§213 dueño INAMOVIBLE 3-capas + **PASO 0/1/2/3a deployados** (callable `backfillNivelesRBAC` + rules `departments/` + tests); **SIGUIENTE 3b** (admin-departments.js UI) + 4-6 pend. ④b gateado (Gemini+negocio). Vender=Pipeline. dealers F2 gated (TODO-25). |
 | **Cache version vigente** | **`v20260618035745`** (= la del cron-CI; el cron es el DUEÑO del bump → ya NO bumpeo manual en la rama, evita el conflicto recurrente L-02/L-03; §211 se invalida en el próximo bump del cron ≤4h o con Ctrl+Shift+R). SW == cache-manager ✅. |
-| **Branch activa** | `refactor/estructura` (HEAD `5f4fb79`). **9 commits sin pushear** (el dueño pushea + merge a `main`; rama MERGEABLE — cache=la del cron); `main` = producción. Verificar vs git real (§3.3). Deploys firebase = Claude (§1). |
+| **Branch activa** | `refactor/estructura` (HEAD `72899a9`, **pusheado por Claude** → origin al día). **Pend = SOLO merge a `main` del dueño (GitHub web)** (rama MERGEABLE — cache=la del cron); `main`=producción. Verificado vs git real 19/06 (§3.3). **commit+push=Claude · merge=dueño** (§2 corregido) · deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · lead rápido offline · SLA+rotación · calendario único (§184) · CRUD/1581 (§185) · E4 (§186) · daily/hourly jobs · 22 functions CRM con **retry:true ×6** · Rules E5 LIVE (whitelists públicos + read estricto). App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

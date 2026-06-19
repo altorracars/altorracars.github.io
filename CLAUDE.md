@@ -93,9 +93,9 @@ Encabezado `## NN. ADR-NNN — <título>` (+ cita del cliente si reportó) y 7 p
 
 ### Reglas git (de §commit del proyecto)
 
-- Crear commits SOLO cuando el usuario lo pida explícitamente.
+- **Claude commitea Y PUSHEA** la rama al cerrar trabajo verificado; **el cliente SOLO mergea a `main` en GitHub web** (M-12).
 - `git add` archivos específicos (NUNCA `git add -A` / `.`).
-- **Claude commitea** (footer `Co-Authored-By: Claude <noreply@anthropic.com>`); **push y merge a `main` = SIEMPRE el cliente**. Entrégale el mensaje igual — ⚠️ árbol sucio sin mensaje = **turno incompleto** (M-12). NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
+- Footer `Co-Authored-By: Claude <noreply@anthropic.com>` + `Modelo:`. Árbol sucio sin commitear+pushear = **turno incompleto** (M-12). NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
 - NUNCA commitear secrets (.env, credentials.json).
 - Al cerrar un pendiente, marcar su `TODO-NN` como ✅ + link al §X. Mantén este CLAUDE.md liviano.
 

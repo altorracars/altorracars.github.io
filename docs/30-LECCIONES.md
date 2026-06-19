@@ -55,6 +55,12 @@
 - **Ampliación (E2E §175, 2026-06-09)**: el bloqueo también tumba **App Check** (`appCheck/throttled` 403 con backoff de 1 DÍA) e Installations; el submit del form de contacto en preview local ni siquiera completó. **E2E de captura/forms = SOLO contra el dominio live** (`main`); para verificar lógica de UI sin red, stubear `window.db` en el preview (probado §175: stub de `.add()` resuelto ejercita el handler real).
 - **Implicación de prueba**: en localhost NO se prueba login/Auth ni writes de formularios. Lo que SÍ: archivos (0 `404`), Firestore público de LECTURA, render, snippets.
 
+### L-43 · La ADC de esta máquina está ligada a `bersaglio-jewelry` → scripts Admin SDK contra `altorra-cars` dan `PERMISSION_DENIED` (IAM, NO rules) ⟦OPUS-4.8 · rev-Fable⟧
+- **Síntoma**: `node functions/<script>.mjs` (Admin SDK + ADC) contra altorra-cars aborta con `7 PERMISSION_DENIED: Missing or insufficient permissions`, aunque el MISMO patrón corre bien en bersaglio (`backfill-claims.mjs`).
+- **Causa (verificada §215)**: `~/AppData/Roaming/gcloud/application_default_credentials.json` trae `quota_project_id: bersaglio-jewelry` y `gcloud auth list` = sin cuentas → la ADC se montó SOLO para bersaglio; ese principal no es IAM-member con acceso Firestore en altorra-cars. El Admin SDK **BYPASSA las security rules** → un `PERMISSION_DENIED` del Admin SDK es SIEMPRE IAM del principal, jamás reglas.
+- **3 planos de auth (no confundir, L-23)**: (1) `firebase login` (CLI deploys, `altorracarssale@`) ≠ (2) **ADC** (lo que usa el Admin SDK en scripts `node`) ≠ (3) security rules (irrelevante para Admin SDK). Un script `node` standalone usa (2), no (1).
+- **Receta**: para correr un script admin contra altorra-cars desde esta máquina, el dueño re-autentica ADC con cuenta autorizada: `gcloud auth application-default login` + `gcloud auth application-default set-quota-project altorra-cars`. **Alternativa preferible** para mutaciones de prod (callejón e + precedente `seedSystemRoles`): empaquetar el backfill como **callable 1-clic** (corre con la SA de Functions, sin ADC ni terminal).
+
 ---
 
 ## 🗂️ Validación de código muerto
@@ -140,11 +146,11 @@
 - **Corrección**: §3.3 generalizada a "evidencia antes de afirmar CUALQUIER hecho" + gate (citar evidencia del turno o decir "no verificado"). Per M-10, lo verificable (huérfanas/frescura/caps) ya vive en `brain:check`; el git/SessionStart hook lo hará automático.
 - **Principio**: el ALCANCE de una doctrina es tan importante como la doctrina misma. Y doctrina sola no basta (M-10) → la red dura es el determinismo (linter + hooks); la doctrina es el respaldo.
 
-### M-12 · SIEMPRE entregar summary+descripción de commit al dejar el árbol sucio (recidiva 2026-06-05)
-- **Defecto**: el cliente commitea en GitHub Desktop; §2 dice "SIEMPRE entrégale el mensaje listo" — pero REPETIDAMENTE cerré turnos con docs/código modificados diciendo "commitéalo cuando quieras" SIN el mensaje. El cliente lo señaló molesto ("SIEMPRE OLVIDAS").
-- **Causa**: tratar el mensaje de commit como paso opcional/posterior, no como parte obligatoria de TODO turno que ensucia el árbol. Familia de M-03 ("lo documento después").
-- **Corrección (regla dura)**: si al cerrar un turno `git status` no está limpio (código o docs), el turno NO está completo hasta entregar **summary + descripción** listos para pegar. Parte del Reflejo de Cierre §G.4.
-- **Principio**: el cliente NO redacta mensajes de commit — se los doy SIEMPRE. Cambio sin su mensaje = trabajo a medias para él.
+### M-12 · Claude COMMITEA Y PUSHEA al cerrar trabajo — el dueño SOLO mergea en web (recidiva AGRAVADA 2026-06-19)
+- **Defecto (2026-06-05)**: cerraba turnos con árbol sucio sin entregar el mensaje de commit. **REINCIDENCIA AGRAVADA 2026-06-19 ⟦OPUS-4.8⟧**: aun entregando el mensaje, seguía pidiéndole al dueño que ÉL commiteara/pusheara ("push/merge son tuyos"). Me corrigió molesto: *"los commit y los push los haces TÚ, yo SOLO hago el merge en GitHub web"*. La regla de raíz (un §2 stale) ERA el error.
+- **Causa**: §2 decía "push y merge a main = SIEMPRE el cliente" — doctrina OBSOLETA. El dueño no quiere redactar ni ejecutar git: quiere que Claude commitee+pushee y él solo apruebe el merge en web.
+- **Corrección (regla dura, §2 REESCRITO 2026-06-19)**: al cerrar trabajo VERIFICADO, Claude **commitea Y pushea** la rama él mismo (`git add` específico + footer Co-Authored + `Modelo:`); el dueño SOLO mergea a `main` en GitHub web. Árbol sucio sin commitear+pushear = turno incompleto (Reflejo de Cierre §G.4). Cruza con `feedback_auto_deploy_crm` (memoria).
+- **Principio**: el dueño APRUEBA (merge), no OPERA (git). Entregar un mensaje "para que él commitee" es la regresión, no la solución.
 
 ### M-13 · Una "cura" se verifica en la capa que el BOOT lee, con grep — no se declara en el historial (recidiva RECURSIVA 2026-06-09)
 - **Defecto**: el ADR §171.7 declaró "añadí el Reflejo de Captura de Deliberación a §G.4" — pero `grep CLAUDE.md = 0 matches`. La cura vivía SOLO en §171 (historial on-demand que un boot fresco NUNCA lee, §G.1). El comité de Validación Final (Mandato 3, §172) lo cazó y se NEGÓ a certificar.

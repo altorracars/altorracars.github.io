@@ -12,16 +12,16 @@
 
 > 🤖 **Opus 4.8** (Fable 5 caído): commits footer `Modelo: Opus 4.8` + ADR/lecciones tag `⟦OPUS-4.8 · rev-Fable⟧`. Convención/causa = dueño `05` (no re-explicar aquí).
 
-> 🧠 **Cerebro v6 = 21/21 ✅** · 3 cerebros auditados Nivel-2 (cars §207 · bersaglio §82 · inmob §12) · **Gemini UNIFICADO ✅ §208** (A Núcleo-Delimitado · B abolir-git-en-`05` · C Doble-Llave+Staging). Hardening A/B/C = **TODO-28/29/30** (kernel/hook ×3 desde canon `bersaglio` + Staging del dueño) — diseño-listo, ventana dedicada, NO urgente.
+> 🧠 **Cerebro v6 = 21/21 ✅** · 3 cerebros Nivel-2 (cars §207·bersaglio §82·inmob §12) · **Gemini UNIFICADO §208** → hardening A/B/C = **TODO-28/29/30** (kernel/hook ×3 canon `bersaglio` + Staging dueño); diseño-listo, NO urgente.
 
-> 🏗️ **CRM E0→E6 (§176, TODO-21)**. E0→E5 ✅. **E6 cutover: gates ②/③ COMPLETOS (6/6)** (§190-195 + §199-204 + §209/§210). + **§211** web pública · **§212/§213** dueño INAMOVIBLE enforced **3 capas** (rules usuarios+roles + CF `isOwnerData`) **DEPLOYADO** · **§214** fix gate (ya NO encierra al dueño fuera del clásico).
-> ⏳ **PENDIENTE DUEÑO = `git push`+merge** (9 commits en `refactor/estructura`, rama MERGEABLE → cierra el merge cron↔cache + publica §211 web + §214 fix + ④a catálogo cliente; luego **Ctrl+Shift+R**). Mientras no pushee, el clásico aún encierra → **workaround `admin.html#/users`**. (Seguridad §212/§213 + functions ya LIVE de mi lado, aparte del git.) Vender=Pipeline (financiero=TODO-25). dealers F2 FROZEN. Follow-up: testimonios home.
-> 🏗️ **④ RBAC departamental (§193.4) EN IMPLEMENTACIÓN — blueprint ④a en bóveda `2026-06-18-RBAC-4a-blueprint.md` (LEER al retomar: plan PASO 0-6 + decisiones)**. HECHO+DEPLOYADO: **PASO 0/§213** (CF dueño-inamovible) + **PASO 1** (catálogo 'Departamentos' + nivel:100 CEO; catálogo DUPLICADO `rbac-catalog.js`↔`functions` v1.1.0 → editar AMBOS). **SIGUIENTE PASO 2** (`seedSystemRoles` 1-clic) → 3 rules+colección `departments/` → 4 sec-users → 5 §71-nivel → 6 dual-portal. **DECIDIR (yo, NO preguntar): ¿UI de ④a en clásico o portal nuevo?** §214 reveló que el portal nuevo NO tiene users/roles (cutover PARCIAL). **Congeladas**: doc-read (claims→Fase5) · permissions[] se queda · nivel per-usuario · dataScope NO-enforce-④a · rules=frontera. **④b GATEADO** (Gemini + ¿visibilidad o solo agrupar? Bersaglio retrocedió → decidir con ④a VISIBLE). Luego cutover paso 24+ (stub redirect, NUNCA borrar admin.html) → E6.5.
+> 🏗️ **CRM E0→E6 (§176, TODO-21)**. E0→E5 ✅. **E6 cutover gates 6/6** (§190-214) · §211 web · §212/§213 dueño INAMOVIBLE 3 capas DEPLOYADO · §214 gate-fix.
+> ⏳ **DUEÑO = SOLO merge a `main` (web)** — Claude ya pusheó todo (PASO 2/3a + §211/§214 + doctrina §2); el merge publica → **Ctrl+Shift+R**. Sin merge, clásico encierra → workaround `admin.html#/users`. Vender=Pipeline (fin.=TODO-25). dealers F2 FROZEN.
+> 🏗️ **④ RBAC departamental (§193.4)** — blueprint ④a (bóveda) = **SSoT** (pasos+congeladas+④b-gate; LEER al retomar). DEPLOYADO: PASO 0/§213 · PASO 1 (catálogo Departamentos; DUPLICADO `rbac-catalog.js`↔`functions`) · **PASO 2/§215** (callable `backfillNivelesRBAC` + botón sec-roles; ⏳ dueño 1 clic "Backfill niveles" tras merge) · **PASO 3a** (rules `departments/` + test emulador). **SIGUIENTE 3b**: `admin-departments.js` (UI CRUD espejo admin-roles) → 4 sec-users → 5 §71-nivel → 6 dual-portal. Helpers nivel/dept/scope → ④b. **§215.7**: PASO 4 `users.edit`↛`'*'` a tercero · ④b `nivel`→int.
 > ⚠️ Decisiones dueño pre-cutover → §193 (bot ALTOR R-1 · gap 8 financiero · 2FA · vista Inicio · RBAC ④ §193.4). Gates: F32 móvil · F33b piloto · manual.
 > 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187 (NFD-slug · admin-calendar-config/dynamic-lists/fcm-sw inyectados VIVOS · dashboards→deals.wonAt · ~1000 exprs Rules · emulador :8081).
 > Strangler/cutover detalle → §188 (plan 29 pasos) + §183 (E6.5 comité diseño · E6.6 auditoría clásico, FIRMES).
 > Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05 (diferido) · SEC-07/09 (P2).
-> ⏳ **Cliente**: descartar lead prueba `VMVMJG…` (spam) · anunciar F42 · billing GCP causa raíz (→`05`). (⏳ **9 commits pendientes de push** del dueño — ver foco.)
+> ⏳ **Cliente**: descartar lead prueba `VMVMJG…` (spam) · anunciar F42 · billing GCP causa raíz (→`05`). (push pendiente → foco.)
 > ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado.
 >
 > **🚫 Callejones sin salida (NO reintentar)**:
@@ -66,5 +66,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC ×9 (12-18/06): §184-**§214** consolidados (→ `00`/`99`). Vivo:
-> - **18/06 ⟦OPUS-4.8⟧**: E6 cutover 6/6 (§209-§211) · dueño INAMOVIBLE 3 capas (§212/§213) · §214 (gate no-encierra) · **④a RBAC PASO 0/1** (blueprint bóveda) · merge cron↔cache ×2 (L-02/L-03: cron=dueño del bump). PREV: comité+adversarial RBAC (crudos bóveda) · Gemini UNIFICADO §208 (A/B/C → TODO-28/29/30).
+> GC ×10 (12-18/06): §184-§214 consolidados + L-43 (→`00`/`99`/`30`). Vivo:
+> - **18/06 ⟦OPUS-4.8⟧**: ④a RBAC **PASO 2** (`backfill-niveles.mjs` escrito+verificado §215; ejecución bloqueada ADC→bersaglio L-43; git reconciliado vs real). PREV: E6 cutover 6/6 + dueño INAMOVIBLE 3 capas (§209-§214) · PASO 0/1 · merge cron↔cache ×2 (L-02/L-03) · Gemini UNIFICADO §208 (→TODO-28/29/30).

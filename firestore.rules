@@ -56,6 +56,16 @@ service cloud.firestore {
         && (perm in getUserPermissions() || '*' in getUserPermissions());
     }
 
+    // §217 (vector §215.7) — un doc de usuario "marca dueño" si tiene el roleId del
+    // CEO o el wildcard '*'. Espejo en rules del isOwnerData de functions/index.js:710
+    // (§213). Se usa para: (a) §212 — no editar al dueño EXISTENTE (sobre resource.data);
+    // (b) §217 — no MINTAR un dueño nuevo desde el cliente (sobre request.resource.data):
+    // solo el Admin SDK (seed/CF) crea dueños. Cierra la escalada users.edit/users.create.
+    function isOwnerDoc(d) {
+      return d.get('roleId', '') == 'system_super_admin'
+          || ('*' in d.get('permissions', []));
+    }
+
     // F4.5: Optimistic locking — validate _version increment
     // Allows: new docs with _version=1, updates with _version+1, or migration from null→1
     function validVersion() {
@@ -149,8 +159,10 @@ service cloud.firestore {
 
       // Super admin (o role custom con users.create / users.delete)
       // gestiona todo el doc del usuario (alta, baja, rol, bloqueado, etc.)
-      allow create: if isSuperAdmin()
-        || hasPermission('users.create');
+      // §217 — pero NO puede MINTAR un dueño ('*'/system_super_admin) desde el
+      // cliente: solo el Admin SDK (seed/createManagedUserV2) crea dueños.
+      allow create: if (isSuperAdmin() || hasPermission('users.create'))
+        && !isOwnerDoc(request.resource.data);
       allow delete: if isSuperAdmin()
         || hasPermission('users.delete');
 
@@ -204,8 +216,8 @@ service cloud.firestore {
       // → anti-spoof (no se puede burlar cambiando roleId en la misma escritura).
       allow update: if
         ( (isSuperAdmin() || hasPermission('users.edit'))
-          && !(resource.data.get('roleId', '') == 'system_super_admin'
-               || ('*' in resource.data.get('permissions', []))) )
+          && !isOwnerDoc(resource.data)          // §212 — no editar al dueño EXISTENTE
+          && !isOwnerDoc(request.resource.data) ) // §217 — no MINTAR un dueño nuevo (self o 3º; vector §215.7)
         || (request.auth.uid == userId &&
             request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly([

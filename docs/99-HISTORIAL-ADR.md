@@ -43683,3 +43683,21 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 **.6 Archivos + cache**: NEW `js/admin/admin-departments.js` (+ 3a: `functions/src/rules/firestore-rules-departments.test.js`). MOD `firestore.rules` (3a, `be68b74`), `admin.html` (nav+sección+script), `js/admin/admin-group-tabs.js` (GROUPS.config). INTACTOS: `admin-roles.js` + rules vecinas. Cache: SIN bump manual (cron; UI admin). Nav "Departamentos" + módulo van live al merge del dueño.
 
 **.7 Doctrina + SIGUIENTE**: al reusar clases de otro módulo, VERIFICAR el inventario CSS real (`grep`), no asumir por nombre (L-37/L-42, elevado a §30 implícito). **SIGUIENTE PASO 4**: `admin-users.js` asigna `departmentId/nivel/dataScope` + mantiene `userCount` + el carry-forward §215.7 (vector `permissions:['*']` por write directo). Deliberación: workflow `rbac-4a-paso3b-adversarial-review` (2 lentes) abortó por 529 overload → sin crudo; cubierto por auto-verificación. NO re-corrido (servidor saturado; el cambio es UI aditiva con seguridad ya enforced por rules 3a).
+
+## 217. ADR-217 — FIX seguridad: ningún users.edit/users.create puede MINTAR un dueño (vector §215.7) ⟦OPUS-4.8 · rev-Fable⟧ (2026-06-19)
+
+> Surgido al VERIFICAR el carry-forward §215.7/§216.7 al arrancar PASO 4 (admin-users). Hueco PRE-EXISTENTE (desde §212), NO introducido por ④a.
+
+**.1 Causa raíz (RCA §19, leyendo `firestore.rules` 205-235)**: §212 cerró "degradar al dueño EXISTENTE" (guard sobre `resource.data`) pero NO el simétrico "MINTAR un dueño NUEVO". La rama admin de `allow update` (`users.edit`) y `allow create` (`users.create`) NO chequeaban `request.resource.data` → un `users.edit` podía escribir `permissions:['*']` / `roleId:'system_super_admin'` a un tercero NO-dueño, **o a SÍ MISMO** (la rama admin no excluye el propio uid → AUTO-escalada a super-admin). La UI no lo ofrece (el dropdown excluye CEO), pero las rules son la frontera real (un write directo por consola lo logra).
+
+**.2 Solución**: helper `isOwnerDoc(d)` (espejo en rules del `isOwnerData` §213). `allow create` += `&& !isOwnerDoc(request.resource.data)`; `allow update` rama admin += `&& !isOwnerDoc(request.resource.data)` (junto al §212 `!isOwnerDoc(resource.data)`). Solo el **Admin SDK** (seed/`createManagedUserV2`, que bypassa rules) minta dueños.
+
+**.3 No-regresión**: la gestión NORMAL (asignar roles/permisos no-'*', bloquear, etc.) sigue viva; el §212 intacto (refactor del inline a `isOwnerDoc` es behavior-preserving); self-update whitelist intacta (`permissions` nunca estuvo ahí).
+
+**.4 Tests**: `firestore-rules-217-mint.test.js` (7 casos: mint bloqueado self/3º/create por `permissions` Y `roleId`; + regresión gestión normal) — suite rules **80/80** (cero regresión §212/§210/departments). `firebase deploy --only firestore:rules` ✓ (compiló).
+
+**.5 Anti-patterns evitados**: asumir que §212 ya cubría el vector (lo VERIFIQUÉ leyendo las rules, RCA §19, en vez de confiar); arreglar solo el síntoma UI (el dropdown ya excluye CEO) en lugar de la frontera real (rules).
+
+**.6 Archivos + cache**: MOD `firestore.rules` (helper `isOwnerDoc` + create + update rama admin). NEW `functions/src/rules/firestore-rules-217-mint.test.js`. INTACTOS: §212 self-update + bloque roles + departments. Cache: SIN bump (rules backend). Va a prod por mi deploy (ya hecho) + queda en el merge del dueño.
+
+**.7 Doctrina**: un guard de protección de dueño debe ser **SIMÉTRICO** — proteger al existente (`resource.data`) Y prohibir mintar nuevos desde el cliente (`request.resource.data`). Cierra el carry-forward §215.7. SIGUIENTE: PASO 4 UI (campos depto/nivel/scope en admin-users).

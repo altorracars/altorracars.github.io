@@ -43701,3 +43701,19 @@ Comité de Validación Final (workflow `mandato3-validacion-final-cerebro`, **11
 **.6 Archivos + cache**: MOD `firestore.rules` (helper `isOwnerDoc` + create + update rama admin). NEW `functions/src/rules/firestore-rules-217-mint.test.js`. INTACTOS: §212 self-update + bloque roles + departments. Cache: SIN bump (rules backend). Va a prod por mi deploy (ya hecho) + queda en el merge del dueño.
 
 **.7 Doctrina**: un guard de protección de dueño debe ser **SIMÉTRICO** — proteger al existente (`resource.data`) Y prohibir mintar nuevos desde el cliente (`request.resource.data`). Cierra el carry-forward §215.7. SIGUIENTE: PASO 4 UI (campos depto/nivel/scope en admin-users).
+
+## 218. ADR-218 — ④a PASO 4: asignar departamento/nivel/dataScope a usuarios + userCount server-side ⟦OPUS-4.8 · rev-Fable⟧ (2026-06-19)
+
+**.1 Causa/contexto**: PASO 4 del blueprint = el admin asigna la fundación departamental a cada usuario. (La verificación de seguridad del carry-forward §215.7 se resolvió aparte en §217 antes de tocar UI.)
+
+**.2 Solución**: **(UI)** `admin.html` user-modal +3 campos (`uDepartmentId` select, `uNivel` number 0-100, `uDataScope` select all/dept/own). `admin-users.js`: `populateDepartmentsDropdown()` (DOM-safe createElement/textContent, lee `departments/` activos, `data-name` para espejar nombre) llamado en alta + edición; populate de nivel/dataScope desde el doc; `rbacData` write (:563) +`departmentId/departmentName/nivel/dataScope`. **(Backend)** CF trigger `onUserDeptChanged` (`onDocumentWritten usuarios/{uid}`, us-central1) mantiene `departments/{id}.userCount` con `FieldValue.increment` al cambiar `departmentId` → hace REAL el guard §66 (no-op si no cambió; tolera depto inexistente).
+
+**.3 No-regresión**: el CEO NUNCA se edita por este form (guard `editUser`:487 "solo Mi Perfil") → los campos no le aplican; `rbacData.permissions` sigue derivando del rol (no '*' salvo CEO, excluido del dropdown + bloqueado por §217); los 4 campos NO están en el self-update whitelist de las rules → NO auto-asignables (solo el admin). §212/§217 + self-update intactos.
+
+**.4 Tests**: `node --check` ×2 (index.js, admin-users.js). Trigger DESPLEGADO (`onUserDeptChanged` us-central1, "Successful create"). Verificación viva (asignar depto + ver userCount subir + §66 al borrar) = dueño (L-08: admin/auth no corre en localhost). **Pendiente recomendado**: emulator test del trigger (L-26: trigger fino → emulador).
+
+**.5 Anti-patterns evitados**: `userCount` client-side (racy + un non-`departments.manage` no puede tocar el doc del depto) → CF server-side autoritativo; `innerHTML` en el dropdown (createElement/textContent); tratar `nivel` como owner-marker (NO lo es — dueño = `permissions:['*']`/`roleId`, §217; `nivel` es autoridad blanda, no se enforce hasta ④b).
+
+**.6 Archivos + cache**: MOD `admin.html` (3 campos en user-modal), `js/admin/admin-users.js` (`populateDepartmentsDropdown` + wire alta/edición + `rbacData`), `functions/index.js` (`onUserDeptChanged`). INTACTOS: `firestore.rules` (§217 ya cubre la frontera), el flujo CF de rol. Cache: SIN bump manual (UI admin + backend). UI va live al merge del dueño; trigger ya desplegado por Claude.
+
+**.7 Doctrina + SIGUIENTE**: un contador que alimenta un guard de rules DEBE mantenerse server-side (CF), no client-side (racy + permisos). **④a casi completo**: falta **PASO 5** (`onUserRoleAssigned` copia `role.nivel`→`user.nivel` SOLO si falta, sin pisar en resync) + **PASO 6** (paridad dual-portal admin-app + cache bump). **④b** (scoping `inDeptScope`) sigue GATEADO (Gemini adversarial + decisión de negocio del dueño con ④a VISIBLE).

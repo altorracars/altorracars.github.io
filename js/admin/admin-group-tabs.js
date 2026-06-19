@@ -63,6 +63,8 @@
                 { id: 'users',     label: 'Usuarios',  icon: 'users',       permission: 'canManageUsers' },
                 // §61.R2 — Roles también solo super_admin (rules backend lo enforce, frontend lo respeta para UX)
                 { id: 'roles',     label: 'Roles',     icon: 'shield-check', permission: 'canManageUsers' },
+                // §215 ④a — Departamentos: mismo gate UX que Roles (canManageUsers); las rules §215 + el módulo enforcan departments.read/manage
+                { id: 'departments', label: 'Departamentos', icon: 'building-2', permission: 'canManageUsers' },
                 { id: 'lists',     label: 'Atributos', icon: 'list-tree' }, // todos
                 { id: 'workflows', label: 'Workflows', icon: 'zap' },        // todos
                 { id: 'audit',     label: 'Auditoría', icon: 'scroll-text' },// todos (canViewActivity = true)

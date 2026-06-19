@@ -20,6 +20,7 @@ skill `llm-council` del repo, pero con humano en el medio.)
 **Humano en el medio (clave)**: yo marco la decisión → el cliente corre el prompt en
 Antigravity → me pega la respuesta → **yo la evalúo como peer review** (adopto lo correcto,
 refuto con razones lo que esté mal). NUNCA me subordino a Gemini; es insumo, no oráculo.
+**Antigravity SOLO asesora — NUNCA edita el repo (§6); el que decide/delibera/implementa soy YO.**
 
 ---
 
@@ -87,6 +88,7 @@ Sé concreto y breve.
 
 ## §6 — Límites duros
 
+- 🚫 **Antigravity NUNCA edita el repo.** Es un IDE agéntico (PUEDE editar), pero aquí es **consejero externo de SOLO-LECTURA**: se le pasan únicamente prompts de **CRÍTICA** (preguntas/hallazgos), JAMÁS tareas de implementación. **Quien DECIDE, DELIBERA (triaje L-34) e IMPLEMENTA (edita/commitea/pushea) soy YO** (Claude), conforme a los hallazgos del comité + Antigravity. Ellos DEBATEN/aportan; yo resuelvo. (Recidiva 2026-06-19: entregué un *mensaje de commit* suelto que, al pegarse en Antigravity, le abrió la puerta a editar en paralelo — la corrección §2 "Claude commitea+pushea, sin mensajes sueltos" cierra ese conducto.)
 - Gemini **no ve** nuestro código/cerebro → todo contexto va en el prompt; **jamás** usarlo para verificar hechos del repo.
 - Es **insumo de juicio**, no autoridad: una crítica de Gemini que esté mal **se refuta**, no se acata.
 - Si el protocolo lleva tiempo sin usarse y no aporta, **revisarlo** (Reflejo de Desafío Crítico §G.4) — un protocolo muerto es deuda.

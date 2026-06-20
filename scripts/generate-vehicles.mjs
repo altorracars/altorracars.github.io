@@ -832,7 +832,10 @@ function runSelfTest() {
             p++;
             try { JSON.parse(val); } catch (e) { fails.push(label + ': ' + varName + ' valor NO parsea (breakout): ' + e.message); }
         }
-        if (p < 1) fails.push(label + ': no se encontro asignacion PRERENDERED inyectada');
+        // marca DEBE inyectar AMBOS globals (PRERENDERED_BRAND_ID + PRERENDERED_BANNER_URL §222);
+        // vehiculo solo 1 (PRERENDERED_VEHICLE_ID). Si el bake del banner se rompiera en silencio, p<2 lo caza.
+        const minPrerendered = (label === 'marca') ? 2 : 1;
+        if (p < minPrerendered) fails.push(label + ': esperaba ' + minPrerendered + ' global(es) PRERENDERED inyectado(s), encontro ' + p);
     }
 
     // FASE 2 — mock de contenido CMS con payload de breakout en aboutBrand: debe salir

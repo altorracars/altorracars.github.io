@@ -132,5 +132,11 @@
 - **Receta**: (1) el JS que toca elementos que el SSG puede reescribir (title/meta/canonical/OG del `<head>`) DEBE usar **null-guard** (`const el=getElementById(x); if(el) el.…`) — un elemento opcional ausente NUNCA debe abortar un render. (2) Matiz a L-07: el SSG "copia tags tal cual" EXCEPTO las anclas SEO del head, que SÍ reescribe (y puede soltar ids). (3) Diagnóstico: consola en vivo (Playwright/Chrome) da la línea exacta; comparar plantilla vs horneado con `git show origin/main:<path>` confirma qué id falta. (4) Cache: la bumpea el cron al regenerar `/marcas/` (no manual, L-02/L-03).
 - **Familia**: L-07 (SSG template-driven) · L-37 (rediseño rompe callsites JS↔HTML) · raíz común "DOM dinámico ≠ DOM horneado".
 
+### L-46 · Inyectar una 2ª global `window.X` en el MISMO `<script>` que otra ROMPE el gate `SSG_SELFTEST` ⟦OPUS-4.8⟧
+- **Síntoma (§222)**: tras añadir `window.PRERENDERED_BANNER_URL` junto a `PRERENDERED_BRAND_ID` en el mismo `<script>`, `SSG_SELFTEST` FALLA: "PRERENDERED_BRAND_ID valor NO parsea (breakout): Unexpected non-whitespace character after JSON".
+- **Causa**: el selftest extrae el valor de cada global con `html.slice(idx+marker.length).split(';</script>')[0]` y lo `JSON.parse`-ea. Con dos asignaciones en un `<script>` (`window.A = "x"; window.B = "y";</script>`), el valor de A arrastra `; window.B = "y"` → no parsea. NO es fallo de `safeJsonLd` (el escape estaba bien); es el gate leyendo de más.
+- **Receta**: una global inyectada = UN `<script>` propio (`…A="x";</script><script>…B="y";</script>`) → cada valor termina en `;</script>` y el split lo aísla. Bonus: registra el sink nuevo en el loop del selftest + mete payload de breakout en su mock (gate con dientes, doctrina §220).
+- **Familia**: L-07 (SSG template-driven) · L-45 (DOM horneado).
+
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

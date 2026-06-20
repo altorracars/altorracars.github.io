@@ -259,6 +259,8 @@
 
 ### L-45 · El SSG horneado DESPOJA ids del `<head>` (ej. `<title id="pageTitle">`) de los que depende el JS inline → null-deref aborta el render → detalle en `33-LECCIONES-FRONTEND.md`
 
+### L-46 · Inyectar una 2ª global `window.X` en el MISMO `<script>` que otra rompe el gate `SSG_SELFTEST` (split `;</script>` arrastra la 2ª asignación) → detalle en `33-LECCIONES-FRONTEND.md`
+
 ### L-38 · `billing disabled` tumba las 27 functions — pero Eventarc RE-ENTREGA al recuperarse (outage corto ≠ pérdida)
 - **Síntoma**: logs de TODAS las functions con "The request failed because billing is disabled" (crons + triggers). La web sigue viva (reads/writes directos a Firestore OK) pero ingestión CRM, emails, Telegram y LLM muertos.
 - **Observado (§175, 2026-06-09)**: outage ~21:00→23:03 UTC; al volver el billing, **Eventarc RE-ENTREGÓ los eventos fallidos solo** (la solicitud de las 22:50 se ingirió a las 23:03, `_ingestedAt` tardío, sin pérdida ni duplicados). La retención de reintentos es limitada (~horas) — un outage LARGO sí pierde eventos → revisar `failedIngestions` + backfill manual.

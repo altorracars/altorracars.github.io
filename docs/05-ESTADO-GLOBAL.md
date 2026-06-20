@@ -5,9 +5,9 @@
 
 | Señal | Valor (última actualización: **2026-06-20**) |
 |---|---|
-| **Build** | 🟢 Todo en `main` (mergeado 20/06): **E6 cutover 6/6** + **④ RBAC ④a COMPLETO** (PASO 0-6, §219; config dueño hecha: 4 deptos + backfill + Francisco→Dirección) + **CMS cobaya VERIFICADA LIVE E2E** (ADR §220/§221 — editor "Acerca de" por marca `cms-dinamico`, gate `content.edit`, cron hornea `aboutBrand`; + fix bug site-wide `pageTitle` que rompía el catálogo de TODA marca horneada, L-45). **④b PARQUEADO** (dueño: 2 personas ven todo; al retomar = floor server-side antes de enforce `nivel`). Vender=Pipeline. dealers F2 (TODO-25). |
-| **Cache version vigente** | **`v20260620174158`** (cron-CI tras merge #878 del 20/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
-| **Branch activa** | `refactor/estructura` == `main` (ff a `d25930a` tras merge #878 + cron). Sesión 20/06: RBAC §219 + CMS §220/§221 MERGEADOS. **commit+push=Claude · merge=dueño web** (§2). deploys firebase=Claude (§1). Verificado vs git 20/06 (§3.3). |
+| **Build** | 🟢 Todo en `main` (mergeado 20/06): **E6 cutover 6/6** + **④ RBAC ④a COMPLETO** (PASO 0-6, §219; config dueño hecha: 4 deptos + backfill + Francisco→Dirección) + **CMS por marca COMPLETO** (ADR §220/§221/§222 — editor `cms-dinamico` aboutBrand+**banner editable**, gate `content.edit`; **FASE 2.4 instant-publish** (CFs `onSiteContentChange`/`onMarcaChange` + workflow `cancel-in-progress`); **nav→canónica** `/marcas/{slug}`; pageTitle fix L-45; review adversarial 0-críticos). **④b PARQUEADO** (dueño: 2 personas ven todo; al retomar = floor server-side antes de enforce `nivel`). Vender=Pipeline. dealers F2 (TODO-25). |
+| **Cache version vigente** | **`v20260620211749`** (cron-CI, merges 20/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Branch activa** | `refactor/estructura` == `main` (merges 20/06 #878-883 + cron). Sesión 20/06: RBAC §219 + CMS §220/§221/**§222** (banner+2.4+nav canónica) MERGEADOS. **commit+push=Claude · merge=dueño web** (§2). deploys firebase=Claude (§1). Verificado vs git 20/06 (§3.3). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario único · CRUD · daily/hourly jobs · 22 functions CRM (**retry:true ×6**) · Rules E5 LIVE. App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

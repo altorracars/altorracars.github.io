@@ -610,6 +610,52 @@ exports.onVehicleChange = onDocumentWritten({
 });
 
 /**
+ * FASE 2.4 (TODO-23 §222): publicación INSTANTÁNEA del CMS. Cualquier guardado de contenido
+ * editable (siteContent/brand_{id}: aboutBrand/bannerUrl por marca) dispara la regeneración del
+ * SSG — así el editor del admin NO requiere un "Run workflow" manual ni esperar el cron de 4h.
+ * Reusa el mismo event_type 'vehicle-changed' (el workflow regenera TODO, idempotente). La
+ * concurrencia del workflow (cancel-in-progress) garantiza que gane el ÚLTIMO guardado. Sin
+ * debounce: los guardados de CMS son escasos y cada uno DEBE publicar (un debounce los tragaría).
+ */
+exports.onSiteContentChange = onDocumentWritten({
+    document: 'siteContent/{docId}',
+    region: 'us-central1',
+    secrets: [githubPat]
+}, async (event) => {
+    const token = githubPat.value();
+    if (!token) {
+        console.error('[SEO] GITHUB_PAT secret no configurado (siteContent dispatch).');
+        return;
+    }
+    try {
+        const response = await fetch('https://api.github.com/repos/altorracars/altorracars.github.io/dispatches', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                event_type: 'vehicle-changed',
+                client_payload: {
+                    source: 'siteContent',
+                    docId: event.params.docId,
+                    timestamp: new Date().toISOString()
+                }
+            })
+        });
+        if (response.ok || response.status === 204) {
+            console.log('[SEO] GitHub Actions dispatched for siteContent ' + event.params.docId);
+        } else {
+            const body = await response.text();
+            console.error('[SEO] GitHub API error ' + response.status + ': ' + body);
+        }
+    } catch (err) {
+        console.error('[SEO] Failed to dispatch GitHub Actions (siteContent):', err.message);
+    }
+});
+
+/**
  * Callable function: manually trigger SEO page regeneration from admin panel.
  * Only super_admin can call this.
  */

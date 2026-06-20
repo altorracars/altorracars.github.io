@@ -50,6 +50,9 @@ desktop.ini
 coverage/
 .nyc_output/
 
+# Playwright MCP — snapshots (.yml) y logs (.log) temporales de verificación en vivo (NO versionar)
+.playwright-mcp/
+
 # Respaldos locales de Firestore (salida de scripts/backup-firestore.mjs — NO versionar)
 backups/
 

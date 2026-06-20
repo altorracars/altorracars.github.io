@@ -66,6 +66,28 @@ body[data-cin="on"] .brand-header .page-subtitle {
     line-height: 1.55;
 }
 
+/* ===== "Acerca de" la marca (CMS aboutBrand, opcional) — intro centrado bajo el header/banner.
+   Sin esta regla el bloque hereda la fuente legacy (Poppins) y queda a la izquierda, desalineado
+   del header centrado. Alinea su container al del header y centra el párrafo. ===== */
+body[data-cin="on"] .brand-about {
+    font-family: var(--cin-sans);
+    padding: clamp(6px, 1.2vw, 16px) 0 clamp(20px, 3vw, 34px);
+}
+body[data-cin="on"] .brand-about .container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding-left: clamp(16px, 4vw, 48px);
+    padding-right: clamp(16px, 4vw, 48px);
+}
+body[data-cin="on"] .brand-about p {
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+    color: var(--cin-ink-soft);
+    font-size: clamp(15px, 1.4vw, 17px);
+    line-height: 1.7;
+}
+
 /* ===== Layout catálogo: sidebar + main ===== */
 body[data-cin="on"] .catalog-section .container {
     max-width: 1320px;

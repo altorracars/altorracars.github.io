@@ -86,9 +86,15 @@ function escapeHtml(str) {
 }
 
 function escapeAttr(str) {
+    // CMS FASE 0.5 (comité v4): antes solo escapaba & y " — NO < > ' → un valor con
+    // `<`/`>` en un meta-tag (og:*/twitter:*) filtraba HTML crudo. Defensa-en-profundidad
+    // ANTES de exponer cualquier campo editable (CMS) a atributos. `&` va primero.
     return String(str)
         .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;');
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function escapeXml(str) {
@@ -739,6 +745,12 @@ function runSelfTest() {
     const fails = [];
 
     function checkScripts(label, html) {
+        // FASE 0.5 — aserción de breakout en TODO el documento: tras safeJsonLd (sinks JSON)
+        // + escapeAttr/escapeHtml (atributos/texto), NINGÚN sink debe dejar el `</script><script>`
+        // crudo. Solo pasa si <> se neutraliza en TODOS los contextos (JSON, attr, texto).
+        if (html.indexOf('</script><script>alert(1)</script>') >= 0) {
+            fails.push(label + ': BREAKOUT crudo </script><script> presente en el HTML (algún sink no escapa < >)');
+        }
         const parts = html.split('<script type="application/ld+json">');
         let n = 0;
         for (let i = 1; i < parts.length; i++) {

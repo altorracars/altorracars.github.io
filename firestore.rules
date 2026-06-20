@@ -324,6 +324,37 @@ service cloud.firestore {
         || hasPermission('banners.delete');
     }
 
+    // ========== CMS — CONTENIDO EDITABLE DEL SITIO (siteContent) ==========
+    // TODO-23 FASE 2 (Decisión Fuerte comité v4 + 2ª opinión Gemini). Docs: siteContent/{page}
+    // (cobaya: siteContent/brand_{id} con `aboutBrand`). El cron SSG lo LEE como cliente anónimo
+    // bajo reglas → `read: if true` es INVARIANTE (endurecerlo rompería el build en silencio,
+    // §2 Hueco B del comité). Escritura SOLO con el permiso ATÓMICO `content.edit` (separación de
+    // deberes: un editor de contenido NO toca CRM/vehículos/agenda). La defensa PRIMARIA es el
+    // TIPO+CONTENIDO validado AQUÍ (server-side), no el render. Repo PÚBLICO → el texto se hornea
+    // al historial git para SIEMPRE: anti-PII por regex (no solo cap de tamaño — un string libre
+    // con read:true es canal de exfiltración; Habeas Data Ley 1581, concern comité+Gemini).
+    match /siteContent/{page} {
+      allow read: if true;
+
+      function scCapOk(f, max) {
+        return !(f in request.resource.data)
+          || request.resource.data[f] == null
+          || (request.resource.data[f] is string && request.resource.data[f].size() <= max);
+      }
+      function siteContentShapeOk() {
+        return request.resource.data.keys().hasOnly(['aboutBrand', 'updatedAt', 'updatedBy', 'updatedByName'])
+          && scCapOk('aboutBrand', 2000)
+          // anti-PII: rechaza 7+ dígitos seguidos (teléfono/cédula) en texto público horneado
+          && !(request.resource.data.get('aboutBrand', '').matches('.*[0-9]{7,}.*'))
+          && scCapOk('updatedAt', 40)
+          && scCapOk('updatedBy', 200)
+          && scCapOk('updatedByName', 120);
+      }
+      // create+update bajo content.edit + shape. delete NO expuesto en MVP
+      // ("vaciar" = update con aboutBrand:'' o ausente; evita el request.resource null en delete).
+      allow create, update: if hasPermission('content.edit') && siteContentShapeOk();
+    }
+
     // ========== LEADS (CRM canónico — Fase 1) ==========
     // Repurposed: el bloque `leads` legacy (create público) era vestigial
     // (ningún código del proyecto usaba collection('leads'); el público

@@ -575,8 +575,9 @@ ${disponibles.slice(0, 20).map(v => {
     // renderiza; NUNCA rompe ni vacía la página de marca — es contenido aditivo).
     const sc = (siteContent && siteContent['brand_' + brandId]) || {};
     const aboutBrand = (typeof sc.aboutBrand === 'string') ? sc.aboutBrand.trim() : '';
+    // Estilo en css/home/marca-cinematic.css (.brand-about) — centrado, Manrope, alineado al header.
     const aboutBlock = aboutBrand
-        ? `<section class="brand-about" style="padding:1.5rem 0"><div class="container"><p style="max-width:70ch;line-height:1.7;margin:0">${escapeHtml(aboutBrand)}</p></div></section>`
+        ? `<section class="brand-about"><div class="container"><p>${escapeHtml(aboutBrand)}</p></div></section>`
         : '';
     html = html.replace('<!--CMS:aboutBrand-->', aboutBlock);
 

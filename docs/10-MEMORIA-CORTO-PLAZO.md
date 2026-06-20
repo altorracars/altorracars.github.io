@@ -68,3 +68,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > GC ×11 (12-19/06): §184-§218 consolidados + L-43 (→`00`/`99`/`30`). Vivo:
 > - **19-20/06**: §219 ④a PASO 5+6 + §219.8 ícono visual · ④b parqueado · **CMS TODO-23 arrancado**: escaneo + comité v4 + Gemini (bóveda) → **FASE 0 seguridad 0.1/0.5/0.2 ✅**. Pre-historia → ADRs §215-§219.
+> - **20/06 (cont.)**: CMS cobaya **PRUEBA LIVE ✅** (texto "Acerca de" en marca-de-prueba visible en `/marcas/…` vía Playwright; publicó solo al mergear #877). Hallazgo colateral = **bug site-wide**: el SSG hornea `<title>` sin `id="pageTitle"` → `loadVehicles` revienta → catálogo de TODA marca horneada = esqueleto eterno. **Fix `cd2a4d1`** (null-guard en `marca.html`, push `refactor/estructura`) → **L-45**. ⏳ dueño MERGEA → regen cron → verifico live → ADR §221 al cerrar.

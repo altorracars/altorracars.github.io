@@ -403,7 +403,7 @@ function generatePage(template, v, slug) {
 
 // ===================== Brand Page Generation =====================
 
-function generateBrandPage(template, brand, slug, vehicles) {
+function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
     const nombre = capitalize(brand.nombre || brand.id || '');
     const brandId = String(brand.id);
     const canonicalUrl = `${SITE_URL}/marcas/${slug}.html`;
@@ -429,6 +429,7 @@ function generateBrandPage(template, brand, slug, vehicles) {
         '</head>',
         'const params = new URLSearchParams(window.location.search);',
         '<div id="header-placeholder"></div>',
+        '<!--CMS:aboutBrand-->',
     ];
     for (const anchor of REQUIRED_ANCHORS_BRAND) {
         if (!template.includes(anchor)) {
@@ -566,6 +567,18 @@ ${disponibles.slice(0, 20).map(v => {
         '<div id="header-placeholder"></div>',
         `<div id="header-placeholder"></div>${noscript}`
     );
+
+    // CMS FASE 2 cobaya — contenido editable OPCIONAL "acerca de la marca".
+    // Fuente: siteContent/brand_{id}.aboutBrand (escrito por el editor del admin, validado
+    // server-side por las reglas). Render-side: escapeHtml (text node, anti-XSS, defensa-en-prof).
+    // Contrato de fallback: sin doc / sin campo / no-string → ancla → vacío (la sección no se
+    // renderiza; NUNCA rompe ni vacía la página de marca — es contenido aditivo).
+    const sc = (siteContent && siteContent['brand_' + brandId]) || {};
+    const aboutBrand = (typeof sc.aboutBrand === 'string') ? sc.aboutBrand.trim() : '';
+    const aboutBlock = aboutBrand
+        ? `<section class="brand-about" style="padding:1.5rem 0"><div class="container"><p style="max-width:70ch;line-height:1.7;margin:0">${escapeHtml(aboutBrand)}</p></div></section>`
+        : '';
+    html = html.replace('<!--CMS:aboutBrand-->', aboutBlock);
 
     return html;
 }
@@ -708,6 +721,20 @@ async function main() {
     const brands = brandsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     console.log(`[generate] ${brands.length} brands found.`);
 
+    // CMS FASE 2 — contenido editable OPCIONAL (siteContent/*). El cron lee como cliente
+    // anónimo bajo reglas (read:if true — invariante §2 Hueco B). Si la red falla o está vacío
+    // → se hornea SIN el contenido CMS (las páginas NO se rompen; es aditivo). NO fail-loud aquí:
+    // a diferencia de vehículos/marcas, siteContent ausente es estado legítimo (nadie editó aún).
+    let siteContentMap = {};
+    try {
+        const scSnap = await getDocs(collection(db, 'siteContent'));
+        scSnap.forEach(d => { siteContentMap[d.id] = d.data() || {}; });
+        console.log(`[generate] ${Object.keys(siteContentMap).length} docs siteContent (contenido CMS).`);
+    } catch (err) {
+        console.warn('[generate] siteContent no disponible — se hornea sin contenido CMS opcional:', err.message);
+        siteContentMap = {};
+    }
+
     const brandTemplate = readFileSync(join(ROOT, 'marca.html'), 'utf-8');
     const brandSlugMap = new Map();
     for (const b of brands) {
@@ -725,7 +752,7 @@ async function main() {
     console.log('[generate] Generating brand pages...');
     for (const b of brands) {
         const slug = brandSlugMap.get(String(b.id));
-        const html = generateBrandPage(brandTemplate, b, slug, vehicles);
+        const html = generateBrandPage(brandTemplate, b, slug, vehicles, siteContentMap);
         writeFileSync(join(brandsDir, `${slug}.html`), html);
         console.log(`  + marcas/${slug}.html`);
     }
@@ -776,6 +803,10 @@ function runSelfTest() {
         if (label === 'marca') {
             if (html.indexOf('<link rel="canonical"') < 0) fails.push(label + ': falta <link rel=canonical> — cadena robots→canonical rota (¿falta el ancla robots en marca.html?)');
             if (html.indexOf('property="og:title"') < 0) fails.push(label + ': falta og:title — bloque OG/Twitter no inyectado');
+            // FASE 2 cobaya — el ancla CMS debe quedar REEMPLAZADA (nunca cruda en el HTML público)
+            // y, con aboutBrand no-vacío (el mock), la sección brand-about debe renderizarse.
+            if (html.indexOf('<!--CMS:aboutBrand-->') >= 0) fails.push(label + ': ancla <!--CMS:aboutBrand--> NO reemplazada (inyección del CMS rota)');
+            if (html.indexOf('class="brand-about"') < 0) fails.push(label + ': aboutBrand presente pero la sección brand-about NO se renderizó');
         }
         const parts = html.split('<script type="application/ld+json">');
         let n = 0;
@@ -799,8 +830,12 @@ function runSelfTest() {
         if (p < 1) fails.push(label + ': no se encontro asignacion PRERENDERED inyectada');
     }
 
+    // FASE 2 — mock de contenido CMS con payload de breakout en aboutBrand: debe salir
+    // ESCAPADO (text node) y el ancla reemplazada (lo verifican las aserciones de abajo).
+    const mockSiteContent = {};
+    mockSiteContent['brand_' + mockB.id] = { aboutBrand: PAYLOAD };
     checkScripts('vehiculo', generatePage(vTpl, mockV, 'selftest'));
-    checkScripts('marca', generateBrandPage(bTpl, mockB, 'selftest', [mockV]));
+    checkScripts('marca', generateBrandPage(bTpl, mockB, 'selftest', [mockV], mockSiteContent));
 
     if (fails.length) {
         console.error('[SSG_SELFTEST] FALLO — safeJsonLd NO neutraliza el breakout:');

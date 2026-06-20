@@ -341,11 +341,24 @@ service cloud.firestore {
           || request.resource.data[f] == null
           || (request.resource.data[f] is string && request.resource.data[f].size() <= max);
       }
+      // bannerUrl (CMS banner de marca, TODO-23): OPCIONAL. Si está, DEBE ser vacío (limpiar) o una
+      // URL https del host de Firebase Storage. Repo público + read:true → un string libre sería canal
+      // de exfiltración / inyección de URL arbitraria en el SSG (la imagen YA pasó por storage.rules:
+      // auth + <5MB + png/jpeg/webp). Restringir al host de Storage cierra ese vector.
+      function scBannerUrlOk() {
+        return !('bannerUrl' in request.resource.data)
+          || request.resource.data.bannerUrl == null
+          || (request.resource.data.bannerUrl is string
+              && (request.resource.data.bannerUrl == ''
+                  || (request.resource.data.bannerUrl.size() <= 600
+                      && request.resource.data.bannerUrl.matches('https://firebasestorage[.]googleapis[.]com/.*'))));
+      }
       function siteContentShapeOk() {
-        return request.resource.data.keys().hasOnly(['aboutBrand', 'updatedAt', 'updatedBy', 'updatedByName'])
+        return request.resource.data.keys().hasOnly(['aboutBrand', 'bannerUrl', 'updatedAt', 'updatedBy', 'updatedByName'])
           && scCapOk('aboutBrand', 2000)
           // anti-PII: rechaza 7+ dígitos seguidos (teléfono/cédula) en texto público horneado
           && !(request.resource.data.get('aboutBrand', '').matches('.*[0-9]{7,}.*'))
+          && scBannerUrlOk()
           && scCapOk('updatedAt', 40)
           && scCapOk('updatedBy', 200)
           && scCapOk('updatedByName', 120);

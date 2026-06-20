@@ -407,12 +407,17 @@ function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
     const nombre = capitalize(brand.nombre || brand.id || '');
     const brandId = String(brand.id);
     const canonicalUrl = `${SITE_URL}/marcas/${slug}.html`;
+    // CMS (TODO-23): contenido editable de la marca (siteContent/brand_{id}). El banner custom
+    // (bannerUrl, validado por reglas = URL de Storage) reemplaza el b_{slug}.png estático tanto en
+    // el hero (PRERENDERED_BANNER_URL) como en el SEO (og:image). '' → fallback estático (cero regresión).
+    const sc = (siteContent && siteContent['brand_' + brandId]) || {};
+    const customBanner = (typeof sc.bannerUrl === 'string' && sc.bannerUrl) ? sc.bannerUrl : '';
     const disponibles = vehicles.filter(v =>
         String(v.marca || '').toLowerCase() === brandId.toLowerCase()
     );
     const count = disponibles.length;
     const desc = `Vehículos ${nombre} disponibles en ALTORRA CARS, Cartagena. ${count} ${count === 1 ? 'vehículo' : 'vehículos'} en inventario. Financiación disponible.`;
-    const bannerImage = `${SITE_URL}/multimedia/banner/b_${brandId}.png`;
+    const bannerImage = customBanner || `${SITE_URL}/multimedia/banner/b_${brandId}.png`;
 
     let html = template;
 
@@ -544,7 +549,7 @@ function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
     // Inject PRERENDERED_BRAND_ID so the inline script picks up the brand without ?marca= query param
     html = html.replace(
         '<script>\n        const params = new URLSearchParams(window.location.search);',
-        `<script>window.PRERENDERED_BRAND_ID = ${safeJsonLd(brandId)};</script>\n    <script>\n        const params = new URLSearchParams(window.location.search);`
+        `<script>window.PRERENDERED_BRAND_ID = ${safeJsonLd(brandId)};</script><script>window.PRERENDERED_BANNER_URL = ${safeJsonLd(customBanner)};</script>\n    <script>\n        const params = new URLSearchParams(window.location.search);`
     );
 
     // <noscript> fallback for crawlers
@@ -573,7 +578,6 @@ ${disponibles.slice(0, 20).map(v => {
     // server-side por las reglas). Render-side: escapeHtml (text node, anti-XSS, defensa-en-prof).
     // Contrato de fallback: sin doc / sin campo / no-string → ancla → vacío (la sección no se
     // renderiza; NUNCA rompe ni vacía la página de marca — es contenido aditivo).
-    const sc = (siteContent && siteContent['brand_' + brandId]) || {};
     const aboutBrand = (typeof sc.aboutBrand === 'string') ? sc.aboutBrand.trim() : '';
     // Estilo en css/home/marca-cinematic.css (.brand-about) — centrado, Manrope, alineado al header.
     const aboutBlock = aboutBrand
@@ -820,7 +824,7 @@ function runSelfTest() {
         if (n < 2) fails.push(label + ': esperaba >=2 bloques ld+json, encontro ' + n);
         // Solo la ASIGNACION inyectada (`window.X = valor;</script>`), no las LECTURAS del template.
         let p = 0;
-        for (const varName of ['PRERENDERED_VEHICLE_ID', 'PRERENDERED_BRAND_ID']) {
+        for (const varName of ['PRERENDERED_VEHICLE_ID', 'PRERENDERED_BRAND_ID', 'PRERENDERED_BANNER_URL']) {
             const marker = 'window.' + varName + ' = ';
             const idx = html.indexOf(marker);
             if (idx < 0) continue;
@@ -834,7 +838,7 @@ function runSelfTest() {
     // FASE 2 — mock de contenido CMS con payload de breakout en aboutBrand: debe salir
     // ESCAPADO (text node) y el ancla reemplazada (lo verifican las aserciones de abajo).
     const mockSiteContent = {};
-    mockSiteContent['brand_' + mockB.id] = { aboutBrand: PAYLOAD };
+    mockSiteContent['brand_' + mockB.id] = { aboutBrand: PAYLOAD, bannerUrl: PAYLOAD };
     checkScripts('vehiculo', generatePage(vTpl, mockV, 'selftest'));
     checkScripts('marca', generateBrandPage(bTpl, mockB, 'selftest', [mockV], mockSiteContent));
 

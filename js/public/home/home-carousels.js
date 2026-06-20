@@ -1137,7 +1137,7 @@
                 var brand = all[i];
                 var a = document.createElement('a');
                 a.className = 'cin-brand';
-                a.href = 'marca.html?marca=' + encodeURIComponent(brand.id || '');
+                a.href = '/marcas/' + encodeURIComponent(brand.id || '') + '.html';
                 a.setAttribute('aria-label', brand.nombre || brand.id || '');
                 var img = document.createElement('img');
                 img.src = brand.logo || ('multimedia/Logos/' + esc(brand.id) + '.webp');

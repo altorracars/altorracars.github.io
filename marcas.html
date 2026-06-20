@@ -341,7 +341,7 @@
                 var fallbackLogo = logo.replace(/\.webp$/i, '.png');
 
                 var card = document.createElement('a');
-                card.href = 'marca.html?marca=' + encodeURIComponent(id);
+                card.href = '/marcas/' + encodeURIComponent(id) + '.html';
                 card.className = 'marca-card';
                 card.innerHTML =
                     (count > 0 ? '<span class="marca-card-badge">' + count + '</span>' : '') +
@@ -369,7 +369,7 @@
             fallback.forEach(function (name) {
                 var id = name.toLowerCase().replace(/\u00eb/g,'e');
                 var card = document.createElement('a');
-                card.href = 'marca.html?marca=' + id;
+                card.href = '/marcas/' + id + '.html';
                 card.className = 'marca-card';
                 card.innerHTML =
                     '<img src="multimedia/Logos/' + name.replace(/\u00eb/,'e') + '.webp" alt="' + name + '" class="marca-card-logo" loading="lazy"' +

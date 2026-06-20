@@ -245,7 +245,7 @@
         }
     })();
     </script>
-    <script>window.PRERENDERED_BRAND_ID = "renault";</script>
+    <script>window.PRERENDERED_BRAND_ID = "renault";</script><script>window.PRERENDERED_BANNER_URL = "";</script>
     <script>
         const params = new URLSearchParams(window.location.search);
         const brandId = window.PRERENDERED_BRAND_ID || params.get('marca');
@@ -277,7 +277,7 @@
                 if (pageTitleEl) pageTitleEl.textContent = brandInfo.nombre + ' | ALTORRA CARS';
 
                 // Cargar banner inmediatamente — mostrar hero al instante
-                const bannerPath = `multimedia/banner/b_${brandId}.png`;
+                const bannerPath = window.PRERENDERED_BANNER_URL || `multimedia/banner/b_${brandId}.png`;
                 const brandHero = document.getElementById('brandHero');
                 const brandHeader = document.getElementById('brandHeader');
                 const bannerImg = document.getElementById('brandBanner');

@@ -126,5 +126,11 @@
 - **Build/deploy**: `admin-app/dist/` **SÍ se versiona** (GitHub Pages lo sirve; `.gitignore` lo exceptúa). Tras tocar `src/` → `npm run build --prefix admin-app` Y commitear el `dist` (filenames hasheados cambian). NO hay CI que lo buildee.
 - **Familia**: §159 (run paralelo admin-app) · L-13 (lazy-load guards).
 
+### L-45 · El SSG horneado DESPOJA ids del `<head>` (ej. `<title id>`) de los que depende el JS inline → null-deref ABORTA el render ⟦OPUS-4.8⟧
+- **Síntoma**: las páginas de marca HORNEADAS (`/marcas/{slug}.html`) quedan en **esqueleto eterno** (catálogo nunca pinta), pero la DINÁMICA (`marca.html?marca=`) funciona. Tras cargar el DB: `TypeError: Cannot set properties of null (setting 'textContent')` en `loadVehicles`. Afectaba a las 19 marcas en producción (§221).
+- **Causa (verificada EN VIVO con Playwright + `git show origin/main:<baked>`)**: `generate-vehicles.mjs` reescribe el `<title>` para SEO y al hornearlo **pierde el `id="pageTitle"`**. El JS inline `getElementById('pageTitle').textContent=…` → `null` → throw → `loadVehicles` se ABORTA antes de `renderVehicles` → los esqueletos nunca se limpian. La dinámica no rompe porque ahí el `<title id="pageTitle">` sí existe.
+- **Receta**: (1) el JS que toca elementos que el SSG puede reescribir (title/meta/canonical/OG del `<head>`) DEBE usar **null-guard** (`const el=getElementById(x); if(el) el.…`) — un elemento opcional ausente NUNCA debe abortar un render. (2) Matiz a L-07: el SSG "copia tags tal cual" EXCEPTO las anclas SEO del head, que SÍ reescribe (y puede soltar ids). (3) Diagnóstico: consola en vivo (Playwright/Chrome) da la línea exacta; comparar plantilla vs horneado con `git show origin/main:<path>` confirma qué id falta. (4) Cache: la bumpea el cron al regenerar `/marcas/` (no manual, L-02/L-03).
+- **Familia**: L-07 (SSG template-driven) · L-37 (rediseño rompe callsites JS↔HTML) · raíz común "DOM dinámico ≠ DOM horneado".
+
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

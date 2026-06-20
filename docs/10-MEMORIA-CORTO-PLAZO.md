@@ -12,14 +12,15 @@
 
 > 🤖 **Opus 4.8** (Fable 5 caído): commits footer `Modelo: Opus 4.8` + ADR/lecciones tag `⟦OPUS-4.8 · rev-Fable⟧`. Convención/causa = dueño `05` (no re-explicar aquí).
 
-> 🧠 **Cerebro v6 = 21/21 ✅** · 3 cerebros Nivel-2 (§207/§82/§12) · **Gemini UNIFICADO §208** → A/B/C = **TODO-28/29/30** (diseño-listo, NO urgente).
+> 🧠 **Cerebro v6 ✅** (3 cerebros N2) · hardening A/B/C = **TODO-28/29/30** (§208, diseño-listo, NO urgente).
 
 > 🏗️ **CRM E0→E6 (§176, TODO-21)**: E0→E5 ✅ · **E6 cutover 6/6** (§190-214) ✅. PR #865+#868 en `main`=`bc58234` (19/06, en producción). Vender=Pipeline (fin.=TODO-25). dealers F2 FROZEN.
-> 🏗️ **④ RBAC (§193.4) — ④a COMPLETO + config dueño ✅** (PASO 0-6, detalle → ADR §219; blueprint bóveda = SSoT). Dueño hizo: 4 deptos + backfill (dueño=100) + Francisco→Dirección (`userCount`=1 verificado). Pend: merge §219.8 (picker). **④b PARQUEADO** (decisión dueño 19/06: hoy 2 personas y ambas ven todo → el depto solo AGRUPA, no filtra; revisitar al contratar varios asesores que deban ver SOLO lo suyo). Al retomar ④b: **🔑 FLOOR server-side ANTES de enforce `nivel`** (actor solo asigna roles de nivel < el suyo; acotar `role.nivel` en rules) — si no, el seed §219 = escalada.
+> 🏗️ **④ RBAC (§193.4): ④a COMPLETO ✅** (PASO 0-6, ADR §219; config dueño hecha: 4 deptos + backfill (dueño=100) + Francisco→Dirección, `userCount`=1 verif). Pend: merge §219.8 (picker). **④b PARQUEADO** (dueño 19/06: 2 personas ven todo, depto solo AGRUPA; revisitar al escalar equipo; al retomar = **FLOOR server-side antes de enforce `nivel`**, si no el seed §219 = escalada).
+>
+> 🏗️ **CMS/Dinamismo (TODO-23) EN CURSO ⟦OPUS-4.8⟧** — editor=**Opción A** (fichas tipadas) decidido. **Escaneo Paso 1 ✅ + arquitectura comité v4 ✅** (bóveda `2026-06-19-cms-escaneo-paso1` + `…-cms-arquitectura-comite-v4`, SSoT). **Pend dueño: pase Gemini** (prompt en bóveda; advisor-only, opcional). **SIGUIENTE = PASO 0** (ADR: CMS nace en `admin-app/src/modules/cms-dinamico/`, flat `admin-brands.js` CONGELADO) + **FASE 0 seguridad VIVA y desacoplada** → **PR #1 = `safeJsonLd` en 6 sinks JSON-LD + self-test `SSG_SELFTEST`** (cierra stored-XSS latente; sin UI). **Cobaya** = campo `aboutBrand` en `marcas/` (index NO horneable hoy = Hueco A: `git add` del SSG lo excluye). Contratos clave: fail-loud cron · fallback singleton-ausente=HTML estático · mapa campo→sink→saneo. Detalle completo → bóveda v4.
 > ⚠️ Decisiones dueño pre-cutover → §193 (bot ALTOR R-1 · gap 8 financiero · 2FA · vista Inicio · RBAC ④ §193.4). Gates: F32 móvil · F33b piloto · manual.
 > 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187 (NFD-slug · admin-calendar-config/dynamic-lists/fcm-sw inyectados VIVOS · dashboards→deals.wonAt · ~1000 exprs Rules · emulador :8081).
-> Strangler/cutover detalle → §188 (plan 29 pasos) + §183 (E6.5 comité diseño · E6.6 auditoría clásico, FIRMES).
-> Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05 (diferido) · SEC-07/09 (P2).
+> Strangler/cutover → §188+§183. Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05/07/09 (diferidos).
 > ⏳ **Cliente** (→`05` flags): descartar lead prueba `VMVMJG…` · anunciar F42 · billing GCP causa raíz.
 > ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado.
 >
@@ -66,5 +67,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 ## 📝 Bitácora (efímera)
 
 > GC ×11 (12-19/06): §184-§218 consolidados + L-43 (→`00`/`99`/`30`). Vivo:
-> - **19/06 §219 — ④a PASO 5+6 (④a COMPLETO)**: seed `nivel` solo-si-falta (`computeNivelSeedOnAssign` +7 tests→16/16, `onUserRoleAssigned` desplegada) + paridad dual-portal (cosmética). Pase adversarial 3/3 SAFE (crudo→bóveda). + **§219.8 selector visual de ícono** en modal deptos (feedback dueño; `admin-departments.js`). SIGUIENTE: ④b (gateado, ver foco) o bucket TODO-22..27.
-> - **19/06 maratón** (8 commits cars+1 inmob, PR #865+#868): ④a PASO 2-4 (§215/§216/§218) · §217 FIX seguridad · doctrina git §2 (M-12) · Antigravity read-only (§15) · E6 cutover 6/6 (§209-214) · Gemini UNIFICADO §208. Detalle → ADRs.
+> - **19/06 (sesión larga)**: §219 ④a PASO 5+6 (seed nivel + paridad, 16/16, adversarial 3/3 SAFE) + §219.8 selector visual ícono deptos · ④b parqueado · **CMS TODO-23 arrancado** (escaneo + comité v4 → bóveda). Pre: maratón PR#865+#868 (④a PASO 2-4 §215/§216/§218, §217, E6 cutover 6/6, Gemini UNIF §208). Detalle → ADRs+bóveda.

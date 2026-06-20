@@ -10,14 +10,14 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **Opus 4.8** (Fable 5 caído): commits footer `Modelo: Opus 4.8` + ADR/lecciones tag `⟦OPUS-4.8 · rev-Fable⟧`. Convención/causa = dueño `05` (no re-explicar aquí).
+> 🤖 **Opus 4.8** (Fable 5 caído): footer `Modelo: Opus 4.8` + tag `⟦OPUS-4.8 · rev-Fable⟧` (detalle → `05`).
 
 > 🧠 **Cerebro v6 ✅** (3 cerebros N2) · hardening A/B/C = **TODO-28/29/30** (§208, diseño-listo, NO urgente).
 
 > 🏗️ **CRM E0→E6 (§176, TODO-21)**: E0→E5 ✅ · **E6 cutover 6/6** (§190-214) ✅. PR #865+#868 en `main`=`bc58234` (19/06, en producción). Vender=Pipeline (fin.=TODO-25). dealers F2 FROZEN.
 > 🏗️ **④ RBAC (§193.4): ④a COMPLETO ✅** (PASO 0-6, ADR §219; config dueño hecha: 4 deptos + backfill (dueño=100) + Francisco→Dirección, `userCount`=1 verif). Pend: merge §219.8 (picker). **④b PARQUEADO** (dueño 19/06: 2 personas ven todo, depto solo AGRUPA; revisitar al escalar equipo; al retomar = **FLOOR server-side antes de enforce `nivel`**, si no el seed §219 = escalada).
 >
-> 🏗️ **CMS/Dinamismo (TODO-23) EN CURSO ⟦OPUS-4.8⟧** — editor=**Opción A** (fichas tipadas) decidido. **Escaneo Paso 1 ✅ + arquitectura comité v4 ✅** (bóveda `2026-06-19-cms-escaneo-paso1` + `…-cms-arquitectura-comite-v4`, SSoT). **Pend dueño: pase Gemini** (prompt en bóveda; advisor-only, opcional). **SIGUIENTE = PASO 0** (ADR: CMS nace en `admin-app/src/modules/cms-dinamico/`, flat `admin-brands.js` CONGELADO) + **FASE 0 seguridad VIVA y desacoplada** → **PR #1 = `safeJsonLd` en 6 sinks JSON-LD + self-test `SSG_SELFTEST`** (cierra stored-XSS latente; sin UI). **Cobaya** = campo `aboutBrand` en `marcas/` (index NO horneable hoy = Hueco A: `git add` del SSG lo excluye). Contratos clave: fail-loud cron · fallback singleton-ausente=HTML estático · mapa campo→sink→saneo. Detalle completo → bóveda v4.
+> 🏗️ **CMS/Dinamismo (TODO-23) EN CURSO ⟦OPUS-4.8⟧** — editor=**Opción A** decidido. Escaneo Paso 1 + arquitectura **comité v4** ✅ (bóveda `…cms-escaneo-paso1` + `…cms-arquitectura-comite-v4`). **Pase Gemini**: prompt entregado al dueño EN CHAT (corriendo; advisor-only). **FASE 0 seguridad (desacoplada): 0.1 `safeJsonLd` 6 sinks + 0.5 `escapeAttr <>` ✅ pusheados** (`4a0b7d6`/`d4cab55`; gate `SSG_SELFTEST` con dientes verificado por prueba negativa). **Pend FASE 0: 0.2 SVG/storage.rules (HACER TRAS Gemini Q2, que revisa justo eso) · 0.3 anchor-guard marcas · 0.4 netlify→_legacy.** Luego **PASO 0** (ADR: CMS en `admin-app/src/modules/cms-dinamico/`, flat `admin-brands.js` CONGELADO) + **cobaya** `aboutBrand` en `marcas/` (Hueco A: index NO horneable). Contratos: fail-loud cron · fallback singleton=HTML estático · mapa campo→sink→saneo. Detalle → bóveda v4.
 > ⚠️ Decisiones dueño pre-cutover → §193 (bot ALTOR R-1 · gap 8 financiero · 2FA · vista Inicio · RBAC ④ §193.4). Gates: F32 móvil · F33b piloto · manual.
 > 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187 (NFD-slug · admin-calendar-config/dynamic-lists/fcm-sw inyectados VIVOS · dashboards→deals.wonAt · ~1000 exprs Rules · emulador :8081).
 > Strangler/cutover → §188+§183. Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05/07/09 (diferidos).

@@ -86,9 +86,15 @@ function escapeHtml(str) {
 }
 
 function escapeAttr(str) {
+    // CMS FASE 0.5 (comité v4): antes solo escapaba & y " — NO < > ' → un valor con
+    // `<`/`>` en un meta-tag (og:*/twitter:*) filtraba HTML crudo. Defensa-en-profundidad
+    // ANTES de exponer cualquier campo editable (CMS) a atributos. `&` va primero.
     return String(str)
         .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;');
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function escapeXml(str) {
@@ -98,6 +104,20 @@ function escapeXml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&apos;');
+}
+
+// CMS FASE 0.1 (Decisión Fuerte comité v4) — JSON embebido en HTML inline
+// (<script type="application/ld+json"> y <script>window.X=…</script>) DEBE neutralizar
+// el breakout de </script> y los separadores de línea JS. JSON.stringify CRUDO no escapa
+// `<` `>` `&` ni U+2028/U+2029 → un campo editable (CMS) que fluya a estos sinks sería
+// stored-XSS persistente, horneado y servido a todo visitante. Las secuencias \uXXXX que
+// inyectamos son válidas dentro de un string JSON → el parser del navegador las decodifica
+// al MISMO valor: semántica idéntica, bytes seguros. (Render-side defensa-en-profundidad;
+// la defensa primaria es el TIPO+CONTENIDO validado server-side en las reglas Firestore.)
+function safeJsonLd(obj) {
+    return JSON.stringify(obj).replace(/[<>&\u2028\u2029]/g, function (c) {
+        return '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0');
+    });
 }
 
 // ===================== Page Generation =====================
@@ -334,14 +354,14 @@ function generatePage(template, v, slug) {
 
     html = html.replace(
         '</head>',
-        `    <script type="application/ld+json">${JSON.stringify(carSchema)}</script>\n` +
-        `    <script type="application/ld+json">${JSON.stringify(breadcrumbSchema)}</script>\n</head>`
+        `    <script type="application/ld+json">${safeJsonLd(carSchema)}</script>\n` +
+        `    <script type="application/ld+json">${safeJsonLd(breadcrumbSchema)}</script>\n</head>`
     );
 
     // 8. Inject PRERENDERED_VEHICLE_ID before historial-visitas.js so auto-tracking
     //    can read it synchronously. Fallback: detalle-page.js (SP-5.3 — el inline
     //    'let currentVehicle' se extrajo a js/public/detalle/; ya no existe en el template).
-    const prerenderedTag = `<script>window.PRERENDERED_VEHICLE_ID = ${JSON.stringify(String(v.id))};</script>`;
+    const prerenderedTag = `<script>window.PRERENDERED_VEHICLE_ID = ${safeJsonLd(String(v.id))};</script>`;
     if (html.includes('<script src="js/core/historial-visitas.js"></script>')) {
         html = html.replace(
             '<script src="js/core/historial-visitas.js"></script>',
@@ -496,14 +516,14 @@ function generateBrandPage(template, brand, slug, vehicles) {
 
     html = html.replace(
         '</head>',
-        `    <script type="application/ld+json">${JSON.stringify(dealerSchema)}</script>\n` +
-        `    <script type="application/ld+json">${JSON.stringify(breadcrumbSchema)}</script>\n</head>`
+        `    <script type="application/ld+json">${safeJsonLd(dealerSchema)}</script>\n` +
+        `    <script type="application/ld+json">${safeJsonLd(breadcrumbSchema)}</script>\n</head>`
     );
 
     // Inject PRERENDERED_BRAND_ID so the inline script picks up the brand without ?marca= query param
     html = html.replace(
         '<script>\n        const params = new URLSearchParams(window.location.search);',
-        `<script>window.PRERENDERED_BRAND_ID = ${JSON.stringify(brandId)};</script>\n    <script>\n        const params = new URLSearchParams(window.location.search);`
+        `<script>window.PRERENDERED_BRAND_ID = ${safeJsonLd(brandId)};</script>\n    <script>\n        const params = new URLSearchParams(window.location.search);`
     );
 
     // <noscript> fallback for crawlers
@@ -708,7 +728,68 @@ async function main() {
     process.exit(0);
 }
 
-main().catch(err => {
-    console.error('[generate] Fatal error:', err);
-    process.exit(1);
-});
+// CMS FASE 0.1 — self-test del cierre anti-stored-XSS de los sinks JSON-LD/PRERENDERED.
+// Gate REAL (no grep): hornea un payload de breakout en cada sink vía las funciones PURAS
+// con mocks (SIN tocar Firestore) y exige que cada bloque JSON PARSEE. Si safeJsonLd fallara,
+// la captura se trunca en el </script> inyectado → JSON.parse falla → exit 1.
+// Corrible hoy: `SSG_SELFTEST=1 node scripts/generate-vehicles.mjs`
+function runSelfTest() {
+    const U2028 = String.fromCharCode(0x2028), U2029 = String.fromCharCode(0x2029);
+    const PAYLOAD = '</script><script>alert(1)</script>' + U2028 + U2029 + ' raw < & > chars';
+    const vTpl = readFileSync(join(ROOT, 'detalle-vehiculo.html'), 'utf-8');
+    const bTpl = readFileSync(join(ROOT, 'marca.html'), 'utf-8');
+    const mockV = { id: PAYLOAD, marca: PAYLOAD, modelo: PAYLOAD, year: 2020, precio: 50000000,
+        tipo: 'sedan', transmision: 'automatica', combustible: 'gasolina', kilometraje: 10000,
+        color: 'negro', categoria: 'sedan', imagen: 'https://x/y.jpg', estado: 'disponible' };
+    const mockB = { id: PAYLOAD, nombre: PAYLOAD, descripcion: PAYLOAD };
+    const fails = [];
+
+    function checkScripts(label, html) {
+        // FASE 0.5 — aserción de breakout en TODO el documento: tras safeJsonLd (sinks JSON)
+        // + escapeAttr/escapeHtml (atributos/texto), NINGÚN sink debe dejar el `</script><script>`
+        // crudo. Solo pasa si <> se neutraliza en TODOS los contextos (JSON, attr, texto).
+        if (html.indexOf('</script><script>alert(1)</script>') >= 0) {
+            fails.push(label + ': BREAKOUT crudo </script><script> presente en el HTML (algún sink no escapa < >)');
+        }
+        const parts = html.split('<script type="application/ld+json">');
+        let n = 0;
+        for (let i = 1; i < parts.length; i++) {
+            const content = parts[i].split('</script>')[0];
+            n++;
+            try { JSON.parse(content); } catch (e) { fails.push(label + ': ld+json #' + n + ' NO parsea (breakout/escape roto): ' + e.message); }
+            if (content.indexOf(U2028) >= 0 || content.indexOf(U2029) >= 0) fails.push(label + ': ld+json #' + n + ' contiene U+2028/2029 CRUDO');
+        }
+        if (n < 2) fails.push(label + ': esperaba >=2 bloques ld+json, encontro ' + n);
+        // Solo la ASIGNACION inyectada (`window.X = valor;</script>`), no las LECTURAS del template.
+        let p = 0;
+        for (const varName of ['PRERENDERED_VEHICLE_ID', 'PRERENDERED_BRAND_ID']) {
+            const marker = 'window.' + varName + ' = ';
+            const idx = html.indexOf(marker);
+            if (idx < 0) continue;
+            const val = html.slice(idx + marker.length).split(';</script>')[0];
+            p++;
+            try { JSON.parse(val); } catch (e) { fails.push(label + ': ' + varName + ' valor NO parsea (breakout): ' + e.message); }
+        }
+        if (p < 1) fails.push(label + ': no se encontro asignacion PRERENDERED inyectada');
+    }
+
+    checkScripts('vehiculo', generatePage(vTpl, mockV, 'selftest'));
+    checkScripts('marca', generateBrandPage(bTpl, mockB, 'selftest', [mockV]));
+
+    if (fails.length) {
+        console.error('[SSG_SELFTEST] FALLO — safeJsonLd NO neutraliza el breakout:');
+        for (const f of fails) console.error('  - ' + f);
+        process.exit(1);
+    }
+    console.log('[SSG_SELFTEST] OK — sinks JSON-LD/PRERENDERED neutralizan </script> + U+2028/29 (safeJsonLd correcto).');
+    process.exit(0);
+}
+
+if (process.env.SSG_SELFTEST) {
+    runSelfTest();
+} else {
+    main().catch(err => {
+        console.error('[generate] Fatal error:', err);
+        process.exit(1);
+    });
+}

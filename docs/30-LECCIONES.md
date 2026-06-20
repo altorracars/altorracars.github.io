@@ -261,6 +261,11 @@
 
 ### L-46 · Inyectar una 2ª global `window.X` en el MISMO `<script>` que otra rompe el gate `SSG_SELFTEST` (split `;</script>` arrastra la 2ª asignación) → detalle en `33-LECCIONES-FRONTEND.md`
 
+### L-47 · En reglas Firestore, `resource.data.X` de un campo AUSENTE **LANZA** (no es null) — guardar con `('X' in resource.data)` ⟦OPUS-4.8⟧
+- **Síntoma (§222)**: un test rules-unit de `marcas` dio `PERMISSION_DENIED: Property _version is undefined on object` al ACTUALIZAR un doc sin `_version` (los seed/legacy). En prod no se notó porque el dueño edita como **super-admin** (que bypassa `validVersion()`); un `brands.edit` no-super SÍ lo dispara.
+- **Causa**: `validVersion()` = `request…_version == resource.data._version + 1 || (resource.data._version == null && …)`. El PRIMER operando accede a `resource.data._version`; si el doc no lo tiene, **lanza evaluation error** → la `||` ni evalúa el fallback `== null`. Acceder a un campo ausente en reglas es un ERROR, NO `null`.
+- **Receta**: antes de leer un campo OPCIONAL de `resource.data`, **guardar con `('X' in resource.data)`** (o `.get('X', default)` donde exista), ANTES de la operación que lo accede. En `request.resource.data` (create) el cliente siempre lo manda; el riesgo es leer `resource.data` (el doc previo, que puede ser seed/legacy sin el campo). Aplica a cualquier helper que compare versión/timestamp de docs que pueden no tenerlos.
+
 ### L-38 · `billing disabled` tumba las 27 functions — pero Eventarc RE-ENTREGA al recuperarse (outage corto ≠ pérdida)
 - **Síntoma**: logs de TODAS las functions con "The request failed because billing is disabled" (crons + triggers). La web sigue viva (reads/writes directos a Firestore OK) pero ingestión CRM, emails, Telegram y LLM muertos.
 - **Observado (§175, 2026-06-09)**: outage ~21:00→23:03 UTC; al volver el billing, **Eventarc RE-ENTREGÓ los eventos fallidos solo** (la solicitud de las 22:50 se ingirió a las 23:03, `_ingestedAt` tardío, sin pérdida ni duplicados). La retención de reintentos es limitada (~horas) — un outage LARGO sí pierde eventos → revisar `failedIngestions` + backfill manual.

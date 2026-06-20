@@ -269,7 +269,12 @@
             const brandInfo = vehicleDB.getBrandInfo(brandId);
             
             if (brandInfo) {
-                document.getElementById('pageTitle').textContent = brandInfo.nombre + ' | ALTORRA CARS';
+                // El SSG horneado (/marcas/{slug}.html) reescribe el <title> para SEO y pierde
+                // el id="pageTitle" → getElementById = null. Guard: si revienta aquí, loadVehicles
+                // se aborta y el catálogo nunca se pinta (esqueletos eternos en TODA marca horneada).
+                // En horneado el título ya viene correcto; solo la página dinámica necesita fijarlo.
+                const pageTitleEl = document.getElementById('pageTitle');
+                if (pageTitleEl) pageTitleEl.textContent = brandInfo.nombre + ' | ALTORRA CARS';
 
                 // Cargar banner inmediatamente — mostrar hero al instante
                 const bannerPath = `multimedia/banner/b_${brandId}.png`;

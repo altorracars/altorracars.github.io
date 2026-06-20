@@ -2574,7 +2574,7 @@ exports.getTelegramWebhookStatus = onCall({
 // (Sprint R7 agregará helper que detecta drift.)
 // ============================================================
 
-const RBAC_CATALOG_VERSION = '1.1.0';
+const RBAC_CATALOG_VERSION = '1.2.0';
 
 const RBAC_PERMISSIONS = [
     // 🚗 Inventario (14)
@@ -2602,6 +2602,8 @@ const RBAC_PERMISSIONS = [
     { id: 'reviews.create',  name: 'Crear reseñas',         description: 'Agregar reseñas manuales',                           category: 'Sitio público', resource: 'reviews', action: 'create' },
     { id: 'reviews.edit',    name: 'Editar reseñas',        description: 'Modificar reseñas',                                  category: 'Sitio público', resource: 'reviews', action: 'edit' },
     { id: 'reviews.delete',  name: 'Eliminar reseñas',      description: 'Borrar reseñas',                                     category: 'Sitio público', resource: 'reviews', action: 'delete', critical: true },
+    // CMS FASE 1.1 (TODO-23, comité v4) — permiso atómico de contenido (siteContent/*). Espejo de js/admin/rbac-catalog.js.
+    { id: 'content.edit',    name: 'Editar contenido del sitio', description: 'Editar textos/contenido editable de páginas públicas (CMS)', category: 'Sitio público', resource: 'content', action: 'edit' },
 
     // 👥 CRM (6)
     { id: 'crm.read',    name: 'Ver CRM',               description: 'Ver lista de contactos del CRM',                     category: 'CRM', resource: 'crm', action: 'read' },

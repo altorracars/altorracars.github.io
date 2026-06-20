@@ -45,6 +45,10 @@
         { id: 'reviews.create', name: 'Crear reseñas', description: 'Agregar reseñas manuales', category: 'Sitio público', resource: 'reviews', action: 'create' },
         { id: 'reviews.edit', name: 'Editar reseñas', description: 'Modificar reseñas', category: 'Sitio público', resource: 'reviews', action: 'edit' },
         { id: 'reviews.delete', name: 'Eliminar reseñas', description: 'Borrar reseñas', category: 'Sitio público', resource: 'reviews', action: 'delete', critical: true },
+        // CMS FASE 1.1 (TODO-23, comité v4) — permiso ATÓMICO para editar contenido del sitio
+        // (siteContent/*). Separación de deberes: NO reusa un rol over-broad; un editor de
+        // contenido NO toca vehículos/CRM/agenda. La regla siteContent lo exige (FASE 2).
+        { id: 'content.edit', name: 'Editar contenido del sitio', description: 'Editar textos/contenido editable de las páginas públicas (CMS)', category: 'Sitio público', resource: 'content', action: 'edit' },
 
         // 👥 CRM (6)
         { id: 'crm.read', name: 'Ver CRM', description: 'Ver lista de contactos del CRM', category: 'CRM', resource: 'crm', action: 'read' },
@@ -200,7 +204,7 @@
     // ========== EXPONER API ==========
 
     window.AltorraRBACCatalog = {
-        version: '1.1.0',
+        version: '1.2.0',
         permissions: PERMISSIONS_CATALOG,
         systemRoles: SYSTEM_ROLES,
         legacyMapping: LEGACY_TO_ROLE_ID,

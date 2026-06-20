@@ -134,12 +134,31 @@ service cloud.firestore {
     match /marcas/{marcaId} {
       allow read: if true;
 
-      allow create: if isSuperAdmin()
+      // §222 #2 (defensa-en-profundidad, review adversarial) — valida FORMA + slug del docId
+      // server-side. El editor (brands.ui.js/admin-brands.js) ya genera docId=slugify(nombre);
+      // esto BLINDA el invariante del que depende el relink de nav `/marcas/{id}.html` (id==slug).
+      // Whitelist = los 8 campos de saveBrand (modular+flat); VERIFICADO vs los 18 docs reales
+      // (unión = {id,nombre,descripcion,logo,updatedAt,updatedBy,_type}; +_version que escriben los
+      // editores) y vs el restore (admin-operations: escribe el doc respaldado, ⊆ 8). delete intacto.
+      function mCapOk(f, max) {
+        return !(f in request.resource.data)
+          || request.resource.data[f] == null
+          || (request.resource.data[f] is string && request.resource.data[f].size() <= max);
+      }
+      function marcaShapeOk() {
+        return marcaId.matches('[a-z0-9-]+')
+          && request.resource.data.keys().hasOnly(['id', 'nombre', 'descripcion', 'logo', 'updatedAt', 'updatedBy', '_type', '_version'])
+          && (!('id' in request.resource.data) || request.resource.data.id == marcaId)
+          && mCapOk('id', 60) && mCapOk('nombre', 80) && mCapOk('descripcion', 500)
+          && mCapOk('logo', 600) && mCapOk('updatedAt', 40) && mCapOk('updatedBy', 200) && mCapOk('_type', 20);
+      }
+
+      allow create: if (isSuperAdmin()
         || isEditorOrAbove()
-        || hasPermission('brands.create');
-      allow update: if isSuperAdmin()
+        || hasPermission('brands.create')) && marcaShapeOk();
+      allow update: if (isSuperAdmin()
         || (isEditorOrAbove() && validVersion())
-        || (hasPermission('brands.edit') && validVersion());
+        || (hasPermission('brands.edit') && validVersion())) && marcaShapeOk();
 
       allow delete: if isSuperAdmin()
         || hasPermission('brands.delete');

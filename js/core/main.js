@@ -49,7 +49,7 @@ async function loadPopularBrands() {
         }
         var count = brandCounts[brand.id] || 0;
         var countText = count > 0 ? '<span class="brand-count">' + count + '</span>' : '';
-        return '<a href="marca.html?marca=' + brand.id + '" class="brand-card">' +
+        return '<a href="/marcas/' + brand.id + '.html" class="brand-card">' +
             '<img src="' + logo + '" alt="' + (brand.nombre || '') + '" class="brand-logo" loading="lazy" decoding="async"' +
             ' onerror="this.src=\'' + (brand.logo || '') + '\';this.onerror=null;">' +
             '<div class="brand-name">' + (brand.nombre || '') + '</div>' +

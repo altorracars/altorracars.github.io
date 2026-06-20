@@ -656,6 +656,50 @@ exports.onSiteContentChange = onDocumentWritten({
 });
 
 /**
+ * FASE 2.4 (TODO-23 §222): un alta/edición de MARCA (marcas/{id}) también regenera el SSG, para
+ * que la página canónica /marcas/{slug}.html de una marca NUEVA exista de inmediato. La navegación
+ * pública enlaza a esa canónica (no a la plantilla dinámica); sin este trigger, una marca recién
+ * creada daría 404 hasta el cron de 4h. Mismo patrón que onSiteContentChange (sin debounce).
+ */
+exports.onMarcaChange = onDocumentWritten({
+    document: 'marcas/{marcaId}',
+    region: 'us-central1',
+    secrets: [githubPat]
+}, async (event) => {
+    const token = githubPat.value();
+    if (!token) {
+        console.error('[SEO] GITHUB_PAT secret no configurado (marcas dispatch).');
+        return;
+    }
+    try {
+        const response = await fetch('https://api.github.com/repos/altorracars/altorracars.github.io/dispatches', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                event_type: 'vehicle-changed',
+                client_payload: {
+                    source: 'marcas',
+                    marcaId: event.params.marcaId,
+                    timestamp: new Date().toISOString()
+                }
+            })
+        });
+        if (response.ok || response.status === 204) {
+            console.log('[SEO] GitHub Actions dispatched for marca ' + event.params.marcaId);
+        } else {
+            const body = await response.text();
+            console.error('[SEO] GitHub API error ' + response.status + ': ' + body);
+        }
+    } catch (err) {
+        console.error('[SEO] Failed to dispatch GitHub Actions (marcas):', err.message);
+    }
+});
+
+/**
  * Callable function: manually trigger SEO page regeneration from admin panel.
  * Only super_admin can call this.
  */

@@ -45,12 +45,13 @@ import { mountDealers } from './modules/dealers/dealers.ui.js';
 import { mountLists } from './modules/lists/lists.ui.js';
 import { mountBackup } from './modules/backup/backup.ui.js';
 import { mountVehicles } from './modules/vehicles/vehicles.ui.js';
+import { mountCmsDinamico } from './modules/cms-dinamico/cms.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

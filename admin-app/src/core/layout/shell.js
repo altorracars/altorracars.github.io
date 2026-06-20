@@ -25,6 +25,8 @@ const NAV = [
   // E6 fase ② §188: módulos del sitio público migrados del clásico.
   { id: 'resenas', label: 'Reseñas', icon: '⭐', ready: true, perm: 'reviews.read' },
   { id: 'banners', label: 'Banners', icon: '🖼️', ready: true, perm: 'banners.read' },
+  // TODO-23 FASE 2 (CMS cobaya): editor de contenido editable del sitio. Gate content.edit.
+  { id: 'contenido', label: 'Contenido', icon: '📝', ready: true, perm: 'content.edit' },
   // E6 fase ③ §188: inventario — marcas primero (el form de vehículos las necesita).
   { id: 'vehiculos', label: 'Vehículos', icon: '🚗', ready: true, perm: 'vehicles.read' },
   { id: 'marcas', label: 'Marcas', icon: '🏷️', ready: true, perm: 'brands.read' },
@@ -45,6 +47,7 @@ const TITLES = {
   config: 'Disponibilidad de citas',
   resenas: 'Reseñas del sitio',
   banners: 'Banners del sitio',
+  contenido: 'Contenido del sitio',
   vehiculos: 'Inventario de vehículos',
   marcas: 'Marcas del inventario',
   aliados: 'Aliados / Concesionarios',

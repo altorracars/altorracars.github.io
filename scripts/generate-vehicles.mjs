@@ -416,6 +416,26 @@ function generateBrandPage(template, brand, slug, vehicles) {
 
     let html = template;
 
+    // FASE 0.3 (comité v4) — guard anti-fail-silent: generateBrandPage inyecta por .replace()
+    // (string Y regex) y FALLA EN SILENCIO (exit 0, página con SEO roto) si un rediseño del
+    // template de marca borra un anclaje — a diferencia de generatePage (vehículo) que ya tenía
+    // guard (§SP-5.3). Validamos la PRESENCIA de cada anclaje ANTES de inyectar → error RUIDOSO.
+    // (Verificar la presencia del tag = el regex/string del .replace correspondiente matcheará.)
+    const REQUIRED_ANCHORS_BRAND = [
+        '<meta charset="UTF-8">',
+        '<meta name="viewport"',
+        '<meta name="robots"',
+        '<title',
+        '</head>',
+        'const params = new URLSearchParams(window.location.search);',
+        '<div id="header-placeholder"></div>',
+    ];
+    for (const anchor of REQUIRED_ANCHORS_BRAND) {
+        if (!template.includes(anchor)) {
+            throw new Error('[generate] ANCLAJE FALTANTE en marca.html: ' + anchor + ' — el rediseño rompió un punto de inyección de generateBrandPage. Revisa el template antes de generar.');
+        }
+    }
+
     // Ensure <base href="/"> for subdir paths
     if (!html.includes('<base href="/">')) {
         html = html.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n    <base href="/">');
@@ -750,6 +770,12 @@ function runSelfTest() {
         // crudo. Solo pasa si <> se neutraliza en TODOS los contextos (JSON, attr, texto).
         if (html.indexOf('</script><script>alert(1)</script>') >= 0) {
             fails.push(label + ': BREAKOUT crudo </script><script> presente en el HTML (algún sink no escapa < >)');
+        }
+        // FASE 0.3 — verifica que la cadena robots→canonical→OG se inyecta en la página de marca
+        // (regresión: si marca.html pierde el ancla `robots`, el .replace() vuelve a ser no-op).
+        if (label === 'marca') {
+            if (html.indexOf('<link rel="canonical"') < 0) fails.push(label + ': falta <link rel=canonical> — cadena robots→canonical rota (¿falta el ancla robots en marca.html?)');
+            if (html.indexOf('property="og:title"') < 0) fails.push(label + ': falta og:title — bloque OG/Twitter no inyectado');
         }
         const parts = html.split('<script type="application/ld+json">');
         let n = 0;

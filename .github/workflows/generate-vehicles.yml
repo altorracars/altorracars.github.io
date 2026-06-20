@@ -19,6 +19,13 @@ on:
     types: [vehicle-changed]
   workflow_dispatch: # Manual trigger from GitHub UI
 
+# FASE 2.4 (TODO-23 §222): varios guardados de CMS (o un guardado + el cron) pueden disparar
+# regeneraciones solapadas. cancel-in-progress garantiza que gane SIEMPRE el último run (evita que
+# uno viejo pise contenido nuevo y evita 'git push' en paralelo con conflicto).
+concurrency:
+  group: generate-vehicles
+  cancel-in-progress: true
+
 jobs:
   generate:
     runs-on: ubuntu-latest

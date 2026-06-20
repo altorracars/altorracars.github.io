@@ -1,0 +1,17 @@
+# ⚠️ NO APLICA — movido a _legacy/ en FASE 0.4 (comité v4 CMS, 2026-06-20).
+# Este sitio se sirve por GitHub Pages: estático, SIN build, SIN headers HTTP.
+# Netlify NO se usa. `bun run build` / `publish=dist` / los redirects de abajo son
+# del proyecto Netlify VIEJO — inertes aquí. Se conserva solo como referencia histórica.
+# (Relevante para CSP: GitHub Pages no emite headers; CSP-full requeriría Cloudflare Pages.)
+
+[images]
+  remote_images = ["https://source.unsplash.com/.*", "https://images.unsplash.com/.*", "https://ext.same-assets.com/.*", "https://ugc.same-assets.com/.*"]
+
+[build]
+  command = "bun run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

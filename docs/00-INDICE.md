@@ -313,7 +313,8 @@
 | §216 | **④a PASO 3: departamentos (rules + UI) ⟦OPUS-4.8⟧** — `match /departments/` (guard §66) + `admin-departments.js` (DOM puro, clases reales L-37) + cableado nav/GROUPS. Deploy ✓. | 43671 |
 | §217 | **FIX seguridad: ningún users.edit/create MINTA un dueño (vector §215.7) ⟦OPUS-4.8⟧** — §212 cerró degradar-al-existente; faltaba no-mintar-nuevo. `isOwnerDoc()` guard en create+update. Test 80/80. Deploy ✓. | 43687 |
 | §218 | **④a PASO 4: asignar depto/nivel/dataScope a usuarios + userCount CF ⟦OPUS-4.8⟧** — user-modal +3 campos + `admin-users.js` rbacData + CF `onUserDeptChanged` (userCount→guard §66). Deploy ✓. SIGUIENTE PASO 5-6. | 43705 |
-| §219 | **④a PASO 5 (seed `nivel` al asignar rol, helper `computeNivelSeedOnAssign` +7 tests) + PASO 6 (paridad dual-portal) — ④a COMPLETO ⟦OPUS-4.8⟧** — seed-once-si-falta vs pin-`cargo`; spread condicional `...nivelSeed`; pase adversarial 3/3 SAFE. Deploy `onUserRoleAssigned` ✓. GATE ④b: floor server-side antes de enforce `nivel`. | 43721 |
+| §219 | **④a PASO 5 (seed `nivel` solo-si-falta) + PASO 6 (paridad dual-portal) — ④a COMPLETO ⟦OPUS-4.8⟧** — helper `computeNivelSeedOnAssign` +7 tests; adversarial 3/3 SAFE; deploy `onUserRoleAssigned`. GATE ④b: floor server-side. | 43721 |
+| §220 | **CMS (TODO-23) arranque: comité v4+Gemini + PASO 0 + FASE 0 seguridad ⟦OPUS-4.8⟧** — editor=fichas tipadas; CMS en `admin-app/` modular (flat congelado); FASE 0: safeJsonLd/escapeAttr/storage-anti-svg/anchor-guard+fix-SEO-marcas/netlify→legacy (gate `SSG_SELFTEST`). SIGUIENTE: FASE 1 → cobaya. Detalle→bóveda. | 43739 |
 
 ---
 

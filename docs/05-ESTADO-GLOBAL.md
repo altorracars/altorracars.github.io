@@ -3,11 +3,11 @@
 > **Nodo: signos vitales.** AUTO-CARGA (con `CLAUDE.md` + `10`). Tablero, no bitácora: solo señales
 > ACTUALES (pisar, no apilar); lo histórico vive en `99` (ADR). Tope ~25 líneas / ~2.8k chars (§G.5).
 
-| Señal | Valor (última actualización: **2026-06-19**) |
+| Señal | Valor (última actualización: **2026-06-20**) |
 |---|---|
-| **Build** | 🟢 **E6 cutover 6/6** DEPLOYADO. **④ RBAC ④a COMPLETO (PASO 0-6)** (detalle → `10`/§219): dueño INAMOVIBLE 3-capas (§212/§213) + backfill + departments + §217 no-mint + asignación+`userCount` (§218) + **seed `nivel` §219 + paridad dual-portal + §219.8 selector visual ícono**. **④a CONFIG DUEÑO ✅** (backfill + 4 deptos + Francisco→Dirección, `userCount` verificado en Firestore). Pend solo merge §219.8. **④b GATEADO** (Gemini+negocio; **floor server-side antes de enforce `nivel`** §219). Vender=Pipeline. dealers F2 (TODO-25). |
-| **Cache version vigente** | **`v20260619041711`** (= la del cron-CI tras el merge; el cron es el DUEÑO del bump → ya NO bumpeo manual en la rama, evita L-02/L-03; se invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
-| **Branch activa** | `refactor/estructura`: **§219 MERGEADO por dueño** (b60b9a6); **§219.8 picker (`caa336b`) pusheado, pend merge**. `onUserRoleAssigned` desplegada. **commit+push=Claude · merge=dueño en web** (§2). deploys firebase=Claude (§1). Verificado vs git 19/06 (§3.3). |
+| **Build** | 🟢 Todo en `main` (mergeado 20/06): **E6 cutover 6/6** + **④ RBAC ④a COMPLETO** (PASO 0-6, §219; config dueño hecha: 4 deptos + backfill + Francisco→Dirección) + **CMS cobaya COMPLETA E2E** (ADR §220 — editor "Acerca de" por marca: módulo `cms-dinamico` panel nuevo, gate `content.edit`, regla `siteContent` desplegada, cron hornea `aboutBrand` con escapeHtml; FASE 0 seguridad 0.1-0.5). **④b PARQUEADO** (dueño: 2 personas ven todo; al retomar = floor server-side antes de enforce `nivel`). Vender=Pipeline. dealers F2 (TODO-25). |
+| **Cache version vigente** | **`v20260620165624`** (cron-CI tras el merge del 20/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Branch activa** | `refactor/estructura` == `main` (ff a `ca33848` tras merge dueño 20/06 + cron). Sesión 20/06: 14 commits (RBAC §219 + CMS §220) MERGEADOS. **commit+push=Claude · merge=dueño web** (§2). deploys firebase=Claude (§1). Verificado vs git 20/06 (§3.3). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario único · CRUD · daily/hourly jobs · 22 functions CRM (**retry:true ×6**) · Rules E5 LIVE. App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

@@ -119,5 +119,12 @@
 - **Receta**: (1) al rediseñar una página, `grep -r "<clase>" js/` ANTES de eliminar/renombrar clases del markup. (2) Selectores de contenedor en JS con fallback (`closest('.x') || form`). (3) En success-paths, el happy path debe PINTAR algo o restaurar estado — un `return` silencioso en éxito es peor que un throw.
 - **Familia**: L-11 (class fidelity JS↔CSS) — esta es la variante JS↔HTML (comportamiento, no estilo).
 
+### L-44 · Añadir un módulo al `admin-app` (SPA modular) toca 4 puntos + rebuild del `dist` versionado ⟦OPUS-4.8⟧
+- **Síntoma**: nuevo módulo registrado en `main.js` (MODULES) y nav en `shell.js`, pero al clickear el nav la URL cambia (`#/contenido`) y **rebota a Bandeja** sin montar el módulo (cero errores en consola).
+- **Causa**: `admin-app/src/core/router.js` tiene un **whitelist `ROUTES`** — `currentRoute()` devuelve `'bandeja'` para cualquier hash que NO esté en la lista. El cuarto punto, fácil de olvidar.
+- **Receta — un módulo nuevo del admin-app necesita LOS 4**: (1) `modules/<n>/<n>.{data,ui}.js` (mount → cleanup); (2) `main.js` import + `MODULES['<id>']`; (3) `shell.js` `NAV` (con `perm`) + `TITLES`; (4) **`router.js` `ROUTES.push('<id>')`** ← el ancla olvidable. Verifica en demo: `?mock=1` (siembra CEO `'*'` + MOCK_*) — render sin Firebase; `preview_snapshot`/`eval` (NO screenshot, L-28).
+- **Build/deploy**: `admin-app/dist/` **SÍ se versiona** (GitHub Pages lo sirve; `.gitignore` lo exceptúa). Tras tocar `src/` → `npm run build --prefix admin-app` Y commitear el `dist` (filenames hasheados cambian). NO hay CI que lo buildee.
+- **Familia**: §159 (run paralelo admin-app) · L-13 (lazy-load guards).
+
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

@@ -403,6 +403,21 @@ function generatePage(template, v, slug) {
 
 // ===================== Brand Page Generation =====================
 
+// FASE 3 (TODO-23 §222, Gemini) — bake-integrity: una página horneada rota/truncada NUNCA debe
+// llegar a producción. Chequeo LIGERO por página (≠ SSG_SELFTEST, que es un gate de DEV con mocks):
+// cierre </html> + tamaño mínimo. Devuelve string de error o null. El run ABORTA (throw) si alguna
+// falla → el workflow NO commitea → prod queda en el último build bueno.
+const MIN_BAKE_BYTES = 5000;
+function bakeIntegrityError(label, slug, html) {
+    if (typeof html !== 'string' || html.length < MIN_BAKE_BYTES) {
+        return `${label}/${slug}.html: ${(html || '').length} bytes < ${MIN_BAKE_BYTES} (vacía/truncada)`;
+    }
+    if (!html.includes('</html>')) {
+        return `${label}/${slug}.html: falta </html> (horneado incompleto)`;
+    }
+    return null;
+}
+
 function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
     const nombre = capitalize(brand.nombre || brand.id || '');
     const brandId = String(brand.id);
@@ -701,11 +716,17 @@ async function main() {
         }
     } catch (_) { /* first run */ }
 
+    // FASE 3 — colector de fallas de integridad (vehículos + marcas). Si queda no-vacío al final
+    // del horneado, se ABORTA el run antes de que el workflow commitee.
+    const bakeFailures = [];
+
     // Generate one HTML per vehicle
     console.log('[generate] Generating vehicle pages...');
     for (const v of vehicles) {
         const slug = slugMap.get(String(v.id));
         const html = generatePage(template, v, slug);
+        const err = bakeIntegrityError('vehiculos', slug, html);
+        if (err) bakeFailures.push(err);
         writeFileSync(join(outDir, `${slug}.html`), html);
         console.log(`  + vehiculos/${slug}.html`);
     }
@@ -758,10 +779,20 @@ async function main() {
     for (const b of brands) {
         const slug = brandSlugMap.get(String(b.id));
         const html = generateBrandPage(brandTemplate, b, slug, vehicles, siteContentMap);
+        const err = bakeIntegrityError('marcas', slug, html);
+        if (err) bakeFailures.push(err);
         writeFileSync(join(brandsDir, `${slug}.html`), html);
         console.log(`  + marcas/${slug}.html`);
     }
     console.log(`[generate] ${brands.length} brand pages created in /marcas/`);
+
+    // FASE 3 — gate de integridad: si ALGÚN horneado salió inválido, abortar (exit≠0) ANTES de que
+    // el workflow commitee. Reporta TODAS las fallas (no solo la primera).
+    if (bakeFailures.length) {
+        console.error('[generate] BAKE-INTEGRITY FALLO -- NO se commitea (prod queda en el ultimo build bueno):');
+        bakeFailures.forEach(e => console.error('  x ' + e));
+        throw new Error('[generate] ' + bakeFailures.length + ' pagina(s) con horneado invalido -- abortado.');
+    }
 
     // Write brand slug map JSON
     writeFileSync(
@@ -842,8 +873,16 @@ function runSelfTest() {
     // ESCAPADO (text node) y el ancla reemplazada (lo verifican las aserciones de abajo).
     const mockSiteContent = {};
     mockSiteContent['brand_' + mockB.id] = { aboutBrand: PAYLOAD, bannerUrl: PAYLOAD };
-    checkScripts('vehiculo', generatePage(vTpl, mockV, 'selftest'));
-    checkScripts('marca', generateBrandPage(bTpl, mockB, 'selftest', [mockV], mockSiteContent));
+    const vHtml = generatePage(vTpl, mockV, 'selftest');
+    const bHtml = generateBrandPage(bTpl, mockB, 'selftest', [mockV], mockSiteContent);
+    checkScripts('vehiculo', vHtml);
+    checkScripts('marca', bHtml);
+
+    // FASE 3 — bake-integrity: páginas completas PASAN (null); truncada (sin </html>) o diminuta FALLAN.
+    if (bakeIntegrityError('vehiculo', 'selftest', vHtml)) fails.push('bake-integrity: la pagina de vehiculo completa NO deberia fallar la integridad');
+    if (bakeIntegrityError('marca', 'selftest', bHtml)) fails.push('bake-integrity: la pagina de marca completa NO deberia fallar la integridad');
+    if (!bakeIntegrityError('marca', 'trunc', bHtml.replace('</html>', ''))) fails.push('bake-integrity: una pagina SIN </html> deberia fallar (no detectado)');
+    if (!bakeIntegrityError('marca', 'tiny', '<html></html>')) fails.push('bake-integrity: una pagina diminuta (<5000 bytes) deberia fallar (no detectado)');
 
     if (fails.length) {
         console.error('[SSG_SELFTEST] FALLO — safeJsonLd NO neutraliza el breakout:');

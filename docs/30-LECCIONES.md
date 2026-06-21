@@ -61,6 +61,12 @@
 - **3 planos de auth (no confundir, L-23)**: (1) `firebase login` (CLI deploys, `altorracarssale@`) ≠ (2) **ADC** (lo que usa el Admin SDK en scripts `node`) ≠ (3) security rules (irrelevante para Admin SDK). Un script `node` standalone usa (2), no (1).
 - **Receta**: para correr un script admin contra altorra-cars desde esta máquina, el dueño re-autentica ADC con cuenta autorizada: `gcloud auth application-default login` + `gcloud auth application-default set-quota-project altorra-cars`. **Alternativa preferible** para mutaciones de prod (callejón e + precedente `seedSystemRoles`): empaquetar el backfill como **callable 1-clic** (corre con la SA de Functions, sin ADC ni terminal).
 
+### L-49 · Swap de backend de un script CI sin regresión: SDK-dual con fallback + `npm ci` exige lock en sync ⟦OPUS-4.8 · rev-Fable⟧
+- **Contexto (§225)**: migrar el cron SSG de SDK cliente anónimo a `firebase-admin`+Service Account, sin poder probar el modo admin (la SA la crea el dueño) y exigiendo cero-regresión.
+- **Patrón SDK-dual con fallback**: NO reemplazar el backend — `connectDb()` ELIGE por entorno (`FIREBASE_SA_KEY` presente → admin; ausente → cliente histórico) y un wrapper `fetchCollection(handle,name)` unifica la lectura. Clave: client SDK y Admin SDK exponen la MISMA interfaz de snapshot (`snap.docs[].id/.data()/.forEach`) → el cuerpo del consumidor queda INTACTO; solo cambia abrir-conexión y pedir-colección. Con el secret ausente, el comportamiento es byte-idéntico al original → cero-regresión verificable corriendo el path de fallback EN VIVO. La ruta no-testeable (admin) se valida por revisión adversarial + API confirmada en docs.
+- **SA en GitHub Actions ≠ ADC (cf. L-43)**: en Actions la SA se inyecta como **secret → env var** (`env: FIREBASE_SA_KEY: ${{ secrets.X }}`) y el script hace `cert(JSON.parse(env))` — NO usa la ADC local (que está ligada a bersaglio). Secret ausente → env vacía → fallback (no rompe). Activación = el dueño crea SA + secret.
+- **GOTCHA `npm ci`**: el workflow usa `npm ci`, que ABORTA si `package.json` y `package-lock.json` no están en sync. Añadir una dep editando SOLO `package.json` rompe el CI en silencio (en local `npm install` no lo nota). **Receta**: SIEMPRE `npm install <dep> --save` (sincroniza el lock) y commitear AMBOS. Verificar antes de pushear.
+
 ---
 
 ## 🗂️ Validación de código muerto

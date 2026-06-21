@@ -33,6 +33,12 @@
 4. **Verificar**: `grep` ruta-vieja = 0 en todo el repo · `node -c` · sin doble `carpeta/carpeta`.
 5. Probar en localhost · `commit`.
 
+### L-48 · Sesión concurrente: un `git add` amplio en otro chat arrastra tu edit sin commitear
+- **Síntoma**: editas un archivo (p.ej. `CLAUDE.md`) en el repo R; al volver, `git status` muestra archivos `M` que NO tocaste, y minutos después desaparecen (otro proceso commiteó); tu archivo queda con un diff inesperado vs HEAD.
+- **Causa**: OTRA sesión/chat trabaja R en paralelo y al cerrar su tarea hizo `git add -A` / `commit -a`, **arrastrando tu edit sin commitear** dentro de SU commit (por eso jamás `git add -A` — M-12).
+- **Receta**: (1) ANTES de operar git en cualquiera de los 4 cerebros, `git status`: si hay `M` ajenos = sesión viva → NO hagas branch/commit/checkout (carrera). (2) Si tu edit ya fue arrastrado a HEAD, verifica byte-identidad (`grep … | sha256sum`) y `git checkout -- <archivo>` para alinear tu working-tree a HEAD; NO re-commitees. (3) `git add` SIEMPRE archivos específicos, nunca `-A`.
+- *Vivido en §223 (propagación §G.4 Caza-bugs ×4; en insema lo arrastró la sesión de ADR-C → `348f80d`).*
+
 ---
 
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento:

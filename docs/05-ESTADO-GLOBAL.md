@@ -6,8 +6,8 @@
 | Señal | Valor (última actualización: **2026-06-20**) |
 |---|---|
 | **Build** | 🟢 Todo en `main` (mergeado 20/06): **E6 cutover 6/6** + **④ RBAC ④a COMPLETO** (PASO 0-6, §219; config dueño hecha: 4 deptos + backfill + Francisco→Dirección) + **CMS por marca COMPLETO** (ADR §220-§222: editor aboutBrand+**banner editable** (gate `content.edit`) + **FASE 2.4 instant-publish** (CFs onSiteContent/onMarca) + **nav→canónica** + `marcaShapeOk` server-side; review 0-críticos). **④b PARQUEADO** (dueño: 2 personas ven todo; al retomar = floor server-side antes de enforce `nivel`). Vender=Pipeline. dealers F2 (TODO-25). |
-| **Cache version vigente** | **`v20260620211749`** (cron-CI, merges 20/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
-| **Branch activa** | `refactor/estructura` == `main` (merges 20/06 #878-883 + cron). Sesión 20/06: RBAC §219 + CMS §220/§221/**§222** (banner+2.4+nav canónica) MERGEADOS. **commit+push=Claude · merge=dueño web** (§2). deploys firebase=Claude (§1). Verificado vs git 20/06 (§3.3). |
+| **Cache version vigente** | **`v20260621003715`** (cron-CI; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Branch activa** | `refactor/estructura` **ADELANTE de `main`**: ⚠️ **FASE 3 bake-integrity (`757481a`/`9863453`) PENDIENTE MERGE** (el gate entra en vigor al mergear). CMS §220-§222 + `marcaShapeOk` YA en `main`. **commit+push=Claude · merge=dueño web** (§2). deploys firebase=Claude (§1). **commit+push=Claude · merge=dueño web** (§2). deploys firebase=Claude (§1). Verificado vs git 20/06 (§3.3). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario único · CRUD · daily/hourly jobs · 22 functions CRM (**retry:true ×6**) · Rules E5 LIVE. App Check MONITOR (enforce ~16-23/06 → lóbulo `41`). |
 
 ## ⚠️ Flags de riesgo activos

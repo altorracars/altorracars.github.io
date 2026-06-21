@@ -16,7 +16,7 @@
 
 > 🏗️ **CRM E0→E6 ✅ (§176/TODO-21)** en `main`. Vender=Pipeline · dealers F2 FROZEN. **RBAC ④a COMPLETO ✅ (§219)**; **④b PARQUEADO** (al retomar = FLOOR server-side antes de enforce `nivel`).
 >
-> 🏗️ **CMS por marca COMPLETO ✅ (§220-§224, LIVE) ⟦OPUS-4.8⟧**. **➡️ §225 ✅** (commit `e8ed4a2`): cron soporta admin+SA con fallback cliente (cero-regresión) + auditor SVG. **🔑 GATEADO AL DUEÑO**: crear SA key GCP + secret `FIREBASE_SA_KEY` → activa cron-auth y el auditor `node scripts/audit-storage-svg.mjs` (roles/purga → §225.7). **TODO-23 (CMS total) continúa.**
+> 🏗️ **CMS por marca COMPLETO ✅ (§220-§224, LIVE) ⟦OPUS-4.8⟧**. **➡️ §225 ✅ ACTIVADO** (commit `e8ed4a2`): cron→admin+SA con fallback cliente. SA **`cron-ssg-lector`** (read-only) + secret `FIREBASE_SA_KEY` LIVE; **modo admin VERIFICADO en vivo** (27v/18m/1sc). **0.2b CERRADO**: auditoría = **0 SVG** en Storage (681 obj, nada que purgar). **TODO-23 (CMS total) continúa.**
 > ⚠️ Decisiones dueño pre-cutover → §193. Gates: F32 móvil · F33b piloto · manual.
 > 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187.
 > Strangler/cutover → §188+§183. Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05/07/09 (diferidos).

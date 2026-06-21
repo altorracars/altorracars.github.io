@@ -92,3 +92,13 @@ Sé concreto y breve.
 - **Vía Antigravity, Gemini SÍ ve** nuestro código/cerebro (solo-lectura) → **PUEDE verificar hechos del repo y revisar código/reglas reales**. Lo único que NUNCA hace es **escribir** (ver el límite de arriba: no edita/implementa/commitea).
 - Es **insumo de juicio**, no autoridad: una crítica de Gemini que esté mal **se refuta**, no se acata.
 - Si el protocolo lleva tiempo sin usarse y no aporta, **revisarlo** (Reflejo de Desafío Crítico §G.4) — un protocolo muerto es deuda.
+
+## Refinamiento — pase adversarial de Gemini (2026-06-21)
+
+Se corrió el protocolo SOBRE sí mismo ("¿ampliar el uso del consejo externo?"). Gemini (code-aware vía Antigravity) convergió con el comité interno: **NO ampliar los triggers** (ya cubren seguridad/dinero/arquitectura). En su lugar, 4 refinamientos de CÓMO se usa:
+- **R1 · Anti-anclaje fuerte**: en decisiones TOP, preferir pasarle el problema CRUDO en paralelo (igual que al comité interno), no un artefacto ya pulido por Claude (dispara su sesgo de confirmación). Si revisa código de Claude, incluir SIEMPRE las opciones DESCARTADAS/callejones + las invariantes a cumplir → que cace el fallo en la LÓGICA, no que apruebe la sintaxis.
+- **R2 · Alcance**: su revisión INCLUYE razonar modos de fallo *runtime-natured* visibles en código estático (race conditions, optimistic-locking, colisiones de transacción, desacoples de contrato cross-artefacto). NO es un linter de sintaxis. Frontera real: "se halla LEYENDO+RAZONANDO (sí consejo externo) vs solo EJECUTANDO (tests/caza-bugs)".
+- **R3 · Límite duro**: la revisión externa es ADITIVA, **NUNCA sustituye** los tests (emulador/E2E) ni el gate de staging/aprobación. Un LLM revisando reglas no supera a un unit test → evita la falsa seguridad pre-prod.
+- **R4 · Fricción alta**: consultar SOLO en refactores ESTRUCTURALES de dinero/seguridad o NUEVAS arquitecturas de reglas — NO como peaje pre-deploy rutinario (un gate rutinario se abandona → protocolo muerto).
+
+> Decisión + deliberación completa → ADR cars §224(.8) + bóveda `2026-06-21-consejo-externo-cobertura-SINTESIS.md`. Convergencia independiente comité-interno↔Gemini (señal fuerte). El mayor ROI del consejo externo se desbloqueó al CORREGIR su error factual ("no ve código"), no al ampliar triggers.

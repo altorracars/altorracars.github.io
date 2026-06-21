@@ -318,7 +318,7 @@
 | §221 | **CMS cobaya VERIFICADA LIVE + fix bug site-wide `pageTitle` ⟦OPUS-4.8⟧** — RCA: SSG horneaba `<title>` sin `id=pageTitle`→`loadVehicles` reventaba→catálogo de 19 marcas roto; fix null-guard `cd2a4d1`. → L-45. | 43755 |
 | §222 | **CMS por marca COMPLETO: banner editable + FASE 2.4 instant-publish + nav→canónica ⟦OPUS-4.8⟧** — banner→Storage→`bannerUrl`→SSG (regla `scBannerUrlOk`); CFs `onSiteContentChange`/`onMarcaChange`+cancel-in-progress→regen selectiva; nav→`/marcas/{id}.html`. Review `wf_ea699144`: 0 críticos, 3 LOW. L-46. | 43773 |
 | §223 | **§G.4 Reflejo de Caza-bugs byte-idéntico ×4 (handoff bersaglio §90.8/TODO-26) ⟦OPUS-4.8⟧** — guardián cars (L-31); drop `(§3.7)` repo-específico (§3.3); gates §90.8 DECLINADO · TODO-22-bsg DIFERIDO (choca §208.2) · TODO-23-bsg→TODO-30; 1er bullet idéntico del §G (TODO-28 pend). | 43791 |
-| §224 | **Consejo Externo: corrección factual "Gemini-vía-Antigravity SÍ ve código (solo-lectura)" + matriz (TIER MÍNIMO) ⟦OPUS-4.8⟧** — §15 ×4 + skill comité byte-idéntico (`48a5e2f6`) decían falsamente "no ve código"; corregido ×4. A=corrección (HECHO) vs B=más-uso (manual→restrictivo: rules/dinero/arquitectura; runtime→caza-bugs). TIER COMPLETO pend (pase Gemini). wf_2c216bc9→bóveda. | 43812 |
+| §224 | **Consejo Externo: corrección factual "Antigravity SÍ ve código (solo-lectura)" + Tier Refinamiento ⟦OPUS-4.8⟧** — §15 ×4 + skill comité (byte-idéntico) decían falsamente "no ve código"; corregido ×4. **Pase Gemini (.8): Tier Completo DESCARTADO** (convergió con el escéptico + cazó mi punto ciego §221) → **Tier Refinamiento R1-R4** ×4 (detalle §224.8 + bóveda). | 43812 |
 
 ---
 

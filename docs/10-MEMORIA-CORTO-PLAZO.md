@@ -68,4 +68,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > GC ×13 (12-20/06): §184-§222 consolidados (→`99`/`00`/`30`/`33`).
 > - **21/06**: §223 **Caza-bugs** §G.4 byte-idéntico ×4 (sha `a0ce231`; 1er bullet idéntico del §G→siembra TODO-28; gates §90.8 DECLINADO/TODO-22-bsg/TODO-23-bsg resueltos; insema vía `348f80d`) · lección **L-48** (sesión concurrente arrastra edits con `git add -A`).
-> - **21/06**: §224 **Consejo Externo corregido ×4** (Gemini vía Antigravity SÍ ve código solo-lectura; §15 ×4 + skill comité byte-idéntico `48a5e2f6`). TIER MÍNIMO hecho · **TIER COMPLETO** (triggers seguridad/dinero) pend→pase Gemini · deliberación→bóveda. Límite solo-lectura INTACTO.
+> - **21/06**: §224 **Consejo Externo corregido ×4** (Antigravity SÍ ve código solo-lectura; §15 ×4 + skill comité byte-idéntico). TIER MÍNIMO + **Tier Refinamiento R1-R4** hechos ×4. Pase Gemini (.8): **Tier Completo DESCARTADO** (convergió con el escéptico + cazó mi punto ciego §221; "orquestar mejor, no más proceso"). Deliberación→bóveda. Límite solo-lectura INTACTO.

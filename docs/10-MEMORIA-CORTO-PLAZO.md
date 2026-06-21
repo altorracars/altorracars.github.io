@@ -16,7 +16,7 @@
 
 > 🏗️ **CRM E0→E6 ✅ (§176/TODO-21)** en `main`. Vender=Pipeline · dealers F2 FROZEN. **RBAC ④a COMPLETO ✅ (§219)**; **④b PARQUEADO** (al retomar = FLOOR server-side antes de enforce `nivel`).
 >
-> 🏗️ **CMS por marca COMPLETO ✅ (§220-§224, LIVE) ⟦OPUS-4.8⟧**. **➡️ §225 ✅ ACTIVADO** (commit `e8ed4a2`): cron→admin+SA con fallback cliente. SA **`cron-ssg-lector`** (read-only) + secret `FIREBASE_SA_KEY` LIVE; **modo admin VERIFICADO en vivo** (27v/18m/1sc). **0.2b CERRADO**: auditoría = **0 SVG** en Storage (681 obj, nada que purgar). **TODO-23 (CMS total) continúa.**
+> 🏗️ **CMS por marca COMPLETO ✅ (§220-§225, LIVE) ⟦OPUS-4.8⟧** — incl. §225 cron→admin+SA **ACTIVADO** (SA `cron-ssg-lector` + secret, verificado en vivo) + auditor SVG (0.2b cerrado, 0 SVG). Detalle→§225/§226. **TODO-23 (CMS total: index/nosotros/contacto/columnas+bloques) continúa.**
 > ⚠️ Decisiones dueño pre-cutover → §193. Gates: F32 móvil · F33b piloto · manual.
 > 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187.
 > Strangler/cutover → §188+§183. Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05/07/09 (diferidos).
@@ -58,6 +58,7 @@
 | **TODO-28** | **Split §G / des-saturación (§206) ⟦OPUS-4.8⟧** — A0/A5/A6/A7/A9 ✅ §206.7. **Diseño RESUELTO por Gemini §208.1**: el split procede con **Núcleo Delimitado** (`<!-- KERNEL DOCTRINE -->` byte-hasheado ×3; fuera, libre per-repo). Resta ejecutar A1-A4 ×3 desde canon bersaglio. | 🔄 | ejecución ×3 |
 | **TODO-29** | **Endurecer el lazo (§207) ⟦OPUS-4.8⟧** — **REVISADO por Gemini §208.2**: los git-gates SE SUSTITUYEN por "abolir estado dinámico en `05`" → SessionStart hook inyecta git-state live en boot + `05` deja de afirmar git/deploy. Kernel/hook ×3 desde canon. (Aún: shard 99a/99b · `ignoreDirs`-KNOWN_KEYS.) | 🔄 | kernel/hook ×3 |
 | **TODO-30** | **Doctrina despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS-4.8⟧** — gate técnico IA (invariantes/tests BLOQUEANTES en CI) + acceptance de Kary en **STAGING** (no prod) + dueño autoriza prod. CORTAR pases directos a prod de código-dinero. **Requiere que el dueño monte Staging**. Aplica cars (F42/comisiones/§TODO-25) + bersaglio (cartera). | 🔮 | Staging (dueño) |
+| **TODO-31** | **Doctrina "comité ACOTADO" + gobierno de maquinaria de agentes (§226) ⟦OPUS-4.8⟧** — la maquinaria pesada (workflow/comité) se CUELGA (subagentes gateados por permiso, L-50) y quema tokens (ultracode + MCP densos) en este entorno; patrón cross-repo (cars+bersaglio mismo día). Doctrina: pocos expertos SIN tools razonando sobre diagnóstico YA verificado + tope + right-tool-for-task. **Cross-brain (toca §G + skill `comité-expertos`)**: armonizar con la decisión que documentó Bersaglio → comité acotado + Gemini → propagar ×4 (escritor único L-31). | 🔄 | **POST-Bersaglio** (L-48: no tocar kernel con chats concurrentes) |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -66,6 +67,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 ## 📝 Bitácora (efímera)
 
 > GC ×13 (12-20/06): §184-§222 consolidados (→`99`/`00`/`30`/`33`).
-> - **21/06 (sesión cierre, TODO mergeado a main)**: §223 **Caza-bugs** §G byte-idéntico ×4 (L-48 sesión-concurrente) · §224 **Consejo Externo** corregido ×4 (Antigravity SÍ ve código solo-lectura) + **Tier Refinamiento R1-R4** (pase Gemini: Tier Completo DESCARTADO, cazó mi error §221) · **skills emparejadas ×4 = 79** (+`caza-bugs`; insema `skills/`+inventory CREADOS) · **GC `00`** (buffer, no shard). Deliberaciones→bóveda. Pendiente menor: GC profundo del `00` (on-demand, NO urgente).
-> - **21/06 (sesión cont., A bajo recomendación)**: §225 **CMS cron→admin+SA + auditor SVG 0.2b** ⟦OPUS-4.8⟧ — código listo+verificado (fallback EN VIVO = cero-regresión; rev. adversarial ×3 `wf_e8dcecd7-952`: regresión SOUND, fixes auditor aplicados), commit `e8ed4a2`. **Activación gateada al dueño** (SA key+secret). L-49 (SDK-dual fallback · `npm ci` lock-sync). Deliberación→bóveda. **§225.8 activación COMPLETA** (SA+secret, admin verificado en vivo, 0.2b=0 SVG).
-> - **21/06 (cont., seguridad)**: 2 alertas GitHub Secret-Scanning cerradas (apiKey web = pública, won't-fix; doctrina→`41`) · App Check enforce REVISADO→**DIFERIDO** (100% verif ×4 APIs pero muestra chica/tráfico bajo + riesgo lead-block silencioso; re-trigger: tráfico↑/spam/pre-pauta → `41`/`05`).
+> - **21/06 (sesión larga, multi-tarea)**: §223 Caza-bugs §G ×4 · §224 Consejo Externo ×4 + Tier Refinamiento R1-R4 · **§225 CMS cron→admin+SA + auditor SVG 0.2b** (activación COMPLETA: SA `cron-ssg-lector`+secret, admin verificado en vivo, 0.2b=0 SVG; L-49) · seguridad: 2 alertas Secret-Scanning cerradas (apiKey web pública) + **App Check enforce DIFERIDO** (§41) · **§226 auditoría cerebro Nivel-2** (SANO; el workflow de sondas COLGÓ por subagentes gateados → doctrina 'comité acotado' = **TODO-31** cross-brain post-Bersaglio; L-50; 3 falsos positivos cazados por §3.3). skills ×4=79. Detalle→ADRs §223-226/bóveda.

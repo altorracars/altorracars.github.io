@@ -47,6 +47,12 @@ jobs:
 
       - name: Generate vehicle pages from Firestore
         run: npm run generate
+        env:
+          # CMS hardening (TODO-23, cron→admin+SA): si el secret existe, el SSG lee Firestore
+          # AUTENTICADO con la Service Account (endurece `siteContent`, habilita drafts futuros).
+          # Si el secret NO existe, esta var llega VACÍA → el script cae al SDK cliente anónimo
+          # (comportamiento histórico, cero regresión). Activación = el dueño crea la SA + el secret.
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
 
       - name: Validate sitemap.xml
         run: |

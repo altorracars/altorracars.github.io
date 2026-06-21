@@ -66,6 +66,6 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> GC ×13 (12-20/06): §184-§222 consolidados + L-43/L-45/L-46 (→`00`/`99`/`30`/`33`). Vivo:
-> - **20/06**: §219 ④a PASO 5-6 · §220 CMS arranque · §221 cobaya live + fix `pageTitle` · **§222 CMS por marca COMPLETO** (banner editable + FASE 2.4 instant-publish CFs onSiteContent/onMarca+concurrency + nav→canónica + review adversarial 0-críticos; cache→`05`).
-> - **21/06**: §223 §G.4 kernel cross-repo — **Reflejo de Caza-bugs** byte-idéntico ×4 (handoff bersaglio §90.8/TODO-26; sha `a0ce231`); drop `(§3.7)` repo-específico (§3.3). Gates opcionales decididos: §90.8 DECLINADO · TODO-22-bsg DIFERIDO (choca §208.2) · TODO-23-bsg→TODO-30. Las 4 §G aún NO byte-idénticas → es el 1er bullet idéntico (siembra TODO-28/29). insema: el bloque landeó en `main` vía `348f80d` (una sesión concurrente de ADR-C arrastró mi edit con `git add` amplio; byte-idéntico, sin commit mío).
+> GC ×13 (12-20/06): §184-§222 consolidados (→`99`/`00`/`30`/`33`).
+> - **21/06**: §223 **Caza-bugs** §G.4 byte-idéntico ×4 (sha `a0ce231`; 1er bullet idéntico del §G→siembra TODO-28; gates §90.8 DECLINADO/TODO-22-bsg/TODO-23-bsg resueltos; insema vía `348f80d`) · lección **L-48** (sesión concurrente arrastra edits con `git add -A`).
+> - **21/06**: §224 **Consejo Externo corregido ×4** (Gemini vía Antigravity SÍ ve código solo-lectura; §15 ×4 + skill comité byte-idéntico `48a5e2f6`). TIER MÍNIMO hecho · **TIER COMPLETO** (triggers seguridad/dinero) pend→pase Gemini · deliberación→bóveda. Límite solo-lectura INTACTO.

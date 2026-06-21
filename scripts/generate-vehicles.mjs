@@ -675,15 +675,53 @@ function sitemapUrl(loc, lastmod, changefreq, priority) {
     return `    <url>\n        <loc>${loc}</loc>\n        <lastmod>${lastmod}</lastmod>\n        <changefreq>${changefreq}</changefreq>\n        <priority>${priority}</priority>\n    </url>`;
 }
 
+// ===========================================================
+// Conexión al backend de datos — CMS hardening (TODO-23, cron→admin+SA) ⟦OPUS-4.8 · rev-Fable⟧
+// ===========================================================
+// El SSG puede leer Firestore con DOS backends, elegido por entorno:
+//   • firebase-admin + Service Account (si existe FIREBASE_SA_KEY en el entorno): lectura
+//     AUTENTICADA → permite endurecer `siteContent` (quitar `read:if true`, Hueco B comité v4)
+//     sin romper el build, y habilita DRAFTS/contenido no-público futuros (Gemini, bóveda 06-20).
+//   • SDK CLIENTE anónimo (FALLBACK = comportamiento histórico): si NO hay SA key, corre
+//     EXACTAMENTE como antes (cero regresión). Activación = el dueño crea la SA + el secret.
+// La interfaz de lectura (snap.docs[].id / .data() / .forEach) es idéntica en ambos SDK, así que
+// el resto del generador NO cambia: solo cómo se ABRE la conexión y cómo se PIDE una colección.
+async function connectDb() {
+    const rawKey = process.env.FIREBASE_SA_KEY;
+    if (rawKey && rawKey.trim()) {
+        let creds;
+        try {
+            creds = JSON.parse(rawKey);
+        } catch (e) {
+            throw new Error('[generate] FIREBASE_SA_KEY presente pero no es JSON válido: ' + e.message);
+        }
+        const { initializeApp: initAdminApp, cert } = await import('firebase-admin/app');
+        const { getFirestore: getAdminFirestore } = await import('firebase-admin/firestore');
+        const adminApp = initAdminApp({ credential: cert(creds), projectId: FIREBASE_CONFIG.projectId });
+        console.log('[generate] Modo Admin SDK (Service Account) — lectura autenticada.');
+        return { mode: 'admin', db: getAdminFirestore(adminApp) };
+    }
+    const clientApp = initializeApp(FIREBASE_CONFIG);
+    console.log('[generate] Modo SDK cliente anónimo (sin Service Account) — comportamiento histórico.');
+    return { mode: 'client', db: getFirestore(clientApp) };
+}
+
+// Lee una colección completa devolviendo un snapshot con interfaz uniforme (.docs[].id/.data(), .forEach).
+async function fetchCollection(handle, name) {
+    if (handle.mode === 'admin') {
+        return await handle.db.collection(name).get();
+    }
+    return await getDocs(collection(handle.db, name));
+}
+
 // ===================== Main =====================
 
 async function main() {
     console.log('[generate] Connecting to Firebase...');
-    const app = initializeApp(FIREBASE_CONFIG);
-    const db = getFirestore(app);
+    const handle = await connectDb();
 
     console.log('[generate] Fetching vehicles from Firestore...');
-    const snap = await getDocs(collection(db, 'vehiculos'));
+    const snap = await fetchCollection(handle, 'vehiculos');
     const allVehicles = snap.docs.map(d => d.data());
 
     // Filter: "disponible" Y "apartado" get pages (E4 §186/F25: el apartado
@@ -743,7 +781,7 @@ async function main() {
 
     // Generate brand pages
     console.log('[generate] Fetching brands from Firestore...');
-    const brandsSnap = await getDocs(collection(db, 'marcas'));
+    const brandsSnap = await fetchCollection(handle, 'marcas');
     const brands = brandsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     console.log(`[generate] ${brands.length} brands found.`);
 
@@ -753,7 +791,7 @@ async function main() {
     // a diferencia de vehículos/marcas, siteContent ausente es estado legítimo (nadie editó aún).
     let siteContentMap = {};
     try {
-        const scSnap = await getDocs(collection(db, 'siteContent'));
+        const scSnap = await fetchCollection(handle, 'siteContent');
         scSnap.forEach(d => { siteContentMap[d.id] = d.data() || {}; });
         console.log(`[generate] ${Object.keys(siteContentMap).length} docs siteContent (contenido CMS).`);
     } catch (err) {

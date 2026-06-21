@@ -14,12 +14,11 @@
 
 > 🧠 **Cerebro v6 ✅** (3 cerebros N2) · hardening A/B/C = **TODO-28/29/30** (§208, diseño-listo, NO urgente).
 
-> 🏗️ **CRM E0→E6 (§176, TODO-21)**: E0→E5 + **E6 cutover 6/6 ✅** en `main` (producción). Vender=Pipeline. dealers F2 FROZEN.
-> 🏗️ **④ RBAC (§193.4): ④a COMPLETO ✅ + config dueño hecha** (ADR §219; 4 deptos + backfill (dueño=100) + Francisco→Dirección). **④b PARQUEADO** (dueño: 2 personas ven todo; al retomar = FLOOR server-side antes de enforce `nivel`).
+> 🏗️ **CRM E0→E6 ✅ (§176/TODO-21)** en `main`. Vender=Pipeline · dealers F2 FROZEN. **RBAC ④a COMPLETO ✅ (§219)**; **④b PARQUEADO** (al retomar = FLOOR server-side antes de enforce `nivel`).
 >
-> 🏗️ **CMS por marca COMPLETO ✅ (ADR §220-§222) ⟦OPUS-4.8⟧**: editor `cms-dinamico` (gate `content.edit`) aboutBrand + **banner editable** → `siteContent` → SSG hornea en `/marcas/{slug}`; **FASE 2.4 instant-publish** (CFs `onSiteContentChange`/`onMarcaChange` + `cancel-in-progress`) · **nav→canónica** · `marcaShapeOk` server-side (rules-unit) · review adversarial 0-críticos. **FASE 3 ✅** (concurrency-group + **bake-integrity** `757481a`: gate `</html>`+min-bytes aborta el run si un horneado sale roto → nunca llega a prod; health-check diferido, bajo valor). **SIGUIENTE (lo hago YO)**: 0.2b purga svg · cron→`firebase-admin`+SA. **TODO-23 (CMS total: index/nosotros/contacto/columnas/bloques tipados) continúa.**
-> ⚠️ Decisiones dueño pre-cutover → §193 (bot ALTOR R-1 · gap 8 financiero · 2FA · vista Inicio · RBAC ④ §193.4). Gates: F32 móvil · F33b piloto · manual.
-> 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187 (NFD-slug · admin-calendar-config/dynamic-lists/fcm-sw inyectados VIVOS · dashboards→deals.wonAt · ~1000 exprs Rules · emulador :8081).
+> 🏗️ **CMS por marca COMPLETO ✅ (§220-§224, LIVE) ⟦OPUS-4.8⟧**. **➡️ §225 ✅** (commit `e8ed4a2`): cron soporta admin+SA con fallback cliente (cero-regresión) + auditor SVG. **🔑 GATEADO AL DUEÑO**: crear SA key GCP + secret `FIREBASE_SA_KEY` → activa cron-auth y el auditor `node scripts/audit-storage-svg.mjs` (roles/purga → §225.7). **TODO-23 (CMS total) continúa.**
+> ⚠️ Decisiones dueño pre-cutover → §193. Gates: F32 móvil · F33b piloto · manual.
+> 🚫 **Callejones de trabajo CERRADO** → §204/§188/§187.
 > Strangler/cutover → §188+§183. Gates heredados: App Check enforce ~16-23/06 (→`41`) · SEC-05/07/09 (diferidos).
 > ⏳ **Cliente** (→`05` flags): descartar lead prueba `VMVMJG…` · anunciar F42 · billing GCP causa raíz.
 > ⚖️ **Gate P4 vigente**: el TEXTO legal público de supresión/privacidad NO se publica sin abogado.
@@ -27,7 +26,7 @@
 > **🚫 Callejones sin salida (NO reintentar)**:
 > (a) **NO custom claims ahora** — reglas Fase 1 usan lookup `usuarios/{uid}`; claims = Fase 5 (§159.3).
 > (b) **NO `preview_screenshot`** (se cuelga tras `preview_resize`, L-28) — usar `preview_snapshot`+`preview_eval`.
-> (c) Consejo Externo ya consultado para modelo de datos/RBAC (§15) — re-consultar solo ante disparador caro.
+> (c) Consejo Externo = Gemini-vía-Antigravity **code-aware solo-lectura** (§224 corrigió "no ve código"); triggers + refinamientos R1-R4 en `§15`; usar en seguridad/dinero/arquitectura ESTRUCTURAL, no rutina.
 > (d) **NO E2E de forms en localhost** (L-08/§175) — E2E solo contra live; UI con stub `window.db`.
 > (e) **NO mutar docs de config de producción vía MCP** — el clasificador lo deniega; ruta correcta:
 > dejarlo como acción de 1 clic del dueño en el portal (patrón F39) o pedir autorización explícita.
@@ -67,5 +66,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 ## 📝 Bitácora (efímera)
 
 > GC ×13 (12-20/06): §184-§222 consolidados (→`99`/`00`/`30`/`33`).
-> - **21/06**: §223 **Caza-bugs** §G.4 byte-idéntico ×4 (sha `a0ce231`; 1er bullet idéntico del §G→siembra TODO-28; gates §90.8 DECLINADO/TODO-22-bsg/TODO-23-bsg resueltos; insema vía `348f80d`) · lección **L-48** (sesión concurrente arrastra edits con `git add -A`).
-> - **21/06**: §224 **Consejo Externo corregido ×4** (Antigravity SÍ ve código solo-lectura; §15 ×4 + skill comité byte-idéntico). TIER MÍNIMO + **Tier Refinamiento R1-R4** hechos ×4. Pase Gemini (.8): **Tier Completo DESCARTADO** (convergió con el escéptico + cazó mi punto ciego §221; "orquestar mejor, no más proceso"). Deliberación→bóveda. Límite solo-lectura INTACTO.
+> - **21/06 (sesión cierre, TODO mergeado a main)**: §223 **Caza-bugs** §G byte-idéntico ×4 (L-48 sesión-concurrente) · §224 **Consejo Externo** corregido ×4 (Antigravity SÍ ve código solo-lectura) + **Tier Refinamiento R1-R4** (pase Gemini: Tier Completo DESCARTADO, cazó mi error §221) · **skills emparejadas ×4 = 79** (+`caza-bugs`; insema `skills/`+inventory CREADOS) · **GC `00`** (buffer, no shard). Deliberaciones→bóveda. Pendiente menor: GC profundo del `00` (on-demand, NO urgente).
+> - **21/06 (sesión cont., A bajo recomendación)**: §225 **CMS cron→admin+SA + auditor SVG 0.2b** ⟦OPUS-4.8⟧ — código listo+verificado (fallback EN VIVO = cero-regresión; rev. adversarial ×3 `wf_e8dcecd7-952`: regresión SOUND, fixes auditor aplicados), commit `e8ed4a2`. **Activación gateada al dueño** (SA key+secret). L-49 (SDK-dual fallback · `npm ci` lock-sync). Deliberación→bóveda.

@@ -74,8 +74,8 @@
     }
   ],
   "deepAudit": {
-    "last": "2026-06-15",
-    "coveredHeaderCount": 240,
+    "last": "2026-06-21",
+    "coveredHeaderCount": 259,
     "maxAdrGap": 12,
     "maxDays": 30,
     "_que": "comite v6 = linea base; Nivel-2 #1 = item U (§206); Nivel-2 #2 = falencias del lazo (§207, M-16, TODO-29)"

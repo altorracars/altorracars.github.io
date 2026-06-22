@@ -320,6 +320,7 @@
 | §223 | **§G.4 Reflejo de Caza-bugs byte-idéntico ×4 (handoff bersaglio §90.8/TODO-26) ⟦OPUS-4.8⟧** — guardián cars (L-31); drop `(§3.7)` repo-específico (§3.3); gates §90.8 DECLINADO · TODO-22-bsg DIFERIDO (choca §208.2) · TODO-23-bsg→TODO-30; 1er bullet idéntico del §G (TODO-28 pend). | 43791 |
 | §224 | **Consejo Externo: corrección factual "Antigravity SÍ ve código (solo-lectura)" + Tier Refinamiento ⟦OPUS-4.8⟧** — §15 ×4 + skill comité (byte-idéntico) decían falsamente "no ve código"; corregido ×4. Pase Gemini (.8): Tier Completo DESCARTADO → **Tier Refinamiento R1-R4** ×4 (detalle §224.8). | 43812 |
 | §225 | **CMS cron→firebase-admin+SA (fallback cliente, cero-regresión) + auditor SVG 0.2b ⟦OPUS-4.8⟧** — `connectDb()`/`fetchCollection()` elige admin+SA o SDK cliente anónimo (fallback histórico); auditor SVG read-only + purga doble-gateada. Verif. en vivo + rev. adversarial ×3 (`wf_e8dcecd7-952`). **ACTIVADO ✅** (SA `cron-ssg-lector` read-only + secret `FIREBASE_SA_KEY`; admin verificado en vivo; 0.2b=0 SVG → §225.8). Commit `e8ed4a2`. L-49. | 43832 |
+| §226 | **Auditoría Cerebro Nivel-2 (21/06): lazo APRENDE + maquinaria de agentes se cuelga ⟦OPUS-4.8⟧** — workflow 6 sondas, 3 colgaron (subagentes gateados en background). SANO (reincidente 05/10-vs-git NO recurrió). HIGH: maquinaria pesada cuelga/quema → 'comité acotado' = TODO-31 cross-brain. 3 falsos positivos cazados (§3.3). L-50. | 43852 |
 
 ---
 

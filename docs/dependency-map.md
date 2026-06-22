@@ -153,8 +153,11 @@ admin-templates.js → admin-state.js + config/messageTemplates
 - `config/{docId}` — counters, bookedSlots, automationRules, followups, messageTemplates
 - `system/meta` — cache invalidation signal
 - `loginAttempts/{hash}` — rate limiting
-- `events/` — Event Bus log (planned in I.1)
-- `conversaciones/{id}` — Concierge unified (planned in U.2)
+- `events/{id}` — audit/security event log **LIVE** (type `security.reauth`, etc.; antes "planned I.1")
+- `crm_alerts/{id}` — alertas del CRM **LIVE**: `daily_digest` (de `crmDailyJob`) + `sla_lead` (leads sin contacto → Telegram). Reconciliado 22/06 (TODO-33)
+- `departments/{id}` — departamentos RBAC **LIVE** (`name`/`nivel`/`active`/`userCount`; Admin/Comercial/Dirección/Marketing, §219). Reconciliado 22/06
+- `comments/{id}` — comentarios internos del CRM sobre entidades (`entityType`/`entityId`/`body`/`mentions`). LIVE (vacía hoy tras limpiar tests)
+- ⚠️ **TODO-33 (lista incompleta vs realidad, 27 colecciones vivas 22/06)**: el CRM canónico (`contacts`/`leads`/`activities`/`deals`/`dedup`) + bot (`conciergeChats`/`knowledgeBase`/`unmatchedQueries`) + `siteContent`/`permissions`/`roles` están en `20-ESPACIAL §Schema`; falta reconciliar ambas listas + confirmar vacías (`banners`/`resenas`/`subscriptions`/`resource_slots`/`merges`/`suppressions`/`failedIngestions`). `conversaciones` (planned U.2) NO existe → el bot usa `conciergeChats` (TODO-34)
 
 ## Files eligible for consolidation in v4
 

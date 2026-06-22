@@ -36,7 +36,7 @@
 - **Panel admin**: `admin.html` (SPA monolítica) + cadena de `js/admin/admin-*.js`.
 - **Bot ALTOR Hub**: cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`.
 - **CSS**: ~31 archivos en `/css/` (planos). Hojas cinematic page-specific en `css/home/`: `cinematic.css` (tokens `--cin-*`), `soft-redesign.css`, `comparar-cinematic.css`, **`detalle-cinematic.css` (cuerpo de `detalle-vehiculo`, §140)**.
-- **Backend**: Firebase (Auth, Firestore, RTDB, Storage, 27 Cloud Functions V2, FCM, Analytics). Project ID `altorra-cars`.
+- **Backend**: Firebase (Auth, Firestore, RTDB, Storage, **59 Cloud Functions V2** al 22/06 — antes decía 27 stale; varias muertas/del bot diferido → poda + reconciliación TODO-33, FCM, Analytics). Project ID `altorra-cars`.
 - **Hosting**: GitHub Pages (`altorracars.github.io`). Push a `main` → auto-deploy.
 
 ### 📁 Estructura de `js/` (modular desde §119 — 128 archivos, 0 sueltos en raíz)

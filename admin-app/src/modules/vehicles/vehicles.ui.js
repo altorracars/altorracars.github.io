@@ -19,6 +19,18 @@ import {
 } from './vehicles.data.js';
 import { openVehicleWizard } from './wizard.js';
 
+/* Tiempo relativo legible para la galería de borradores (TODO-24). */
+function relTimeDraft(iso) {
+  const t = Date.parse(iso);
+  if (isNaN(t)) return String(iso).slice(0, 16).replace('T', ' ');
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'hace un momento';
+  if (m < 60) return 'hace ' + m + ' min';
+  const h = Math.round(m / 60);
+  if (h < 24) return 'hace ' + h + ' h';
+  return 'hace ' + Math.round(h / 24) + ' d';
+}
+
 export function mountVehicles(root) {
   const ui = { vehicles: [], drafts: [], brandNames: {}, brands: [], q: '', estado: '', sub: null, subBrands: null, subDrafts: null, loaded: false };
   const canEdit = hasPermission('vehicles.edit') || hasPermission('vehicles.create');
@@ -306,9 +318,9 @@ export function mountVehicles(root) {
         openWizard(vehicle, { id: d._draftId, snap: d });
       });
       const del = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑', 'aria-label': 'Eliminar borrador' });
-      del.addEventListener('click', async () => {
-        if (!window.confirm('¿Eliminar el borrador "' + label + '"?')) return;
+      const doDelete = async () => {
         const idx = ui.drafts.findIndex((x) => x._draftId === d._draftId);
+        if (idx < 0) return;
         const removed = ui.drafts.splice(idx, 1)[0]; // OPTIMISTA (§110)
         render();
         if (store.get().mock) {
@@ -324,11 +336,40 @@ export function mountVehicles(root) {
           ui.drafts.splice(idx, 0, removed); render(); // rollback (§110)
           toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
         }
+      };
+      // Modal custom (consistencia pro; reemplaza el window.confirm nativo — TODO-24)
+      del.addEventListener('click', () => {
+        const yes = el('button', { class: 'btn btn--danger', type: 'button', text: 'Eliminar' });
+        const no = el('button', { class: 'btn btn--soft', type: 'button', text: 'Cancelar' });
+        const ov = el('div', { class: 'rev-modal__overlay' }, [
+          el('div', { class: 'rev-modal rev-modal--sm', role: 'alertdialog', 'aria-modal': 'true' }, [
+            el('h3', { class: 'rev-modal__title', text: '¿Eliminar el borrador "' + label + '"?' }),
+            el('div', { class: 'rev-modal__actions' }, [no, yes]),
+          ]),
+        ]);
+        const closeOv = () => ov.remove();
+        no.addEventListener('click', closeOv);
+        ov.addEventListener('click', (e) => { if (e.target === ov) closeOv(); });
+        yes.addEventListener('click', () => { closeOv(); doDelete(); });
+        document.body.append(ov);
       });
+      const thumbUrl = (d._images && d._images[0]) || '';
+      const thumb = thumbUrl
+        ? el('img', { class: 'veh-draft__thumb', src: thumbUrl, alt: '', loading: 'lazy', decoding: 'async' })
+        : el('div', { class: 'veh-draft__thumb' });
+      const missing = [];
+      if (!d.vModelo) missing.push('modelo');
+      if (!d.vPrecio) missing.push('precio');
+      if (!(d._images && d._images.length)) missing.push('fotos');
+      const hint = missing.length ? ('Falta: ' + missing.join(' · ')) : '✓ Listo para publicar';
       return el('div', { class: 'veh-draft' }, [
-        el('div', { class: 'veh-draft__meta' }, [
-          el('strong', { text: label }),
-          el('span', { class: 'u-caption u-muted', text: sub + (d._savedAt ? ' · guardado ' + String(d._savedAt).slice(0, 16).replace('T', ' ') : '') }),
+        el('div', { class: 'u-row u-row--tight veh-draft__lead' }, [
+          thumb,
+          el('div', { class: 'veh-draft__meta' }, [
+            el('strong', { text: label }),
+            el('span', { class: 'u-caption u-muted', text: sub + (d._savedAt ? ' · ' + relTimeDraft(d._savedAt) : '') }),
+            el('span', { class: 'u-caption ' + (missing.length ? 'veh-draft__missing' : 'u-muted'), text: hint }),
+          ]),
         ]),
         el('div', { class: 'u-row u-row--tight' }, [resume, del]),
       ]);

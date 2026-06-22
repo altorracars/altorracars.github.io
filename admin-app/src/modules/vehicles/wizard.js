@@ -44,6 +44,12 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   let _draftId = draft ? draft.id : null;
   let _lastSaved = draft ? draft.snap : null;
   let _original = null; // baseline de apertura (doble baseline §108)
+  let _dead = false; // publicado/descartado → no resucitar el draft (write-after-delete) ni bufferear
+  let _bufTimer = null; // debounce de la red de recuperación local
+  // Red de recuperación local (TODO-24): buffer efímero por contexto; al reabrir
+  // se OFRECE restaurar (opt-in) — NUNCA autorestaura (la lección §107).
+  // Scoped por uid: en un navegador COMPARTIDO no se cruza el buffer entre cuentas.
+  const RECOVERY_KEY = 'altorra:vehDraftBuf:' + (uid || 'anon') + ':' + (isEdit ? ('edit-' + vehicle.id) : 'new');
   const who = (() => {
     const u = store.get().user || {}; const p = store.get().profile || {};
     return { email: u.email || 'unknown', nombre: p.nombre || u.email || 'unknown' };
@@ -406,22 +412,72 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
     refreshTipo(); refreshConsigna(); refreshDestacado(); renderGallery(); refreshSmart();
   }
 
+  /* ── Estado de guardado (feedback pro; NO es autosave a Firestore) ── */
+  function setSavedHint(state) {
+    if (!savedHint) return;
+    if (state === 'saved') savedHint.textContent = '✓ Guardado ' + new Date().toTimeString().slice(0, 5);
+    else if (state === 'dirty') savedHint.textContent = '• Cambios sin guardar';
+    else savedHint.textContent = '';
+  }
+
+  /* ── Red de recuperación local (opt-in, §107-safe: NO crea borradores
+   *  fantasma — vive en localStorage, no en la galería) ── */
+  function readRecoveryBuffer() {
+    try { const raw = localStorage.getItem(RECOVERY_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
+  }
+  function clearRecoveryBuffer() {
+    try { localStorage.removeItem(RECOVERY_KEY); } catch { /* noop */ }
+  }
+  function writeRecoveryBuffer() {
+    if (_dead) return;
+    const snap = getSnapshot();
+    if (!snapshotHasAnyData(snap)) { clearRecoveryBuffer(); return; }
+    try { localStorage.setItem(RECOVERY_KEY, JSON.stringify(snap)); } catch { /* cuota/denegado: nunca romper el form */ }
+  }
+  function scheduleRecovery() {
+    setSavedHint('dirty');
+    clearTimeout(_bufTimer);
+    _bufTimer = setTimeout(writeRecoveryBuffer, 1500);
+  }
+  /* Al reabrir: OFRECE recuperar lo que el buffer guardó (jamás autorestaura). */
+  function maybeOfferRecovery() {
+    const buf = readRecoveryBuffer();
+    if (!buf || !snapshotHasAnyData(buf)) return;
+    if (_original && !snapshotsAreDifferent(buf, _original)) return; // == lo ya cargado
+    if (_lastSaved && !snapshotsAreDifferent(buf, _lastSaved)) return;
+    const when = buf._savedAt ? (' (' + String(buf._savedAt).slice(11, 16) + ')') : '';
+    const restore = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: 'Restaurar' });
+    const dismiss = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: 'Descartar' });
+    const bar = el('div', { class: 'veh-wiz__recover' }, [
+      el('span', { class: 'u-caption', text: '↩ Recuperamos cambios sin guardar' + when }),
+      el('div', { class: 'u-row u-row--tight' }, [dismiss, restore]),
+    ]);
+    restore.addEventListener('click', () => { applyDraftSnapshot(buf); setSavedHint('dirty'); bar.remove(); });
+    dismiss.addEventListener('click', () => { clearRecoveryBuffer(); bar.remove(); });
+    body.prepend(bar);
+  }
+
   async function saveDraftNow() {
     const snap = getSnapshot();
     if (!snapshotHasAnyData(snap)) { toast('Nada que guardar todavía.', 'error'); return false; }
+    if (_dead) return false; // ya publicado/descartado
     const prev = { id: _draftId, last: _lastSaved };
     _draftId = _draftId || newDraftId();
+    const myId = _draftId;
     _lastSaved = snap; // OPTIMISTA (§108): contexto primero, write en background
     toast('💾 Borrador guardado' + (store.get().mock ? ' (demo)' : ''), 'ok');
     if (store.get().mock) {
-      const i = mockDrafts.findIndex((d) => d._draftId === _draftId);
-      const docSnap = { ...snap, _draftId, _userId: 'demo', _userEmail: who.email };
+      const i = mockDrafts.findIndex((d) => d._draftId === myId);
+      const docSnap = { ...snap, _draftId: myId, _userId: 'demo', _userEmail: who.email };
       if (i >= 0) mockDrafts[i] = docSnap; else mockDrafts.unshift(docSnap);
       onDraftsChange && onDraftsChange();
+      clearRecoveryBuffer(); setSavedHint('saved');
       return true;
     }
     try {
-      await saveDraftDoc(uid, _draftId, { ...snap, _draftId, _userId: uid, _userEmail: who.email });
+      await saveDraftDoc(uid, myId, { ...snap, _draftId: myId, _userId: uid, _userEmail: who.email });
+      if (_dead) { deleteDraftDoc(uid, myId).catch(() => {}); return false; } // descartado durante el await → no resucitar
+      clearRecoveryBuffer(); setSavedHint('saved');
       return true;
     } catch (e) {
       _draftId = prev.id; _lastSaved = prev.last; // rollback COMPLETO (§111)
@@ -431,6 +487,9 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   }
 
   function discardCurrentDraft() {
+    _dead = true; // sella contra write-after-delete y detiene el buffer local
+    clearTimeout(_bufTimer);
+    clearRecoveryBuffer();
     if (!_draftId) return;
     const id = _draftId; _draftId = null;
     if (store.get().mock) {
@@ -446,6 +505,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   const saveBtn = el('button', { class: 'btn btn--gold', type: 'button', text: isEdit ? 'Guardar cambios' : 'Publicar vehículo' });
   const draftBtn = el('button', { class: 'btn btn--soft', type: 'button', text: '💾 Borrador' });
   draftBtn.addEventListener('click', saveDraftNow);
+  const savedHint = el('span', { class: 'veh-wiz__saved u-caption u-muted', text: '' });
   const cancelBtn = el('button', { class: 'btn btn--soft', type: 'button', text: 'Cancelar' });
 
   saveBtn.addEventListener('click', async () => {
@@ -529,10 +589,10 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       progress,
     ]),
     stepsBar, body,
-    el('div', { class: 'veh-wiz__foot' }, [prevBtn, nextBtn, el('span', { style: { flex: '1' } }), draftBtn, cancelBtn, saveBtn]),
+    el('div', { class: 'veh-wiz__foot' }, [prevBtn, nextBtn, el('span', { style: { flex: '1' } }), savedHint, draftBtn, cancelBtn, saveBtn]),
   ]);
   const overlay = el('div', { class: 'modal-overlay' }, [card]);
-  const close = () => { overlay.remove(); window.removeEventListener('keydown', onKey); };
+  const close = () => { overlay.remove(); window.removeEventListener('keydown', onKey); window.removeEventListener('beforeunload', onUnload); clearTimeout(_bufTimer); };
 
   /* Cierre con cambios (§108): igual a CUALQUIERA de los dos baselines
    * (último guardado / apertura) → cierra sin preguntar; con cambios →
@@ -551,16 +611,21 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       ]),
     ]);
     yes.addEventListener('click', () => { ov2.remove(); saveDraftNow(); close(); }); // optimista: cierra YA
-    no.addEventListener('click', () => { ov2.remove(); close(); });
+    no.addEventListener('click', () => { ov2.remove(); clearRecoveryBuffer(); close(); }); // descartó: no ofrecer recuperación luego
     ov2.addEventListener('click', (e) => { if (e.target === ov2) { ov2.remove(); close(); } });
     document.body.append(ov2);
   }
   const onKey = (e) => { if (e.key === 'Escape') requestClose(); };
+  const onUnload = () => { clearTimeout(_bufTimer); writeRecoveryBuffer(); }; // cierre de pestaña/crash: flush
   window.addEventListener('keydown', onKey);
+  window.addEventListener('beforeunload', onUnload);
   cancelBtn.addEventListener('click', requestClose);
   overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) requestClose(); });
+  body.addEventListener('input', scheduleRecovery);
+  body.addEventListener('change', scheduleRecovery);
   document.body.append(overlay);
   if (draft) applyDraftSnapshot(draft.snap);
   _original = getSnapshot(); // baseline de apertura
+  maybeOfferRecovery();
   goTo(0);
 }

@@ -186,6 +186,11 @@
 - **Corrección**: (1) cuando una auditoría manda una meta-lección o fix-de-doctrina, ESCRIBIRLO ESE turno (M-03, no "después"). (2) Toda reincidencia (defecto que vuelve pese a tener "corrección" documentada) declara que su cura-por-doctrina FALLÓ → su única cura real es un **GATE en el kernel** (TODO-29: boot/cache-vs-`origin/main`, anclas §G). (3) El gate es cross-repo (kernel ×3) → coordinar con el canon `bersaglio`, jamás cars-only (fork silencioso).
 - **Principio**: una reincidencia NO se cura repitiendo la doctrina que ya falló; se cura subiéndola un nivel — de honor a determinismo. Si genuinamente no puede mecanizarse, se marca **[HONOR] explícito + ritual barato**, nunca se finge cobertura.
 
+### M-17 · Cuando el pedido LITERAL del dueño contradice el historial verificado, NO construyas a ciegas — interpreta por evidencia (el RESULTADO, no el mecanismo) y prefiere opt-in sobre imponer ⟦OPUS-4.8 · rev-Fable⟧
+- **Defecto evitado (§227/TODO-24, 2026-06-22)**: el dueño pidió "borradores con autosave"; el camino obvio era construirlo. El historial verificado (§107) decía que YA lo había quitado por molesto ("no me restaures automáticamente"). Construirlo habría re-litigado una pelea ya perdida = pérdida de **confianza** (su recurso escaso), no un bug técnico.
+- **Cómo se cazó**: el comité **ACOTADO** + peer-review cruzado anónimo convergió 4/4 en "estás resolviendo el problema equivocado" — el pedido es el **RESULTADO** (no perder trabajo, sin bugs), NO el **MECANISMO** (autosave-restore). En solitario la propuesta de autosave era convincente; el cruce anónimo la refutó.
+- **Principio**: pedido-literal ⊥ historial-verificado = **GATE de interpretación**, no problema de diseño. Resolver por evidencia (o preguntar la disyuntiva resultado-vs-mecanismo) ANTES de codear; ante la duda, **opt-in (ofrecer) > imponer**. Familia M-11 (verifica, no asumas) · §3.3.
+
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md`
@@ -272,6 +277,8 @@
 ### L-45 · El SSG horneado DESPOJA ids del `<head>` (ej. `<title id="pageTitle">`) de los que depende el JS inline → null-deref aborta el render → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-46 · Inyectar una 2ª global `window.X` en el MISMO `<script>` que otra rompe el gate `SSG_SELFTEST` (split `;</script>` arrastra la 2ª asignación) → detalle en `33-LECCIONES-FRONTEND.md`
+
+### L-51 · Recuperación de borradores "pro" SIN reabrir un autosave rechazado: separar borrador-deliberado de red-de-seguridad-local (opt-in, scoped por uid) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-47 · En reglas Firestore, `resource.data.X` de un campo AUSENTE **LANZA** (no es null) — guardar con `('X' in resource.data)` ⟦OPUS-4.8⟧
 - **Síntoma (§222)**: un test rules-unit de `marcas` dio `PERMISSION_DENIED: Property _version is undefined on object` al ACTUALIZAR un doc sin `_version` (los seed/legacy). En prod no se notó porque el dueño edita como **super-admin** (que bypassa `validVersion()`); un `brands.edit` no-super SÍ lo dispara.

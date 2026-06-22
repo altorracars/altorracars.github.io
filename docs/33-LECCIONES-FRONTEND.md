@@ -138,5 +138,11 @@
 - **Receta**: una global inyectada = UN `<script>` propio (`…A="x";</script><script>…B="y";</script>`) → cada valor termina en `;</script>` y el split lo aísla. Bonus: registra el sink nuevo en el loop del selftest + mete payload de breakout en su mock (gate con dientes, doctrina §220).
 - **Familia**: L-07 (SSG template-driven) · L-45 (DOM horneado).
 
+### L-51 · Recuperación de borradores "pro" SIN reabrir un autosave ya rechazado: separar borrador-deliberado de red-de-seguridad-local (opt-in, scoped por uid) ⟦OPUS-4.8⟧
+- **Síntoma/contexto (§227/TODO-24)**: el dueño pide "borradores profesionales con autosave/recuperación" PERO en el pasado (§107) quitó el autosave porque reaparecía y restauraba solo ("no me restaures automáticamente"). El pedido literal ⊥ el historial verificado.
+- **Causa/insight**: "profesional" = el **RESULTADO** (nunca perder trabajo, sin bugs), NO el **mecanismo** (autosave-restore) ya rechazado. Un autosave que persiste drafts crea fantasmas que reaparecen en la galería = **§107 disfrazado** ("nunca re-pregunta ≠ nunca resucita").
+- **Receta**: (1) separa DOS conceptos — borrador **DELIBERADO** (botón → backend → galería → retomar) vs **RED DE SEGURIDAD** local (localStorage debounce, efímera, **NO** en la galería). (2) recuperación = **OFRECER** (barra opt-in al reabrir), NUNCA autorestaurar (form vacío hasta que el usuario pulse). (3) el buffer local va **scoped por `uid`** (localStorage es por-navegador → en equipo compartido cruza cuentas si no). (4) los datos REALES se aíslan a nivel **SERVIDOR** (rules `path/{uid}/`), no por código. (5) **guard anti-resurrección**: un write optimista que aterriza tras un delete recrea el doc → flag `_dead` + cancelar timers en close/discard/publish.
+- **Familia**: §107 (drafts por cuenta) · §202 (V4 port verbatim por interop) · §227 (este rediseño) · M-17 (la meta: pedido literal ⊥ historial → interpretar por evidencia).
+
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

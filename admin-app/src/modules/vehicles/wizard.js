@@ -48,7 +48,8 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   let _bufTimer = null; // debounce de la red de recuperación local
   // Red de recuperación local (TODO-24): buffer efímero por contexto; al reabrir
   // se OFRECE restaurar (opt-in) — NUNCA autorestaura (la lección §107).
-  const RECOVERY_KEY = 'altorra:vehDraftBuf:' + (isEdit ? ('edit-' + vehicle.id) : 'new');
+  // Scoped por uid: en un navegador COMPARTIDO no se cruza el buffer entre cuentas.
+  const RECOVERY_KEY = 'altorra:vehDraftBuf:' + (uid || 'anon') + ':' + (isEdit ? ('edit-' + vehicle.id) : 'new');
   const who = (() => {
     const u = store.get().user || {}; const p = store.get().profile || {};
     return { email: u.email || 'unknown', nombre: p.nombre || u.email || 'unknown' };

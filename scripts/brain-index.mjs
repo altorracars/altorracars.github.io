@@ -20,7 +20,18 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const SRC = 'docs/99-HISTORIAL-ADR.md';
 const OUT = 'docs/00-INDICE.generated.md';
-const reHeader = /^## (\d+)\.\s+(.+?)\s*$/;
+// Captura ADRs top-level (`## 227. …`) Y sub-numerados (`## 60.1 …`, `## 60.1.1 …`).
+const reHeader = /^## (\d+(?:\.\d+)*)\.?\s+(.+?)\s*$/;
+// Orden numérico por segmentos: §60 < §60.1 < §60.2 < §61.
+const cmpId = (a, b) => {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? -1) - (pb[i] ?? -1);
+    if (d) return d;
+  }
+  return 0;
+};
 
 const lines = readFileSync(SRC, 'utf8').split('\n');
 const rows = [];
@@ -41,7 +52,7 @@ lines.forEach((line, i) => {
   if (!hook) errors.push(`§${id} (línea ${lineNo}): header sin título tras parsear`);
   if (seen.has(id)) errors.push(`§${id} DUPLICADO (líneas ${seen.get(id)} y ${lineNo})`);
   seen.set(id, lineNo);
-  rows.push({ id: Number(id), hook, lineNo });
+  rows.push({ id, hook, lineNo });
 });
 
 if (errors.length) {
@@ -50,7 +61,7 @@ if (errors.length) {
   process.exit(1);
 }
 
-rows.sort((a, b) => a.id - b.id);
+rows.sort((a, b) => cmpId(a.id, b.id));
 const body = rows.map((r) => `| §${r.id} | ${r.hook} | ${r.lineNo} |`).join('\n');
 const out = `# 🗂️ 00-INDICE (GENERADO — TODO-32 Etapa 1 SHADOW · ⛔ NO editar a mano)
 

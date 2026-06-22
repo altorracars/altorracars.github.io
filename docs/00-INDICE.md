@@ -65,6 +65,7 @@
 ## Mapa § → línea
 
 > ⚠️ **ADR §228**: este mapa NO se comprime con pérdida (es on-demand, no boot → su tamaño casi no cuesta contexto). Si crece, se TIERA/sharda; nunca se recorta el contenido. `scripts/brain-index.mjs` lo audita (completitud §→línea; genoma frontmatter = TODO-32 Etapa 3).
+> 🪦 **Tombstones (anti-Data-Rot, §228/TODO-32)**: un `⛔→§M` en una fila marca una decisión SUPERADA — NO la apliques, ve a §M. En el ADR viejo (`99`) la marca canónica es `> ⛔ REEMPLAZADO POR §M`; `brain-index.mjs` la detecta y **valida que §M exista** (puntero colgante = error). 1er caso: §111→§112.
 
 | § | Tema | Línea |
 |---|---|---|
@@ -207,124 +208,124 @@
 | §108 | Drafts 4 fixes (galería + re-prompt + lento) | 40503 |
 | §109 | INVENTARIO CONSOLIDADO PENDIENTES (TODO-NN) | 40614 |
 | §110 | Eliminar borrador optimista | 40719 |
-| §111 | Drafts borran al refresh (causa equivocada) | 40819 |
-| §112 | FIX DEFINITIVO drafts refresh (teardown race) | 40950 |
-| §113 | Contador tiempo real Marcas | 41104 |
-| §114 | Depuración roles legacy → roleName + CARGO | 41194 |
-| §115 | Tema cromático admin (toast-spam + 6 paletas) | 41365 |
-| §116 | Plan A superficies teñidas (color-mix) | 41478 |
-| §117 | Plan B texto legible + Plan C tints + dedup | 41595 |
-| §118 | Arquitectura Documental Neuronal (cerebro de memoria) | 41734 |
-| §119 | Reestructuración frontend (js/ plano → modular) | 41818 |
-| §120 | Cerebro Documental Neuronal AUTÓNOMO | 41842 |
-| §121 | Autocrítica + linter brain-check + robustez (cross-review) | 41865 |
-| §122 | SP-1 Index cinematic vanilla (T4-T8 — port HarmonyOS/Claude Design) | 41886 |
-| §123 | Reflejo de Cierre (M-03) — el cerebro no se auto-alimentaba sin recordatorio | 41965 |
-| §124 | SP-5.0 rastro saga c→f — SW stale-while-revalidate + initTrail races (L-14/L-15, M-04) | 41985 |
-| §125 | Omni-Brain Fase 1 — Trigger 🔵 Auditoría + Lóbulos de Dominio + skills sinergia (M-05) | 42030 |
-| §126 | SP-5.1 Chrome global cinematic (snippets + components.js + home-chrome.js + cache bump) | 42076 |
-| §127 | SP-5.1.b Bridge legacy↔cinematic (data-theme + especificidad CSS, chrome invisible fix · L-16) | 42129 |
-| §128 | SP-5.2.a Body migration piloto (Legales + 404 → soft-redesign.css, contenido legal preservado) | 42176 |
-| §129 | SP-5.2.b Body migration editorial (nosotros + contacto, form preservado) + fix cin-eyebrow global | 42215 |
-| §130 | SP-5.2.c.1 Reseñas (sub-piloto app-like — reescribir render del JS a cinematic) | 42252 |
-| §131 | SP-5.2.c.2 Perfil → cinematic por armonización de tokens (`--pf-*`→`--cin-*`, hero soft, 0 cambios JS) | 42285 |
-| §132 | SP-5.2.c.2 Favoritos → cinematic por armonización CSS de `.vehicle-card` (scoped data-cin, 0 cambios JS) | 42324 |
-| §133 | Chrome unify: botones `.btn-*` del header en legacy (port a chrome-redesign.css scoped) + badge favoritos reposicionado + oculto en 0 · L-18 | 42360 |
-| §134 | SP-5.2.c.3 Comparador flotante cinematic + abajo-izquierda + máx 2 (CSS en chrome-redesign.css → aparece en index) | 42395 |
-| §135 | SP-5.2.c.3 Comparador página `comparar.html` cinematic (slots A/B + picker inline + diff dorado + veredicto, port Compare.jsx) | 42422 |
-| §136 | SP-5.2.c.4 Simulador crédito cinematic por armonización de tokens `--sim-*`→cinematic (cero cambios al cálculo) · cierra SP-5.2.c | 42443 |
-| §137 | QA/pulido cinematic: flotante comparador reposicionado (no choca con QuickTools) + gráfico simulador armonizado | 42469 |
-| §138 | SP-4 Motor de recomendaciones por similitud al rastro (content-based, `js/core/recommendations.js`) · L-19 · M-06 | 42483 |
-| §139 | Footer cinematic: matar gris fantasma `#808080` (bridge `color:var(--ink-text-muted)`) + auditoría cobertura cinematic (qué falta) · L-20 | 42510 |
-| §140 | SP-5.3: `detalle-vehiculo` cinematic + de-monolitización (4 módulos `js/public/detalle/` + `css/home/detalle-cinematic.css`, botones Opción A, favorito/comparar/sticky cableados, 27 páginas regeneradas) · L-08/L-20 | 42539 |
-| §141 | SP-5.3 pulido detalle post-validación: fix glow dorado hover ficha + fondo blanco características + descripción editorial + glass (info-card/descripción) · L-21 | 42567 |
-| §142 | Eliminar Descripción del vehículo (tab detalle + campo/generador admin + búsqueda + noscript; 27 regeneradas; `descripcion` dormido en Firestore) | 42592 |
-| §143 | `busqueda.html` (catálogo) cinematic (SP-5.3.b): hero serif + filtros glass + tarjetas `.vehicle-card` cinematic + paginación; JS intacto, sin regen · L-21 | 42612 |
-| §144 | `marca.html` (template) cinematic (SP-5.3.c): hero/brand-header serif + sidebar filtros glass + tarjetas cinematic; 18 `marcas/*` regeneradas; JS intacto · L-21 | 42629 |
-| §145 | Fix nav header "Marcas"→`marcas.html` (snippet + index; antes al carrusel) + `marcas.html` (índice) cinematic (tokens/serif/Manrope, 18 tarjetas de marca) · L-21 | 42647 |
-| §146 | 4 landings SEO por categoría (`vehiculos-{suv,pickup,sedan,hatchback}.html`) cinematic (SP-5.3.e): clon estructural de marca.html → REUSO `marca-cinematic.css` (DRY), data-cin + soft-redesign; 3 redirects (usados/nuevos/camionetas) INTACTOS; estáticas, sin regen. **Catálogo 100% cinematic** | 42665 |
-| §147 | A11y quick wins WCAG (cierre parcial §48): focus-visible + reduced-motion + h1 sr-only + aria-label en 50 controles. Aditivo, ids/JS intactos. | 42694 |
-| §148 | Validación post-launch (node -c limpio + 1 enlace roto arreglado) + A11Y-03 contraste WCAG AA + deuda TODO-09..13 verificada. | 42724 |
-| §149 | A11Y-04 skip-link (WCAG 2.4.1, **cierra §48 = 6/6**): `.skip-link` + `ensureMainLandmark()` en components.js (DRY, sin tocar 20 páginas). Aditivo. | 42752 |
-| §150 | **Consistencia de diseño global**: near-black cálido `#0D0B09` + QuickTools dock + dropdown Vehículos; fixes dropdown-colapsado/dedup/columna. PR#786. | 42781 |
-| §151 | **Evaluación crítica "Cerebro V5"** (Antigravity): ADOPTADO lean — saturación por SÍNTOMA en §G.2 🔴 + "🚫 Callejones" en handoff de `10`. RECHAZADO: contador de turnos, HANDOFF.md, docs/skills/, inyecciones a CLAUDE.md. → M-08 | 42832 |
-| §152 | **Reflejo de Auto-auditoría PRE-CIERRE de sesión**: barrido holístico proactivo (brain:check + frescura vs git) antes de cerrar la sesión, extendido en §G.4. Por evento de cierre, NO contador de turnos. → M-09 | 42853 |
-| §153 | **Lo verificable va al LINTER, no a un reflejo** (RCA de por qué la Autocrítica es reactiva): brain-check extendido con (4) Frescura cache SW==manager==05 + origin/main. → M-10 | 42865 |
-| §154 | **Chequeo AVANZADO del cerebro**: brain:check extendido (offsets, ADRs sin índice, refs L-/M- colgantes, hojas inexistentes). Auditoría integral 0 huecos estructurales; 1 semántico corregido (rutas planas → modulares). → M-10 | 42884 |
-| §155 | **Kickoff reconstrucción CRM** + skill `crm-architect` (commit `6cc0055`): build Firebase/Firestore/Functions, vertical automotive, RBAC+Ley 1581. CRM viejo = `admin.html` + `js/admin/admin-crm*.js` + `comm-schema.js`. Diseño → ADRs §157+ | 42900 |
-| §156 | **Blindaje determinista del cerebro**: hooks (pre-commit + SessionStart brain-check) + Consejo Externo (15) + verifica-no-asumas UNIVERSAL (§3.3, M-11) + limpieza skills. Doctrina→garantía mecánica (M-10) | 42907 |
-| §157 | **Fix rectángulo negro del hero**: `<footer class=cin-hero-foot>` heredaba `body footer{background}` (dark-theme.css:688). Fix `.cin-hero-foot{background:transparent}`. Lección **L-25** | 42917 |
-| §158 | **CRM Fase 1: ingestión canónica DESPLEGADA**: `onSolicitudCreated` normaliza `solicitudes`→`contacts`/`leads`/`activities` en tx atómica (dedup, consent 1581, idempotencia, dead-letter). 21 tests. LIVE. L-26 | 42927 |
-| §159 | **CRM Fase 2: Bandeja + app admin greenfield** (`admin-app/`, Vite+Firebase modular `altorra-crm`): colas triage + score/NBA determinista + acciones 1-clic + Customer 360. Auth lookup `usuarios/{uid}` (claims→Fase 5). Verif `?mock=1`. L-27 | 42937 |
-| §160 | **CRM Fase 3a: Pipeline drag-drop** sobre `deals` (lead→oportunidad): `domain/pipeline.js` (8 etapas, forecast) + kanban a11y + ganado/perdido. Reglas+índice `deals` LIVE (`1e154c2`). L-29 | 42947 |
-| §161 | **CRM Fase 3b: Agenda unificada**: `domain/agenda.js` (grilla mes, `dayKey` LOCAL) + lee `activities.dueAt` (índice automático). Acción '📅 Agendar' en 360. Verif `?mock=1`. L-30 | 42957 |
-| §162 | **CRM: Captura MANUAL de leads multi-canal** (Meta/WhatsApp/TikTok/llamada): form '＋Nuevo lead' escribe `solicitudes` → reusa ingestión Fase 1, cero backend. Atribución canal/pauta/campaña (ROI). L-31 | 42966 |
-| §163 | **CRM Canal AUTO #1: registro→contacto** (`onClienteCreated`): upsert `contacts` (dedup), NO crea lead (registrarse≠intención), fusiona invitado→registrado sin pisar first-seen. 28 tests. DESPLEGADO. Backfill pendiente | 42975 |
-| §164 | **CRM Canal AUTO #2: newsletter→contacto** (`onSubscriptionCreated`) — TOCA SITIO PÚBLICO: form roto → `subscriptions` → upsert contact (subscriber). `home.js initNewsletter`. Cache bump. 33 tests | 42985 |
-| §165 | **CRM Fase 4: Reportes/KPIs** (`#/reportes`): KPIs + embudo + canal (`channelOf`) + forecast + tendencia + CSV. `domain/reports.js` PURO + charts SVG/CSS sin librería. L-30/L-32. | 42994 |
-| §166 | **CRM: Contactos (directorio)** (`#/contactos`): lista buscable/filtrable; con lead → ficha 360 existente (detailLeadId atómico L-27); suscriptor sin lead → fila no interactiva. L-33. | 43004 |
-| §167 | **Cerebro Fase A**: Lente de Arquitecto §3.8 (6 pilares → `46`) · Legal=Colombia en Trigger 🔵 · workflow `adversarial-review.js` + L-34. Comité ×3 diseñado. Spec `2026-06-06-cerebro-skills-roadmap.md` | 43014 |
-| §168 | Cerebro Fase B (reconciliación): las 3 skills YA EXISTEN (portables, build paralelo Bersaglio) + registro + eval llm-council/engineering | 43022 |
-| §169 | Cerebro Fase C: auditoría seguridad (9 hallazgos) + holística CRM + legal vehículos → nacen 41-SEGURIDAD y 42-LEGAL (nada desplegado) | 43031 |
-| §170 | Decisión Fuerte: cerebro MULTI-PROYECTO (núcleo compartido 4-capas + brain:diff, NO único; comité×3 + Gemini) → spec 2026-06-09 | 43039 |
-| §171 | **ENMIENDA a §170**: revalidación comité×3 + Gemini (convergentes) PAUSA el sync P2P del KERNEL → economía LOCAL primero (destilar 10) + Opción C template/generator diferida a Cloudflare. "PASO 1 extraer KERNEL" SUPERSEDED. Veredicto → `…-comite-revalidacion-paso1-VEREDICTO.md` | 43048 |
-| §172 | **Mandato 3 (validación FINAL) → CERTIFICADO**: comité 11 agentes verificó en disco; 2 bloqueantes (cura no aterrizada §171.7 + README stale) RESUELTOS+grep → CERTIFICADO. Meta: verificar la cura en la capa que el boot lee | 43060 |
-| §173 | **Comité v6 — cerebro auto-evaluable** (16 agentes, 45 hallazgos): cura 'SANO-teatro' = evaluación 2 NIVELES (gates + skill `auditoria-cerebro`) + GC dos palancas con trinquete + TODO ledger único + captura-en-ORIGEN + brain-diff gateado. Checklist A-U → bóveda VEREDICTO | 43072 |
-| §174 | **Bóveda privada brain-private** (ítem C, Gemini adoptado/refutado): RED/AMBER → repo hermano privado (NO submódulo — rompe Pages; NO purga de historial — riesgo residual documentado); stubs públicos + archiveDir ×3 → bóveda; cliente crea remote privado + push | 43109 |
-| §175 | **TODO-17 E2E live CRM ✅** (web+newsletter → solicitudes/subscriptions → ingestión → canónico → Bandeja score/NBA + Contactos 3/3) + **incidente billing-disabled** (~2h, Eventarc re-entregó solo, L-38) + **FIX spinner form contacto** (`.form-card` eliminada por el rediseño → fallback al `<form>`, L-37) + shard `31-LECCIONES-GIT` | 43139 |
-| §176 | **Comité CRM v2 → plan E0→E6** (quejas reales: cero sync lead↔deal, sin CRUD, calendarios desconectados, cupos no liberan). Estados lead v3, pipeline v3, calendario único, Ley 1581=anonimización, F42 comisiones. VEREDICTO→bóveda. Manual `docs/MANUAL-CRM-USO.md`. TODO-21 | 43151 |
-| §177 | **E0 EJECUTADA**: spec única crm-spec + F34 export/restore + F1 lead inmutable (atacado live ✓) + Bandeja Activos/SLA chip + F17-urgente cupos transaccionales | 43163 |
-| §178 | **E1a núcleo**: ⚡ lead rápido `lead_intake` offline (<30s, E2E live 2s) + ingestLead compartido + quick-log + Pendientes hoy + P2.b próximo paso. Gotcha: 1er evento perdido por propagación Eventarc | 43175 |
-| §181 | **E1b Pipeline v2**: restore ENSAYADO (gate) + enums v3 + paridad 7×7 + Rules gates/matriz + onDealUpdated (E2E live 3s) + F7 conversión/anulación + undo 10s | 43211 |
-| §182 | **E2 tanda 1**: F21.1 configs DIVERGÍAN (web vendía festivos) + F16 proyección cita→Agenda (E2E live 5s) + crmDailyJob 5am (backup→rebuild→purga→digest) | 43223 |
-| §183 | **Decisiones del dueño (end-game panel)**: agenda clásica muere EN el cutover tras paridad F39 · E6.5 comité de DISEÑO del panel (FIRME) · E6.6 auditoría TOTAL admin clásico post-migración · relevo por saturación (retomar 'continúa E2 tanda 2', §182.7) | 43235 |
-| §179 | **E1a CERRADA**: F37 SLA 2h hábiles + rotación de intake en tx (E2E live ✓) + F38 notify (crítica/info) + F33a fricción | 43187 |
-| §180 | **Adelanto E3**: F13 Archivar + F15 crmPurgeLead (cascada server, super admin) + fix credencial GitHub | 43199 |
-| §185 | **E3 EJECUTADA**: índice dedup F40e (E2E live ✓) + F12 editar/_version/fusión resumible + F14 supresión 1581 (gracia 72h, finalizador, tombstones en cascada). Review: 1 crítico + 9 majors corregidos. 139 tests | 43258 |
-| §184 | **E2 COMPLETA**: F21 SSoT availability + módulo Disponibilidad (festivos 1-clic) + F18/F19 crmCitaAction (tupla 30min, token rota C.4) + citaConfirm HTTP (E2E live ✓) + F20 sweep horario + F28 v2. Carrera C.5 en verde | 43245 |
-| §187 | **E5 EJECUTADA — blindaje**: SEC-01 read estricto (8 colecciones) · SEC-06 whitelist hasOnly+caps+shapes (⚠️ ~1000 exprs Rules) · SEC-08 bookedSlots · retry:true ×6 + DLQ. 189 tests. Residual: cupos por anónimo → App Check | 43284 |
-| §186 | **E4 EJECUTADA**: `vehicleAggregate` (won→vendido/apartado, no pisa manuales, badge web) · `dealWon` (postventa+commissionSnapshot) · F26 colisión · F42 Comisiones (CSV anti-inyección). Rules anti-forja. Fix pipeline yml roto 16 días. 169 tests | 43271 |
-| §188 | **E6.6 EJECUTADA — auditoría admin clásico** (16 agentes, 112 hallazgos): KPIs envenenados (portal no actualiza `solicitudes.estado`) · mapa 21 secciones · 14 riesgos cutover (stub redirect, NO borrar admin.html) · plan strangler 29 pasos → bóveda | 43297 |
-| §189 | **E6 paso 0**: cacheSignal ×4 (system/meta 13 días stale) · onUsuarioBloqueadoSync + loginAttempts CERRADO · fix: E5 rompió cita interna (createdBy no censado, L-41) + kind:'cita'. 192 tests. Deploy ✅ | 43310 |
-| §190 | **E6 fase ② p1 — Reseñas en el portal** (1er módulo público migrado, patrón validado): shape VERBATIM del lector público + RBAC reviews.* + mock + **core/audit.js NUEVO** (no perder auditoría; semilla fase ④) + `#/resenas`. Preview mock ✓. F39 live doble: reseña real valida módulo + cacheSignal | 43322 |
-| §191 | **E6 fase ② p2 — Banners (código fase ② COMPLETO)**: solo posiciones VIVAS (promocional limit-3 + home_promo; hero/categoria write-only NO se portan) · **core/image.js** WebP + storage export · `_version` preservado · Ocultar≠Borrar. Preview mock ✓. Gate de fase tras F39: ocultar ambas secciones del clásico. Siguiente: fase ③ | 43334 |
-| §192 | **E6 fase ③ p1 — Marcas en el portal**: docId=slug (en vivo, acentos ok) · `_version`/validVersion preservado · resolvers de logos legacy + LOCAL_LOGOS · upload `cars/brand_logo_*` (WebP 512/SVG) · conteo de vehículos por marca · **guard de borrado con inventario** (mejora vs clásico). Preview mock ✓. Siguiente: lists (S) → vehicles (L, SESIÓN FRESCA) | 43346 |
-| §193 | **Decisiones del dueño (siembra post-panel)**: bot ALTOR sin fallback IA (solo Claude, R-1) · fábrica de skills frontend/backend portables + rescate de webs monolíticas (TODO-22) · web pública CMS-izada post-panel (TODO-23) · RBAC departamental fase ④ (cf. Bersaglio) | 43358 |
-| §194 | **E6 fase ③ p2 — Atributos del inventario** (`config/listas` → `#/atributos`): shape VERBATIM {value,label} · merge SOLO la clave editada · getDoc once + dirty/tarjeta (NO onSnapshot en editor inline) · conteo de uso + modal al quitar opciones EN USO · gate UI settings.* · lector dynamic-lists.js INTACTO | 43370 |
-| §195 | **E6 — backup inventario (D4-09b) ADELANTADO**: CRM_COLLECTIONS += vehiculos/marcas + listas (daily 5am automático) · módulo `#/respaldos` (export + restore dry-run-first, path diario predecible por fecha) · server=guardián. Deploy ✓. Doctrina de adelanto de ítems (195.7) | 43382 |
-| §196 | **Gap 5 Agenda (F23-7) — '＋Nueva cita' en vista Agenda**: chooser con buscador de leads + camino walk-in SIN lead (server exige nombre/fecha/hora/asesor). Reusa openCitaCreate, gated crm.edit. Verif mock | 43394 |
-| §197 | **Gap 7 Agenda — acción `update`**: observaciones + REASIGNAR asesor sin cambio de estado (`moveAdvisorBlocks`: libera saliente + reserva entrante MISMA tx; vehículo/confirmedAt/token intactos) · UI "✏️ Editar / reasignar". Emulador 193 ✓ · deploy ✓ | 43406 |
-| §198 | **F39 v2 (decisión dueño)**: verificación EN VIVO la ejecuta Claude por LOTES en hitos (no el dueño, no por merge); tests/emulador/preview por cambio NO se relajan; comité/Gemini en entregas grandes; gates ②/③ tras lote post-vehículos. + M-14 | 43418 |
-| §199 | **ÉPICA VEHÍCULOS — mapa + V1**: 7 lectores (~950k tok; crudo + 11 decisiones de port en bóveda `2026-06-12-epica-vehiculos-plan.md`) · domain/vehicle.js (Smart Fields VERBATIM) · `#/vehiculos` lista (orden prioridad DESC/id ASC, destacar espejo, delete con log previo) · markAsSold NO se porta (venta=pipeline R-12) | 43427 |
-| §200 | **Épica vehículos V2 — wizard 6 pasos**: buildVehicleDoc PURO (~45 campos, derivados verbatim) · create tx (counter ALT- + anti-colisión id) · **update tx compare expectedVersion → version-conflict → SHAPE COMPLETO** (gate anti-vehicleAggregate) · apartado disabled-persistible · vendido Fase 22 · smart preview live (score exacto) | 43438 |
-| §201 | **Épica vehículos V3 — subida nativa de fotos**: tanda alfanumérica pre-subida + slots estables · WebP 1200@0.75 · path `cars/{ts}_{baseName}.webp` · límite real 2MB (el '10MB' era stale). Mock ✓; subida real = lote V6 | 43447 |
-| §202 | **Épica vehículos V4 — borradores**: `usuarios/{uid}/drafts` shape = KEYS DEL FORM CLÁSICO (interop) · explícito OPTIMISTA + rollback · DOBLE baseline al cerrar · retomar RE-DERIVA tipo · publicar borra draft · retry 1200ms. **§202.5: comité de rediseño de borradores post-cutover (TODO-24)** | 43454 |
-| §203 | **Épica vehículos V5**: reorder global · CSV · historial+revert solo-super · duplicar. V1-V5 ✅; resta V6 lote en vivo | 43462 |
-| §204 | **Dealers FASE 1 ⟦OPUS⟧** — port aliados al portal (slug clásico, sin _version/delete) + backup. FASE 2=TODO-25 | 43471 |
-| §205 | **Gate legal JSON-LD ⟦OPUS⟧** — placa+seller solo si propio; terceros omitidos (Habeas Data/Ley 1480). `generate-vehicles.mjs` | 43484 |
-| §206 | **Auditoría cerebro N2 (ítem U) ⟦OPUS⟧** — costo boot + monolitos + §G load-bearing. Plan A0-A10 (shard 30→33, 11-GOBERNANZA gated ×3+Gemini) | 43496 |
-| §207 | **Auditoría N2: ¿lazo o teatro? ⟦OPUS⟧** — MECANIZA o TEATRO (M-10/M-16: 05/10 mienten sobre git). Curas=gate kernel ×3 (TODO-29) | 43510 |
-| §208 | **Gemini UNIFICADO ⟦OPUS⟧** — A=Núcleo Delimitado (desbloquea split §G) · B=abolir estado-git en 05→inyectar en boot · C=Doble Llave+Staging (código-dinero) | 43527 |
-| §209 | **Verif V6 + fix walk-in ⟦OPUS⟧** — `createManualLead` permission-denied (L-41)→`crm.edit`+anti-spoof append-only. 198/198 | 43537 |
-| §210 | **Strangler E6 gates ②/③ ⟦OPUS⟧** — `admin-cutover-gates.js` oculta+redirige secciones portadas (sidebar/tabs/hash), Ocultar≠Borrar. Vehículos→V6 | 43555 |
-| §211 | **Fixes render público (V6) ⟦OPUS⟧** — reseñas link · banner promo restaurado · carrusel marcas refetch | 43573 |
-| §212 | **SEC: dueño INAMOVIBLE server-side ⟦OPUS⟧** — `users.edit` degradaba CEO + `roles.edit` tocaba super → fix rules anti-spoof + 7/7. Deploy | 43597 |
-| §213 | **④a PASO 0: capa CF dueño-inamovible ⟦OPUS⟧** — `isOwnerData()` en verifySuperAdmin + guard en update/deleteUserRoleV2. Deploy. Blueprint bóveda `2026-06-18-RBAC-4a-*` | 43619 |
-| §214 | **FIX gate §210: no encerrar al dueño ⟦OPUS⟧** — `guardHash`→dashboard (no al portal sin Usuarios/Roles). Cutover no encierra lo no-portado | 43637 |
-| §215 | **④a PASO 2: backfill RBAC ⟦OPUS⟧** — callable `backfillNivelesRBAC` (no ADC, L-43) + `rbac-foundation.js` +9 tests. Deploy | 43653 |
-| §216 | **④a PASO 3: departamentos ⟦OPUS⟧** — `match /departments/` + `admin-departments.js` (DOM puro) + nav/GROUPS. Deploy | 43671 |
-| §217 | **SEC: ningún users.edit/create MINTA un dueño (§215.7) ⟦OPUS⟧** — `isOwnerDoc()` en create+update. 80/80. Deploy | 43687 |
-| §218 | **④a PASO 4: depto/nivel/dataScope a usuarios ⟦OPUS⟧** — modal +3 campos + CF `onUserDeptChanged` (userCount). Deploy | 43705 |
-| §219 | **④a PASO 5+6 → ④a COMPLETO ⟦OPUS⟧** — `computeNivelSeedOnAssign` +7 tests; deploy `onUserRoleAssigned`. GATE ④b: floor server-side | 43721 |
-| §220 | **CMS (TODO-23) arranque + FASE 0 seguridad ⟦OPUS⟧** — editor fichas tipadas en admin-app; hardening safeJsonLd/anti-svg/anchor; gate SSG_SELFTEST | 43739 |
-| §221 | **CMS cobaya LIVE + fix `pageTitle` site-wide ⟦OPUS⟧** — SSG horneaba `<title>` sin id→loadVehicles reventaba (19 marcas) → null-guard. L-45 | 43755 |
-| §222 | **CMS por marca COMPLETO ⟦OPUS⟧** — banner editable→SSG + CFs instant-publish (regen selectiva) + nav→canónica. Review 0-críticos. L-46 | 43773 |
-| §223 | **§G.4 Caza-bugs byte-idéntico ×4 ⟦OPUS⟧** — guardián cars (L-31); §90.8 DECLINADO; 1er bullet idéntico del §G (TODO-28 pend) | 43791 |
-| §224 | **Consejo Externo: "Antigravity SÍ ve código" + Tier Refinamiento ⟦OPUS⟧** — corregido ×4; Gemini→Tier R1-R4 (§224.8) | 43812 |
-| §225 | **CMS cron→admin+SA + auditor SVG 0.2b ⟦OPUS⟧** — `connectDb` admin-SA/cliente fallback; SVG read-only purga gateada. ACTIVADO (SA `cron-ssg-lector`). L-49 | 43832 |
-| §226 | **Auditoría cerebro N2 (21/06) ⟦OPUS⟧** — 3 sondas colgaron (subagentes gateados). SANO. HIGH: maquinaria pesada cuelga→'comité acotado'=TODO-31. L-50 | 43852 |
-| §227 | **Borradores rediseño f1+2 ⟦OPUS⟧** — recuperación local opt-in §107-safe + por-cuenta + galería pro + modal custom (comité ACOTADO). f3 Storage=Gemini-gated. #896. L-51/M-17 | 43872 |
-| §228 | **TODO-32 escalabilidad: índice on-demand NO se comprime (tope 36k→48k vía ratchet §173) + auto-índice = GUARDIÁN no reemplazo (cutover refutado=lossy) ⟦OPUS⟧** — comité+Gemini+debate; `scripts/brain-index.mjs` VERIFICA completitud (índice a mano ya completo: 245=245, 0 huecos; claim falso previo corregido §3.3); genoma frontmatter + tombstoning = Etapa 3 (abierta). | 43885 |
+| §111 | ⛔→§112 Drafts borran al refresh (causa EQUIVOCADA — el fix NO funcionó; aplica §112) | 40819 |
+| §112 | FIX DEFINITIVO drafts refresh (teardown race) | 40952 |
+| §113 | Contador tiempo real Marcas | 41106 |
+| §114 | Depuración roles legacy → roleName + CARGO | 41196 |
+| §115 | Tema cromático admin (toast-spam + 6 paletas) | 41367 |
+| §116 | Plan A superficies teñidas (color-mix) | 41480 |
+| §117 | Plan B texto legible + Plan C tints + dedup | 41597 |
+| §118 | Arquitectura Documental Neuronal (cerebro de memoria) | 41736 |
+| §119 | Reestructuración frontend (js/ plano → modular) | 41820 |
+| §120 | Cerebro Documental Neuronal AUTÓNOMO | 41844 |
+| §121 | Autocrítica + linter brain-check + robustez (cross-review) | 41867 |
+| §122 | SP-1 Index cinematic vanilla (T4-T8 — port HarmonyOS/Claude Design) | 41888 |
+| §123 | Reflejo de Cierre (M-03) — el cerebro no se auto-alimentaba sin recordatorio | 41967 |
+| §124 | SP-5.0 rastro saga c→f — SW stale-while-revalidate + initTrail races (L-14/L-15, M-04) | 41987 |
+| §125 | Omni-Brain Fase 1 — Trigger 🔵 Auditoría + Lóbulos de Dominio + skills sinergia (M-05) | 42032 |
+| §126 | SP-5.1 Chrome global cinematic (snippets + components.js + home-chrome.js + cache bump) | 42078 |
+| §127 | SP-5.1.b Bridge legacy↔cinematic (data-theme + especificidad CSS, chrome invisible fix · L-16) | 42131 |
+| §128 | SP-5.2.a Body migration piloto (Legales + 404 → soft-redesign.css, contenido legal preservado) | 42178 |
+| §129 | SP-5.2.b Body migration editorial (nosotros + contacto, form preservado) + fix cin-eyebrow global | 42217 |
+| §130 | SP-5.2.c.1 Reseñas (sub-piloto app-like — reescribir render del JS a cinematic) | 42254 |
+| §131 | SP-5.2.c.2 Perfil → cinematic por armonización de tokens (`--pf-*`→`--cin-*`, hero soft, 0 cambios JS) | 42287 |
+| §132 | SP-5.2.c.2 Favoritos → cinematic por armonización CSS de `.vehicle-card` (scoped data-cin, 0 cambios JS) | 42326 |
+| §133 | Chrome unify: botones `.btn-*` del header en legacy (port a chrome-redesign.css scoped) + badge favoritos reposicionado + oculto en 0 · L-18 | 42362 |
+| §134 | SP-5.2.c.3 Comparador flotante cinematic + abajo-izquierda + máx 2 (CSS en chrome-redesign.css → aparece en index) | 42397 |
+| §135 | SP-5.2.c.3 Comparador página `comparar.html` cinematic (slots A/B + picker inline + diff dorado + veredicto, port Compare.jsx) | 42424 |
+| §136 | SP-5.2.c.4 Simulador crédito cinematic por armonización de tokens `--sim-*`→cinematic (cero cambios al cálculo) · cierra SP-5.2.c | 42445 |
+| §137 | QA/pulido cinematic: flotante comparador reposicionado (no choca con QuickTools) + gráfico simulador armonizado | 42471 |
+| §138 | SP-4 Motor de recomendaciones por similitud al rastro (content-based, `js/core/recommendations.js`) · L-19 · M-06 | 42485 |
+| §139 | Footer cinematic: matar gris fantasma `#808080` (bridge `color:var(--ink-text-muted)`) + auditoría cobertura cinematic (qué falta) · L-20 | 42512 |
+| §140 | SP-5.3: `detalle-vehiculo` cinematic + de-monolitización (4 módulos `js/public/detalle/` + `css/home/detalle-cinematic.css`, botones Opción A, favorito/comparar/sticky cableados, 27 páginas regeneradas) · L-08/L-20 | 42541 |
+| §141 | SP-5.3 pulido detalle post-validación: fix glow dorado hover ficha + fondo blanco características + descripción editorial + glass (info-card/descripción) · L-21 | 42569 |
+| §142 | Eliminar Descripción del vehículo (tab detalle + campo/generador admin + búsqueda + noscript; 27 regeneradas; `descripcion` dormido en Firestore) | 42594 |
+| §143 | `busqueda.html` (catálogo) cinematic (SP-5.3.b): hero serif + filtros glass + tarjetas `.vehicle-card` cinematic + paginación; JS intacto, sin regen · L-21 | 42614 |
+| §144 | `marca.html` (template) cinematic (SP-5.3.c): hero/brand-header serif + sidebar filtros glass + tarjetas cinematic; 18 `marcas/*` regeneradas; JS intacto · L-21 | 42631 |
+| §145 | Fix nav header "Marcas"→`marcas.html` (snippet + index; antes al carrusel) + `marcas.html` (índice) cinematic (tokens/serif/Manrope, 18 tarjetas de marca) · L-21 | 42649 |
+| §146 | 4 landings SEO por categoría (`vehiculos-{suv,pickup,sedan,hatchback}.html`) cinematic (SP-5.3.e): clon estructural de marca.html → REUSO `marca-cinematic.css` (DRY), data-cin + soft-redesign; 3 redirects (usados/nuevos/camionetas) INTACTOS; estáticas, sin regen. **Catálogo 100% cinematic** | 42667 |
+| §147 | A11y quick wins WCAG (cierre parcial §48): focus-visible + reduced-motion + h1 sr-only + aria-label en 50 controles. Aditivo, ids/JS intactos. | 42696 |
+| §148 | Validación post-launch (node -c limpio + 1 enlace roto arreglado) + A11Y-03 contraste WCAG AA + deuda TODO-09..13 verificada. | 42726 |
+| §149 | A11Y-04 skip-link (WCAG 2.4.1, **cierra §48 = 6/6**): `.skip-link` + `ensureMainLandmark()` en components.js (DRY, sin tocar 20 páginas). Aditivo. | 42754 |
+| §150 | **Consistencia de diseño global**: near-black cálido `#0D0B09` + QuickTools dock + dropdown Vehículos; fixes dropdown-colapsado/dedup/columna. PR#786. | 42783 |
+| §151 | **Evaluación crítica "Cerebro V5"** (Antigravity): ADOPTADO lean — saturación por SÍNTOMA en §G.2 🔴 + "🚫 Callejones" en handoff de `10`. RECHAZADO: contador de turnos, HANDOFF.md, docs/skills/, inyecciones a CLAUDE.md. → M-08 | 42834 |
+| §152 | **Reflejo de Auto-auditoría PRE-CIERRE de sesión**: barrido holístico proactivo (brain:check + frescura vs git) antes de cerrar la sesión, extendido en §G.4. Por evento de cierre, NO contador de turnos. → M-09 | 42855 |
+| §153 | **Lo verificable va al LINTER, no a un reflejo** (RCA de por qué la Autocrítica es reactiva): brain-check extendido con (4) Frescura cache SW==manager==05 + origin/main. → M-10 | 42867 |
+| §154 | **Chequeo AVANZADO del cerebro**: brain:check extendido (offsets, ADRs sin índice, refs L-/M- colgantes, hojas inexistentes). Auditoría integral 0 huecos estructurales; 1 semántico corregido (rutas planas → modulares). → M-10 | 42886 |
+| §155 | **Kickoff reconstrucción CRM** + skill `crm-architect` (commit `6cc0055`): build Firebase/Firestore/Functions, vertical automotive, RBAC+Ley 1581. CRM viejo = `admin.html` + `js/admin/admin-crm*.js` + `comm-schema.js`. Diseño → ADRs §157+ | 42902 |
+| §156 | **Blindaje determinista del cerebro**: hooks (pre-commit + SessionStart brain-check) + Consejo Externo (15) + verifica-no-asumas UNIVERSAL (§3.3, M-11) + limpieza skills. Doctrina→garantía mecánica (M-10) | 42909 |
+| §157 | **Fix rectángulo negro del hero**: `<footer class=cin-hero-foot>` heredaba `body footer{background}` (dark-theme.css:688). Fix `.cin-hero-foot{background:transparent}`. Lección **L-25** | 42919 |
+| §158 | **CRM Fase 1: ingestión canónica DESPLEGADA**: `onSolicitudCreated` normaliza `solicitudes`→`contacts`/`leads`/`activities` en tx atómica (dedup, consent 1581, idempotencia, dead-letter). 21 tests. LIVE. L-26 | 42929 |
+| §159 | **CRM Fase 2: Bandeja + app admin greenfield** (`admin-app/`, Vite+Firebase modular `altorra-crm`): colas triage + score/NBA determinista + acciones 1-clic + Customer 360. Auth lookup `usuarios/{uid}` (claims→Fase 5). Verif `?mock=1`. L-27 | 42939 |
+| §160 | **CRM Fase 3a: Pipeline drag-drop** sobre `deals` (lead→oportunidad): `domain/pipeline.js` (8 etapas, forecast) + kanban a11y + ganado/perdido. Reglas+índice `deals` LIVE (`1e154c2`). L-29 | 42949 |
+| §161 | **CRM Fase 3b: Agenda unificada**: `domain/agenda.js` (grilla mes, `dayKey` LOCAL) + lee `activities.dueAt` (índice automático). Acción '📅 Agendar' en 360. Verif `?mock=1`. L-30 | 42959 |
+| §162 | **CRM: Captura MANUAL de leads multi-canal** (Meta/WhatsApp/TikTok/llamada): form '＋Nuevo lead' escribe `solicitudes` → reusa ingestión Fase 1, cero backend. Atribución canal/pauta/campaña (ROI). L-31 | 42968 |
+| §163 | **CRM Canal AUTO #1: registro→contacto** (`onClienteCreated`): upsert `contacts` (dedup), NO crea lead (registrarse≠intención), fusiona invitado→registrado sin pisar first-seen. 28 tests. DESPLEGADO. Backfill pendiente | 42977 |
+| §164 | **CRM Canal AUTO #2: newsletter→contacto** (`onSubscriptionCreated`) — TOCA SITIO PÚBLICO: form roto → `subscriptions` → upsert contact (subscriber). `home.js initNewsletter`. Cache bump. 33 tests | 42987 |
+| §165 | **CRM Fase 4: Reportes/KPIs** (`#/reportes`): KPIs + embudo + canal (`channelOf`) + forecast + tendencia + CSV. `domain/reports.js` PURO + charts SVG/CSS sin librería. L-30/L-32. | 42996 |
+| §166 | **CRM: Contactos (directorio)** (`#/contactos`): lista buscable/filtrable; con lead → ficha 360 existente (detailLeadId atómico L-27); suscriptor sin lead → fila no interactiva. L-33. | 43006 |
+| §167 | **Cerebro Fase A**: Lente de Arquitecto §3.8 (6 pilares → `46`) · Legal=Colombia en Trigger 🔵 · workflow `adversarial-review.js` + L-34. Comité ×3 diseñado. Spec `2026-06-06-cerebro-skills-roadmap.md` | 43016 |
+| §168 | Cerebro Fase B (reconciliación): las 3 skills YA EXISTEN (portables, build paralelo Bersaglio) + registro + eval llm-council/engineering | 43024 |
+| §169 | Cerebro Fase C: auditoría seguridad (9 hallazgos) + holística CRM + legal vehículos → nacen 41-SEGURIDAD y 42-LEGAL (nada desplegado) | 43033 |
+| §170 | Decisión Fuerte: cerebro MULTI-PROYECTO (núcleo compartido 4-capas + brain:diff, NO único; comité×3 + Gemini) → spec 2026-06-09 | 43041 |
+| §171 | **ENMIENDA a §170**: revalidación comité×3 + Gemini (convergentes) PAUSA el sync P2P del KERNEL → economía LOCAL primero (destilar 10) + Opción C template/generator diferida a Cloudflare. "PASO 1 extraer KERNEL" SUPERSEDED. Veredicto → `…-comite-revalidacion-paso1-VEREDICTO.md` | 43050 |
+| §172 | **Mandato 3 (validación FINAL) → CERTIFICADO**: comité 11 agentes verificó en disco; 2 bloqueantes (cura no aterrizada §171.7 + README stale) RESUELTOS+grep → CERTIFICADO. Meta: verificar la cura en la capa que el boot lee | 43062 |
+| §173 | **Comité v6 — cerebro auto-evaluable** (16 agentes, 45 hallazgos): cura 'SANO-teatro' = evaluación 2 NIVELES (gates + skill `auditoria-cerebro`) + GC dos palancas con trinquete + TODO ledger único + captura-en-ORIGEN + brain-diff gateado. Checklist A-U → bóveda VEREDICTO | 43074 |
+| §174 | **Bóveda privada brain-private** (ítem C, Gemini adoptado/refutado): RED/AMBER → repo hermano privado (NO submódulo — rompe Pages; NO purga de historial — riesgo residual documentado); stubs públicos + archiveDir ×3 → bóveda; cliente crea remote privado + push | 43111 |
+| §175 | **TODO-17 E2E live CRM ✅** (web+newsletter → solicitudes/subscriptions → ingestión → canónico → Bandeja score/NBA + Contactos 3/3) + **incidente billing-disabled** (~2h, Eventarc re-entregó solo, L-38) + **FIX spinner form contacto** (`.form-card` eliminada por el rediseño → fallback al `<form>`, L-37) + shard `31-LECCIONES-GIT` | 43141 |
+| §176 | **Comité CRM v2 → plan E0→E6** (quejas reales: cero sync lead↔deal, sin CRUD, calendarios desconectados, cupos no liberan). Estados lead v3, pipeline v3, calendario único, Ley 1581=anonimización, F42 comisiones. VEREDICTO→bóveda. Manual `docs/MANUAL-CRM-USO.md`. TODO-21 | 43153 |
+| §177 | **E0 EJECUTADA**: spec única crm-spec + F34 export/restore + F1 lead inmutable (atacado live ✓) + Bandeja Activos/SLA chip + F17-urgente cupos transaccionales | 43165 |
+| §178 | **E1a núcleo**: ⚡ lead rápido `lead_intake` offline (<30s, E2E live 2s) + ingestLead compartido + quick-log + Pendientes hoy + P2.b próximo paso. Gotcha: 1er evento perdido por propagación Eventarc | 43177 |
+| §181 | **E1b Pipeline v2**: restore ENSAYADO (gate) + enums v3 + paridad 7×7 + Rules gates/matriz + onDealUpdated (E2E live 3s) + F7 conversión/anulación + undo 10s | 43213 |
+| §182 | **E2 tanda 1**: F21.1 configs DIVERGÍAN (web vendía festivos) + F16 proyección cita→Agenda (E2E live 5s) + crmDailyJob 5am (backup→rebuild→purga→digest) | 43225 |
+| §183 | **Decisiones del dueño (end-game panel)**: agenda clásica muere EN el cutover tras paridad F39 · E6.5 comité de DISEÑO del panel (FIRME) · E6.6 auditoría TOTAL admin clásico post-migración · relevo por saturación (retomar 'continúa E2 tanda 2', §182.7) | 43237 |
+| §179 | **E1a CERRADA**: F37 SLA 2h hábiles + rotación de intake en tx (E2E live ✓) + F38 notify (crítica/info) + F33a fricción | 43189 |
+| §180 | **Adelanto E3**: F13 Archivar + F15 crmPurgeLead (cascada server, super admin) + fix credencial GitHub | 43201 |
+| §185 | **E3 EJECUTADA**: índice dedup F40e (E2E live ✓) + F12 editar/_version/fusión resumible + F14 supresión 1581 (gracia 72h, finalizador, tombstones en cascada). Review: 1 crítico + 9 majors corregidos. 139 tests | 43260 |
+| §184 | **E2 COMPLETA**: F21 SSoT availability + módulo Disponibilidad (festivos 1-clic) + F18/F19 crmCitaAction (tupla 30min, token rota C.4) + citaConfirm HTTP (E2E live ✓) + F20 sweep horario + F28 v2. Carrera C.5 en verde | 43247 |
+| §187 | **E5 EJECUTADA — blindaje**: SEC-01 read estricto (8 colecciones) · SEC-06 whitelist hasOnly+caps+shapes (⚠️ ~1000 exprs Rules) · SEC-08 bookedSlots · retry:true ×6 + DLQ. 189 tests. Residual: cupos por anónimo → App Check | 43286 |
+| §186 | **E4 EJECUTADA**: `vehicleAggregate` (won→vendido/apartado, no pisa manuales, badge web) · `dealWon` (postventa+commissionSnapshot) · F26 colisión · F42 Comisiones (CSV anti-inyección). Rules anti-forja. Fix pipeline yml roto 16 días. 169 tests | 43273 |
+| §188 | **E6.6 EJECUTADA — auditoría admin clásico** (16 agentes, 112 hallazgos): KPIs envenenados (portal no actualiza `solicitudes.estado`) · mapa 21 secciones · 14 riesgos cutover (stub redirect, NO borrar admin.html) · plan strangler 29 pasos → bóveda | 43299 |
+| §189 | **E6 paso 0**: cacheSignal ×4 (system/meta 13 días stale) · onUsuarioBloqueadoSync + loginAttempts CERRADO · fix: E5 rompió cita interna (createdBy no censado, L-41) + kind:'cita'. 192 tests. Deploy ✅ | 43312 |
+| §190 | **E6 fase ② p1 — Reseñas en el portal** (1er módulo público migrado, patrón validado): shape VERBATIM del lector público + RBAC reviews.* + mock + **core/audit.js NUEVO** (no perder auditoría; semilla fase ④) + `#/resenas`. Preview mock ✓. F39 live doble: reseña real valida módulo + cacheSignal | 43324 |
+| §191 | **E6 fase ② p2 — Banners (código fase ② COMPLETO)**: solo posiciones VIVAS (promocional limit-3 + home_promo; hero/categoria write-only NO se portan) · **core/image.js** WebP + storage export · `_version` preservado · Ocultar≠Borrar. Preview mock ✓. Gate de fase tras F39: ocultar ambas secciones del clásico. Siguiente: fase ③ | 43336 |
+| §192 | **E6 fase ③ p1 — Marcas en el portal**: docId=slug (en vivo, acentos ok) · `_version`/validVersion preservado · resolvers de logos legacy + LOCAL_LOGOS · upload `cars/brand_logo_*` (WebP 512/SVG) · conteo de vehículos por marca · **guard de borrado con inventario** (mejora vs clásico). Preview mock ✓. Siguiente: lists (S) → vehicles (L, SESIÓN FRESCA) | 43348 |
+| §193 | **Decisiones del dueño (siembra post-panel)**: bot ALTOR sin fallback IA (solo Claude, R-1) · fábrica de skills frontend/backend portables + rescate de webs monolíticas (TODO-22) · web pública CMS-izada post-panel (TODO-23) · RBAC departamental fase ④ (cf. Bersaglio) | 43360 |
+| §194 | **E6 fase ③ p2 — Atributos del inventario** (`config/listas` → `#/atributos`): shape VERBATIM {value,label} · merge SOLO la clave editada · getDoc once + dirty/tarjeta (NO onSnapshot en editor inline) · conteo de uso + modal al quitar opciones EN USO · gate UI settings.* · lector dynamic-lists.js INTACTO | 43372 |
+| §195 | **E6 — backup inventario (D4-09b) ADELANTADO**: CRM_COLLECTIONS += vehiculos/marcas + listas (daily 5am automático) · módulo `#/respaldos` (export + restore dry-run-first, path diario predecible por fecha) · server=guardián. Deploy ✓. Doctrina de adelanto de ítems (195.7) | 43384 |
+| §196 | **Gap 5 Agenda (F23-7) — '＋Nueva cita' en vista Agenda**: chooser con buscador de leads + camino walk-in SIN lead (server exige nombre/fecha/hora/asesor). Reusa openCitaCreate, gated crm.edit. Verif mock | 43396 |
+| §197 | **Gap 7 Agenda — acción `update`**: observaciones + REASIGNAR asesor sin cambio de estado (`moveAdvisorBlocks`: libera saliente + reserva entrante MISMA tx; vehículo/confirmedAt/token intactos) · UI "✏️ Editar / reasignar". Emulador 193 ✓ · deploy ✓ | 43408 |
+| §198 | **F39 v2 (decisión dueño)**: verificación EN VIVO la ejecuta Claude por LOTES en hitos (no el dueño, no por merge); tests/emulador/preview por cambio NO se relajan; comité/Gemini en entregas grandes; gates ②/③ tras lote post-vehículos. + M-14 | 43420 |
+| §199 | **ÉPICA VEHÍCULOS — mapa + V1**: 7 lectores (~950k tok; crudo + 11 decisiones de port en bóveda `2026-06-12-epica-vehiculos-plan.md`) · domain/vehicle.js (Smart Fields VERBATIM) · `#/vehiculos` lista (orden prioridad DESC/id ASC, destacar espejo, delete con log previo) · markAsSold NO se porta (venta=pipeline R-12) | 43429 |
+| §200 | **Épica vehículos V2 — wizard 6 pasos**: buildVehicleDoc PURO (~45 campos, derivados verbatim) · create tx (counter ALT- + anti-colisión id) · **update tx compare expectedVersion → version-conflict → SHAPE COMPLETO** (gate anti-vehicleAggregate) · apartado disabled-persistible · vendido Fase 22 · smart preview live (score exacto) | 43440 |
+| §201 | **Épica vehículos V3 — subida nativa de fotos**: tanda alfanumérica pre-subida + slots estables · WebP 1200@0.75 · path `cars/{ts}_{baseName}.webp` · límite real 2MB (el '10MB' era stale). Mock ✓; subida real = lote V6 | 43449 |
+| §202 | **Épica vehículos V4 — borradores**: `usuarios/{uid}/drafts` shape = KEYS DEL FORM CLÁSICO (interop) · explícito OPTIMISTA + rollback · DOBLE baseline al cerrar · retomar RE-DERIVA tipo · publicar borra draft · retry 1200ms. **§202.5: comité de rediseño de borradores post-cutover (TODO-24)** | 43456 |
+| §203 | **Épica vehículos V5**: reorder global · CSV · historial+revert solo-super · duplicar. V1-V5 ✅; resta V6 lote en vivo | 43464 |
+| §204 | **Dealers FASE 1 ⟦OPUS⟧** — port aliados al portal (slug clásico, sin _version/delete) + backup. FASE 2=TODO-25 | 43473 |
+| §205 | **Gate legal JSON-LD ⟦OPUS⟧** — placa+seller solo si propio; terceros omitidos (Habeas Data/Ley 1480). `generate-vehicles.mjs` | 43486 |
+| §206 | **Auditoría cerebro N2 (ítem U) ⟦OPUS⟧** — costo boot + monolitos + §G load-bearing. Plan A0-A10 (shard 30→33, 11-GOBERNANZA gated ×3+Gemini) | 43498 |
+| §207 | **Auditoría N2: ¿lazo o teatro? ⟦OPUS⟧** — MECANIZA o TEATRO (M-10/M-16: 05/10 mienten sobre git). Curas=gate kernel ×3 (TODO-29) | 43512 |
+| §208 | **Gemini UNIFICADO ⟦OPUS⟧** — A=Núcleo Delimitado (desbloquea split §G) · B=abolir estado-git en 05→inyectar en boot · C=Doble Llave+Staging (código-dinero) | 43529 |
+| §209 | **Verif V6 + fix walk-in ⟦OPUS⟧** — `createManualLead` permission-denied (L-41)→`crm.edit`+anti-spoof append-only. 198/198 | 43539 |
+| §210 | **Strangler E6 gates ②/③ ⟦OPUS⟧** — `admin-cutover-gates.js` oculta+redirige secciones portadas (sidebar/tabs/hash), Ocultar≠Borrar. Vehículos→V6 | 43557 |
+| §211 | **Fixes render público (V6) ⟦OPUS⟧** — reseñas link · banner promo restaurado · carrusel marcas refetch | 43575 |
+| §212 | **SEC: dueño INAMOVIBLE server-side ⟦OPUS⟧** — `users.edit` degradaba CEO + `roles.edit` tocaba super → fix rules anti-spoof + 7/7. Deploy | 43599 |
+| §213 | **④a PASO 0: capa CF dueño-inamovible ⟦OPUS⟧** — `isOwnerData()` en verifySuperAdmin + guard en update/deleteUserRoleV2. Deploy. Blueprint bóveda `2026-06-18-RBAC-4a-*` | 43621 |
+| §214 | **FIX gate §210: no encerrar al dueño ⟦OPUS⟧** — `guardHash`→dashboard (no al portal sin Usuarios/Roles). Cutover no encierra lo no-portado | 43639 |
+| §215 | **④a PASO 2: backfill RBAC ⟦OPUS⟧** — callable `backfillNivelesRBAC` (no ADC, L-43) + `rbac-foundation.js` +9 tests. Deploy | 43655 |
+| §216 | **④a PASO 3: departamentos ⟦OPUS⟧** — `match /departments/` + `admin-departments.js` (DOM puro) + nav/GROUPS. Deploy | 43673 |
+| §217 | **SEC: ningún users.edit/create MINTA un dueño (§215.7) ⟦OPUS⟧** — `isOwnerDoc()` en create+update. 80/80. Deploy | 43689 |
+| §218 | **④a PASO 4: depto/nivel/dataScope a usuarios ⟦OPUS⟧** — modal +3 campos + CF `onUserDeptChanged` (userCount). Deploy | 43707 |
+| §219 | **④a PASO 5+6 → ④a COMPLETO ⟦OPUS⟧** — `computeNivelSeedOnAssign` +7 tests; deploy `onUserRoleAssigned`. GATE ④b: floor server-side | 43723 |
+| §220 | **CMS (TODO-23) arranque + FASE 0 seguridad ⟦OPUS⟧** — editor fichas tipadas en admin-app; hardening safeJsonLd/anti-svg/anchor; gate SSG_SELFTEST | 43741 |
+| §221 | **CMS cobaya LIVE + fix `pageTitle` site-wide ⟦OPUS⟧** — SSG horneaba `<title>` sin id→loadVehicles reventaba (19 marcas) → null-guard. L-45 | 43757 |
+| §222 | **CMS por marca COMPLETO ⟦OPUS⟧** — banner editable→SSG + CFs instant-publish (regen selectiva) + nav→canónica. Review 0-críticos. L-46 | 43775 |
+| §223 | **§G.4 Caza-bugs byte-idéntico ×4 ⟦OPUS⟧** — guardián cars (L-31); §90.8 DECLINADO; 1er bullet idéntico del §G (TODO-28 pend) | 43793 |
+| §224 | **Consejo Externo: "Antigravity SÍ ve código" + Tier Refinamiento ⟦OPUS⟧** — corregido ×4; Gemini→Tier R1-R4 (§224.8) | 43814 |
+| §225 | **CMS cron→admin+SA + auditor SVG 0.2b ⟦OPUS⟧** — `connectDb` admin-SA/cliente fallback; SVG read-only purga gateada. ACTIVADO (SA `cron-ssg-lector`). L-49 | 43834 |
+| §226 | **Auditoría cerebro N2 (21/06) ⟦OPUS⟧** — 3 sondas colgaron (subagentes gateados). SANO. HIGH: maquinaria pesada cuelga→'comité acotado'=TODO-31. L-50 | 43854 |
+| §227 | **Borradores rediseño f1+2 ⟦OPUS⟧** — recuperación local opt-in §107-safe + por-cuenta + galería pro + modal custom (comité ACOTADO). f3 Storage=Gemini-gated. #896. L-51/M-17 | 43874 |
+| §228 | **TODO-32 escalabilidad: índice on-demand NO se comprime (tope 36k→48k vía ratchet §173) + auto-índice = GUARDIÁN no reemplazo (cutover refutado=lossy) ⟦OPUS⟧** — comité+Gemini+debate; `scripts/brain-index.mjs` VERIFICA completitud (índice a mano ya completo: 245=245, 0 huecos; claim falso previo corregido §3.3); genoma frontmatter + tombstoning = Etapa 3 (abierta). | 43887 |
 
 ---
 

@@ -38,21 +38,37 @@ const rows = [];
 const seen = new Map();
 const errors = [];
 
+// Tombstone (TODO-32 anti-Data-Rot): una marca `⛔ REEMPLAZADO POR §M` bajo el header de
+// un ADR superado avisa al próximo "yo" que NO aplique esa decisión vieja, y a dónde ir.
+const reTomb = /⛔.*?REEMPLAZAD[OA].*?§\s*([\d.]+)/i; // tolera negrita markdown (**…**) y espacios
+let current = null;
+
 lines.forEach((line, i) => {
   const m = line.match(reHeader);
-  if (!m) return;
-  const id = m[1];
-  const lineNo = i + 1;
-  // hook = título limpio: quita "ADR-NNN — " redundante, el ⟦tag⟧ y la (fecha) final.
-  const hook = m[2]
-    .replace(/^ADR-\d+\s*[—-]\s*/, '')
-    .replace(/\s*⟦[^⟧]*⟧\s*/g, ' ')
-    .replace(/\s*\(\d{4}-\d{2}-\d{2}\)\s*$/, '')
-    .trim();
-  if (!hook) errors.push(`§${id} (línea ${lineNo}): header sin título tras parsear`);
-  if (seen.has(id)) errors.push(`§${id} DUPLICADO (líneas ${seen.get(id)} y ${lineNo})`);
-  seen.set(id, lineNo);
-  rows.push({ id, hook, lineNo });
+  if (m) {
+    const id = m[1];
+    const lineNo = i + 1;
+    // hook = título limpio: quita "ADR-NNN — " redundante, el ⟦tag⟧ y la (fecha) final.
+    const hook = m[2]
+      .replace(/^ADR-\d+\s*[—-]\s*/, '')
+      .replace(/\s*⟦[^⟧]*⟧\s*/g, ' ')
+      .replace(/\s*\(\d{4}-\d{2}-\d{2}\)\s*$/, '')
+      .trim();
+    if (!hook) errors.push(`§${id} (línea ${lineNo}): header sin título tras parsear`);
+    if (seen.has(id)) errors.push(`§${id} DUPLICADO (líneas ${seen.get(id)} y ${lineNo})`);
+    seen.set(id, lineNo);
+    current = { id, hook, lineNo, replacedBy: null };
+    rows.push(current);
+    return;
+  }
+  const t = current && line.match(reTomb);
+  if (t) current.replacedBy = t[1];
+});
+
+// GATE: un tombstone que apunta a un § inexistente es un puntero colgante (peor que nada).
+const tombs = rows.filter((r) => r.replacedBy);
+tombs.forEach((r) => {
+  if (!seen.has(r.replacedBy)) errors.push(`§${r.id}: tombstone "REEMPLAZADO POR §${r.replacedBy}" → destino INEXISTENTE`);
 });
 
 if (errors.length) {
@@ -61,18 +77,28 @@ if (errors.length) {
   process.exit(1);
 }
 
-rows.sort((a, b) => cmpId(a.id, b.id));
-const body = rows.map((r) => `| §${r.id} | ${r.hook} | ${r.lineNo} |`).join('\n');
-const out = `# 🗂️ 00-INDICE (GENERADO — TODO-32 Etapa 1 SHADOW · ⛔ NO editar a mano)
+void cmpId; // (reservado para un futuro modo de orden; el reconcile no ordena)
+// Mapa §id → línea ACTUAL en 99.
+const lineById = new Map(rows.map((r) => [r.id, r.lineNo]));
 
-> Compilado por \`scripts/brain-index.mjs\` desde los headers \`## NN.\` de ${SRC}.
-> **${rows.length} ADRs** · mapa §→línea mecánico, sin pérdida ni desync (se regenera, no se comprime).
-> La capa de ruteo SEMÁNTICO (síntoma→neurona) sigue a mano en \`00-INDICE.md\` (inteligencia humana).
-> PRUEBA de la doctrina "Genoma" (deliberación comité+Gemini): el índice se COMPILA, no se mantiene a mano.
-
-| § | Hook (título del ADR) | Línea |
-|---|---|---|
-${body}
-`;
-writeFileSync(OUT, out);
-console.log(`✅ ${rows.length} ADRs compilados → ${OUT} (0 errores de integridad)`);
+// RECONCILIA el índice vivo (00): actualiza SOLO la columna de línea de cada fila
+// `| §X | desc | N |` cuyo §X exista como header en 99 — preservando la descripción HUMANA.
+// Cura el drift que CUALQUIER inserción en 99 provoca (p.ej. una marca de tombstone corre
+// todas las líneas siguientes): la fragilidad que motivó TODO-32. El generador mantiene la
+// parte MECÁNICA (líneas); el humano mantiene las descripciones + entradas especiales
+// (BLOQUE T, §13.bis…) y la capa de ruteo semántico → esas NO matchean y quedan intactas.
+const IDX = 'docs/00-INDICE.md';
+const reRow = /^(\| §([\d.]+) \| .* \| )(\d+)( \|\s*)$/;
+let checked = 0, fixed = 0;
+const idxOut = readFileSync(IDX, 'utf8').split('\n').map((line) => {
+  const m = line.match(reRow);
+  if (!m || !lineById.has(m[2])) return line;
+  checked++;
+  const cur = String(lineById.get(m[2]));
+  if (m[3] === cur) return line;
+  fixed++;
+  return `${m[1]}${cur}${m[4]}`;
+}).join('\n');
+writeFileSync(IDX, idxOut);
+void OUT; // (el modo shadow se reemplazó por el reconcile del índice vivo)
+console.log(`✅ 99: ${rows.length} ADRs · ${tombs.length} tombstone(s) válido(s). Índice 00: ${checked} filas verificadas, ${fixed} líneas reconciliadas.`);

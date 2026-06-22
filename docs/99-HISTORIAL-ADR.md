@@ -40818,6 +40818,8 @@ cero transition nuevo. §17.12: cero MutationObserver. §35: cero pointermove.
 
 ## 111. ADR-111 — Borradores se borraban al Ctrl+Shift+R y desaparecía la sección "Mis borradores" (RCA + fix de fondo) (2026-05-22)
 
+> ⛔ **REEMPLAZADO POR §112** — el diagnóstico de §111 era EQUIVOCADO (adivinó: `sanitizeForFirestore`+retry por el optimista §108) y su fix NO funcionó; la causa raíz real era una **teardown race** del listener, corregida de verdad en §112. NO apliques el fix de §111. *(Tombstone — TODO-32/§228, anti-Data-Rot.)*
+
 > Cliente reportó: "Entre otro error cuando se le da control shift R todos
 > los borradores que aparecian guardados se borran y ya no aparece la
 > seccion de borradores ni todos los que se guardaron."

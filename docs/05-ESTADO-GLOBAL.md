@@ -5,9 +5,9 @@
 
 | Señal | Valor (última actualización: **2026-06-21**) |
 |---|---|
-| **Build** | 🟢 Todo en `main` (mergeado 20/06): **E6 cutover 6/6** + **④ RBAC ④a COMPLETO** (PASO 0-6, §219; config dueño hecha: 4 deptos + backfill + Francisco→Dirección) + **CMS por marca COMPLETO** (ADR §220-§222: editor aboutBrand+**banner editable** (gate `content.edit`) + **FASE 2.4 instant-publish** (CFs onSiteContent/onMarca) + **nav→canónica** + `marcaShapeOk` server-side; review 0-críticos). **④b PARQUEADO** (dueño: 2 personas ven todo; al retomar = floor server-side antes de enforce `nivel`). Vender=Pipeline. dealers F2 (TODO-25). |
-| **Cache version vigente** | **`v20260621003715`** (cron-CI; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
-| **Branch activa** | 🟢 **TODO mergeado a `main` (21/06)**: FASE 3 bake-integrity LIVE + §223 Caza-bugs §G + §224 Consejo Externo (+Refinamiento R1-R4) + skills emparejadas ×4 (79) + GC `00`. `refactor/estructura` == `main` (solo merge-bubbles #888-891). **commit+push=Claude · merge=dueño web** (§2) · deploys firebase=Claude (§1). Verificado vs git 21/06 (§3.3). |
+| **Build** | 🟢 Todo en `main` (último merge 22/06 #896): **borradores TODO-24 f1+2 LIVE** (recuperación local opt-in §107-safe + aislamiento por-cuenta, §227; f3 Storage = Gemini-gated) + **E6 cutover 6/6** + **RBAC ④a COMPLETO** (§219; **④b PARQUEADO** → floor server-side antes de enforce `nivel`) + **CMS por marca COMPLETO** (§220-§226). Vender=Pipeline. dealers F2 (TODO-25). |
+| **Cache version vigente** | **`v20260622031009`** (cron-CI; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Branch activa** | 🟢 **TODO mergeado a `main` (22/06)**: TODO-24 borradores f1+2 (#896) + §223-§226 (cerebro N2 + comité acotado TODO-31). `refactor/estructura` FF==`main`. **commit+push=Claude · merge=dueño web** (§2) · deploys firebase=Claude (§1). Verificado vs git 22/06 (§3.3). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario único · CRUD · daily/hourly jobs · 22 functions CRM (**retry:true ×6**) · Rules E5 LIVE. App Check MONITOR (100% verif Storage/Auth/Firestore; enforce DIFERIDO — riesgo lead-block silencioso + tráfico bajo, §41). |
 
 ## ⚠️ Flags de riesgo activos

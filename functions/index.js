@@ -2079,7 +2079,11 @@ exports.onChatEscalated = onDocumentWritten({
     console.log('[onChatEscalated] ' + okCount + '/' + results.length + ' push notifications sent');
 });
 
-exports.proactiveEngagement = onSchedule({
+// ⛔ REMOVIDO del deploy 2026-06-22: corría cada 5 min y FALLABA siempre (falta índice en
+// conciergeChats) → ~288 errores/día. El bot se reestructura (ALTOR → LLM-only, ver TODO-34),
+// así que NO se re-despliega. Des-exportado (Firebase solo despliega `exports.*`); el bloque
+// completo se borra en TODO-34. NO re-exportar sin la reestructura.
+const _removedProactiveEngagement_TODO34 = onSchedule({
     schedule: 'every 5 minutes',
     region: 'us-central1',
     timeoutSeconds: 60,

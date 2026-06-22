@@ -1,0 +1,45 @@
+# Barrido de fotos HUÉRFANAS en Storage (TODO-24 f3) — SOLO LECTURA.
+# Manual desde GitHub → Actions → "Storage Orphans Scan" → Run workflow.
+# Usa la MISMA Service Account del cron (secrets.FIREBASE_SA_KEY, §225). NO borra nada:
+# lista cars/, cruza contra vehiculos+drafts y reporta huérfanos (cantidad, tamaño, $/mes).
+# El borrado real (con respaldo + doble-llave) es un paso aparte, gateado al dueño tras ver esto.
+
+name: Storage Orphans Scan (read-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      min_age_days:
+        description: 'Solo contar como huérfana una foto más vieja que N días (colchón de seguridad)'
+        required: false
+        default: '30'
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Scan orphans (read-only — no delete)
+        env:
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
+        run: |
+          set -o pipefail
+          node scripts/storage-orphans.mjs --min-age-days "${{ github.event.inputs.min_age_days || '30' }}" | tee orphan-report.txt
+          {
+            echo '## 🧹 Reporte de fotos huérfanas (SOLO LECTURA — no se borró nada)';
+            echo '';
+            echo '```';
+            cat orphan-report.txt;
+            echo '```';
+          } >> "$GITHUB_STEP_SUMMARY"

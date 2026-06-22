@@ -64,6 +64,8 @@
 
 ## Mapa § → línea
 
+> ⚠️ **ADR §228**: este mapa NO se comprime con pérdida (es on-demand, no boot → su tamaño casi no cuesta contexto). Si crece, se TIERA/sharda; nunca se recorta el contenido. `scripts/brain-index.mjs` lo audita (completitud §→línea; genoma frontmatter = TODO-32 Etapa 3).
+
 | § | Tema | Línea |
 |---|---|---|
 | §1 | Arquitectura general (stack, deploy, negocio) | 8 |
@@ -322,6 +324,7 @@
 | §225 | **CMS cron→admin+SA + auditor SVG 0.2b ⟦OPUS⟧** — `connectDb` admin-SA/cliente fallback; SVG read-only purga gateada. ACTIVADO (SA `cron-ssg-lector`). L-49 | 43832 |
 | §226 | **Auditoría cerebro N2 (21/06) ⟦OPUS⟧** — 3 sondas colgaron (subagentes gateados). SANO. HIGH: maquinaria pesada cuelga→'comité acotado'=TODO-31. L-50 | 43852 |
 | §227 | **Borradores rediseño f1+2 ⟦OPUS⟧** — recuperación local opt-in §107-safe + por-cuenta + galería pro + modal custom (comité ACOTADO). f3 Storage=Gemini-gated. #896. L-51/M-17 | 43872 |
+| §228 | **TODO-32 escalabilidad: índice on-demand NO se comprime (tope 36k→48k vía ratchet §173) + auto-índice = GUARDIÁN no reemplazo (cutover refutado=lossy) ⟦OPUS⟧** — comité+Gemini+debate; `scripts/brain-index.mjs` audita completitud (cazó ~20 sub-ADRs §60.x); genoma frontmatter + tombstoning = Etapa 3 (abierta). | 43885 |
 
 ---
 

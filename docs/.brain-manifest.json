@@ -8,7 +8,7 @@
     "docs/05-ESTADO-GLOBAL.md",
     "docs/10-MEMORIA-CORTO-PLAZO.md"
   ],
-  "_caps_trinquete": "ADR §173: caps bajados al tamaño post-GC + headroom (trinquete: bajar libre; SUBIR exige ADR citado). 30/00 conservan su cap hasta su propio GC/shard.",
+  "_caps_trinquete": "ADR §173: caps bajados al tamaño post-GC + headroom (trinquete: bajar libre; SUBIR exige ADR citado). ADR §228: 00 elevado 36000→48000 (índice ON-DEMAND, no boot → NO se comprime con pérdida; si crece se tiera/sharda).",
   "caps": {
     "CLAUDE.md": {
       "lines": 320,
@@ -36,7 +36,7 @@
     },
     "docs/00-INDICE.md": {
       "lines": 450,
-      "chars": 36000
+      "chars": 48000
     },
     "docs/40-LOBULOS-DOMINIO.md": {
       "lines": 280,
@@ -48,11 +48,13 @@
   "staleDays": 10,
   "peers": [
     "../bersagliojewelry.github.io",
-    "../altorrainmobiliaria.github.io"
+    "../altorrainmobiliaria.github.io",
+    "../insemastereo.github.io"
   ],
   "kernelFiles": [
     "scripts/brain-check.mjs",
-    "scripts/brain-diff.mjs"
+    "scripts/brain-diff.mjs",
+    "scripts/brain-index.mjs"
   ],
   "ssotFacts": [
     {

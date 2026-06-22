@@ -326,6 +326,7 @@
 | §226 | **Auditoría cerebro N2 (21/06) ⟦OPUS⟧** — 3 sondas colgaron (subagentes gateados). SANO. HIGH: maquinaria pesada cuelga→'comité acotado'=TODO-31. L-50 | 43854 |
 | §227 | **Borradores rediseño f1+2 ⟦OPUS⟧** — recuperación local opt-in §107-safe + por-cuenta + galería pro + modal custom (comité ACOTADO). f3 Storage=Gemini-gated. #896. L-51/M-17 | 43874 |
 | §228 | **TODO-32 escalabilidad: índice on-demand NO se comprime (tope 36k→48k vía ratchet §173) + auto-índice = GUARDIÁN no reemplazo (cutover refutado=lossy) ⟦OPUS⟧** — comité+Gemini+debate; `scripts/brain-index.mjs` VERIFICA completitud (índice a mano ya completo: 245=245, 0 huecos; claim falso previo corregido §3.3); genoma frontmatter + tombstoning = Etapa 3 (abierta). | 43887 |
+| §229 | **TODO-32 paso (b): replicación del guardián ×brains = SELECTIVA por convención (no byte ciego) ⟦OPUS⟧** — inmob ✅ instalado (compat); bersaglio/insema = ADR N/A (headers fecha-leading / índice-por-proveniencia → copy=falsa cobertura M-10); guardián NO se funde al `brain-check` read-only (invariante L11, check #3 ya detecta el drift); +insema a peers. L-52. | 43899 |
 
 ---
 

@@ -48,11 +48,13 @@
   "staleDays": 10,
   "peers": [
     "../bersagliojewelry.github.io",
-    "../altorrainmobiliaria.github.io"
+    "../altorrainmobiliaria.github.io",
+    "../insemastereo.github.io"
   ],
   "kernelFiles": [
     "scripts/brain-check.mjs",
-    "scripts/brain-diff.mjs"
+    "scripts/brain-diff.mjs",
+    "scripts/brain-index.mjs"
   ],
   "ssotFacts": [
     {

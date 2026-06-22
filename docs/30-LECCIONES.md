@@ -280,6 +280,11 @@
 
 ### L-51 · Recuperación de borradores "pro" SIN reabrir un autosave rechazado: separar borrador-deliberado de red-de-seguridad-local (opt-in, scoped por uid) → detalle en `33-LECCIONES-FRONTEND.md`
 
+### L-52 · Antes de replicar un script de KERNEL acoplado a convenciones ×cerebros, VERIFICA la convención de cada destino — un copy byte-idéntico que no aplica = no-op silencioso = falsa cobertura (M-10) ⟦OPUS-4.8⟧
+- **Disparador**: vas a propagar un script del cerebro (índice/linter/generador) a los otros repos "byte-idéntico ×N".
+- **Síntoma (§229)**: `brain-index.mjs` (auto-reconcilia §→línea) está acoplado a (a) headers `## NN.` numéricos y (b) índice con columna de nº de línea. bersaglio (headers fecha-leading) e insema (índice por-proveniencia) NO cumplen → un copy correría, diría "0 reconciliadas", saldría 0 y *parecería instalado*. Solo cars/inmob cumplen.
+- **Receta**: (1) lee el `99`+`00` de cada destino y arma la **matriz de compatibilidad ANTES de copiar**; (2) instala SOLO donde aplica; donde no, un ADR que documenta el N/A + el pre-requisito (NO código muerto); (3) **verifica los hashes del kernel ANTES de añadir un peer** al manifest (si no, metes un warn en #11); (4) referencia una `L-/M-` solo si existe en ESE repo (un `M-10` de cars es ref colgante en bersaglio → pásalo a texto plano). Byte-identidad del kernel es un INVARIANTE a defender, NO una meta a forzar sobre convenciones divergentes.
+
 ### L-47 · En reglas Firestore, `resource.data.X` de un campo AUSENTE **LANZA** (no es null) — guardar con `('X' in resource.data)` ⟦OPUS-4.8⟧
 - **Síntoma (§222)**: un test rules-unit de `marcas` dio `PERMISSION_DENIED: Property _version is undefined on object` al ACTUALIZAR un doc sin `_version` (los seed/legacy). En prod no se notó porque el dueño edita como **super-admin** (que bypassa `validVersion()`); un `brands.edit` no-super SÍ lo dispara.
 - **Causa**: `validVersion()` = `request…_version == resource.data._version + 1 || (resource.data._version == null && …)`. El PRIMER operando accede a `resource.data._version`; si el doc no lo tiene, **lanza evaluation error** → la `||` ni evalúa el fallback `== null`. Acceder a un campo ausente en reglas es un ERROR, NO `null`.

@@ -75,10 +75,9 @@ function resolveCredential() {
     try { return JSON.parse(readFileSync(path, 'utf-8')); }
     catch (e) { throw new Error('GOOGLE_APPLICATION_CREDENTIALS apunta a un .json inválido (' + path + '): ' + e.message); }
   }
-  throw new Error(
-    'Faltan credenciales de Service Account. Define FIREBASE_SA_KEY (JSON inline) o ' +
-    'GOOGLE_APPLICATION_CREDENTIALS (ruta al .json). El SDK cliente no puede listar el bucket.'
-  );
+  // Sin SA key explícita → null = usar Application Default Credentials (ADC, p.ej. gcloud auth
+  // application-default login en la máquina del dueño). En GitHub Actions siempre llega la SA key.
+  return null;
 }
 
 // Extrae TODOS los paths de Storage referenciados en un objeto JSON arbitrario.
@@ -104,11 +103,16 @@ function human(bytes) {
 
 async function main() {
   const creds = resolveCredential();
-  const { initializeApp, cert } = await import('firebase-admin/app');
+  const { initializeApp, cert, applicationDefault } = await import('firebase-admin/app');
   const { getStorage } = await import('firebase-admin/storage');
   const { getFirestore } = await import('firebase-admin/firestore');
 
-  const app = initializeApp({ credential: cert(creds), projectId: PROJECT_ID, storageBucket: STORAGE_BUCKET });
+  console.log(`[orphans] Credencial: ${creds ? 'Service Account key' : 'Application Default Credentials (ADC)'}`);
+  const app = initializeApp({
+    credential: creds ? cert(creds) : applicationDefault(),
+    projectId: PROJECT_ID,
+    storageBucket: STORAGE_BUCKET,
+  });
   const db = getFirestore(app);
   const bucket = getStorage(app).bucket();
 

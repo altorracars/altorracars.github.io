@@ -56,5 +56,8 @@ coverage/
 # Respaldos locales de Firestore (salida de scripts/backup-firestore.mjs — NO versionar)
 backups/
 
+# Respaldo reversible de fotos huérfanas (salida de scripts/storage-orphans.mjs --backup — NO versionar)
+orphans_backup/
+
 # Cuarentena de legacy (no se sirve; ver _legacy/README.md)
 # _legacy/  <- se MANTIENE versionado a propósito, comentado aquí solo como nota

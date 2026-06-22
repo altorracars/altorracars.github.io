@@ -75,8 +75,37 @@ Inventario = Tool Calling (no prompt-stuffing) · OFF = Circuit Breaker automát
 `engine` (no in-place) · seguridad: jailbreak + Denial-of-Wallet → App Check + billing alerts + prompt
 anti-jailbreak. Crudo verbatim → bóveda `../brain-private/altorracars/research-archive/`.
 
+## Comité ACOTADO post-Gemini — VERDICTO (revalidación, 2026-06-22; crudo bóveda `242bc41`)
+El comité (4 expertos + peer-review, bounded, no se colgó) cazó lo que Gemini NO vio:
+- **Costo (verificado ✅)**: las Billing Alerts de GCP **NO ven el gasto de tokens de Anthropic**
+  (cuentas separadas) → el salvavidas de costo tenía punto ciego. Falta gate de costo DENTRO de
+  `chatLLM` (contador tokens/gasto-diario en Firestore que flipee `llmEnabled`). Tool Calling = costo
+  no-lineal (2+ requests/turno + inventario reinyectado al historial cada turno).
+- **Legal (verificado ✅ en principio · gate abogado ⚖️ `42-LEGAL`)**: F1 "captura todo al CRM" SIN
+  consentimiento previo viola **Ley 1581**. Falta gate `consent{}` bloqueante (validado server-side en
+  `onSolicitudCreated`) antes de ingestar PII. + allow-list de campos por Tool (anti-exfiltración).
+- **Vaporware (verificado ✅)**: el Circuit Breaker en-memoria NO sirve en una Cloud Function
+  efímera/escalada → server-side con estado en Firestore (`config/altor.breakerOpenUntil`, half-open).
+- **Bug que contradice el plan (⚠️ NO verificado — leer código primero)**: colisión de anónimos en
+  `sanitizeContactId` (leads sin email/tel → 1 contactId = fusión silenciosa = anti-cero-pérdida) +
+  `onCreate` no re-entrante. A VERIFICAR antes de codear (§3.3 — no asumir que el comité acertó).
+- **UX**: falta loop al cliente vía **WhatsApp** + SLA visible + `lead_quality` (sin scoring, F1 inunda
+  el CRM de ruido → el asesor pierde confianza).
+- **🔑 La PREMISA (lo que TODOS omitieron)**: ¿100%-LLM es la arquitectura correcta para un dominio TAN
+  acotado (catálogo finito + 3-4 intenciones)? El comité propone un **ENRUTADOR HÍBRIDO** (clasificador
+  determinista barato decide PRIMERO; el LLM solo el long-tail conversacional) → baja Denial-of-Wallet +
+  superficie de inyección + ruido-en-CRM + dependencia del breaker, de un golpe. **Contradice la visión
+  "solo LLM" del dueño → Decisión Fuerte nueva, decide el dueño.**
+
+**VERDICTO (Claude, presidente)**: F1 y F2 **NO están listas** tal cual. F1 = bloqueante legal
+(consentimiento) + verificar `sanitizeContactId` + lead_quality/WhatsApp. F2 = breaker re-diseñado
+server-side + gate de costo Anthropic-aware. El proceso multi-capa (Gemini + comité) VALIÓ: pasó de
+"F1+F2 listos" a un mapa de bloqueantes reales + una pregunta de arquitectura.
+
 ## Checklist
-- [x] Diagnóstico actual verificado en código (2026-06-22): bot NO conectado al CRM (grep), chatLLM existe.
-- [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL ↑ (costo+seguridad eran el gap). Crudo→bóveda.
-- [ ] Decisión del dueño: borrar `js/ai/` (en F5) + techo de costo mensual (define límites F3).
-- [ ] Implementación por fases (F1 puente + F2 OFF-de-hierro primero).
+- [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
+- [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).
+- [x] Comité ACOTADO ✅ (2026-06-22): costo-Anthropic · Ley 1581 · breaker-vaporware · premisa-híbrida. Crudo `242bc41`.
+- [ ] **Decisión del dueño: (1) LLM-puro vs HÍBRIDO · (2) techo de costo USD/mes · (3) borrar `js/ai/`.**
+- [ ] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ANTES de codear.
+- [ ] Implementar tras decisiones — F1 con consentimiento + F2 con breaker server-side + telemetría de costo.

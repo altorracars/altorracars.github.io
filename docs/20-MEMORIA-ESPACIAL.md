@@ -36,7 +36,7 @@
 - **Panel admin**: `admin.html` (SPA monolítica) + cadena de `js/admin/admin-*.js`.
 - **Bot ALTOR Hub**: cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`.
 - **CSS**: ~31 archivos en `/css/` (planos). Hojas cinematic page-specific en `css/home/`: `cinematic.css` (tokens `--cin-*`), `soft-redesign.css`, `comparar-cinematic.css`, **`detalle-cinematic.css` (cuerpo de `detalle-vehiculo`, §140)**.
-- **Backend**: Firebase (Auth, Firestore, RTDB, Storage, FCM, Analytics). Project ID `altorra-cars`. **Cloud Functions V2 = 58** (reconciliado EN VIVO 22/06, TODO-33; antes "27"/"59" stale): **~42 vivas-core** (CRM/ingestión ×25 · RBAC-usuarios ×9 · señales-SSG ×8) + **13 del bot** (concierge/telegram/summarize/`chatLLM` → reestructura TODO-34, NO podar suelto) + **3 migraciones 1-vez** (`migrateLegacyUsers`+`backfillNivelesRBAC` = poda segura · `seedSystemRoles` = semilla, conservar). Regiones mezcladas (5 en `southamerica-east1`, resto `us-central1`).
+- **Backend**: Firebase (Auth, Firestore, RTDB, Storage, FCM, Analytics). Project ID `altorra-cars`. **Cloud Functions V2 = 57** (reconciliado EN VIVO 22/06, TODO-33; antes "27"/"59" stale): **~42 vivas-core** (CRM/ingestión ×25 · RBAC-usuarios ×9 · señales-SSG ×8) + **13 del bot** (concierge/telegram/summarize/`chatLLM` → reestructura TODO-34, NO podar suelto) + 2 migraciones (`backfillNivelesRBAC` parqueada-RBAC④b · `seedSystemRoles` semilla); `migrateLegacyUsers` + `proactiveEngagement` ya BORRADAS 22/06. Regiones mezcladas (5 en `southamerica-east1`).
 - **Hosting**: GitHub Pages (`altorracars.github.io`). Push a `main` → auto-deploy.
 
 ### 📁 Estructura de `js/` (modular desde §119 — 128 archivos, 0 sueltos en raíz)
@@ -92,7 +92,7 @@ admin-crm.js / admin-appointments.js / admin-inbox.js → comm-schema.js
 
 Detalle completo y subcolecciones → `docs/dependency-map.md` §Schemas.
 
-**Reconciliación de colecciones (27 vivas, 22/06, TODO-33)**: vivas que NO están en el schema de arriba → `crm_alerts`, `departments`, `comments`, `events` (+ del bot: `conciergeChats`/`knowledgeBase`/`unmatchedQueries`). Documentadas arriba pero HOY VACÍAS (no aparecen vivas) → `banners`, `resenas`, `failedIngestions`, `resource_slots`, `merges`, `suppressions`, `subscriptions`. `drafts_activos` (sistema viejo de borradores) BORRADA 22/06. Pendiente TODO-33: documentar las nuevas + confirmar las vacías son esperadas.
+**Reconciliación de colecciones (27 vivas, 22/06, TODO-33)**: 4 nuevas ahora documentadas en `dependency-map.md §Schemas` (`crm_alerts`/`departments`/`comments`/`events`); bot (`conciergeChats`/`knowledgeBase`/`unmatchedQueries`) → TODO-34. `drafts_activos` BORRADA 22/06. Resta: confirmar las documentadas-pero-vacías (`banners`/`resenas`/`subscriptions`/`resource_slots`/`merges`/`suppressions`/`failedIngestions`) + Storage/rules/índices.
 
 ---
 

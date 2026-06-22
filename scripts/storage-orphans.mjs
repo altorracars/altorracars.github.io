@@ -158,12 +158,16 @@ async function main() {
     return (nowMs - t) / 86400000;
   };
   const orphans = [];
-  let tooYoung = 0, live = 0;
+  let tooYoung = 0, live = 0, placeholders = 0;
   for (const f of files) {
+    // Marcador de carpeta (nombre termina en '/', 0 bytes, virtual): no es una foto, no se
+    // respalda (rompería el backup a disco: archivo vs carpeta con el mismo nombre) ni se borra.
+    if (f.name.endsWith('/')) { placeholders++; continue; }
     if (referenced.has(f.name)) { live++; continue; }
     if (ageDaysOf(f) < MIN_AGE_DAYS) { tooYoung++; continue; } // subida en curso / borrador activo reciente
     orphans.push(f);
   }
+  if (placeholders) console.log(`[orphans] (${placeholders} marcador(es) de carpeta ignorado(s) — virtuales, 0 bytes)`);
 
   const orphanBytes = orphans.reduce((s, f) => s + Number((f.metadata && f.metadata.size) || 0), 0);
   const costPerMonth = (orphanBytes / (1024 ** 3)) * 0.026; // ~US$0.026/GB/mes Storage

@@ -15,7 +15,7 @@
 Verificado el 2026-06-03 leyendo la config real:
 
 - `~/.claude/settings.json` → **solo** habilita el plugin `superpowers@claude-plugins-official` (14 skills de proceso).
-- `~/.claude/skills/` (user-level) → 7 skills de gobernanza. **Desde 2026-06-09 (ADR §171), las 4 portables (`crm-architect`, `legal-colombia`, `comite-expertos`, `arquitecto-software`) están VERSIONADAS en `skills/` del repo** (descontaminadas/domain-neutral, byte-idénticas en los 3 repos) → el repo es la fuente git-trackeada; se copian a `~/.claude/skills/` manualmente (no aparecen en el panel de personalización).
+- `~/.claude/skills/` (user-level) → 8 skills de gobernanza. **Desde 2026-06-09 (ADR §171), las 5 portables (`crm-architect`, `legal-colombia`, `comite-expertos`, `arquitecto-software`, `proceso-decision-fuerte`) están VERSIONADAS en `skills/` del repo** (descontaminadas/domain-neutral, byte-idénticas en los 3 repos) → el repo es la fuente git-trackeada; se copian a `~/.claude/skills/` manualmente (no aparecen en el panel de personalización).
 - **NO** existe `.claude/settings.json` de proyecto, ni `plugin.json`/`marketplace.json` en el repo, ni un plugin `anthropic-skills` instalado.
 - El namespace `anthropic-skills:*` (~100 skills) que Claude ve es **bundle del entorno/build** (set oficial de Anthropic), independiente del repo.
 
@@ -160,6 +160,7 @@ de mis capacidades. Implicaciones:
 | `crm-architect` | **Framework de la reconstrucción del CRM** (Firebase+Firestore+Functions, verticales concesionario+inmobiliario, RBAC+Ley 1581). Universal multi-industria. **Versionada en `skills/`** (§171) + global + bundle. | ✅ repo+user |
 | `legal-colombia` | Guardrail + método legal para negocios **colombianos** (fuentes `.gov.co`, gate abogado; bloquea plugins legales US). Portable. **Versionada en `skills/`** (§171). | ✅ repo+user |
 | `comite-expertos` | Comité de expertos ×3 que mejora una respuesta (expertos por tema + peer-review anónimo + presidente; 2ª voz Gemini en Decisión Fuerte). Portable. **Versionada en `skills/`** (§171). | ✅ repo+user |
+| `proceso-decision-fuerte` | **Pipeline de validación multi-capa para Decisión Fuerte** (verificar → comité ACOTADO → Gemini → análisis crítico que VERIFICA cada claim, no asume → revalidación → veredicto → impl verificada por fase). Orquesta `comite-expertos`+`caza-bugs`+Consejo Externo `15`. Gate: solo Decisión Fuerte (trivial→directo). Portable. **Versionada en `skills/`**. Validada en vivo (TODO-34: cazó bloqueante Ley 1581 que Gemini no vio). | ✅ repo+user |
 | `arquitecto-software` | Piensa como arquitecto ANTES de codear (6 lentes + IAP). Domain-neutral. **Versionada en `skills/`** (§171). | ✅ repo+user |
 | `Asesor_Critico_Honesto` (`asesor-critico-honesto`) | Feedback crítico honesto sobre ideas/planes | ✅ |
 

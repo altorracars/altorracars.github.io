@@ -27,7 +27,7 @@ registrado toma su info, si no se la pide → la manda al **chat del panel admin
   recalculateWorkloadOnChatChange·recalculateWorkloadScheduled·linkTelegramChat·
   getTelegramWebhookStatus·setupTelegramWebhook.
 
-## Plan PROPUESTO (fases por riesgo; sujeto a red-team Gemini)
+## Plan PROPUESTO (pre-Gemini — SUPERSEDED por "Plan FINAL" ↓)
 - **F1 — Puente bot→CRM (la pieza que FALTA, máximo valor)**: al capturar/escalar, escribir un
   `solicitudes/{id}` con `origen='altor'` → reusa la ingestión Fase-1 existente (`onSolicitudCreated`
   → contact+lead, dedup incluido), igual que la captura manual (§162). Hace VERDADERO "todo al CRM".
@@ -50,8 +50,33 @@ registrado toma su info, si no se la pide → la manda al **chat del panel admin
 5. Migración sin romper el chat vivo durante el refactor.
 6. ¿Algún riesgo de seguridad/costo/irreversible subestimado?
 
+## Plan FINAL (post red-team Gemini 22/06 — reordenado por riesgo)
+Gemini APROBÓ el puente pero corrigió 3 gaps críticos de mi diseño: **costo** (inventario en el
+prompt = "suicidio financiero"), **seguridad** (LLM expuesto = jailbreak + Denial-of-Wallet), y el
+**orden** (borrar `js/ai/` va al FINAL, no al inicio). Plan adoptado:
+- **F1 — Puente + dedup**: el bot escribe `solicitudes/{id}` `origen='altor'` (+uid/email/tel) →
+  `onSolicitudCreated`. El **dedup YA existe** (§185 `dedup/{key}` + tx) → no infla `contacts`.
+  Cero-pérdida de leads (cualquier estado del bot captura).
+- **F2 — Modo OFF "de hierro"**: form determinista duro ("déjame tus datos, un asesor te contacta") +
+  **Circuit Breaker**: si el LLM falla (429/timeout/saldo) conmuta a OFF solo. + flag manual
+  `config/altor.llmEnabled`.
+- **F3 — Cerebro nuevo (LLM + Tool Calling + guardas)**: system-prompt LIGERO (reglas + anti-jailbreak
+  + 5 FAQs); inventario SOLO vía **Tool Calling** (`inventory-search` → `search_inventory(...)`, NUNCA
+  la BD en el prompt). Guardas de costo: tope de historial (~6 msgs), ~15 turnos/sesión → escala a
+  humano, rate-limit por IP. Seguridad: App Check/reCAPTCHA en `chatLLM` (infra §41 ya existe, hoy
+  MONITOR), Billing Alerts GCP 50/80/100%, prompt legal ("nunca prometer descuento/contrato/crédito").
+- **F4 — Rollout PARALELO (A/B)**: campo `engine:'v2-llm'` en chats NUEVOS; los viejos siguen por la
+  ruta determinista (no romper pestañas abiertas). Sin downtime.
+- **F5 — Poda quirúrgica (sunset)**: 1-2 semanas después, con logs limpios y costo estable → borrar
+  `js/ai/*` (dejando las Tools) + las 10+ functions viejas del bot.
+
+## Gemini — correcciones clave adoptadas
+Inventario = Tool Calling (no prompt-stuffing) · OFF = Circuit Breaker automático · migración A/B con
+`engine` (no in-place) · seguridad: jailbreak + Denial-of-Wallet → App Check + billing alerts + prompt
+anti-jailbreak. Crudo verbatim → bóveda `../brain-private/altorracars/research-archive/`.
+
 ## Checklist
 - [x] Diagnóstico actual verificado en código (2026-06-22): bot NO conectado al CRM (grep), chatLLM existe.
-- [ ] Red-team Gemini (prompt entregado al dueño).
-- [ ] Decisión del dueño sobre alcance/fases.
-- [ ] Implementación por fases (F1 primero — el puente al CRM).
+- [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL ↑ (costo+seguridad eran el gap). Crudo→bóveda.
+- [ ] Decisión del dueño: borrar `js/ai/` (en F5) + techo de costo mensual (define límites F3).
+- [ ] Implementación por fases (F1 puente + F2 OFF-de-hierro primero).

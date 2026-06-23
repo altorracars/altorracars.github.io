@@ -47,6 +47,13 @@ Contexto del cambio que valido: {QUÉ SE MERGEÓ / subsistema tocado}
 PROHIBIDO (sin que yo lo autorice explícitamente): enviar leads/formularios reales, pagos,
 borrar/editar datos, o cualquier acción irreversible. Si un paso lo requiere, DETENTE y avísame.
 
+MÉTODO DE OBSERVACIÓN (OBLIGATORIO): NO te bases en UN solo screenshot de lo último visible. Lee el
+DOM COMPLETO de la conversación (TODOS los bubbles desde el PRIMER mensaje) — usa get_page_text / lee
+el contenedor de mensajes entero — y haz SCROLL del chat de ARRIBA (inicio) hasta ABAJO (final),
+capturando cada tramo. Un screenshot solo muestra el viewport; los bugs viven también ARRIBA del fold
+(mensajes/CTAs/quickReplies duplicados, defectos de diseño en mensajes anteriores). Reporta el flujo
+COMPLETO y en ORDEN (saludo→cierre), no solo lo último.
+
 COBERTURA DE SESIÓN (obligatoria si el cambio toca auth/sesión): haz PRIMERO los escenarios
 CON login (ya estoy logueado); LUEGO CIERRA SESIÓN (logout NO necesita credenciales) y repite
 el camino como visitante SIN login; reporta toda DIFERENCIA entre ambos estados. (Para volver a
@@ -75,7 +82,7 @@ Por cada escenario, exijo:
 - **Consola**: errores/warnings (texto literal del primero relevante), o "limpia".
 - **Network**: requests fallidos (status ≥400 / CORS / timeout) con URL + código, o "sin fallos".
 - **DOM/estado**: qué se renderizó / cambió (aparición de widget, botones, modales, vacíos).
-- **Respuestas reales**: cita LITERAL de lo que dijo el bot/UI (no parafraseo) — la evidencia de oro.
+- **Respuestas reales**: cita LITERAL de lo que dijo el bot/UI (no parafraseo) — la evidencia de oro. Recórrelas TODAS scrolleando el chat completo (DOM), NO solo el último bubble del viewport.
 - **Transición**: qué pasó al finalizar/iniciar/recargar (¿optimista? ¿exigió refresh? ¿se perdió estado?).
 - **Veredicto del escenario**: ✅ esperado / ⚠️ raro / ❌ roto, en una línea.
 - **Prueba de negativos**: toda afirmación "sin error/sin fallo" trae el sweep que la respalda (qué patrón se buscó), NO la mera ausencia de mención.

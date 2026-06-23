@@ -129,6 +129,9 @@ skills, verificar el largo antes de instalar) en `skills/<nombre>/` → (5) la *
     en `CLAUDE.md §3.8`; manifiesto en `46-ESCALABILIDAD`.
   - ⚠️ **Defecto a corregir** (en la conversación dueña de las skills, no aquí — son co-editadas en paralelo): `description`
     parseada >1024 (límite uploader): `comite-expertos` 1038, `legal-colombia` 1148; `arquitecto-software` 934 OK.
+    🧮 **Gotcha (medir bien)**: el límite es **1024 en `String.length` de JS** (NO bytes). `wc -m` cuenta bytes y
+    sobre-estima por acentos/flechas (→, é, ñ) → falso positivo. Medir con `node -e "...m[1].length"`.
+    `validacion-live-chrome` nació en 1222→recortada a **953 OK** (2026-06-23, el dueño chocó el límite al instalar manual).
 - **`validacion-live-chrome`** (2026-06-23, TODO-36 → ADR §232) — INSTRUMENTO de verificación LIVE post-merge:
   genero un prompt+esquema-de-observabilidad para la extensión "Claude in Chrome" del dueño (su sesión logueada;
   credenciales solo él, L-08), él lo ejecuta en la web en vivo y me pega la observabilidad → actúo (caza-bugs→fix).

@@ -202,17 +202,36 @@ pendientes. Comité #3 (captura+UX+qualifier, crudo `2026-06-23-TODO34-comite-UX
 - **Ejecución — el rediseño UX es REESCRITURA, va DESPUÉS del bot, como MÓDULO PARALELO v2** (no in-place, o el
   A/B es ilusorio: el flag aísla la lógica, NO el DOM). **Widget cliente y chat interno = DOS fases separadas.**
 
-### Plan EPIC (6 fases, foco único hasta terminar)
-- **F1 — Guards + frenar hemorragia:** App Check `enforce` en chatLLM + gate de costo server-side (techo MANUAL
-  del dueño + auto-enforce que solo cuida ese número + modo-captura "déjanos WhatsApp" si se pasa + alertas
-  50/80/100%) + rate-limit por App Check token (no sessionId) + tope turnos/conversación (~15) + fix ingestión
-  (lead sin handle = `incompleto`/'bot', cero-pérdida). [Independiente del motor, máximo valor, mínimo riesgo.]
-- **F2 — Bot LLM + Tool Calling** tras `engine:'v2'`, reusando UX v1 + contratos de captura/escalada. Tools:
-  `search_inventory` (payload capado), `submit_lead` con `lead_quality` GRATIS. El LLM promueve hot→asesor, nunca rechaza.
-- **F3 — Flujo de captura:** quitar cédula; mínimo nombre+celular; **fallback WhatsApp** en el punto del form
-  (cero-pérdida); consent Ley 1581 inline; saludo tono Colombia + botones.
+### Capa 3 — Gemini red-team del EPIC (2026-06-23) → REORDEN + guardrails
+Crudo `2026-06-23-TODO34-gemini-redteam-EPIC-CRUDO.md`. Verificado/adoptado:
+- ⚠️ **CORRECCIÓN CLAVE — orden de fases**: Gemini cazó un acoplamiento que el comité no vio: soltar el bot
+  LLM (fluido) ANTES de arreglar la captura → la cohorte choca con el formulario VIEJO de cédula = caída
+  brutal. → **CAPTURA va ANTES del bot** (y beneficia incluso al bot viejo). Swap F2↔F3.
+- ✅ **Guardrail anti-negociación (CRÍTICO/legal):** el inventario entra al prompt vía el RESULTADO de la tool
+  → si el cliente "ofrece $40M" el LLM podría "¡trato hecho!". System-prompt: **"PROHIBIDO NEGOCIAR PRECIOS /
+  ACEPTAR OFERTAS; PRECIOS FINALES."**
+- ✅ **Validación backend del payload `submit_lead`** (anti-prompt-injection): si nombre="Mickey Mouse" o
+  celular inválido → degradar `lead_quality` a cold/spam sin importar lo que dijo el LLM.
+- ⚠️ **Anti-abuso refinado:** con chat anónimo, el límite-por-identidad es BACHE (borran LocalStorage/incógnito);
+  **el muro real es el TECHO GLOBAL de gasto**. App Check frena bots básicos, no click-farms/DoW manual.
+- ✅ **TTL** conversaciones anónimas muertas (24-48h auto-borrado; Ley 1581 minimización + costo).
+- ✅ **Latencia:** onCall CO→us-central1 + Anthropic = 4-6s → indicador "Escribiendo…" inmediato + evaluar streaming.
+- ✅ Ya existen y se reusan: `handoverToWhatsApp()`+`buildWhatsAppSummary()` (handoff con contexto, :1555/:1563);
+  `normalize.js` ya acepta teléfono-sin-email (:31-33); `summarizeChat` (truncamiento de memoria).
+
+### Plan EPIC FINAL (6 fases REORDENADAS, foco único)
+- **F1 — Guards + frenar hemorragia:** App Check `enforce` en chatLLM + **gate de costo server-side = TECHO
+  GLOBAL** (techo MANUAL del dueño + auto-enforce + modo-captura "déjanos WhatsApp" + alertas 50/80/100%) +
+  rate-limit por IP/App Check (bache, no muro) + tope turnos (~15) + **truncamiento de memoria (~6 msgs)** +
+  fix ingestión (lead sin handle = `incompleto`) + **TTL** conversaciones anónimas. [Máximo valor, mínimo riesgo.]
+- **F2 — Flujo de captura** (ANTES del bot, beneficia al bot viejo): **quitar cédula**; mínimo nombre+celular;
+  correo opcional; **fallback WhatsApp** en el punto del form (reusa `handoverToWhatsApp`); consent Ley 1581
+  inline (texto + link); saludo tono COLOMBIA + botones tontos.
+- **F3 — Bot LLM + Tool Calling** tras `engine:'v2'`, reusando UX v1 + contratos. Tools: `search_inventory`
+  (payload capado), `submit_lead` con `lead_quality` GRATIS + **validación backend** + **guardrail anti-negociación**.
+  El LLM PROMUEVE hot→asesor, nunca rechaza. Indicador "Escribiendo…".
 - **F4 — UX rediseño widget cliente:** MÓDULO PARALELO v2 (montaje nuevo, v1 intacto hasta retirar flag).
-- **F5 — UX rediseño chat interno admin:** fase SEPARADA (distinto archivo/usuarios/riesgo, no toca leads).
+- **F5 — UX rediseño chat interno admin:** fase SEPARADA (distinto archivo/usuarios/riesgo).
 - **F6 — Poda:** borrar motor determinista `js/ai/` (5,600L) AL FINAL, con v2 estable.
 
 ## Checklist
@@ -224,5 +243,6 @@ pendientes. Comité #3 (captura+UX+qualifier, crudo `2026-06-23-TODO34-comite-UX
 - [x] Comité ACOTADO #2 (arquitectura) ✅ 2026-06-23: convergencia 4/4 en **B-moderno** (router=UI + LLM+tools); captcha-UI=cosmético→App Check enforce; tope $12-15/mes; F1-primero.
 - [x] **Capa 3 — Gemini red-team ✅ 2026-06-23**: recomendó A (no B); verificado por-claim (precio refutado: Haiku 4.5 = $1/$5, no $0.25/$1.25). Crudo bóveda `2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
 - [x] **VEREDICTO FINAL ✅: Opción A** (solo-LLM + Tool Calling + botones tontos de navegación), guards-first. A↔B parcialmente semántica; con guards las ventajas de B son marginales; A gana por mantenibilidad + corte limpio + honra el instinto del dueño.
-- [ ] **Confirmación dueño (ya no forks): (1) A=su instinto "solo LLM" con Tools · (2) techo $15/mes · (3) anti-bot = App Check enforce.**
-- [ ] Implementar F1→F5 (plan arriba), verificación por fase. F1 (frenar hemorragia) primero — bajo riesgo, valor inmediato.
+- [x] **EPIC expandido + Comité #3 (captura/UX/qualifier) ✅ 2026-06-23** + **Gemini red-team del EPIC ✅** (reorden captura↔bot + 4 guardrails). Pipeline completo = 3 comités + 2 Gemini, verificado por-claim. Crudos bóveda.
+- [ ] **Confirmación dueño: plan EPIC 6 fases REORDENADAS (captura antes del bot) + techo $15/mes (techo global = el muro).**
+- [ ] Implementar F1→F6 (plan arriba), verificación por fase §G.4. **F1 (candados + frenar hemorragia + TTL) primero** — bajo riesgo, valor inmediato.

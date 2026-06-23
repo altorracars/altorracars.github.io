@@ -44,6 +44,12 @@ Contexto del cambio que valido: {QUÉ SE MERGEÓ / subsistema tocado}
 PROHIBIDO (sin que yo lo autorice explícitamente): enviar leads/formularios reales, pagos,
 borrar/editar datos, o cualquier acción irreversible. Si un paso lo requiere, DETENTE y avísame.
 
+COBERTURA DE SESIÓN (obligatoria si el cambio toca auth/sesión): haz PRIMERO los escenarios
+CON login (ya estoy logueado); LUEGO CIERRA SESIÓN (logout NO necesita credenciales) y repite
+el camino como visitante SIN login; reporta toda DIFERENCIA entre ambos estados. (Para volver a
+entrar yo reingreso la contraseña.) Busca TODAS las fallas posibles — estamos ajustando en
+iteraciones: encontrar un fallo nuevo es ÉXITO, no fracaso. NO te detengas en el primer ✅.
+
 Recorre estos escenarios y para CADA uno reporta la observabilidad de §3:
 {ESCENARIOS — p.ej.:
  A) Bot SIN login: abre el widget, manda 3 mensajes (saludo, pregunta real del negocio, algo ambiguo);

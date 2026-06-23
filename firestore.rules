@@ -703,8 +703,14 @@ service cloud.firestore {
           // §188 paso 0.3: el censo E5 cubrió los 5 creadores PÚBLICOS y se le
           // escapó el 6º escritor — la cita interna del clásico
           // (admin-appointments.js saveInternalAppt) firma con createdBy.
-          'createdBy'
+          'createdBy',
+          // §TODO-37: el gate del bot persiste el consentimiento (Ley 1581) server-side →
+          // la ingestión (mapConsent) lo lee. OPCIONAL + solo bool; NO afloja nada — la regla
+          // UPDATE sigue ESTRICTA (solo-admin); esto es el CREATE público con su whitelist.
+          'consentGiven'
         ])
+        && (!('consentGiven' in request.resource.data)
+            || request.resource.data.consentGiven is bool)
         // ⚠️ PRESUPUESTO de Rules: máx ~1000 expresiones por evaluación — los
         // caps por-campo se limitan a los vectores REALES de abuso (textos
         // largos + shapes de maps/list). Los campos enum diminutos quedan sin

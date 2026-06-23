@@ -1268,6 +1268,51 @@
             });
     }
 
+    // §TODO-37 Fase 1 — el GATE persiste el lead vía CREATE (NO update). La rule UPDATE de
+    // `solicitudes` es solo-admin (correcta → no se afloja), así que un guest no puede enriquecer
+    // su soft-lead; pero el CREATE público SÍ está permitido. Hacemos un CREATE completo con
+    // nombre/cel/correo + consentGiven (Ley 1581, whitelisteado en la rule). El soft-lead "phantom"
+    // del 1er mensaje (sin contacto) NO se vuelve contacto del CRM (la ingestión normalizeSolicitud
+    // lanza sin email/teléfono) → CERO duplicado; este CREATE es el lead real y limpio. La promesa
+    // se devuelve SIN .catch: handleGateSubmit la cacha → rescate WhatsApp si falla (red).
+    function persistGateLead() {
+        if (!window.db) return Promise.reject(new Error('no-db'));
+        var lastUser = session.messages
+            .filter(function (m) { return m.from === 'user'; })
+            .slice(-5).map(function (m) { return m.text; }).join(' / ');
+        var lead = {
+            kind: 'lead',
+            tipo: 'concierge_gate',
+            origen: 'concierge',
+            nombre: session.nombre || null,
+            email: session.email || null,
+            telefono: session.telefono || null,
+            consentGiven: !!(session.profile && session.profile.consent),
+            comentarios: lastUser,
+            estado: 'pendiente',
+            userId: session.uid || null,
+            clientCategory: session.uid ? 'registered' : 'guest',
+            sessionId: session.sessionId,
+            sourcePage: session.sourcePage,
+            sourceVehicleId: session.sourceVehicleId,
+            level: session.level,
+            createdAt: new Date().toISOString(),
+            lastMessageAt: new Date().toISOString()
+        };
+        if (typeof lead.nombre === 'string') lead.nombre = lead.nombre.slice(0, 120);
+        if (typeof lead.comentarios === 'string') lead.comentarios = lead.comentarios.slice(0, 3000);
+        if (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta) {
+            try { lead = Object.assign({}, lead, window.AltorraCommSchema.computeMeta(lead)); } catch (e) {}
+        }
+        return window.db.collection('solicitudes').add(lead).then(function (ref) {
+            _softContactRef = ref;
+            session.leadId = ref.id;   // apuntar al lead REAL (no al phantom)
+            _leadCreated = true;
+            saveSession(session);
+            return ref;
+        });
+    }
+
     /**
      * §23 FASE 2 — escalateToLive ahora pasa el chat a `mode='queue'`.
      * El asesor que lo tome (vía claimChat del admin-concierge) lo
@@ -2727,7 +2772,8 @@
         // datos" aunque fallara (enrich de guest denegado=400 por la rule UPDATE solo-admin)
         // → el lead se perdía en SILENCIO. Ahora: éxito real → confirmar; fallo → NO mentir,
         // rescate cero-pérdida por WhatsApp (session ya tiene nombre/cel/correo).
-        var _persistP = (!_leadCreated) ? createSoftContact() : updateSoftContact();
+        // §TODO-37 Fase 1 — persistir el lead vía CREATE completo (persistGateLead), NO update.
+        var _persistP = persistGateLead();
         Promise.resolve(_persistP).then(function () {
             // §86 Sprint C-S8 — gate por progressive profiling: agradecer + ejecutar la
             // respuesta diferida con el intent original (NO greeting genérico).

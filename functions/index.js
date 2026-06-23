@@ -1408,13 +1408,80 @@ async function executeSearchInventory(input) {
     };
 }
 
+// Tool de captura de lead (F3-b): escribe solicitudes/{id} origen 'bot' → reusa onSolicitudCreated
+// (dedup + contact/lead + alerta al asesor). Validación BACKEND anti prompt-injection (Gemini-EPIC).
+const SUBMIT_LEAD_TOOL = {
+    name: 'submit_lead',
+    description: 'Registra el contacto del cliente para que un asesor humano lo contacte. Llama esto SOLO ' +
+        'cuando el cliente YA te dio su nombre y su celular y quiere que lo contacten (agendar, financiar, ' +
+        'vender o hablar con un asesor). Si faltan nombre o celular, pídelos primero; NO la uses para dudas generales.',
+    input_schema: {
+        type: 'object',
+        properties: {
+            nombre: { type: 'string', description: 'Nombre del cliente.' },
+            celular: { type: 'string', description: 'Celular colombiano (10 dígitos, empieza en 3).' },
+            correo: { type: 'string', description: 'Correo electrónico. Opcional.' },
+            intent: { type: 'string', description: 'Qué necesita: agendar | financiar | vender | info | asesor.' },
+            lead_quality: { type: 'string', enum: ['hot', 'warm', 'cold'], description: 'Tu lectura del interés real del cliente.' },
+            vehiculo_id: { type: 'string', description: 'ID del vehículo de interés, si aplica. Opcional.' }
+        },
+        required: ['nombre', 'celular']
+    }
+};
+
+/**
+ * Ejecuta submit_lead: valida en BACKEND (anti prompt-injection), captura el lead reusando la ingestión
+ * existente (solicitudes/{id}, origen 'bot' → onSolicitudCreated: dedup + contact/lead + alerta asesor).
+ * CONSENT CONSERVADOR: consentGiven=false hasta que exista el texto/flow de consentimiento aprobado por
+ * abogado (gate P4); el lead queda capturado + asignado (cero-pérdida) SIN asumir consentimiento de marketing.
+ */
+async function executeSubmitLead(input, ctx) {
+    input = input || {};
+    ctx = ctx || {};
+    const nombre = String(input.nombre || '').trim();
+    const celular = String(input.celular || '').replace(/\D/g, '');
+    const correo = String(input.correo || '').trim().toLowerCase();
+    const validPhone = /^3[0-9]{9}$/.test(celular);
+    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
+    // Exige al menos un handle dedupable; si no, el LLM debe pedirlo (no escribimos doc que reventaría normalize).
+    if (!validPhone && !validEmail) {
+        return { ok: false, error: 'sin_contacto', message: 'Falta un celular válido (3XXXXXXXXX) o un correo. Pídeselo al cliente antes de registrar.' };
+    }
+    // lead_quality: el BACKEND manda — degrada a 'cold' si el payload huele a basura (ignora lo que diga el LLM).
+    let quality = ['hot', 'warm', 'cold'].indexOf(String(input.lead_quality)) !== -1 ? input.lead_quality : 'warm';
+    const looksFake = nombre.length < 2 || /(mickey|mouse|\btest\b|asdf|qwer|xxxx|prueba|fulano)/i.test(nombre);
+    if (looksFake || !validPhone) quality = 'cold';
+    const sol = {
+        nombre: nombre || 'Sin nombre',
+        telefono: validPhone ? celular : '',
+        email: validEmail ? correo : '',
+        origen: 'bot',
+        kind: 'solicitud',
+        tipo: String(input.intent || 'info').slice(0, 40),
+        vehiculoId: input.vehiculo_id || ctx.sourceVehicleId || null,
+        comentarios: 'Lead capturado por el bot ALTOR (chat) · calidad estimada: ' + quality,
+        consentGiven: false, // P4: pendiente del texto/flow de consentimiento aprobado por abogado (Ley 1581)
+        leadQuality: quality,
+        tags: ['bot', 'altor-hub'],
+        sessionId: ctx.sessionId || null,
+        createdAt: new Date().toISOString()
+    };
+    try {
+        const ref = await db.collection('solicitudes').add(sol);
+        return { ok: true, lead_id: ref.id, lead_quality: quality, message: 'Datos registrados; un asesor lo contactará pronto.' };
+    } catch (e) {
+        console.error('[submit_lead] write failed:', e.message);
+        return { ok: false, error: 'write_failed', message: 'No se pudo registrar ahora; ofrécele continuar por WhatsApp.' };
+    }
+}
+
 /**
  * F3 — loop de Tool Calling (engine v2). Llama a Anthropic con tools; mientras el modelo pida
  * tool_use, ejecuta el tool server-side y reinyecta el resultado (cap MAX_TOOL_ITERATIONS).
  * Acumula el usage de TODAS las iteraciones para que el techo global ($, F1.a) cuente el costo real.
  */
-async function runToolLoop(apiKey, model, system, messages, temperature, maxTokens) {
-    const tools = [SEARCH_INVENTORY_TOOL];
+async function runToolLoop(apiKey, model, system, messages, temperature, maxTokens, ctx) {
+    const tools = [SEARCH_INVENTORY_TOOL, SUBMIT_LEAD_TOOL];
     const convo = messages.slice();
     const agg = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
     let lastText = '';
@@ -1443,9 +1510,9 @@ async function runToolLoop(apiKey, model, system, messages, temperature, maxToke
         for (const tu of toolUses) {
             let out;
             try {
-                out = (tu.name === 'search_inventory')
-                    ? await executeSearchInventory(tu.input)
-                    : { error: 'herramienta desconocida' };
+                if (tu.name === 'search_inventory') out = await executeSearchInventory(tu.input);
+                else if (tu.name === 'submit_lead') out = await executeSubmitLead(tu.input, ctx);
+                else out = { error: 'herramienta desconocida' };
             } catch (e) { out = { error: 'fallo al ejecutar la herramienta' }; }
             toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify(out) });
         }
@@ -1496,9 +1563,16 @@ function composeSystemPromptV2(brain, chatSummary, sessionContext) {
         'INSTRUCCIONES:',
         brain.instrucciones || '',
         '',
-        'HERRAMIENTAS: Tienes la herramienta search_inventory para consultar el catálogo EN TIEMPO REAL. ' +
-            'Úsala SIEMPRE que el cliente pregunte por autos, marcas, precios o disponibilidad. ' +
-            'NUNCA inventes vehículos, precios, años ni kilometraje: si search_inventory no lo devolvió, no existe.',
+        'HERRAMIENTAS: Tienes dos. (1) search_inventory: consulta el catálogo EN TIEMPO REAL — úsala SIEMPRE ' +
+            'que el cliente pregunte por autos, marcas, precios o disponibilidad. NUNCA inventes vehículos, ' +
+            'precios, años ni kilometraje: si search_inventory no lo devolvió, no existe. ' +
+            '(2) submit_lead: registra el contacto del cliente para que un asesor lo contacte.',
+        '',
+        'CAPTURA DE LEADS: cuando el cliente quiera que un asesor lo contacte (agendar, financiar, vender o pide ' +
+            'asesor) y te haya dado nombre + celular, llama submit_lead con un lead_quality (hot/warm/cold) según ' +
+            'su interés real. Si faltan datos, pídelos con amabilidad antes. NUNCA rechaces ni descalifiques a un ' +
+            'cliente: ante la duda, captúralo igual (cold) — un asesor humano decide. Solo PROMUEVES: a los hot, ' +
+            'ofréceles hablar ya con un asesor.',
         '',
         'GUARDRAIL DE PRECIOS (INVIOLABLE): ESTRICTAMENTE PROHIBIDO NEGOCIAR PRECIOS, OFRECER DESCUENTOS O ' +
             'ACEPTAR OFERTAS/CONTRAOFERTAS. LOS PRECIOS PUBLICADOS SON FINALES. Si el cliente ofrece un monto ' +
@@ -1658,8 +1732,11 @@ exports.chatLLM = onCall({
     let result;
     try {
         if (engine === 'v2' && provider === 'anthropic') {
-            // F3 (EPIC) — solo-LLM + Tool Calling (search_inventory). v1 intacto en el else.
-            result = await runToolLoop(apiKey, model, system, cleanMessages, temperature, maxTokens);
+            // F3 (EPIC) — solo-LLM + Tool Calling (search_inventory + submit_lead). v1 intacto en el else.
+            result = await runToolLoop(apiKey, model, system, cleanMessages, temperature, maxTokens, {
+                sessionId: sessionId,
+                sourceVehicleId: (sessionContext && sessionContext.sourceVehicleId) || null
+            });
         } else if (provider === 'openai') {
             result = await callOpenAI(apiKey, model, system, cleanMessages, temperature, maxTokens);
         } else if (provider === 'google') {

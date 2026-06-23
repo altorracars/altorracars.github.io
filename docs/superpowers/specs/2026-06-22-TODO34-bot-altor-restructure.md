@@ -286,11 +286,13 @@ por tool-use real (`callAnthropic` HOY no envía `tools[]`, `index.js:1063` — 
 **Decisiones dueño 2026-06-23 (GO-conditions resueltas):** (1) techo **$15/mes** ✅ · (2) App Check **MONITOR**
 (no enforce ahora) · (3) TTL = **anonimizar @30d** (no borrar; Ley 1581 minimización).
 
-**Estado F3:** **F3-a ✅ implementado en `dev`** (Tool Calling read-only `search_inventory` + `engine:'v2'`
-dormiente + v1 intacto; `functions/index.js`: `runToolLoop`/`composeSystemPromptV2`/`SEARCH_INVENTORY_TOOL`).
-**PEND DEPLOY** (con F1.a, como UNIDAD, justo antes del flip; prod corre v1 con LLM apagado → seguro).
-🔜 **F3-b:** `submit_lead` (CRM write + validación backend + `lead_quality` + cero-pérdida `incompleto`) →
-TTL mecanismo (`autoResolveIdleChats` → anonimizar @30d) → wiring `engine:'v2'` en cliente + flip A/B 10%.
+**Estado F3:** **F3-a ✅ + F3-b ✅ implementados en `dev`** (Tool Calling dormiente tras `engine:'v2'` +
+`_brain.enabled=false`; v1 intacto). Tools: `search_inventory` (read-only, payload cap 3) + `submit_lead`
+(escribe `solicitudes` origen 'bot' reusando `onSolicitudCreated` → dedup+asigna+alerta asesor; **validación
+backend** degrada `lead_quality` ante basura; **consent CONSERVADOR** `consentGiven=false` → lead capturado +
+asignado SIN asumir marketing = Ley-1581-safe + cero-pérdida; el texto de consent EXPRESO sigue gate P4).
+**PEND DEPLOY** (F1.a+F3 como UNIDAD, justo antes del flip; prod corre v1 con LLM apagado → seguro).
+🔜 TTL mecanismo (`autoResolveIdleChats` → anonimizar @30d) → wiring `engine:'v2'` en cliente + flip A/B 10%.
 
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
@@ -306,4 +308,5 @@ TTL mecanismo (`autoResolveIdleChats` → anonimizar @30d) → wiring `engine:'v
 - [x] **Implementación: F1.a ✅ · F2.a ✅ · F2.b ✅** (2026-06-23, en `dev`): techo gasto + memoria corta · cédula fuera · WhatsApp en gate + voz Colombia + 3 botones tontos en la bienvenida (reusan `data-quick-reply`).
 - [x] **F3 diseño execution-ready ✅ 2026-06-23** (§F3 arriba: tools + system-prompt rewrite + tool-loop en `callAnthropic` + flag `engine:'v2'` + gate App Check). Pend GO dueño.
 - [x] **F3-a ✅ 2026-06-23** (Tool Calling read-only `search_inventory` + `engine:'v2'` dormiente + v1 intacto, en `dev`; pend deploy). GO dueño resuelto: techo $15 · AppCheck monitor · TTL anonimizar@30d.
+- [x] **F3-b ✅ 2026-06-23** (`submit_lead`: escribe `solicitudes` origen 'bot' reusando `onSolicitudCreated`; validación backend + `lead_quality` + consent conservador `consentGiven=false` Ley-1581-safe; cero-pérdida; dormiente en `dev`). Consent EXPRESO = gate P4 antes del flip.
 - [ ] Implementar F1→F6 (plan arriba), verificación por fase §G.4. **F1 (candados + frenar hemorragia + TTL) primero** — bajo riesgo, valor inmediato.

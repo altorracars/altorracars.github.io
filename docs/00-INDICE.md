@@ -327,6 +327,8 @@
 | §227 | **Borradores rediseño f1+2 ⟦OPUS⟧** — recuperación local opt-in §107-safe + por-cuenta + galería pro + modal custom (comité ACOTADO). f3 Storage=Gemini-gated. #896. L-51/M-17 | 43874 |
 | §228 | **TODO-32 escalabilidad: índice on-demand NO se comprime (tope 36k→48k vía ratchet §173) + auto-índice = GUARDIÁN no reemplazo (cutover refutado=lossy) ⟦OPUS⟧** — comité+Gemini+debate; `scripts/brain-index.mjs` VERIFICA completitud (índice a mano ya completo: 245=245, 0 huecos; claim falso previo corregido §3.3); genoma frontmatter + tombstoning = Etapa 3 (abierta). | 43887 |
 | §229 | **TODO-32 paso (b): replicación del guardián ×brains = SELECTIVA por convención (no byte ciego) ⟦OPUS⟧** — inmob ✅ instalado (compat); bersaglio/insema = ADR N/A (headers fecha-leading / índice-por-proveniencia → copy=falsa cobertura M-10); guardián NO se funde al `brain-check` read-only (invariante L11, check #3 ya detecta el drift); +insema a peers. L-52. | 43899 |
+| §230 | **Limpieza Firebase 22/06 ⟦OPUS⟧** — Storage: 406 fotos huérfanas/78MB PURGADAS (`storage-orphans.mjs`+workflow, guardas anti-bug-#7, 256 vivas intactas). Firestore: −5 docs basura. Functions: `proactiveEngagement`(fallaba 288×/día)+`migrateLegacyUsers` borradas (59→57; 13 del bot→TODO-34). Hallazgo: cerebro decía 27 functions→59 (autocrítica→TODO-33). | 43918 |
+| §231 | **Doctrina de proceso 22/06 ⟦OPUS⟧** — (1) rama ÚNICA `dev` (no más proliferación; borrar mergeadas; `main`+`dev`). (2) **Pipeline Decisión Fuerte** (skill `proceso-decision-fuerte`): verificar→comité→Gemini→VERIFICAR cada claim (no asumir, aporte del dueño)→revalidar→veredicto→impl por fase; ACOTADO; gate solo-Decisión-Fuerte. Validado en vivo (TODO-34: comité cazó Ley 1581 que Gemini no vio). | 43928 |
 
 ---
 

@@ -234,6 +234,22 @@ Crudo `2026-06-23-TODO34-gemini-redteam-EPIC-CRUDO.md`. Verificado/adoptado:
 - **F5 — UX rediseño chat interno admin:** fase SEPARADA (distinto archivo/usuarios/riesgo).
 - **F6 — Poda:** borrar motor determinista `js/ai/` (5,600L) AL FINAL, con v2 estable.
 
+### Progreso F1 + refinamientos IAP (2026-06-23)
+- **F1.a ✅ COMMITTEADO (`f747f5e`):** techo global Anthropic-aware (`checkMonthlyBudget`/`recordSpend`,
+  `config/altorCost.monthlyBudgetUsd` default $15, `altorSpend/{YYYY-MM}`) + memoria corta `MAX_HISTORY_MSGS=8`.
+  Verificado: `_brain.enabled=false` (LLM apagado) → sin gasto vivo → deploy de F1 como unidad.
+- **IAP — ingestión: el `throw` de `normalizeSolicitud` SE QUEDA.** Protege el camino de FORMULARIOS web
+  (rechaza envíos sin email NI tel = spam). Quitarlo = contactos basura. El bot aún no escribe `solicitudes`
+  (eso es F3). → **cero-pérdida se mueve a F2** (capturar handle/WhatsApp ANTES de escalar), no debilitando el guard.
+- **IAP — TTL/auto-borrado: es DESTRUCTIVO + decisión LEGAL de retención (Ley 1581) → NO se improvisa.**
+  Pendiente decisión dueño: (a) ventana de retención (recom. conservadora ~30 días), (b) borrar vs anonimizar.
+  + el esquema necesita verificación fina (`radicado` se asigna en la creación → "sin radicado" NO es marcador
+  limpio de anónimo). Patrón base = `autoResolveIdleChats` (función programada existente).
+- **F1.c — App Check: foundation VERIFICADA.** La web activa App Check (`firebase-config.js:146`,
+  reCAPTCHA v3 `6Lfz…` + auto-refresh). Falta antes del enforce: confirmar que la llamada a `chatLLM` viaja
+  sobre la app firmada (anti lead-block; por eso está en monitor). **Mejor activar el enforce JUSTO ANTES de
+  encender el bot (F3)** — con el bot apagado no protege nada y no se puede verificar con tráfico real.
+
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
 - [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).

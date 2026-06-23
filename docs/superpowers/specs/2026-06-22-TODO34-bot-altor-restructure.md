@@ -122,10 +122,46 @@ Leídos: `onSolicitudCreated.js` · `ingestLead.js` · `normalize.js`. Hallazgos
   consentimiento (solo marca do-not-contact) → si almacenar PII pre-consentimiento debe bloquearse es
   gate abogado (P4/`42-LEGAL`), no técnico.
 
+## Dato nuevo del dueño (2026-06-23): el híbrido determinista YA se intentó y FALLÓ
+Reporte vivido: respuestas desalineadas, mal inventario, no entendía al cliente. **Diagnóstico verificado
+en código** (`dual-core.js`/`chatLLM`/`js/ai/`): el "híbrido" actual = **DualCore** (LLM-first else **Free
+Core determinista ~5,600L de NLP a mano** en 16 archivos). Con el LLM OFF (bot DIFERIDO), cada turno cayó al
+Free Core frágil → ESO es lo que falló. Y el path LLM **apelmaza el inventario en el system-prompt** y **no
+tiene Tool Calling real** (solo tag `[CTA:]`). **NUNCA se probó** "LLM entiende + Tool Calling determinista
+responde" (cero Anthropic tool-use). Anti-bot verificado: `chatLLM` onCall **SIN `enforceAppCheck`**
+(endpoint abierto), rate-limit por `sessionId`-cliente (brincable), sin tope global de gasto.
+
+## Comité acotado #2 — ARQUITECTURA (2026-06-23) · convergencia 4/4 en B-moderno
+4 expertos razonamiento-puro (arquitecto-LLM · seguridad-escéptico · FinOps · ejecutor), foreground, 0
+tools, inline (L-50). Crudo → bóveda `2026-06-23-TODO34-comite-arquitectura-CRUDO.md`. Cazaron:
+- **B (híbrido moderno) 4/4 — pero REDEFINIDO**: el "router" NO es NLP a mano (eso fue lo que falló) sino
+  **chips/botones de UI** para las 3-4 intenciones + **LLM+Tool Calling** para texto libre. Honra el "solo
+  LLM" del dueño en lo conversacional y deja GRATIS lo común.
+- **Reencuadre (arquitecto)**: A-vs-B era casi señuelo. Causa raíz del fracaso = **falta de Tool Calling +
+  acción no confiable**, que A y B resuelven igual. La decisión real: "LLM CON herramientas, inventario
+  JAMÁS en el prompt". Tools server-side: `search_inventory`/`create_lead`/`book_visit`; render del carro
+  por código determinista desde Firestore.
+- **Fallo fatal ORTOGONAL a A/B (seguridad)**: el captcha-de-UI que pidió el dueño es **COSMÉTICO** — un bot
+  hace POST directo a la onCall saltándose el HTML. **App Check ENFORCE en la función** (`enforceAppCheck:
+  true`) es lo único que cierra el Denial-of-Wallet. Va PRIMERO, antes del motor. + rate-limit por identidad
+  REAL (App Check token/UID/IP), no `sessionId`-cliente.
+- **Costo (FinOps)**: B ≈ 4-5× más barato (~$0.005-0.01 vs $0.025-0.04/conversación); A arriesga $20-50/mes;
+  **tope duro $12-15/mes**. Gate server-side Anthropic-aware (contador atómico Firestore que suma
+  `usage` real × precio + kill-switch) + tope de historial (6 msgs, corta el cuadrático) + prompt caching.
+- **Orden (ejecutor)**: **F1 cero-pérdida PRIMERO** (capturar handle + fallback `lead_anonimo` que nunca se
+  rechaza — independiente del motor) → guards (AppCheck+gate costo) → engine `v2` tras flag, A/B 10% →
+  clasificador chico → **podar determinista AL FINAL** (incremental, cuarentena `_legacy/`, nunca big-bang).
+
+**VEREDICTO preliminar (pre-Gemini):** **B-como-router-de-UI + LLM-con-tools**; guards seguridad/costo + F1
+ANTES del motor; migración incremental shadow→10%→100%; poda al final.
+
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
 - [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).
-- [x] Comité ACOTADO ✅ (2026-06-22): costo-Anthropic · Ley 1581 · breaker-vaporware · premisa-híbrida. Crudo `242bc41`.
-- [x] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ✅ 2026-06-23 (§ arriba): claim de colisión REFUTADO; GAP real = anónimos se PIERDEN (no se fusionan); consent ya plomeado.
-- [ ] **Decisión del dueño: (1) LLM-puro vs HÍBRIDO · (2) techo de costo USD/mes · (3) borrar `js/ai/`.**
-- [ ] Implementar tras decisiones — F1 con captura-de-handle + consentimiento + F2 con breaker server-side + telemetría de costo.
+- [x] Comité ACOTADO #1 ✅ (2026-06-22): costo-Anthropic · Ley 1581 · breaker-vaporware · premisa-híbrida. Crudo `242bc41`.
+- [x] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ✅ 2026-06-23: claim de colisión REFUTADO; GAP real = anónimos se PIERDEN; consent ya plomeado.
+- [x] Diagnóstico ARQUITECTURA verificado ✅ 2026-06-23 (`dual-core.js`): el híbrido viejo = Free Core determinista 5,600L (lo que falló); chatLLM sin AppCheck + inventario-en-prompt + sin tool-use.
+- [x] Comité ACOTADO #2 (arquitectura) ✅ 2026-06-23: convergencia 4/4 en **B-moderno** (router=UI + LLM+tools); captcha-UI=cosmético→App Check enforce; tope $12-15/mes; F1-primero.
+- [ ] **Capa 3 — Gemini red-team (anti-anclado)**: la corre el dueño; integrar + VERIFICAR cada claim.
+- [ ] **Decisión del dueño (reencuadrada): (1) confirmar B-moderno · (2) techo USD/mes (~$15) · (3) aceptar gate real = App Check enforce (no captcha visible).**
+- [ ] Implementar por fases: F1 cero-pérdida → guards (AppCheck+gate costo) → engine v2 tras flag A/B → clasificador chico → poda determinista al final.

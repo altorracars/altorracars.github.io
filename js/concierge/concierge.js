@@ -1188,6 +1188,11 @@
        ═══════════════════════════════════════════════════════════ */
     var _softContactRef = null;
     var _leadCreated = false;
+    // §57.9 reset-ref: su declaración se perdió en el split §119 → cleanSessionAndRender()
+    // lo asignaba sin declarar y en 'use strict' lanzaba ReferenceError al reabrir un chat
+    // finalizado (regresión: usuario atrapado). Hoy es write-only (el estado real del asesor
+    // vive en session.activeAsesor) → candidato a poda en pase anti-código-muerto con telemetría.
+    var _asesorJoinedAnnounced = false;
     function createSoftContact() {
         if (_leadCreated || !window.db) return;
         _leadCreated = true;

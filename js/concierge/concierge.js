@@ -341,7 +341,7 @@
         if (classification.intent === 'thanks') {
             var thanksVariants = [
                 '¡De nada' + (firstName ? ' ' + firstName : '') + '! Cualquier otra cosa, aquí estoy 🙌',
-                'Un gusto. Si necesitas algo más, escribime.',
+                'Un gusto. Si necesitas algo más, escríbeme.',
                 '¡Para servirte! Cualquier duda, sigo por aquí.'
             ];
             return { text: pickVariant(thanksVariants, ctx) };
@@ -361,12 +361,12 @@
         // pregunta abierta + opciones — sin escalar prematuramente ni cerrar.
         if (classification.intent === 'request_help') {
             var helpVariants = firstName ? [
-                '¡Por supuesto ' + firstName + '! 🙌 Cuéntame, ¿qué duda tenés? Puedo ayudarte con info de carros, precios, financiación, agendar visita, peritaje o consignación.',
-                'Claro ' + firstName + ', dime qué necesitas saber. ¿Es sobre algún auto en particular, financiación, o querés agendar una visita?',
-                '¡Estoy para eso ' + firstName + '! Cuéntame qué te interesa — te puedo mostrar el catálogo, explicarte cómo funciona la financiación, agendarte una visita, o pasarte con un asesor humano si preferís.'
+                '¡Por supuesto ' + firstName + '! 🙌 Cuéntame, ¿qué duda tienes? Puedo ayudarte con info de carros, precios, financiación, agendar visita, peritaje o consignación.',
+                'Claro ' + firstName + ', dime qué necesitas saber. ¿Es sobre algún auto en particular, financiación, o quieres agendar una visita?',
+                '¡Estoy para eso ' + firstName + '! Cuéntame qué te interesa — te puedo mostrar el catálogo, explicarte cómo funciona la financiación, agendarte una visita, o pasarte con un asesor humano si prefieres.'
             ] : [
-                '¡Por supuesto! 🙌 Cuéntame, ¿qué duda tenés? Puedo ayudarte con info de carros, precios, financiación, agendar visita, peritaje o consignación.',
-                'Claro, dime qué necesitas saber. ¿Es sobre algún auto en particular, financiación, o querés agendar una visita?',
+                '¡Por supuesto! 🙌 Cuéntame, ¿qué duda tienes? Puedo ayudarte con info de carros, precios, financiación, agendar visita, peritaje o consignación.',
+                'Claro, dime qué necesitas saber. ¿Es sobre algún auto en particular, financiación, o quieres agendar una visita?',
                 '¡Estoy para eso! Cuéntame qué te interesa — te puedo mostrar el catálogo, explicarte financiación, agendarte una visita, o pasarte con un asesor humano.'
             ];
             return { text: pickVariant(helpVariants, ctx) };
@@ -532,7 +532,7 @@
                     categoria: 'El ' + vTitle + ' es **' + (v.categoria || 'consultar') + '**.'
                 };
                 return {
-                    text: answers[attr] + ' ¿Querés ver la ficha completa o agendar una visita?',
+                    text: answers[attr] + ' ¿Quieres ver la ficha completa o agendar una visita?',
                     cta: { label: 'Ver ficha', action: 'goto-busqueda' }
                 };
             }
@@ -671,7 +671,7 @@
             setTimeout(function () { escalateToLive('triple_fallback'); }, 800);
             return {
                 text: (firstName ? firstName + ', ' : '') +
-                      'mejor te conecto con un asesor humano que te va a entender mejor lo que necesitás 🙋‍♂️ Un momento por favor.',
+                      'mejor te conecto con un asesor humano que te va a entender mejor lo que necesitas 🙋‍♂️ Un momento por favor.',
                 _isFallback: true
             };
         }
@@ -680,7 +680,7 @@
         if (session.botFallbackCount === 2) {
             return {
                 text: (firstName ? firstName + ', ' : '') +
-                      'todavía no estoy seguro de qué necesitás. Mirá, te dejo opciones — tocá la que te sirva:',
+                      'todavía no estoy seguro de qué necesitas. Mira, te dejo opciones — toca la que te sirva:',
                 quickReplies: [
                     { label: '🚗 Ver autos', payload: 'muéstrame autos' },
                     { label: '💰 Financiación', payload: 'quiero financiación' },
@@ -694,9 +694,9 @@
         // 1er fallback → pedir reformulación amablemente
         if (session.botFallbackCount === 1) {
             var clarifyVariants = [
-                'no estoy seguro de haber entendido bien. ¿Me lo podés decir de otra forma?',
-                'creo que no te entendí bien. ¿Me podés contar más?',
-                'mmm, no estoy seguro de qué necesitás. ¿Me explicás un poquito más?'
+                'no estoy seguro de haber entendido bien. ¿Me lo puedes decir de otra forma?',
+                'creo que no te entendí bien. ¿Me puedes contar más?',
+                'mmm, no estoy seguro de qué necesitas. ¿Me explicas un poquito más?'
             ];
             var clarifyText = clarifyVariants[Math.floor(Math.random() * clarifyVariants.length)];
             return {
@@ -716,7 +716,7 @@
         return {
             text: (firstName ? firstName + ', ' : '') +
                   'puedo ayudarte con info del catálogo, financiación, citas y peritaje. ' +
-                  'Escribime con más detalle qué necesitas, o si prefieres, te paso con un asesor.',
+                  'Escríbeme con más detalle qué necesitas, o si prefieres, te paso con un asesor.',
             cta: { label: 'Hablar con asesor', action: 'escalate' }
         };
     }
@@ -1164,7 +1164,7 @@
             saveSession(session);
             setTimeout(function () {
                 var firstName = session.nombre.split(' ')[0];
-                addMessage('bot', 'Genial ' + firstName + '. Para que un asesor te pueda contactar después, ¿me dejás tu correo o WhatsApp?');
+                addMessage('bot', 'Genial ' + firstName + '. Para que un asesor te pueda contactar después, ¿me dejas tu correo o WhatsApp?');
             }, 800);
             return;
         }
@@ -1176,7 +1176,7 @@
             session.level = Math.max(session.level, 3);
             saveSession(session);
             setTimeout(function () {
-                addMessage('bot', '¿Tenés un rango de presupuesto o tipo de vehículo en mente? Así te muestro las mejores opciones.');
+                addMessage('bot', '¿Tienes un rango de presupuesto o tipo de vehículo en mente? Así te muestro las mejores opciones.');
             }, 800);
             return;
         }
@@ -2303,6 +2303,14 @@
                     '</label>' +
                     '<button type="submit" class="cnc-gate-submit">Continuar</button>' +
                     '<div class="cnc-gate-error" id="cncGateError" role="alert" aria-live="polite"></div>' +
+                    // F2.b (EPIC): fallback WhatsApp en el MISMO punto del form = rescate del invariante
+                    // cero-pérdida (quien no completa el form NO se evapora: sigue por WhatsApp con contexto,
+                    // reusa handoverToWhatsApp). type="button" → NO dispara la validación del form.
+                    // (El TEXTO legal del 1er msg automático en WA = gate P4 abogado, §42-LEGAL — no se añade aquí.)
+                    '<div class="cnc-gate-or"><span>o</span></div>' +
+                    '<button type="button" class="cnc-gate-wa" id="cncGateWa">' +
+                        '<i data-lucide="message-circle" aria-hidden="true"></i> Prefiero seguir por WhatsApp' +
+                    '</button>' +
                 '</form>' +
             '</div>' +
             // Quick action — solo visible cuando gate completado
@@ -2441,6 +2449,23 @@
         var gateForm = document.getElementById('cncGateForm');
         if (gateForm) {
             gateForm.addEventListener('submit', handleGateSubmit);
+        }
+
+        // F2.b (EPIC) — fallback WhatsApp en el gate (cero-pérdida): si el cliente prefiere no
+        // llenar el form, lo pasamos a WhatsApp con el contexto que ya tengamos. Capturamos el
+        // nombre/celular tipeados SOLO si son válidos, para enriquecer buildWhatsAppSummary; no
+        // exigimos consent porque es el cliente quien inicia el contacto saliente hacia nosotros.
+        var gateWaBtn = document.getElementById('cncGateWa');
+        if (gateWaBtn && gateForm) {
+            gateWaBtn.addEventListener('click', function () {
+                try {
+                    var n = ((gateForm.nombre && gateForm.nombre.value) || '').trim();
+                    var c = ((gateForm.celular && gateForm.celular.value) || '').trim();
+                    if (n.length >= 2 && !session.nombre) session.nombre = n;
+                    if (/^3[0-9]{9}$/.test(c) && !session.telefono) session.telefono = c;
+                } catch (e) {}
+                handoverToWhatsApp();
+            });
         }
 
         // Aplicar estado inicial: mostrar gate si falta + sync header con activeAsesor
@@ -2722,7 +2747,7 @@
             } else {
                 greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
                         'Estoy aquí para ayudarte con info del catálogo, financiación, citas, peritaje y más. ' +
-                        'Si en algún momento querés hablar con un asesor humano, decímelo nomás.';
+                        'Si en algún momento quieres hablar con un asesor humano, dímelo.';
             }
             addMessage('bot', greet);
             applyGateVisibility();
@@ -2962,7 +2987,7 @@
                     closedBlock.innerHTML =
                         '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
                         '<div class="cnc-closed-title">Chat finalizado</div>' +
-                        '<div class="cnc-closed-sub">Gracias por escribirnos. Si querés volver a hablarnos, podrás iniciar una nueva conversación cuando quieras.</div>' +
+                        '<div class="cnc-closed-sub">Gracias por escribirnos. Si quieres volver a hablarnos, podrás iniciar una nueva conversación cuando quieras.</div>' +
                         (radicadoTxt
                             ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
@@ -3201,7 +3226,7 @@
             if (window.notify && window.notify.error) {
                 window.notify.error({
                     title: 'Error al generar la descarga',
-                    message: err.message || 'Intentá de nuevo más tarde.'
+                    message: err.message || 'Intenta de nuevo más tarde.'
                 });
             }
         }
@@ -3615,7 +3640,7 @@
      *
      *   1. Returning user (sesión previa <7 días con mensajes previos en
      *      otra apertura, NO en queue/closed): "¡Bienvenido de vuelta!"
-     *   2. En página de vehículo: "Veo que mirás el {marca modelo año}..."
+     *   2. En página de vehículo: "Veo que estás mirando el {marca modelo año}..."
      *   3. Logueado con nombre: "¡Hola {firstName}!..."
      *   4. Default genérico (sin contexto identificable): welcome estándar
      *
@@ -3652,7 +3677,7 @@
             return '<div class="cnc-bot-bubble cnc-welcome">' +
                 '<strong>' + greetReturning + '</strong>' +
                 '<br><br>' +
-                'Soy ALTOR. ¿Seguimos donde dejamos la conversación o necesitás algo nuevo?' +
+                'Soy ALTOR. ¿Seguimos donde dejamos la conversación o necesitas algo nuevo?' +
             '</div>';
         }
 
@@ -3666,8 +3691,8 @@
                 return '<div class="cnc-bot-bubble cnc-welcome">' +
                     '<strong>' + greetVehicle + '</strong>' +
                     '<br><br>' +
-                    'Veo que mirás el <strong>' + escapeHtml(vehTitle) + '</strong>. ' +
-                    '¿Tenés preguntas sobre este auto, o querés ver opciones similares?' +
+                    'Veo que estás mirando el <strong>' + escapeHtml(vehTitle) + '</strong>. ' +
+                    '¿Tienes preguntas sobre este auto, o quieres ver opciones similares?' +
                 '</div>';
             }
         }
@@ -3685,7 +3710,7 @@
         return '<div class="cnc-bot-bubble cnc-welcome">' +
             '<strong>👋 ¡Hola! Soy ALTOR</strong>, el Asistente Virtual IA de Altorra Cars.' +
             '<br><br>' +
-            'Pregúntame sobre vehículos, financiación, citas, peritaje o lo que necesites. Si querés, puedo conectarte directo con un asesor humano.' +
+            'Pregúntame sobre vehículos, financiación, citas, peritaje o lo que necesites. Si quieres, puedo conectarte directo con un asesor humano.' +
         '</div>';
     }
 

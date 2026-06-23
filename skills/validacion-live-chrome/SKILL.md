@@ -19,7 +19,8 @@ description: Usar DESPUÉS de un merge/deploy cuando los cambios YA están EN VI
   observable por el usuario** (bot/chat, login/sesión, formularios/leads, CRUD, render condicional) y
   necesito evidencia real que NO puedo obtener en localhost (L-08) ni leyendo el diff. **También**:
   flujos MULTI-SUPERFICie (público→admin: lo que entra por el bot/form debe aparecer en el panel/CRM)
-  y **auditorías de diseño/UX en vivo** (recolectar defectos visuales para el plan de rediseño).
+  y **auditorías de diseño/UX + copywriting + flujo comercial en vivo** (recorrer la conversación/journey
+  completa de saludo a cierre; recolectar defectos visuales, de copy y de flujo para el plan de rediseño).
 - **NO**: cambios sin superficie viva (docs, cerebro, tooling, refactor interno sin efecto observable);
   un bug YA reproducible → `systematic-debugging`; el gate del claim final → `verification-before-completion`.
 - **Relación con `caza-bugs`**: caza-bugs DECIDE *qué* recorrer (camino vivo desde estado-cero: vacío→1 y
@@ -81,6 +82,7 @@ Por cada escenario, exijo:
 - **No-probado**: lista explícita de lo que NO se recorrió (ciclos, caminos infelices, bordes) — para que YO no lo dé por bueno.
 - **Diseño/UX (para el plan de rediseño)**: defectos VISUALES con captura + ubicación + severidad — texto cortado o renderizado vertical (1 letra/línea), botones que se superponen/aplastan la burbuja, overflow, scroll-traps, desalineación, contraste pobre, z-index, responsive roto, estados rotos (vacío/carga/error). Se ACUMULAN para el rediseño, no se arreglan en el acto salvo que rompan el flujo.
 - **Consistencia entre sistemas** (si el cambio cruza superficies, p.ej. bot→CRM): el dato que ENTRA por una (chat/lead/escalación) debe aparecer COMPLETO y correcto en la otra (panel/CRM) — sin pérdida ni desfase en la ingestión. Cruzar conteos + contenido (nombre, celular, vehículo, canal, consentimiento).
+- **Copywriting & flujo comercial (saludo→cierre)**: recorre la conversación COMPLETA como cliente real (saludo → descubrimiento → captura de datos → agendar/escalar → cierre/finalizar) y caza: mensajes o bloques **duplicados/redundantes** (ej. el mismo CTA/quickReplies 2 veces), CTAs/opciones **prematuros** (pedir fecha antes de pedir datos), tono/ortografía/voz de marca inconsistente, pasos que sobran o faltan, momentos donde el cliente se **confunde o se estanca**, fricción comercial (¿pide datos en mal momento? ¿el CTA correcto en cada paso? ¿el bot aterriza la venta o divaga?). Reporta cita LITERAL + qué se siente mal + sugerencia. Va al backlog de rediseño.
 
 ## 4. Barandas de seguridad
 - **Credenciales = solo el dueño.** Nunca las pido, recibo ni pego.

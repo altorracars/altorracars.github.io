@@ -294,7 +294,7 @@ asignado SIN asumir marketing = Ley-1581-safe + cero-pérdida; el texto de conse
 **PEND DEPLOY** (F1.a+F3 como UNIDAD, justo antes del flip; prod corre v1 con LLM apagado → seguro).
 **TTL ✅** (`anonymizeIdleAnonChats`, scheduled diario, **DRY-RUN por defecto** `config/altorTTL.enabled=false`:
 marca anónima segura `!userId && !historicalUserKey` + closed + idle>30d; FASE 1 redacta PII del parent;
-messages-subcol = fase 2; idempotente/capado/auditado; pend deploy). 🔜 wiring `engine:'v2'` en cliente + flip A/B 10%.
+messages-subcol = fase 2; idempotente/capado/auditado; pend deploy). **wiring `engine:'v2'` ✅** (`concierge.js`: cohorte `V2_ROLLOUT_PCT`, default 100; fuera del cohorte → Free Core; inerte hasta el enable). 🔜 **FLIP** (secuencia): dueño mergea `dev`→`main` (M-12, su único paso hands-on) → **YO** `firebase deploy --only functions` + `_brain.enabled=true` + verificación eyes-on (kill-switch instantáneo + $15 cap + fallback Free Core ante error). Rampa opcional: bajar `V2_ROLLOUT_PCT`.
 
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
@@ -306,7 +306,8 @@ messages-subcol = fase 2; idempotente/capado/auditado; pend deploy). 🔜 wiring
 - [x] **Capa 3 — Gemini red-team ✅ 2026-06-23**: recomendó A (no B); verificado por-claim (precio refutado: Haiku 4.5 = $1/$5, no $0.25/$1.25). Crudo bóveda `2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
 - [x] **VEREDICTO FINAL ✅: Opción A** (solo-LLM + Tool Calling + botones tontos de navegación), guards-first. A↔B parcialmente semántica; con guards las ventajas de B son marginales; A gana por mantenibilidad + corte limpio + honra el instinto del dueño. Evidencia: ADJUDICACIÓN en `research-archive/2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
 - [x] **EPIC expandido + Comité #3 (captura/UX/qualifier) ✅ 2026-06-23** + **Gemini red-team del EPIC ✅** (reorden captura↔bot + 4 guardrails). Pipeline completo = 3 comités + 2 Gemini, verificado por-claim. Crudos bóveda.
-- [ ] **Confirmación dueño: plan EPIC 6 fases REORDENADAS (captura antes del bot) + techo $15/mes (techo global = el muro).**
+- [x] **Confirmación dueño ✅ 2026-06-23**: plan EPIC + techo $15 · App Check MONITOR · TTL anonimizar@30d · **GO al flip**.
+- [x] **Client wiring `engine:'v2'` ✅ 2026-06-23** (`concierge.js` cohorte `V2_ROLLOUT_PCT`; inerte hasta enable). 🔜 FLIP = dueño mergea → YO deploy+enable+verifico.
 - [x] **Implementación: F1.a ✅ · F2.a ✅ · F2.b ✅** (2026-06-23, en `dev`): techo gasto + memoria corta · cédula fuera · WhatsApp en gate + voz Colombia + 3 botones tontos en la bienvenida (reusan `data-quick-reply`).
 - [x] **F3 diseño execution-ready ✅ 2026-06-23** (§F3 arriba: tools + system-prompt rewrite + tool-loop en `callAnthropic` + flag `engine:'v2'` + gate App Check). Pend GO dueño.
 - [x] **F3-a ✅ 2026-06-23** (Tool Calling read-only `search_inventory` + `engine:'v2'` dormiente + v1 intacto, en `dev`; pend deploy). GO dueño resuelto: techo $15 · AppCheck monitor · TTL anonimizar@30d.

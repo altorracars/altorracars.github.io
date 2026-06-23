@@ -4110,6 +4110,18 @@
        la respuesta. Si la function no está deployada o el _brain
        está disabled, devuelve null y el caller hace fallback rules.
        ═══════════════════════════════════════════════════════════ */
+    // F3 (EPIC) — flip a v2: % de sesiones que usan el bot v2 (Tool Calling). El resto → Free Core
+    // (rampa A/B del comité: 10%→100%, sin romper chats vivos). Master kill = `_brain.enabled` (server,
+    // instantáneo). Con brain OFF esto es inerte (chatLLM retorna disabled igual). Para rampar: bajar el %.
+    var V2_ROLLOUT_PCT = 100;
+    function inV2Cohort(sid) {
+        if (V2_ROLLOUT_PCT >= 100) return true;
+        if (V2_ROLLOUT_PCT <= 0) return false;
+        var h = 0, s = String(sid || '');
+        for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+        return (h % 100) < V2_ROLLOUT_PCT;
+    }
+
     if (window.firebaseReady && window.AltorraAI && window.AltorraAI.registerProvider) {
         window.firebaseReady.then(function () {
             if (!window.functions) return;
@@ -4117,6 +4129,8 @@
                 var chatLLMCallable = window.functions.httpsCallable('chatLLM');
                 window.AltorraAI.registerProvider('chat', function (messages, opts) {
                     opts = opts || {};
+                    // F3 ramp: fuera del cohorte v2 → no llamamos al LLM (null → Free Core).
+                    if (!inV2Cohort(session.sessionId)) return Promise.resolve(null);
                     var payload = {
                         messages: messages,
                         sessionId: session.sessionId,
@@ -4124,7 +4138,10 @@
                         sourcePage: session.sourcePage || null,
                         profile: session.profile || null,
                         context: session.context || null,
-                        activeAsesor: session.activeAsesor || null
+                        activeAsesor: session.activeAsesor || null,
+                        // F3 (EPIC) — motor v2 (solo-LLM + Tool Calling). v1 (inventario-en-prompt)
+                        // queda dead-code → poda F6. Master switch real = _brain.enabled (server).
+                        engine: 'v2'
                     };
                     return chatLLMCallable(payload).then(function (result) {
                         var data = (result && result.data) || {};

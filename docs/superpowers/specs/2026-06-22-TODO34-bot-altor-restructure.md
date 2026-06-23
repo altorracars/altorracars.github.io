@@ -102,10 +102,30 @@ El comité (4 expertos + peer-review, bounded, no se colgó) cazó lo que Gemini
 server-side + gate de costo Anthropic-aware. El proceso multi-capa (Gemini + comité) VALIÓ: pasó de
 "F1+F2 listos" a un mapa de bloqueantes reales + una pregunta de arquitectura.
 
+## Verificación de contratos reales (2026-06-23, §3.3 — leído el código, NO asumido)
+Leídos: `onSolicitudCreated.js` · `ingestLead.js` · `normalize.js`. Hallazgos:
+- **Claim del comité "colisión de anónimos en `sanitizeContactId`" → REFUTADO.** `contactDedupKey`
+  (normalize.js:28-34) devuelve `email:…` | `phone:…` | **`null`**. Con `null`, `normalizeSolicitud`
+  **LANZA** (`normalize.js:60-62`) ANTES de tocar `sanitizeContactId` → `onSolicitudCreated` cae a
+  `failedIngestions` (dead-letter, ID determinista, retry). `sanitizeContactId` SOLO recibe claves
+  reales (`email:`/`phone:`), nunca constante/vacía. **Cero fusión silenciosa.** (El comité apuntó al
+  área correcta pero con el signo equivocado.)
+- **GAP REAL (opuesto al temido) — bloqueante de la visión "cero-pérdida":** la ruta de ingestión
+  **RECHAZA** todo lead sin email NI teléfono → dead-letter, **nunca entra al CRM**. Un chat ANÓNIMO
+  escalado por el bot, si F1 escribe `solicitud origen='altor'` sin handle, se **PIERDE en silencio** —
+  contradice "todo al CRM SÍ o SÍ". **F1 debe**: capturar email/tel ANTES de escribir la solicitud, o
+  capturar el chat anónimo por otra vía (el doc `conciergeChats` + bandeja ya existe) y emitir la
+  solicitud SOLO cuando haya handle.
+- **Consentimiento Ley 1581 — la plomería YA existe:** `mapConsent` (normalize.js:40-50) arma
+  `consent{email,whatsapp,calls}` desde `sol.consentGiven===true`; `doNotContact:!consent.email`. F1
+  solo debe setear `consentGiven` con la verdad del bot. ⚠️ La ingestión NO se BLOQUEA por falta de
+  consentimiento (solo marca do-not-contact) → si almacenar PII pre-consentimiento debe bloquearse es
+  gate abogado (P4/`42-LEGAL`), no técnico.
+
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
 - [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).
 - [x] Comité ACOTADO ✅ (2026-06-22): costo-Anthropic · Ley 1581 · breaker-vaporware · premisa-híbrida. Crudo `242bc41`.
+- [x] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ✅ 2026-06-23 (§ arriba): claim de colisión REFUTADO; GAP real = anónimos se PIERDEN (no se fusionan); consent ya plomeado.
 - [ ] **Decisión del dueño: (1) LLM-puro vs HÍBRIDO · (2) techo de costo USD/mes · (3) borrar `js/ai/`.**
-- [ ] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ANTES de codear.
-- [ ] Implementar tras decisiones — F1 con consentimiento + F2 con breaker server-side + telemetría de costo.
+- [ ] Implementar tras decisiones — F1 con captura-de-handle + consentimiento + F2 con breaker server-side + telemetría de costo.

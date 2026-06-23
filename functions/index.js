@@ -4067,7 +4067,7 @@ exports.autoResolveIdleChats = onSchedule({
             batch.set(msgRef, {
                 from: 'system',
                 systemType: 'auto-resolved',
-                text: '✓ Conversación cerrada automáticamente por inactividad (24h sin actividad). Si necesitás algo más, podés iniciar una nueva conversación.',
+                text: '✓ Conversación cerrada automáticamente por inactividad (24h sin actividad). Si necesitas algo más, puedes iniciar una nueva conversación.',
                 timestamp: nowIso,
                 _source: 'autoResolveIdleChats-§87'
             });

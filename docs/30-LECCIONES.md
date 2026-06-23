@@ -191,6 +191,11 @@
 - **Cómo se cazó**: el comité **ACOTADO** + peer-review cruzado anónimo convergió 4/4 en "estás resolviendo el problema equivocado" — el pedido es el **RESULTADO** (no perder trabajo, sin bugs), NO el **MECANISMO** (autosave-restore). En solitario la propuesta de autosave era convincente; el cruce anónimo la refutó.
 - **Principio**: pedido-literal ⊥ historial-verificado = **GATE de interpretación**, no problema de diseño. Resolver por evidencia (o preguntar la disyuntiva resultado-vs-mecanismo) ANTES de codear; ante la duda, **opt-in (ofrecer) > imponer**. Familia M-11 (verifica, no asumas) · §3.3.
 
+### M-18 · Un `firebase deploy` JAMÁS es paso del dueño — los deploys los ejecuto YO (§1); el dueño solo DECIDE ⟦OPUS-4.8⟧
+- **Defecto (2026-06-23)**: en el runbook de go-live del EPIC puse `firebase deploy --only functions` como paso numerado **del dueño**. §1 dice explícito "los deploys los ejecuta Claude" — la regla estaba CARGADA (CLAUDE.md auto-load cada sesión) y aun así no la apliqué. El dueño: "esto lo ajustamos hace tiempo y aún fallas".
+- **Causa**: confundí "la DECISIÓN de ir-live es del dueño" (dinero/producción, cierto) con "el ACTO de desplegar es del dueño" (FALSO). Familia **M-12** (yo commiteo+pusheo, el dueño solo mergea en web): misma frontera **dueño-DECIDE / Claude-EJECUTA**, ahora trasladada al deploy. Bajo contexto largo una regla always-on no disparó al redactar pasos.
+- **Corrección (trigger duro)**: antes de escribir CUALQUIER "pasos/runbook para el dueño", escanear cada paso → si es `firebase deploy` / desplegar / publicar functions·rules = **es MÍO, lo ejecuto yo**. El dueño SOLO: merge `dev`→`main` en web (M-12) · go/no-go · dinero · A/B · gates legales (P4). Config-docs de prod (`_brain.enabled`, `config/altorTTL.enabled`, etc.) = dueño-en-portal o yo-con-su-go, NUNCA vía MCP (callejón e). + §1 endurecido este turno.
+
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md`

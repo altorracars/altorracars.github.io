@@ -73,7 +73,7 @@ por contexto). En su lugar:
 - **Áreas**: sitio público (index, busqueda, detalle-vehiculo, marcas, etc.), panel admin (`admin.html` SPA), bot ALTOR Hub (cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`).
 - **Costo recurrente**: ~$2-5 USD/mes (solo LLM Anthropic Haiku 4.5; resto Firebase free tier).
 - **Secrets YA configurados** (NO re-preguntar ni reconfigurar): `EMAIL_USER`, `EMAIL_PASS`, `GITHUB_PAT`, `LLM_API_KEY`, `TELEGRAM_BOT_TOKEN`.
-- **Deploys** (no CI, no auto): **los ejecuta Claude** vía `firebase deploy --only firestore:rules|database|storage|functions` (CLI auth `altorracarssale@` presente en la máquina del cliente). Un cambio en el repo NO se aplica solo → Claude despliega cuando un cambio lo requiere.
+- **Deploys** (no CI, no auto): **los ejecuta Claude** vía `firebase deploy --only firestore:rules|database|storage|functions` (CLI auth `altorracarssale@` presente en la máquina del cliente). Un cambio NO se aplica solo → Claude despliega cuando se requiere; **un `firebase deploy` JAMÁS va como paso del dueño** (el dueño solo DECIDE: merge web M-12 · go/no-go · dinero · legal) — M-18.
 
 Detalle profundo de cualquier subsistema → `docs/00-INDICE.md` + tramo correspondiente del historial.
 

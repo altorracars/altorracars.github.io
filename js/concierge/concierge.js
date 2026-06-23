@@ -1054,7 +1054,7 @@
         // U.16 — Crear soft contact al primer mensaje (incluso sin escalate)
         // El lead queda en estado L0 inicialmente, se enriquece con cada turno
         if (!_leadCreated && session.messages.filter(function (m) { return m.from === 'user'; }).length >= 1) {
-            createSoftContact();
+            createSoftContact().catch(function () {});   // §TODO-37 fire-and-forget: el gate/turnos reintentan; no propagar rechazo
         }
 
         // U.19 — Detectar intención de opt-in en el mensaje del cliente
@@ -1127,7 +1127,7 @@
             }, 350 + Math.random() * 400);
         } else if (_leadCreated) {
             // Si está en modo live, actualizar el lead con cada nuevo mensaje
-            updateSoftContact();
+            updateSoftContact().catch(function () {});   // §TODO-37 fire-and-forget (guest enrich falla; el gate rescata)
         }
     }
 
@@ -1194,7 +1194,7 @@
     // vive en session.activeAsesor) → candidato a poda en pase anti-código-muerto con telemetría.
     var _asesorJoinedAnnounced = false;
     function createSoftContact() {
-        if (_leadCreated || !window.db) return;
+        if (_leadCreated || !window.db) return Promise.resolve();
         _leadCreated = true;
 
         var firstUserMsgs = session.messages.filter(function (m) { return m.from === 'user'; }).slice(0, 3);
@@ -1204,7 +1204,7 @@
             kind: 'lead',
             tipo: 'concierge_soft',
             origen: 'concierge',
-            nombre: session.nombre || 'Concierge ' + session.sessionId.slice(-6),
+            nombre: session.nombre || null,   // §TODO-37: NO fabricar placeholder ("Concierge/Cliente XXXX") → anónimo honesto (la ingestión lo trata status:anonymous, no como lead falso)
             email: session.email || null,
             telefono: session.telefono || null,
             comentarios: summary,
@@ -1229,15 +1229,23 @@
             try { lead = Object.assign({}, lead, window.AltorraCommSchema.computeMeta(lead)); } catch (e) {}
         }
 
-        window.db.collection('solicitudes').add(lead).then(function (ref) {
+        // §TODO-37: devolver la promesa + NO tragar el error en silencio. Si el CREATE falla,
+        // liberar _leadCreated para que un reintento/el gate re-cree (y no caiga en
+        // updateSoftContact, que un guest no puede ejecutar — rule UPDATE solo-admin).
+        return window.db.collection('solicitudes').add(lead).then(function (ref) {
             _softContactRef = ref;
             session.leadId = ref.id;
             saveSession(session);
-        }).catch(function () {});
+            return ref;
+        }).catch(function (err) {
+            _leadCreated = false;
+            console.warn('[Concierge] §TODO-37 soft-lead create falló:', err && (err.code || err.message));
+            throw err;
+        });
     }
 
     function updateSoftContact() {
-        if (!_softContactRef || !session.leadId || !window.db) return;
+        if (!_softContactRef || !session.leadId || !window.db) return Promise.resolve();
         var update = {
             level: session.level,
             lastMessageAt: new Date().toISOString()
@@ -1251,8 +1259,58 @@
             .slice(-5)
             .map(function (m) { return m.text; }).join(' / ');
         update.comentarios = lastUser;
-        window.db.collection('solicitudes').doc(session.leadId)
-            .update(update).catch(function () {});
+        // §TODO-37: devolver la promesa + NO tragar el error. Para un guest/no-admin la rule
+        // UPDATE (solo-admin) lo deniega → 400; el caller (gate) lo cacha y rescata por WhatsApp.
+        return window.db.collection('solicitudes').doc(session.leadId)
+            .update(update).catch(function (err) {
+                console.warn('[Concierge] §TODO-37 enrich update falló:', err && (err.code || err.message));
+                throw err;
+            });
+    }
+
+    // §TODO-37 Fase 1 — el GATE persiste el lead vía CREATE (NO update). La rule UPDATE de
+    // `solicitudes` es solo-admin (correcta → no se afloja), así que un guest no puede enriquecer
+    // su soft-lead; pero el CREATE público SÍ está permitido. Hacemos un CREATE completo con
+    // nombre/cel/correo + consentGiven (Ley 1581, whitelisteado en la rule). El soft-lead "phantom"
+    // del 1er mensaje (sin contacto) NO se vuelve contacto del CRM (la ingestión normalizeSolicitud
+    // lanza sin email/teléfono) → CERO duplicado; este CREATE es el lead real y limpio. La promesa
+    // se devuelve SIN .catch: handleGateSubmit la cacha → rescate WhatsApp si falla (red).
+    function persistGateLead() {
+        if (!window.db) return Promise.reject(new Error('no-db'));
+        var lastUser = session.messages
+            .filter(function (m) { return m.from === 'user'; })
+            .slice(-5).map(function (m) { return m.text; }).join(' / ');
+        var lead = {
+            kind: 'lead',
+            tipo: 'concierge_gate',
+            origen: 'concierge',
+            nombre: session.nombre || null,
+            email: session.email || null,
+            telefono: session.telefono || null,
+            consentGiven: !!(session.profile && session.profile.consent),
+            comentarios: lastUser,
+            estado: 'pendiente',
+            userId: session.uid || null,
+            clientCategory: session.uid ? 'registered' : 'guest',
+            sessionId: session.sessionId,
+            sourcePage: session.sourcePage,
+            sourceVehicleId: session.sourceVehicleId,
+            level: session.level,
+            createdAt: new Date().toISOString(),
+            lastMessageAt: new Date().toISOString()
+        };
+        if (typeof lead.nombre === 'string') lead.nombre = lead.nombre.slice(0, 120);
+        if (typeof lead.comentarios === 'string') lead.comentarios = lead.comentarios.slice(0, 3000);
+        if (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta) {
+            try { lead = Object.assign({}, lead, window.AltorraCommSchema.computeMeta(lead)); } catch (e) {}
+        }
+        return window.db.collection('solicitudes').add(lead).then(function (ref) {
+            _softContactRef = ref;
+            session.leadId = ref.id;   // apuntar al lead REAL (no al phantom)
+            _leadCreated = true;
+            saveSession(session);
+            return ref;
+        });
     }
 
     /**
@@ -1296,9 +1354,8 @@
         }
         addMessage('bot', msg);
 
-        // Soft contact / lead
-        if (!_leadCreated) createSoftContact();
-        else updateSoftContact();
+        // Soft contact / lead — §TODO-37 fire-and-forget (el rescate del lead se maneja en el gate)
+        Promise.resolve(!_leadCreated ? createSoftContact() : updateSoftContact()).catch(function () {});
 
         // Crear chat doc en Firestore + iniciar sync bidireccional + SLA watcher
         waitForAuthThen(function () {
@@ -2708,55 +2765,66 @@
         session._deferredQuery = null;
         saveSession(session);
 
-        // Crear soft contact con perfil COMPLETO (NER ya tiene todo)
-        if (!_leadCreated) createSoftContact();
-        else updateSoftContact();
-
         var firstName = fd.nombre.trim().split(/\s+/)[0];
 
-        // §86 Sprint C-S8 — Si el gate vino de progressive profiling
-        // (cliente pidió financiación/cita/peritaje y bot pidió datos),
-        // NO sembrar greeting genérico. En su lugar, agradecer brevemente
-        // y ejecutar la respuesta diferida con el intent original.
-        if (deferredQuery) {
-            addMessage('bot', '¡Listo, ' + firstName + '! 🙌 Ya tengo tus datos. Te respondo:');
-            applyGateVisibility();
-            // Ejecutar la respuesta diferida con delay corto para que el
-            // cliente vea primero el bubble de "Listo, X".
-            setTimeout(function () {
-                try {
-                    var resp = generateBotResponse(deferredQuery);
-                    if (resp && resp.text) {
-                        var deferredIntent = (session.context && session.context.lastIntent) || null;
-                        var deferredHasVCards = Array.isArray(resp.vehicleCards) && resp.vehicleCards.length > 0;
-                        addMessage('bot', resp.text, {
-                            cta: resp.cta,
-                            quickReplies: resp.quickReplies || getContextualQuickReplies(deferredIntent, deferredHasVCards),
-                            vehicleCards: resp.vehicleCards
-                        });
+        // §TODO-37 bleed-stop — persistir el lead y NO confirmar hasta el ACK del server.
+        // ANTES: el write iba fire-and-forget con .catch mudo → el bot decía "Ya tengo tus
+        // datos" aunque fallara (enrich de guest denegado=400 por la rule UPDATE solo-admin)
+        // → el lead se perdía en SILENCIO. Ahora: éxito real → confirmar; fallo → NO mentir,
+        // rescate cero-pérdida por WhatsApp (session ya tiene nombre/cel/correo).
+        // §TODO-37 Fase 1 — persistir el lead vía CREATE completo (persistGateLead), NO update.
+        var _persistP = persistGateLead();
+        Promise.resolve(_persistP).then(function () {
+            // §86 Sprint C-S8 — gate por progressive profiling: agradecer + ejecutar la
+            // respuesta diferida con el intent original (NO greeting genérico).
+            if (deferredQuery) {
+                addMessage('bot', '¡Listo, ' + firstName + '! 🙌 Ya tengo tus datos. Te respondo:');
+                applyGateVisibility();
+                setTimeout(function () {
+                    try {
+                        var resp = generateBotResponse(deferredQuery);
+                        if (resp && resp.text) {
+                            var deferredIntent = (session.context && session.context.lastIntent) || null;
+                            var deferredHasVCards = Array.isArray(resp.vehicleCards) && resp.vehicleCards.length > 0;
+                            addMessage('bot', resp.text, {
+                                cta: resp.cta,
+                                quickReplies: resp.quickReplies || getContextualQuickReplies(deferredIntent, deferredHasVCards),
+                                vehicleCards: resp.vehicleCards
+                            });
+                        }
+                    } catch (err) {
+                        console.warn('[Concierge] §86 deferred response error:', err && err.message);
                     }
-                } catch (err) {
-                    console.warn('[Concierge] §86 deferred response error:', err && err.message);
-                }
-            }, 900);
-        } else {
-            // Greeting personalizado normal (cliente completó gate inicial,
-            // no por progressive profiling — caso legacy o cliente que
-            // explícitamente quiso identificarse antes de chatear)
-            var sourceVeh = session.sourceVehicleId ? resolveVehicleTitleFromCache(session.sourceVehicleId) : null;
-            var greet;
-            if (sourceVeh) {
-                greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
-                        'Veo que te interesa el ' + sourceVeh + '. Pregúntame lo que quieras: ' +
-                        'precio final, financiación, peritaje, agendar una visita, o lo que necesites.';
+                }, 900);
             } else {
-                greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
-                        'Estoy aquí para ayudarte con info del catálogo, financiación, citas, peritaje y más. ' +
-                        'Si en algún momento quieres hablar con un asesor humano, dímelo.';
+                // Greeting personalizado (gate inicial / cliente que se identificó antes de chatear)
+                var sourceVeh = session.sourceVehicleId ? resolveVehicleTitleFromCache(session.sourceVehicleId) : null;
+                var greet;
+                if (sourceVeh) {
+                    greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
+                            'Veo que te interesa el ' + sourceVeh + '. Pregúntame lo que quieras: ' +
+                            'precio final, financiación, peritaje, agendar una visita, o lo que necesites.';
+                } else {
+                    greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
+                            'Estoy aquí para ayudarte con info del catálogo, financiación, citas, peritaje y más. ' +
+                            'Si en algún momento quieres hablar con un asesor humano, dímelo.';
+                }
+                addMessage('bot', greet);
+                applyGateVisibility();
             }
-            addMessage('bot', greet);
+        }).catch(function (err) {
+            // §TODO-37 — el lead NO se guardó (típico: enrich de guest denegado por la rule
+            // UPDATE solo-admin → 400, hasta que aterrice Fase 1). NO mentir. Rescate
+            // cero-pérdida: continuar por WhatsApp CON los datos (buildWhatsAppSummary lee
+            // session.nombre/telefono/email). El botón open-wa lo maneja el handler delegado
+            // del panel → handoverToWhatsApp (gesto del usuario → sin bloqueo de popup).
+            console.warn('[Concierge] §TODO-37 persistencia de lead FALLÓ (' + (err && (err.code || err.message)) + ') → rescate WhatsApp');
+            addMessage('bot', 'Gracias ' + firstName + '. Tuve un problema técnico para registrar tus datos aquí 😕. ' +
+                'Para no hacerte esperar, continúa por WhatsApp y un asesor te atiende enseguida con tu información:', {
+                cta: { action: 'open-wa', label: '📲 Continuar por WhatsApp' }
+            });
             applyGateVisibility();
-        }
+        });
 
         // Focus al input para escribir inmediatamente
         setTimeout(function () {
@@ -4190,7 +4258,7 @@
 
                         // Update soft contact si existe
                         if (typeof updateSoftContact === 'function') {
-                            updateSoftContact();
+                            updateSoftContact().catch(function () {});   // §TODO-37 fire-and-forget
                         }
                     }
                 });

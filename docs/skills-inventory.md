@@ -120,6 +120,7 @@ de mis capacidades. Implicaciones:
 | `free-tool-strategy` | | Herramientas gratis como growth | ✅ |
 | `referral-program` | | Programas de referidos | ✅ |
 | `paid-ads` | | Estrategia/targeting de paid ads | ✅ |
+| `meta-ads-diagnostico` | | Diagnosticar/optimizar campañas Meta Ads (framework 3 preguntas: ¿qué pasó? · ¿por qué? · ¿qué hacemos?) para e-commerce / mensajes WhatsApp / leads. Añadida ×repos 2026-06-23. | ✅ |
 | `pricing-strategy` | | Estrategia de precios | ✅ |
 | `product-marketing-context` | | Contexto de product marketing | ✅ |
 | `revops` | | Revenue operations | ✅ |

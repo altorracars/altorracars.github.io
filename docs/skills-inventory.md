@@ -47,6 +47,7 @@ de mis capacidades. Implicaciones:
 | `systematic-debugging` | | Debug metódico ante bug/fallo/comportamiento raro | ✅ |
 | `verification-before-completion` | | Verificar antes de declarar "hecho" | ✅ |
 | `caza-bugs` | | **Reflejo al TOCAR/ROZAR** un subsistema con estado observable → recorrer su CAMINO VIVO end-to-end desde estado-cero (vacío→1 y N→vacío + recarga), no solo el diff; + escalada calibrada (N0 barato / N1 pesado). NO es `systematic-debugging` (bug ya visible) ni `verification-before-completion` (claim final). Portable. Origen ADR §90 bersaglio + W-10. | ✅ |
+| `anti-codigo-muerto` | | **Anti Knight Capital** ($460M / el "8º servidor"): al estrenar código que reemplaza algo viejo, RETIRAR/CUARENTENAR lo viejo (no apilar) — functions huérfanas (gate `deadcode:check` = diff desplegadas↔source), JS sin referencia, flags reutilizados (tombstones), deploy incompleto; **cuarentena>borrado**; camino vivo con motor ACTUAL. Gate mecánico + skill + workflow bounded. Portable. TODO-35 / M-19, veredicto 2026-06-23. **Pend: propagar ×3 peers + P2 workflow.** | ✅ |
 | `requesting-code-review` | | Pedir revisión de código | ✅ |
 | `receiving-code-review` | | Recibir/aplicar feedback de revisión | ✅ |
 | `finishing-a-development-branch` | | Cerrar una rama de desarrollo | ✅ |

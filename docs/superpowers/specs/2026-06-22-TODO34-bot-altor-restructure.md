@@ -277,14 +277,20 @@ por tool-use real (`callAnthropic` HOY no envía `tools[]`, `index.js:1063` — 
 4. **Flag `engine:'v2'`:** el cliente manda `engine` en `data`; el server bifurca v2 (tool loop) vs v1 (`[CTA:]`
    actual) — **v1 INTACTO** hasta retirar el flag (corte limpio = F6). A/B por sessionId 10%→100%.
 5. **GATE antes de encender (F1 diferido):** `enforceAppCheck:true` en el `onCall` (hoy AUSENTE, `index.js:1369`)
-   + rate-limit por App Check token/IP (no `sessionId`) + turn-cap ~15 (escala a humano) + indicador
-   "Escribiendo…" (latencia 4-6s onCall→Anthropic). Activar JUSTO antes del flip (verificable solo con tráfico real).
+   + rate-limit por IP + turn-cap ~15 (escala a humano) + indicador "Escribiendo…" (latencia 4-6s
+   onCall→Anthropic). **DECISIÓN DUEÑO 23/06: App Check QUEDA EN MONITOR** (bajo flujo; el **techo global $15
+   es el muro** anti-DoW — lo que Gemini llamó "tu salvavidas"); enforce diferido a "cuando crezcamos".
 6. **Verificación F3:** unit del tool loop (mock Anthropic `tool_use`); E2E live `engine:'v2'` cohorte 10%
    (post-merge, dueño); **recorrer `submit_lead` cero-pérdida end-to-end** (anónimo sin handle → `incompleto`, NO se pierde).
 
-**GO-conditions (dueño) para arrancar F3:** (1) confirmar techo $/mes (default **$15** ya activo en
-`config/altorCost`) · (2) OK a activar App Check enforce justo antes del flip · (3) decisión TTL retención
-(borrar vs anonimizar + ventana, Ley 1581).
+**Decisiones dueño 2026-06-23 (GO-conditions resueltas):** (1) techo **$15/mes** ✅ · (2) App Check **MONITOR**
+(no enforce ahora) · (3) TTL = **anonimizar @30d** (no borrar; Ley 1581 minimización).
+
+**Estado F3:** **F3-a ✅ implementado en `dev`** (Tool Calling read-only `search_inventory` + `engine:'v2'`
+dormiente + v1 intacto; `functions/index.js`: `runToolLoop`/`composeSystemPromptV2`/`SEARCH_INVENTORY_TOOL`).
+**PEND DEPLOY** (con F1.a, como UNIDAD, justo antes del flip; prod corre v1 con LLM apagado → seguro).
+🔜 **F3-b:** `submit_lead` (CRM write + validación backend + `lead_quality` + cero-pérdida `incompleto`) →
+TTL mecanismo (`autoResolveIdleChats` → anonimizar @30d) → wiring `engine:'v2'` en cliente + flip A/B 10%.
 
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
@@ -299,4 +305,5 @@ por tool-use real (`callAnthropic` HOY no envía `tools[]`, `index.js:1063` — 
 - [ ] **Confirmación dueño: plan EPIC 6 fases REORDENADAS (captura antes del bot) + techo $15/mes (techo global = el muro).**
 - [x] **Implementación: F1.a ✅ · F2.a ✅ · F2.b ✅** (2026-06-23, en `dev`): techo gasto + memoria corta · cédula fuera · WhatsApp en gate + voz Colombia.
 - [x] **F3 diseño execution-ready ✅ 2026-06-23** (§F3 arriba: tools + system-prompt rewrite + tool-loop en `callAnthropic` + flag `engine:'v2'` + gate App Check). Pend GO dueño.
+- [x] **F3-a ✅ 2026-06-23** (Tool Calling read-only `search_inventory` + `engine:'v2'` dormiente + v1 intacto, en `dev`; pend deploy). GO dueño resuelto: techo $15 · AppCheck monitor · TTL anonimizar@30d.
 - [ ] Implementar F1→F6 (plan arriba), verificación por fase §G.4. **F1 (candados + frenar hemorragia + TTL) primero** — bajo riesgo, valor inmediato.

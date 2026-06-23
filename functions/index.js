@@ -1060,7 +1060,18 @@ const PRICE_CACHE_READ_PER_MTOK = 0.10;  // cache_read (~0.1× input)
  *   Header anthropic-version 2023-06-01 ya soporta prompt caching stable
  *   (no requiere beta header).
  */
-async function callAnthropic(apiKey, model, system, messages, temperature, maxTokens) {
+async function callAnthropic(apiKey, model, system, messages, temperature, maxTokens, tools) {
+    // Prompt caching: el system prompt es la parte fija que se reutiliza entre turnos
+    // del mismo chat. Lo enviamos como bloque structured con cache_control.
+    const body = {
+        model: model,
+        max_tokens: maxTokens,
+        temperature: temperature,
+        system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+        messages: messages
+    };
+    // F3 (EPIC): Tool Calling — el caller v2 pasa tools[]; v1 las omite → body SIN tools = idéntico a antes.
+    if (tools && tools.length) body.tools = tools;
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -1068,22 +1079,7 @@ async function callAnthropic(apiKey, model, system, messages, temperature, maxTo
             'anthropic-version': '2023-06-01',
             'content-type': 'application/json'
         },
-        body: JSON.stringify({
-            model: model,
-            max_tokens: maxTokens,
-            temperature: temperature,
-            // Prompt caching: el system prompt es la parte fija que se reutiliza
-            // entre turnos del mismo chat. Lo enviamos como bloque structured
-            // con cache_control para que Anthropic lo cachee.
-            system: [
-                {
-                    type: 'text',
-                    text: system,
-                    cache_control: { type: 'ephemeral' }
-                }
-            ],
-            messages: messages
-        })
+        body: JSON.stringify(body)
     });
     if (!resp.ok) {
         const errBody = await resp.text();
@@ -1094,8 +1090,10 @@ async function callAnthropic(apiKey, model, system, messages, temperature, maxTo
     // data.usage incluye cache_creation_input_tokens (write) y
     // cache_read_input_tokens (read) cuando el caching aplica.
     // Los exponemos para que el cliente / admin pueda monitorearlo.
+    // F3 (EPIC): `content` (array de bloques: text | tool_use) lo usa el tool-loop v2.
     return {
         text: text,
+        content: data.content || [],
         usage: data.usage || null,
         model: data.model || model,
         stopReason: data.stop_reason || null
@@ -1366,6 +1364,154 @@ async function recordSpend(costUsd) {
     } catch (e) { console.warn('[recordSpend] no registrado:', e.message); }
 }
 
+// ── F3 (EPIC) — solo-LLM + Tool Calling (engine:'v2', DORMIENTE hasta el flip del dueño) ──────
+const MAX_TOOL_ITERATIONS = 3; // anti-loop: máx ejecuciones de tool por turno
+
+// Tool de catálogo: read-only, payload CAPADO a 3 (anti Tool-Hallucination / DDoS interno — Gemini).
+const SEARCH_INVENTORY_TOOL = {
+    name: 'search_inventory',
+    description: 'Consulta el catálogo de vehículos disponibles de Altorra Cars en tiempo real. ' +
+        'Úsala SIEMPRE que el cliente pregunte por autos, marcas, precios o disponibilidad. ' +
+        'NUNCA inventes vehículos, precios, años ni kilometraje: si esta herramienta no lo devuelve, no existe. ' +
+        'Devuelve máximo 3 resultados.',
+    input_schema: {
+        type: 'object',
+        properties: {
+            marca: { type: 'string', description: 'Marca (ej. Mazda, Toyota). Opcional.' },
+            modelo: { type: 'string', description: 'Modelo. Opcional.' },
+            year_min: { type: 'integer', description: 'Año mínimo. Opcional.' },
+            year_max: { type: 'integer', description: 'Año máximo. Opcional.' },
+            precio_max: { type: 'integer', description: 'Precio máximo en COP. Opcional.' },
+            tipo: { type: 'string', description: 'Categoría (SUV, sedán, pickup, etc.). Opcional.' }
+        }
+    }
+};
+
+/** Ejecuta search_inventory: lee vehiculos disponibles, filtra por params, cap 3. READ-ONLY. */
+async function executeSearchInventory(input) {
+    input = input || {};
+    const norm = (s) => String(s == null ? '' : s).toLowerCase().trim();
+    let items = await fetchInventoryForLLM(100);
+    if (input.marca) items = items.filter((v) => norm(v.marca).indexOf(norm(input.marca)) !== -1);
+    if (input.modelo) items = items.filter((v) => norm(v.modelo).indexOf(norm(input.modelo)) !== -1);
+    if (typeof input.year_min === 'number') items = items.filter((v) => (v.year || 0) >= input.year_min);
+    if (typeof input.year_max === 'number') items = items.filter((v) => (v.year || 0) <= input.year_max);
+    if (typeof input.precio_max === 'number') items = items.filter((v) => (v.precioOferta || v.precio || 0) <= input.precio_max);
+    if (input.tipo) items = items.filter((v) => norm(v.categoria).indexOf(norm(input.tipo)) !== -1);
+    return {
+        count: items.length,
+        vehicles: items.slice(0, 3).map((v) => ({
+            id: v.id, marca: v.marca, modelo: v.modelo, year: v.year,
+            precio: v.precioOferta || v.precio, km: v.kilometraje,
+            categoria: v.categoria, estado: v.estado
+        }))
+    };
+}
+
+/**
+ * F3 — loop de Tool Calling (engine v2). Llama a Anthropic con tools; mientras el modelo pida
+ * tool_use, ejecuta el tool server-side y reinyecta el resultado (cap MAX_TOOL_ITERATIONS).
+ * Acumula el usage de TODAS las iteraciones para que el techo global ($, F1.a) cuente el costo real.
+ */
+async function runToolLoop(apiKey, model, system, messages, temperature, maxTokens) {
+    const tools = [SEARCH_INVENTORY_TOOL];
+    const convo = messages.slice();
+    const agg = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+    let lastText = '';
+    let lastModel = model;
+    const addUsage = (u) => {
+        if (!u) return;
+        agg.input_tokens += u.input_tokens || 0;
+        agg.output_tokens += u.output_tokens || 0;
+        agg.cache_creation_input_tokens += u.cache_creation_input_tokens || 0;
+        agg.cache_read_input_tokens += u.cache_read_input_tokens || 0;
+    };
+    for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+        const r = await callAnthropic(apiKey, model, system, convo, temperature, maxTokens, tools);
+        addUsage(r.usage);
+        lastModel = r.model || lastModel;
+        const content = Array.isArray(r.content) ? r.content : [];
+        const textOut = content.filter((b) => b && b.type === 'text').map((b) => b.text).join('\n');
+        if (textOut) lastText = textOut;
+        const toolUses = content.filter((b) => b && b.type === 'tool_use');
+        if (r.stopReason !== 'tool_use' || toolUses.length === 0) {
+            return { text: lastText || r.text || '', usage: agg, model: lastModel, stopReason: r.stopReason };
+        }
+        // Continuación tool-use: turno del assistant (con los bloques tool_use) + turno user (tool_results).
+        convo.push({ role: 'assistant', content: content });
+        const toolResults = [];
+        for (const tu of toolUses) {
+            let out;
+            try {
+                out = (tu.name === 'search_inventory')
+                    ? await executeSearchInventory(tu.input)
+                    : { error: 'herramienta desconocida' };
+            } catch (e) { out = { error: 'fallo al ejecutar la herramienta' }; }
+            toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify(out) });
+        }
+        convo.push({ role: 'user', content: toolResults });
+    }
+    // Tope de iteraciones alcanzado → último texto o fallback seguro a escalar.
+    return {
+        text: lastText || 'Permíteme conectarte con un asesor para ayudarte mejor con eso.',
+        usage: agg, model: lastModel, stopReason: 'max_tool_iterations'
+    };
+}
+
+/**
+ * F3 — system prompt v2 (engine:'v2'): idéntico al v1 salvo que el inventario NO se inyecta
+ * (lo trae la tool search_inventory) + instrucciones de tool-use + guardrail de precios.
+ * v1 (composeSystemPrompt) queda INTACTO hasta la poda F6.
+ */
+function composeSystemPromptV2(brain, chatSummary, sessionContext) {
+    const id = brain.identidad || {};
+    const ctx = brain.contexto || {};
+    const valores = (ctx.valores || []).join(', ');
+    const servicios = (ctx.servicios || []).map((s) => '- ' + s).join('\n');
+    const reglas = (brain.reglas_seguridad || []).map((r) => '- ' + r).join('\n');
+
+    let summarySection = '';
+    if (chatSummary) summarySection = '\n\nRESUMEN DE LA CONVERSACIÓN HASTA AHORA:\n' + chatSummary;
+
+    let sessionSection = '';
+    if (sessionContext) {
+        const bits = [];
+        if (sessionContext.profile && sessionContext.profile.nombre) {
+            bits.push('Cliente: ' + sessionContext.profile.nombre +
+                (sessionContext.profile.apellido ? ' ' + sessionContext.profile.apellido : ''));
+        }
+        if (sessionContext.sourceVehicleId) bits.push('Cliente entró desde la ficha del vehículo ID: ' + sessionContext.sourceVehicleId);
+        if (sessionContext.activeAsesor && sessionContext.activeAsesor.nombre) bits.push('Asesor humano activo en este chat: ' + sessionContext.activeAsesor.nombre);
+        if (bits.length > 0) sessionSection = '\n\nCONTEXTO DE ESTA CONVERSACIÓN:\n' + bits.map((b) => '- ' + b).join('\n');
+    }
+
+    return [
+        id.personalidad || 'Soy ALTOR, asistente virtual de Altorra Cars.',
+        '',
+        'CONTEXTO DEL NEGOCIO:',
+        ctx.descripcion || '',
+        valores ? 'NUESTROS VALORES: ' + valores : '',
+        servicios ? 'SERVICIOS:\n' + servicios : '',
+        '',
+        'INSTRUCCIONES:',
+        brain.instrucciones || '',
+        '',
+        'HERRAMIENTAS: Tienes la herramienta search_inventory para consultar el catálogo EN TIEMPO REAL. ' +
+            'Úsala SIEMPRE que el cliente pregunte por autos, marcas, precios o disponibilidad. ' +
+            'NUNCA inventes vehículos, precios, años ni kilometraje: si search_inventory no lo devolvió, no existe.',
+        '',
+        'GUARDRAIL DE PRECIOS (INVIOLABLE): ESTRICTAMENTE PROHIBIDO NEGOCIAR PRECIOS, OFRECER DESCUENTOS O ' +
+            'ACEPTAR OFERTAS/CONTRAOFERTAS. LOS PRECIOS PUBLICADOS SON FINALES. Si el cliente ofrece un monto ' +
+            'o pide rebaja, dile que cada caso lo evalúa un asesor humano y ofrécele hablar con uno. ' +
+            'NUNCA prometas crédito aprobado, cupo ni cierres una venta dentro del chat.',
+        reglas ? 'REGLAS DE SEGURIDAD (INVIOLABLES):\n' + reglas : '',
+        sessionSection,
+        summarySection,
+        '',
+        id.tono ? 'TONO: ' + id.tono : ''
+    ].filter(Boolean).join('\n').trim();
+}
+
 exports.chatLLM = onCall({
     region: 'us-central1',
     secrets: [llmApiKey],
@@ -1428,8 +1574,13 @@ exports.chatLLM = onCall({
         };
     }
 
-    // 4. Inventario en tiempo real
-    const inventory = await fetchInventoryForLLM(MAX_INVENTORY_VEHICLES);
+    // F3 (EPIC) — motor: 'v2' = solo-LLM + Tool Calling; default 'v1' = inventario-en-prompt + [CTA:].
+    // DOBLE LLAVE: además de este flag (que el cliente aún no envía), brain.enabled (arriba) lo mantiene
+    // TODO apagado en prod. v2 es inalcanzable hasta el flip explícito del dueño.
+    const engine = (data.engine === 'v2') ? 'v2' : 'v1';
+
+    // 4. Inventario en tiempo real — SOLO v1 lo inyecta al prompt. v2 lo consulta vía tool search_inventory.
+    const inventory = engine === 'v1' ? await fetchInventoryForLLM(MAX_INVENTORY_VEHICLES) : [];
 
     // 4.5 F.1 — Cargar summary previo del chat si existe (chats largos)
     let chatSummary = null;
@@ -1453,8 +1604,12 @@ exports.chatLLM = onCall({
         activeAsesor: data.activeAsesor || null
     };
 
-    // 5. Compose system prompt (con tool/CTA hints)
-    const system = composeSystemPrompt(brain, inventory, chatSummary, sessionContext) +
+    // 5. Compose system prompt (con tool/CTA hints). v2 usa el prompt SIN inventario inline
+    // (lo trae search_inventory); v1 inyecta el inventario como antes.
+    const baseSystem = engine === 'v2'
+        ? composeSystemPromptV2(brain, chatSummary, sessionContext)
+        : composeSystemPrompt(brain, inventory, chatSummary, sessionContext);
+    const system = baseSystem +
         // F.2 — Function-calling lite: el LLM puede sugerir un CTA accionable
         // al final de su respuesta usando un tag especial que el cliente
         // parsea. No es full tool-use (que requeriría re-llamada) pero
@@ -1502,12 +1657,15 @@ exports.chatLLM = onCall({
 
     let result;
     try {
-        if (provider === 'openai') {
+        if (engine === 'v2' && provider === 'anthropic') {
+            // F3 (EPIC) — solo-LLM + Tool Calling (search_inventory). v1 intacto en el else.
+            result = await runToolLoop(apiKey, model, system, cleanMessages, temperature, maxTokens);
+        } else if (provider === 'openai') {
             result = await callOpenAI(apiKey, model, system, cleanMessages, temperature, maxTokens);
         } else if (provider === 'google') {
             result = await callGoogle(apiKey, model, system, cleanMessages, temperature, maxTokens);
         } else {
-            // default anthropic
+            // default anthropic (v1: inventario en prompt + [CTA:])
             result = await callAnthropic(apiKey, model, system, cleanMessages, temperature, maxTokens);
         }
     } catch (err) {

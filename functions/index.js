@@ -4115,6 +4115,117 @@ exports.autoResolveIdleChats = onSchedule({
     console.log(`[autoResolveIdleChats] §87 completado: ${resolved} chats cerrados, ${errors} errores. Total candidatos en mode=live: ${candidatesSnap.size}.`);
 });
 
+// ════════════════════════════════════════════════════════════════════
+// F3 (EPIC, TTL) — anonymizeIdleAnonChats — minimización Ley 1581
+// ════════════════════════════════════════════════════════════════════
+// Decisión dueño 23/06: ANONIMIZAR (no borrar) las conversaciones ANÓNIMAS
+// inactivas > N días. Marcador anónimo SEGURO (spec §EPIC: 'radicado' NO sirve,
+// se asigna a todas): !userId && !historicalUserKey (nunca se identificó) + status='closed'.
+//
+// SEGURIDAD (patrón f3 §230): DRY-RUN por DEFECTO. config/altorTTL.enabled (default
+// false) → solo CUENTA y loguea candidatos + audita; MUTA NADA. El dueño revisa el
+// dry-run en auditLog y recién entonces pone enabled=true. Aun deployado, inerte (dry).
+// FASE 1 = redacta el PII estructurado del doc parent (nombre/tel/email/profile).
+// FASE 2 (futuro) = redactar el texto de la subcolección messages/ (PII libre).
+// Idempotente: skip docs con _piiPurged. Cap MAX_PER_RUN. retentionDays configurable.
+// ════════════════════════════════════════════════════════════════════
+exports.anonymizeIdleAnonChats = onSchedule({
+    schedule: 'every 24 hours',
+    timeZone: 'America/Bogota',
+    region: 'us-central1'
+}, async () => {
+    const startedAt = Date.now();
+    const nowIso = new Date(startedAt).toISOString();
+
+    // Config: dry-run por defecto (enabled=false) + ventana de retención (default 30d).
+    let enabled = false;
+    let retentionDays = 30;
+    try {
+        const cfg = await db.doc('config/altorTTL').get();
+        if (cfg.exists) {
+            const d = cfg.data() || {};
+            enabled = d.enabled === true;
+            if (typeof d.retentionDays === 'number' && d.retentionDays >= 1) retentionDays = d.retentionDays;
+        }
+    } catch (e) { console.warn('[ttl] config read failed → dry-run + 30d:', e.message); }
+
+    const cutoffMs = startedAt - retentionDays * 24 * 60 * 60 * 1000;
+    const mode = enabled ? 'ANONIMIZAR' : 'DRY-RUN';
+    console.log(`[ttl] iniciado · modo=${mode} · retención=${retentionDays}d`);
+
+    let snap;
+    try {
+        snap = await db.collection('conciergeChats').where('status', '==', 'closed').limit(500).get();
+    } catch (e) { console.error('[ttl] fetch failed:', e.message); return; }
+    if (snap.empty) { console.log('[ttl] sin chats cerrados'); return; }
+
+    const candidates = [];
+    snap.forEach((doc) => {
+        const d = doc.data() || {};
+        if (d._piiPurged) return; // idempotencia
+        // Marcador ANÓNIMO seguro: nunca se identificó (sin uid ni clave histórica).
+        if (d.userId || d.historicalUserKey) return;
+        // Idle: lastMessageAt (fallback closedAt) más viejo que la ventana.
+        let lastMs = 0;
+        const tsRaw = d.lastMessageAt || d.closedAt;
+        if (tsRaw) { const t = new Date(tsRaw).getTime(); if (!isNaN(t)) lastMs = t; }
+        if (!lastMs || lastMs > cutoffMs) return;
+        candidates.push({ ref: doc.ref, sessionId: doc.id });
+    });
+
+    // NOTA (no silent cap): query limitada a 500 cerrados/corrida (sin orderBy para no exigir
+    // índice compuesto); si el volumen real lo supera, el dry-run lo evidencia → fase 2 añade índice.
+    if (candidates.length === 0) {
+        console.log(`[ttl] ${mode}: 0 candidatos (anónimos sin identificar, cerrados, >${retentionDays}d) en ${snap.size} cerrados escaneados`);
+        return;
+    }
+
+    // DRY-RUN (defecto): solo reporta + audita. CERO mutación.
+    if (!enabled) {
+        const sample = candidates.slice(0, 5).map((c) => c.sessionId);
+        console.log(`[ttl] DRY-RUN: ${candidates.length} candidatos a anonimizar (muestra: ${sample.join(', ')}). Pon config/altorTTL.enabled=true para ejecutar.`);
+        try {
+            await db.collection('auditLog').add({
+                type: 'chat.ttl-dryrun', candidates: candidates.length, retentionDays,
+                sample, scanned: snap.size, timestamp: nowIso, actor: 'system',
+                actorName: 'Cloud Function (anonymizeIdleAnonChats · dry-run)',
+                durationMs: Date.now() - startedAt
+            });
+        } catch (e) { console.warn('[ttl] dry-run audit skip:', e.message); }
+        return;
+    }
+
+    // ENABLED: redacta el PII estructurado del parent (FASE 1). Cap defensivo + batch.
+    const MAX_PER_RUN = 200;
+    const toProcess = candidates.slice(0, MAX_PER_RUN);
+    let purged = 0, errors = 0;
+    let batch = db.batch(), ops = 0;
+    for (const c of toProcess) {
+        try {
+            batch.update(c.ref, {
+                nombre: null, telefono: null, userEmail: null, email: null,
+                profile: null, historicalUserKey: null,
+                lastMessage: '[conversación anonimizada por retención]',
+                _piiPurged: true, _anonymizedAt: nowIso, _anonymizedBy: 'anonymizeIdleAnonChats'
+            });
+            ops++; purged++;
+            if (ops >= 450) { await batch.commit(); batch = db.batch(); ops = 0; }
+        } catch (e) { errors++; console.warn(`[ttl] ${c.sessionId} falló:`, e.message); }
+    }
+    if (ops > 0) { try { await batch.commit(); } catch (e) { console.error('[ttl] commit final falló:', e.message); errors++; } }
+
+    try {
+        await db.collection('auditLog').add({
+            type: 'chat.ttl-anonymized', count: purged, errors, retentionDays,
+            capped: candidates.length > MAX_PER_RUN ? candidates.length - MAX_PER_RUN : 0,
+            timestamp: nowIso, actor: 'system',
+            actorName: 'Cloud Function (anonymizeIdleAnonChats · FASE 1 parent PII)',
+            durationMs: Date.now() - startedAt
+        });
+    } catch (e) { console.warn('[ttl] audit skip:', e.message); }
+    console.log(`[ttl] ANONIMIZAR: ${purged} anonimizados, ${errors} errores (FASE 1 parent PII; messages = fase 2).`);
+});
+
 // ========== CRM Fase 1 — Capa de ingestión canónica ==========
 exports.onSolicitudCreated = require('./src/ingestion/onSolicitudCreated').onSolicitudCreated;
 // ========== CRM — Canal AUTO: registro de cuenta → contacto (§163) ==========

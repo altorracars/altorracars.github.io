@@ -438,6 +438,7 @@
                 return {
                     text: 'Te ayudo con la financiación' + (firstName ? ', ' + firstName : '') + '. ' +
                           'Antes necesito unos datos breves para que un asesor te arme una propuesta personalizada con los plazos y cuotas que te convengan.',
+                    quickReplies: [],   // §TODO-37: el gate pide DATOS → sin quickReplies contextuales prematuras
                     _requestGate: 'financiacion',
                     _deferredQuery: userMsg
                 };
@@ -475,6 +476,7 @@
             if (needsIdentityForHighValueAction()) {
                 return {
                     text: '📅 ¡Perfecto' + (firstName ? ', ' + firstName : '') + '! Para agendar tu visita necesito unos datos breves así un asesor confirma fecha y hora contigo.',
+                    quickReplies: [],   // §TODO-37: el gate pide DATOS (form) → NO mostrar fechas contextuales aquí (salían DUPLICADAS: gate + respuesta diferida post-gate)
                     _requestGate: 'cita',
                     _deferredQuery: userMsg
                 };
@@ -492,6 +494,7 @@
                 return {
                     text: '🚙 ¡Excelente! Te ayudamos a vender tu auto con peritaje gratis y compra directa o consignación. ' +
                           'Antes necesito tus datos para que un asesor coordine la valuación.',
+                    quickReplies: [],   // §TODO-37: el gate pide DATOS → sin quickReplies contextuales prematuras
                     _requestGate: 'vender',
                     _deferredQuery: userMsg
                 };

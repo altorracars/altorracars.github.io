@@ -1262,11 +1262,15 @@
             .slice(-5)
             .map(function (m) { return m.text; }).join(' / ');
         update.comentarios = lastUser;
-        // §TODO-37: devolver la promesa + NO tragar el error. Para un guest/no-admin la rule
-        // UPDATE (solo-admin) lo deniega → 400; el caller (gate) lo cacha y rescata por WhatsApp.
+        // §TODO-37: devolver la promesa + NO tragar el error. El enrich-por-UPDATE de un guest/no-admin
+        // es DENEGADO por diseño (la rule UPDATE es solo-admin) — el lead YA se persiste por
+        // `persistGateLead`/CREATE, así que `permission-denied` aquí es ESPERADO y NO un bug: no se
+        // loggea (evita ruido que parece error). Solo se avisa de errores INESPERADOS.
         return window.db.collection('solicitudes').doc(session.leadId)
             .update(update).catch(function (err) {
-                console.warn('[Concierge] §TODO-37 enrich update falló:', err && (err.code || err.message));
+                if (err && err.code !== 'permission-denied') {
+                    console.warn('[Concierge] §TODO-37 enrich update (inesperado):', err.code || err.message);
+                }
                 throw err;
             });
     }

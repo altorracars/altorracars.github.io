@@ -292,7 +292,9 @@ por tool-use real (`callAnthropic` HOY no envía `tools[]`, `index.js:1063` — 
 backend** degrada `lead_quality` ante basura; **consent CONSERVADOR** `consentGiven=false` → lead capturado +
 asignado SIN asumir marketing = Ley-1581-safe + cero-pérdida; el texto de consent EXPRESO sigue gate P4).
 **PEND DEPLOY** (F1.a+F3 como UNIDAD, justo antes del flip; prod corre v1 con LLM apagado → seguro).
-🔜 TTL mecanismo (`autoResolveIdleChats` → anonimizar @30d) → wiring `engine:'v2'` en cliente + flip A/B 10%.
+**TTL ✅** (`anonymizeIdleAnonChats`, scheduled diario, **DRY-RUN por defecto** `config/altorTTL.enabled=false`:
+marca anónima segura `!userId && !historicalUserKey` + closed + idle>30d; FASE 1 redacta PII del parent;
+messages-subcol = fase 2; idempotente/capado/auditado; pend deploy). 🔜 wiring `engine:'v2'` en cliente + flip A/B 10%.
 
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
@@ -309,4 +311,5 @@ asignado SIN asumir marketing = Ley-1581-safe + cero-pérdida; el texto de conse
 - [x] **F3 diseño execution-ready ✅ 2026-06-23** (§F3 arriba: tools + system-prompt rewrite + tool-loop en `callAnthropic` + flag `engine:'v2'` + gate App Check). Pend GO dueño.
 - [x] **F3-a ✅ 2026-06-23** (Tool Calling read-only `search_inventory` + `engine:'v2'` dormiente + v1 intacto, en `dev`; pend deploy). GO dueño resuelto: techo $15 · AppCheck monitor · TTL anonimizar@30d.
 - [x] **F3-b ✅ 2026-06-23** (`submit_lead`: escribe `solicitudes` origen 'bot' reusando `onSolicitudCreated`; validación backend + `lead_quality` + consent conservador `consentGiven=false` Ley-1581-safe; cero-pérdida; dormiente en `dev`). Consent EXPRESO = gate P4 antes del flip.
+- [x] **TTL ✅ 2026-06-23** (`anonymizeIdleAnonChats`: scheduled diario, DRY-RUN por defecto; anonimiza chats anónimos `!userId&&!historicalUserKey` cerrados >30d, FASE 1 PII del parent; idempotente/capado/auditado; pend deploy). Owner revisa dry-run en auditLog → `config/altorTTL.enabled=true`. Messages-subcol = fase 2.
 - [ ] Implementar F1→F6 (plan arriba), verificación por fase §G.4. **F1 (candados + frenar hemorragia + TTL) primero** — bajo riesgo, valor inmediato.

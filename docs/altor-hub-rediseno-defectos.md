@@ -5,23 +5,44 @@
 > `validacion-live-chrome` (extensión Claude-in-Chrome). NO se arreglan en el acto (salvo que
 > rompan el flujo) — se agrupan aquí para resolverlos en bloque en la fase de rediseño del bot.
 >
-> Formato por defecto: `#N · [severidad] · superficie/estado · síntoma → causa hipótesis → fix sugerido · evidencia`.
+> Formato: `#N · [severidad] · superficie/estado · síntoma → causa → fix sugerido · evidencia`.
 
 ---
 
 ## Abiertos
 
-### #1 · 🔴 ALTO · Widget bot · estado "fuera de horario / esperando asesor" (botones WhatsApp)
-**Síntoma**: el texto de la burbuja ("La espera está sie…") se renderiza **VERTICAL — una letra por
-línea** — quedando ilegible. Ocurre en el estado con la fila de botones **"Continuar por WhatsApp" /
-"Seguir esperando"** (gate WhatsApp de F2.b) superpuesta sobre la burbuja.
-**Causa hipótesis** (a verificar en el CSS del concierge): la fila de acciones se posiciona encima/al
-lado de la burbuja y le **colapsa el ancho a ~1 carácter** (overlay absoluto, o conflicto flex/`width`/
-`min-width:0` faltante, o `white-space`/`overflow` que fuerza el wrap por carácter).
-**Fix sugerido**: la burbuja y la fila de botones deben apilarse en bloque (no superponerse); dar
-`min-width:0` + `flex` correcto al contenedor de texto; los botones en su propia fila debajo.
-**Evidencia**: screenshot del dueño 2026-06-23 (chat del bot, vista móvil/estrecha).
-**Estado**: 🆕 reportado · pendiente de diagnóstico en CSS + fix en F4/F5.
+### #1 · 🔴 ALTO · Widget bot · banner SLA de espera (warning) — texto VERTICAL + scroll-trap
+**Síntoma**: el texto del banner `.cnc-sla-banner--warning` ("⏰ La espera está siendo más larga…
+¿Continuar por WhatsApp o seguir esperando?") se renderiza **una letra por línea (vertical)** e
+ilegible. Aparece tras escalar a asesor y superar el umbral de espera (visto con "Esperando hace 29 min").
+**Causa raíz (CONFIRMADA por validador, CSS)**: `.cnc-sla-banner-text` computa `width:0px` dentro de un
+flex-row (le falta `flex:1` / `min-width:0`) → el `<strong>` se ajusta a ~15px de ancho × ~754px de alto;
+el banner crece a ~1825px → **scroll-trap** dentro del chat. El estado inicial ("Esperando hace 0 min")
+renderiza BIEN (horizontal) — el bug es específico del **banner de advertencia**.
+**Fix sugerido**: `.cnc-sla-banner-text { flex:1; min-width:0; }` + botones (Continuar WhatsApp / Seguir
+esperando) en su propia fila debajo, no superpuestos.
+**Evidencia**: screenshot del dueño 2026-06-23 + medición de layout del validador.
+**Estado**: 🆕 confirmado · candidato a fix rápido standalone (rompe una CTA de conversión: WhatsApp).
+
+### #2 · 🟡 MEDIO · Widget bot · tarjeta de vehículo · título truncado
+**Síntoma**: `.cnc-vcard-title` con `white-space:nowrap; overflow:hidden; text-overflow:ellipsis`,
+clientWidth 92px vs scrollWidth 126px → "toyota HILUX 4X4 2018" se corta con "…". Año/modelo no se ve.
+**Fix sugerido**: permitir 2 líneas (clamp) o ensanchar la tarjeta del chat.
+**Evidencia**: medición del validador 2026-06-23.
+
+### #3 · 🟡 MEDIO · Header · "Cerrar sesión" atenuado + 2 clics (intermitente)
+**Síntoma**: el ítem "Cerrar sesión" se ve más tenue que "Mi perfil"/"Mis favoritos"; a veces exige 2 clics.
+**Causa (ya diagnosticada §234 follow-up)**: race entre el listener global de `document` que cierra el
+dropdown y el re-bind del botón tras re-render del header (`auth.js:1355-1368`).
+**Fix sugerido**: bind estable (delegación de eventos) + estado visual consistente del ítem.
+**Evidencia**: validador 2026-06-23 (2 pasadas, intermitente).
+
+### #4 · 🟡 MEDIO · z-index · el widget tapa el dropdown de cuenta del header
+**Síntoma**: con el chat abierto (esquina sup-derecha), el menú "Daniel → Mi perfil / Cerrar sesión"
+queda solapado/detrás del widget; hay que cerrar el chat para operarlo.
+**Fix sugerido**: coordinar z-index/posición (el dropdown del header debe ganar al widget, o el widget
+cede stacking cuando el dropdown abre).
+**Evidencia**: validador 2026-06-23.
 
 ---
 

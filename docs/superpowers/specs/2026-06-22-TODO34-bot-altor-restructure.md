@@ -155,6 +155,37 @@ tools, inline (L-50). Crudo → bóveda `2026-06-23-TODO34-comite-arquitectura-C
 **VEREDICTO preliminar (pre-Gemini):** **B-como-router-de-UI + LLM-con-tools**; guards seguridad/costo + F1
 ANTES del motor; migración incremental shadow→10%→100%; poda al final.
 
+## Capa 3 — Gemini red-team + VEREDICTO FINAL (2026-06-23)
+Gemini (Antigravity, code-aware) **CONTRADIJO al comité**: recomendó **Opción A** (solo-LLM+Tool Calling,
+borrar el determinista) vs B. Verificación por-claim (regla de oro) → crudo bóveda
+`2026-06-23-TODO34-gemini-redteam-CRUDO.md`:
+- ✅ Verificado/adoptado: App Check enforce mandatorio pero NO basta vs Selenium → **hard cap server-side
+  es el salvavidas real**; Tool Hallucination → payload capado (máx 3); ingestión-throw → guardar lead
+  `incompleto`/'bot' (coincide con hallazgo 23/06); consent Ley 1581 (pedir antes de ingestar PII);
+  fallback UX (429/500/cap → WhatsApp).
+- ⚠️ REFUTADO: Gemini citó **$0.25/$1.25 = Claude 3.5 Haiku (RETIRADO)**; el real **Haiku 4.5 = $1/$5**
+  (4× más caro; catálogo oficial). Su optimismo de costo es 4× — aún barato a tráfico bajo; el estimado
+  FinOps (~$0.03/conv) usó el precio correcto.
+
+**VEREDICTO FINAL (Claude, presidente): Opción A** = **solo-LLM + Tool Calling real + botones tontos de
+navegación** (links/acciones, NO motor determinista) + guards-first. Razones (verificadas):
+(1) la discrepancia A↔B es PARCIALMENTE semántica (B-router-de-botones ≈ A-con-quick-replies); (2) con
+guards, las ventajas de B (costo ~4×/conv, superficie) son MARGINALES a tráfico bajo; (3) las de A son
+DURADERAS y alineadas con los invariantes duros: **mantenibilidad** (cero NLP), **corte limpio con el
+determinista que YA falló** (B conserva semilla → "valle inquietante"), **honra el instinto "solo LLM"
+del dueño**. Lo que faltaba era **Tool Calling**, no más híbrido. (La capa gratis de B = YAGNI hasta ~100× tráfico.)
+
+## Plan de implementación FINAL (por fases, verificación por fase §G.4)
+- **F1 — Frenar hemorragia (PRIMERO, independiente del motor):** (a) quitar `throw` de normalizeSolicitud →
+  lead sin handle = doc `incompleto`/origen 'bot' (cero-pérdida); (b) **App Check `enforce:true` en chatLLM**;
+  (c) **contador de gasto server-side Anthropic-aware** ($1/$5 Haiku 4.5) + **hard cap ~$15/mes** kill-switch;
+  (d) rate-limit por identidad real (no `data.sessionId`).
+- **F2 — Tool Calling:** quitar inventario de `composeSystemPrompt`; tool `search_inventory` (payload capado
+  máx ~3); system-prompt ligero + prompt caching (Haiku 4.5, min 4096 tok) + tope historial 6 (corta cuadrático).
+- **F3 — Reemplazo de cerebro:** solo-LLM+tools tras flag `engine:'v2'`, A/B 10%→100%, sin romper chats vivos.
+- **F4 — Tool `submit_lead`:** llamar SOLO con dato de contacto + consentimiento Ley 1581 + fallback UX.
+- **F5 — Poda:** borrar `js/ai/` AL FINAL (incremental, cuarentena `_legacy/`), tras métricas v2>v1.
+
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
 - [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).
@@ -162,6 +193,7 @@ ANTES del motor; migración incremental shadow→10%→100%; poda al final.
 - [x] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ✅ 2026-06-23: claim de colisión REFUTADO; GAP real = anónimos se PIERDEN; consent ya plomeado.
 - [x] Diagnóstico ARQUITECTURA verificado ✅ 2026-06-23 (`dual-core.js`): el híbrido viejo = Free Core determinista 5,600L (lo que falló); chatLLM sin AppCheck + inventario-en-prompt + sin tool-use.
 - [x] Comité ACOTADO #2 (arquitectura) ✅ 2026-06-23: convergencia 4/4 en **B-moderno** (router=UI + LLM+tools); captcha-UI=cosmético→App Check enforce; tope $12-15/mes; F1-primero.
-- [ ] **Capa 3 — Gemini red-team (anti-anclado)**: la corre el dueño; integrar + VERIFICAR cada claim.
-- [ ] **Decisión del dueño (reencuadrada): (1) confirmar B-moderno · (2) techo USD/mes (~$15) · (3) aceptar gate real = App Check enforce (no captcha visible).**
-- [ ] Implementar por fases: F1 cero-pérdida → guards (AppCheck+gate costo) → engine v2 tras flag A/B → clasificador chico → poda determinista al final.
+- [x] **Capa 3 — Gemini red-team ✅ 2026-06-23**: recomendó A (no B); verificado por-claim (precio refutado: Haiku 4.5 = $1/$5, no $0.25/$1.25). Crudo bóveda `2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
+- [x] **VEREDICTO FINAL ✅: Opción A** (solo-LLM + Tool Calling + botones tontos de navegación), guards-first. A↔B parcialmente semántica; con guards las ventajas de B son marginales; A gana por mantenibilidad + corte limpio + honra el instinto del dueño.
+- [ ] **Confirmación dueño (ya no forks): (1) A=su instinto "solo LLM" con Tools · (2) techo $15/mes · (3) anti-bot = App Check enforce.**
+- [ ] Implementar F1→F5 (plan arriba), verificación por fase. F1 (frenar hemorragia) primero — bajo riesgo, valor inmediato.

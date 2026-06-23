@@ -186,6 +186,35 @@ del dueño**. Lo que faltaba era **Tool Calling**, no más híbrido. (La capa gr
 - **F4 — Tool `submit_lead`:** llamar SOLO con dato de contacto + consentimiento Ley 1581 + fallback UX.
 - **F5 — Poda:** borrar `js/ai/` AL FINAL (incremental, cuarentena `_legacy/`), tras métricas v2>v1.
 
+## EPIC "ALTOR Hub v2" — expansión de alcance (2026-06-23, pedido del dueño)
+El dueño expandió TODO-34 a un EPIC completo y declaró **foco único**: terminar TODO ALTOR Hub (bot LLM +
+captura + UX widget + UX chat interno) ANTES de retomar CRM / panel admin / migración panel viejo / demás
+pendientes. Comité #3 (captura+UX+qualifier, crudo `2026-06-23-TODO34-comite-UX-captura-CRUDO.md`) cazó:
+- **Captura — quitar la CÉDULA del chat** (mayor fuga de leads; inútil en esta etapa — se pide al formalizar
+  con un humano). **Mínimo viable de lead = nombre + celular**; correo opcional. Progressive correcto; el gap
+  real = **falta fallback WhatsApp** en el punto del form → ESO viola cero-pérdida hoy (el que rechaza se evapora).
+- **Tono — voz argentina** ("andás/podés/decinos") en negocio colombiano = bug de marca → saludo usted-neutro Colombia + 3 botones tontos.
+- **Qualifier troll/lead (idea dueño) — NO un juez LLM separado** (falso-negativo = perder un auto ~$20-40M COP
+  por ahorrar centavos). Hacerlo **`lead_quality: hot|warm|cold` como campo GRATIS del tool `submit_lead`**;
+  el LLM solo PROMUEVE (ofrece asesor a los hot), NUNCA rechaza. Anti-abuso = heurísticas + App Check, aparte.
+- **Anti-abuso — el riesgo dominante es IDENTIDAD FALSIFICABLE** (sessionId brincable), no verbosidad → App
+  Check enforce + rate-limit por App Check token; el tope de turnos es secundario.
+- **Ejecución — el rediseño UX es REESCRITURA, va DESPUÉS del bot, como MÓDULO PARALELO v2** (no in-place, o el
+  A/B es ilusorio: el flag aísla la lógica, NO el DOM). **Widget cliente y chat interno = DOS fases separadas.**
+
+### Plan EPIC (6 fases, foco único hasta terminar)
+- **F1 — Guards + frenar hemorragia:** App Check `enforce` en chatLLM + gate de costo server-side (techo MANUAL
+  del dueño + auto-enforce que solo cuida ese número + modo-captura "déjanos WhatsApp" si se pasa + alertas
+  50/80/100%) + rate-limit por App Check token (no sessionId) + tope turnos/conversación (~15) + fix ingestión
+  (lead sin handle = `incompleto`/'bot', cero-pérdida). [Independiente del motor, máximo valor, mínimo riesgo.]
+- **F2 — Bot LLM + Tool Calling** tras `engine:'v2'`, reusando UX v1 + contratos de captura/escalada. Tools:
+  `search_inventory` (payload capado), `submit_lead` con `lead_quality` GRATIS. El LLM promueve hot→asesor, nunca rechaza.
+- **F3 — Flujo de captura:** quitar cédula; mínimo nombre+celular; **fallback WhatsApp** en el punto del form
+  (cero-pérdida); consent Ley 1581 inline; saludo tono Colombia + botones.
+- **F4 — UX rediseño widget cliente:** MÓDULO PARALELO v2 (montaje nuevo, v1 intacto hasta retirar flag).
+- **F5 — UX rediseño chat interno admin:** fase SEPARADA (distinto archivo/usuarios/riesgo, no toca leads).
+- **F6 — Poda:** borrar motor determinista `js/ai/` (5,600L) AL FINAL, con v2 estable.
+
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
 - [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).

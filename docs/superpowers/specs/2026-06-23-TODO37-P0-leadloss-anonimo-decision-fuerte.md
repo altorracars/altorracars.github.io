@@ -45,16 +45,18 @@ Gemini (Antigravity, code-aware) confirmó diagnóstico + rumbo (C+D, regla estr
 6. **DIVERGENCIA mecanismo**: corregido claims→lookup (arriba).
 Legal: consent timestamp + versión-de-texto server-side (audit trail anti-SIC); **NO almacenar IP sin base legal** (IP = PII bajo 1581 → gate abogado P4); el TEXTO de consentimiento sigue en gate P4 (`legal-colombia`).
 
-## 5. Plan por fases (post-veredicto)
-- **Fase 0 (bleed-stop, DIRECTO, sin reglas/función)**: gate result-aware (los writes devuelven promesa; `handleGateSubmit` espera el ACK; "¡Listo!" SOLO tras éxito; en fallo → WhatsApp prellenado con nombre/celular); matar catch mudo (1236/1255). Detiene la mentira + salva el lead vía WhatsApp HOY. **← implementable ya, bajo riesgo.**
-- **Fase 1 (C, Decisión Fuerte)**: function `enrichLead` (merge+idempotente+sessionId-match+status-guard) + wiring cliente (gate llama `enrichLead` en vez de `updateSoftContact` para no-admin) + stop-placeholder en la ingestión + cola local. Deploy Claude (`firebase deploy --only functions`). Re-validar live.
-- **Fase 2**: dedup cascada (leadId→sessionId→tel→email) 2ª red + job expiración de anónimos + App Check enforce (con §41).
-- Re-validación LIVE (validador adversarial) tras Fase 0 y Fase 1.
+## 5. Implementación por fases
+- **Fase 0 ✅ (bleed-stop, commit `f2cf6ee`)** — `concierge.js`: gate result-aware (confirma "¡Listo!" SOLO tras ACK del server; en fallo → NO miente, rescate WhatsApp prellenado vía `cta:{action:'open-wa'}`→`handoverToWhatsApp`); `createSoftContact`/`updateSoftContact` devuelven promesa y matan el `.catch` mudo; call sites fire-and-forget (1er msg/per-turn/escalate/auth) tragan el rechazo; stop-placeholder (`nombre:null`, no "Concierge/Cliente XXXX").
+- **Fase 1 ✅ (auto-persist, commit `f0d7463`)** — **REFINAMIENTO del veredicto durante impl** (verificado en código): NO callable (el sitio público NO carga el functions SDK) NI UPDATE dirigido (`onSolicitudCreated` es onCreate-only → un update no re-ingesta). En su lugar **Option G** = el gate hace un CREATE completo (`persistGateLead`: nombre/cel/correo/`consentGiven`). **CLAVE**: `normalizeSolicitud` (normalize.js:60) **LANZA sin email/teléfono** → el phantom guest NUNCA se vuelve contacto del CRM → **G NO duplica** (la objeción del comité/Gemini a B/G se basaba en el duplicado, que aquí no materializa). Firestore CREATE = **offline-safe** (resuelve la pega de callable de Gemini). Rules: `+consentGiven` al whitelist del CREATE público (aditivo, opcional bool; **UPDATE INTACTA**) → `mapConsent` lo lee (Ley 1581). **Reglas DESPLEGADAS a prod ✅** (compiled+released). Mismo principio del veredicto (cliente append-only CREATE · rule UPDATE estricta · ingestión server · consent server).
+- **🔜 Re-validación LIVE** (validador adversarial) tras merge dueño: guest completa gate → lead PRUEBA-QA aparece **COMPLETO en el CRM** (no fallback WhatsApp).
+- **Fase 2 (futuro)**: dedup/link por sessionId (phantom↔lead) + job expiración de anónimos + App Check enforce (con §41).
+> El TEXTO del consentimiento sigue gate P4 (abogado); aquí solo se persiste el FLAG (audit trail).
 
 ## Checklist
 - [x] Verificación de causa raíz — `js/concierge/concierge.js:2712` (gate→update) + `firestore.rules:773` (update solo-admin) + `js/concierge/concierge.js:1236` (catch mudo)
 - [x] Comité acotado (3 expertos) capturado — síntesis §3 + agentIds `a1f890f32c7c1de42`/`ab9aa324dbf7930d0`/`a6ad4676a43e357fe`
 - [x] Consejo externo Gemini verificado — §4 (confirmó C+D; corregí claim claims→lookup `firestore.rules:21`; divergencia App Check razonada)
 - [x] Veredicto final — §4 (C+D, regla intacta, App Check diferido con mitigaciones, consent server-side)
-- [ ] Autorización dueño + Fase 0 (D) implementada + re-validada live
-- [ ] Fase 1 (C) implementada + re-validada live
+- [x] Fase 0 implementada — `concierge.js` commit `f2cf6ee` (bleed-stop + stop-placeholder)
+- [x] Fase 1 implementada — Option G + reglas desplegadas, commit `f0d7463`
+- [ ] Re-validación LIVE (validador) tras merge dueño — guest gate → lead completo en CRM

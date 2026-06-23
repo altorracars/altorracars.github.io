@@ -58,5 +58,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> (Histórico 12-22/06 §184-§231 → `99`/`00`/`30`.) **23/06 (EPIC ALTOR Hub v2)**: pipeline TODO-34 (3 comités + 2 Gemini → veredicto **Opción A**; reorden captura-antes-del-bot + 4 guardrails) → 5 crudos bóveda + spec §EPIC + memoria. Avance en `dev`: **F1.a · F2.a · F2.b · F3-a ✅** (F3-a Tool Calling dormiente, pend deploy). `proceso-decision-fuerte v2` + skill `meta-ads-diagnostico` ×4. **TODO-35 capturado** (anti-Knight-Capital). 🔜 F3-b.
-> **23/06 (TODO-36 ✅ §232)**: skill `validacion-live-chrome` (validación LIVE post-merge vía extensión Claude-in-Chrome). Propagación skills: nueva ×4+global; `anti-codigo-muerto` (deuda TODO-35) y `proceso-decision-fuerte` (invariante) → ×3 peers. Hallazgo: `meta-ads-diagnostico` falta en `~/.claude/skills/` (ok por bundle).
+> Histórico 12-22/06 §184-§231 → `99`/`00`/`30`. **23/06**: EPIC TODO-34 → **Opción A** (`dev`: F1.a·F2·F3-a ✅ dormiente, pend deploy; 🔜 F3-b). Validador Chrome TODO-36 ✅ (§232: skill `validacion-live-chrome` + skills ×4+global + gate `skills:desc-check`). **1ª caza LIVE §233**: `_asesorJoinedAnnounced` sin declarar (split §119, strict) atrapaba al reabrir chat finalizado → fix en `dev`, **🔜 re-validar LIVE tras merge**. Follow-up bot: `confirm()`→modal F4/F5; grounding débil=esperado (LLM off).

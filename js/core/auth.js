@@ -1100,12 +1100,29 @@
             window.vehicleDB.stopRealtime();
         }
 
+        // §234 Privacidad: al hacer logout EXPLÍCITO, borrar la sesión del concierge
+        // para que en un equipo COMPARTIDO el siguiente visitante anónimo NO vea la
+        // conversación, datos personales ni la solicitud de asesor del usuario anterior.
+        // El concierge vincula su sesión al uid en el login (concierge.js:4175) pero NO
+        // tenía rama de logout → el chat (nombre + mensajes) persistía en localStorage.
+        function _wipeConcierge() {
+            try {
+                if (window.AltorraConcierge && typeof window.AltorraConcierge.resetSession === 'function') {
+                    window.AltorraConcierge.resetSession();   // limpia memoria + localStorage + re-render fresco
+                } else {
+                    localStorage.removeItem('altorra_concierge_session'); // widget aún no cargado → solo dropear lo persistido
+                }
+            } catch (e) {}
+        }
+
         window.firebaseReady.then(function () {
             return window.auth.signOut();
         }).then(function () {
+            _wipeConcierge();   // auth ya es null aquí → sesión nueva queda anónima limpia
             _toast('Sesión cerrada correctamente.', 'success', 3000);
         }).catch(function (err) {
             // Network failure during signOut — Firebase will retry on next page load
+            _wipeConcierge();   // best-effort: la privacidad local manda aunque signOut falle
             console.warn('[Auth] Sign out error (ignored):', err && err.message);
             _toast('Sesión cerrada localmente. Sincronizando...', 'info', 3000);
         }).finally(function () {

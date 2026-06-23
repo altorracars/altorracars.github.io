@@ -12,7 +12,7 @@ description: Usar DESPUÉS de un merge/deploy cuando los cambios YA están EN VI
 > PORTABLE: cero rutas de un repo concreto — leo el cerebro del proyecto activo para llenar la URL,
 > el subsistema tocado y los escenarios. Adapta al stack que sea.
 >
-> ⚔️ **Postura ADVERSARIAL (no confirmadora) — eje de la skill (dueño 2026-06-23)**: el objetivo es **ROMPER, no aprobar**. (1) La extensión NO se limita al camino feliz: prueba bordes, ciclos repetidos, entradas raras y caminos infelices, e intenta hacer fallar el cambio. (2) YO trato cada **"✅" del reporte como HIPÓTESIS a refutar**: lo cruzo contra el código, exijo evidencia para todo negativo ("sin errores" = sweep explícito, no ausencia de mención), y **nombro lo que NO se probó**. Un reporte que solo confirma el camino feliz **NO cierra nada**. (Hermana mental: `asesor-critico-honesto`.)
+> ⚔️ **Postura ADVERSARIAL (no confirmadora) — eje de la skill (dueño 2026-06-23)**: el objetivo es **ROMPER, no aprobar**. (1) La extensión NO se limita al camino feliz: prueba bordes, ciclos repetidos, entradas raras y caminos infelices, e intenta hacer fallar el cambio. Además **explora con LIBRE ALBEDRÍO acotado** (es mis OJOS): pulsa zonas/botones que no le listé, por iniciativa propia — siempre dentro de las barandas (§4: nada irreversible sin OK). (2) YO trato cada **"✅" del reporte como HIPÓTESIS a refutar**: lo cruzo contra el código, exijo evidencia para todo negativo ("sin errores" = sweep explícito, no ausencia de mención), y **nombro lo que NO se probó**. Un reporte que solo confirma el camino feliz **NO cierra nada**. (Hermana mental: `asesor-critico-honesto`.)
 
 ## 0. Cuándo aplica / cuándo NO
 - **SÍ**: tras un merge/deploy con el cambio YA en vivo, cuando el subsistema tocado tiene **estado
@@ -73,6 +73,13 @@ prueba bordes, repite ciclos (ej. finalizar→reabrir 2-3 veces), entradas raras
 infelices. Para CADA afirmación negativa ("sin errores", "no falla") PRUÉBALA con un sweep
 explícito de consola/network (di qué patrón buscaste) — la ausencia de mención NO es prueba.
 Reporta además qué NO pudiste probar.
+
+EXPLORACIÓN AUTÓNOMA (eres mis OJOS — libre albedrío): ADEMÁS de los escenarios que te di, EXPLORA por
+iniciativa PROPIA — pulsa botones/links/menús/iconos/zonas que NO te listé, prueba caminos inesperados,
+inputs raros, dobles clics, atrás/adelante, resize, y estados límite. Si algo te da curiosidad o huele
+a bug, PÚLSALO/PRUÉBALO. Esa libertad SIEMPRE está acotada por lo PROHIBIDO de arriba: nada irreversible/
+destructivo/envíos reales sin mi OK — ante la duda, DETENTE y avísame. Reporta qué exploraste por tu
+cuenta y qué encontraste (lo no-anticipado suele ser el mejor hallazgo).
 
 Al terminar, entrégame UN reporte estructurado con el formato de "Observabilidad" (abajo).
 ```

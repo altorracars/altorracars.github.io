@@ -122,10 +122,143 @@ Leídos: `onSolicitudCreated.js` · `ingestLead.js` · `normalize.js`. Hallazgos
   consentimiento (solo marca do-not-contact) → si almacenar PII pre-consentimiento debe bloquearse es
   gate abogado (P4/`42-LEGAL`), no técnico.
 
+## Dato nuevo del dueño (2026-06-23): el híbrido determinista YA se intentó y FALLÓ
+Reporte vivido: respuestas desalineadas, mal inventario, no entendía al cliente. **Diagnóstico verificado
+en código** (`dual-core.js`/`chatLLM`/`js/ai/`): el "híbrido" actual = **DualCore** (LLM-first else **Free
+Core determinista ~5,600L de NLP a mano** en 16 archivos). Con el LLM OFF (bot DIFERIDO), cada turno cayó al
+Free Core frágil → ESO es lo que falló. Y el path LLM **apelmaza el inventario en el system-prompt** y **no
+tiene Tool Calling real** (solo tag `[CTA:]`). **NUNCA se probó** "LLM entiende + Tool Calling determinista
+responde" (cero Anthropic tool-use). Anti-bot verificado: `chatLLM` onCall **SIN `enforceAppCheck`**
+(endpoint abierto), rate-limit por `sessionId`-cliente (brincable), sin tope global de gasto.
+
+## Comité acotado #2 — ARQUITECTURA (2026-06-23) · convergencia 4/4 en B-moderno
+4 expertos razonamiento-puro (arquitecto-LLM · seguridad-escéptico · FinOps · ejecutor), foreground, 0
+tools, inline (L-50). Crudo → bóveda `2026-06-23-TODO34-comite-arquitectura-CRUDO.md`. Cazaron:
+- **B (híbrido moderno) 4/4 — pero REDEFINIDO**: el "router" NO es NLP a mano (eso fue lo que falló) sino
+  **chips/botones de UI** para las 3-4 intenciones + **LLM+Tool Calling** para texto libre. Honra el "solo
+  LLM" del dueño en lo conversacional y deja GRATIS lo común.
+- **Reencuadre (arquitecto)**: A-vs-B era casi señuelo. Causa raíz del fracaso = **falta de Tool Calling +
+  acción no confiable**, que A y B resuelven igual. La decisión real: "LLM CON herramientas, inventario
+  JAMÁS en el prompt". Tools server-side: `search_inventory`/`create_lead`/`book_visit`; render del carro
+  por código determinista desde Firestore.
+- **Fallo fatal ORTOGONAL a A/B (seguridad)**: el captcha-de-UI que pidió el dueño es **COSMÉTICO** — un bot
+  hace POST directo a la onCall saltándose el HTML. **App Check ENFORCE en la función** (`enforceAppCheck:
+  true`) es lo único que cierra el Denial-of-Wallet. Va PRIMERO, antes del motor. + rate-limit por identidad
+  REAL (App Check token/UID/IP), no `sessionId`-cliente.
+- **Costo (FinOps)**: B ≈ 4-5× más barato (~$0.005-0.01 vs $0.025-0.04/conversación); A arriesga $20-50/mes;
+  **tope duro $12-15/mes**. Gate server-side Anthropic-aware (contador atómico Firestore que suma
+  `usage` real × precio + kill-switch) + tope de historial (6 msgs, corta el cuadrático) + prompt caching.
+- **Orden (ejecutor)**: **F1 cero-pérdida PRIMERO** (capturar handle + fallback `lead_anonimo` que nunca se
+  rechaza — independiente del motor) → guards (AppCheck+gate costo) → engine `v2` tras flag, A/B 10% →
+  clasificador chico → **podar determinista AL FINAL** (incremental, cuarentena `_legacy/`, nunca big-bang).
+
+**VEREDICTO preliminar (pre-Gemini):** **B-como-router-de-UI + LLM-con-tools**; guards seguridad/costo + F1
+ANTES del motor; migración incremental shadow→10%→100%; poda al final.
+
+## Capa 3 — Gemini red-team + VEREDICTO FINAL (2026-06-23)
+Gemini (Antigravity, code-aware) **CONTRADIJO al comité**: recomendó **Opción A** (solo-LLM+Tool Calling,
+borrar el determinista) vs B. Verificación por-claim (regla de oro) → crudo bóveda
+`2026-06-23-TODO34-gemini-redteam-CRUDO.md`:
+- ✅ Verificado/adoptado: App Check enforce mandatorio pero NO basta vs Selenium → **hard cap server-side
+  es el salvavidas real**; Tool Hallucination → payload capado (máx 3); ingestión-throw → guardar lead
+  `incompleto`/'bot' (coincide con hallazgo 23/06); consent Ley 1581 (pedir antes de ingestar PII);
+  fallback UX (429/500/cap → WhatsApp).
+- ⚠️ REFUTADO: Gemini citó **$0.25/$1.25 = Claude 3.5 Haiku (RETIRADO)**; el real **Haiku 4.5 = $1/$5**
+  (4× más caro; catálogo oficial). Su optimismo de costo es 4× — aún barato a tráfico bajo; el estimado
+  FinOps (~$0.03/conv) usó el precio correcto.
+
+**VEREDICTO FINAL (Claude, presidente): Opción A** = **solo-LLM + Tool Calling real + botones tontos de
+navegación** (links/acciones, NO motor determinista) + guards-first. Razones (verificadas):
+(1) la discrepancia A↔B es PARCIALMENTE semántica (B-router-de-botones ≈ A-con-quick-replies); (2) con
+guards, las ventajas de B (costo ~4×/conv, superficie) son MARGINALES a tráfico bajo; (3) las de A son
+DURADERAS y alineadas con los invariantes duros: **mantenibilidad** (cero NLP), **corte limpio con el
+determinista que YA falló** (B conserva semilla → "valle inquietante"), **honra el instinto "solo LLM"
+del dueño**. Lo que faltaba era **Tool Calling**, no más híbrido. (La capa gratis de B = YAGNI hasta ~100× tráfico.)
+
+## Plan de implementación FINAL (por fases, verificación por fase §G.4)
+- **F1 — Frenar hemorragia (PRIMERO, independiente del motor):** (a) quitar `throw` de normalizeSolicitud →
+  lead sin handle = doc `incompleto`/origen 'bot' (cero-pérdida); (b) **App Check `enforce:true` en chatLLM**;
+  (c) **contador de gasto server-side Anthropic-aware** ($1/$5 Haiku 4.5) + **hard cap ~$15/mes** kill-switch;
+  (d) rate-limit por identidad real (no `data.sessionId`).
+- **F2 — Tool Calling:** quitar inventario de `composeSystemPrompt`; tool `search_inventory` (payload capado
+  máx ~3); system-prompt ligero + prompt caching (Haiku 4.5, min 4096 tok) + tope historial 6 (corta cuadrático).
+- **F3 — Reemplazo de cerebro:** solo-LLM+tools tras flag `engine:'v2'`, A/B 10%→100%, sin romper chats vivos.
+- **F4 — Tool `submit_lead`:** llamar SOLO con dato de contacto + consentimiento Ley 1581 + fallback UX.
+- **F5 — Poda:** borrar `js/ai/` AL FINAL (incremental, cuarentena `_legacy/`), tras métricas v2>v1.
+
+## EPIC "ALTOR Hub v2" — expansión de alcance (2026-06-23, pedido del dueño)
+El dueño expandió TODO-34 a un EPIC completo y declaró **foco único**: terminar TODO ALTOR Hub (bot LLM +
+captura + UX widget + UX chat interno) ANTES de retomar CRM / panel admin / migración panel viejo / demás
+pendientes. Comité #3 (captura+UX+qualifier, crudo `2026-06-23-TODO34-comite-UX-captura-CRUDO.md`) cazó:
+- **Captura — quitar la CÉDULA del chat** (mayor fuga de leads; inútil en esta etapa — se pide al formalizar
+  con un humano). **Mínimo viable de lead = nombre + celular**; correo opcional. Progressive correcto; el gap
+  real = **falta fallback WhatsApp** en el punto del form → ESO viola cero-pérdida hoy (el que rechaza se evapora).
+- **Tono — voz argentina** ("andás/podés/decinos") en negocio colombiano = bug de marca → saludo usted-neutro Colombia + 3 botones tontos.
+- **Qualifier troll/lead (idea dueño) — NO un juez LLM separado** (falso-negativo = perder un auto ~$20-40M COP
+  por ahorrar centavos). Hacerlo **`lead_quality: hot|warm|cold` como campo GRATIS del tool `submit_lead`**;
+  el LLM solo PROMUEVE (ofrece asesor a los hot), NUNCA rechaza. Anti-abuso = heurísticas + App Check, aparte.
+- **Anti-abuso — el riesgo dominante es IDENTIDAD FALSIFICABLE** (sessionId brincable), no verbosidad → App
+  Check enforce + rate-limit por App Check token; el tope de turnos es secundario.
+- **Ejecución — el rediseño UX es REESCRITURA, va DESPUÉS del bot, como MÓDULO PARALELO v2** (no in-place, o el
+  A/B es ilusorio: el flag aísla la lógica, NO el DOM). **Widget cliente y chat interno = DOS fases separadas.**
+
+### Capa 3 — Gemini red-team del EPIC (2026-06-23) → REORDEN + guardrails
+Crudo `2026-06-23-TODO34-gemini-redteam-EPIC-CRUDO.md`. Verificado/adoptado:
+- ⚠️ **CORRECCIÓN CLAVE — orden de fases**: Gemini cazó un acoplamiento que el comité no vio: soltar el bot
+  LLM (fluido) ANTES de arreglar la captura → la cohorte choca con el formulario VIEJO de cédula = caída
+  brutal. → **CAPTURA va ANTES del bot** (y beneficia incluso al bot viejo). Swap F2↔F3.
+- ✅ **Guardrail anti-negociación (CRÍTICO/legal):** el inventario entra al prompt vía el RESULTADO de la tool
+  → si el cliente "ofrece $40M" el LLM podría "¡trato hecho!". System-prompt: **"PROHIBIDO NEGOCIAR PRECIOS /
+  ACEPTAR OFERTAS; PRECIOS FINALES."**
+- ✅ **Validación backend del payload `submit_lead`** (anti-prompt-injection): si nombre="Mickey Mouse" o
+  celular inválido → degradar `lead_quality` a cold/spam sin importar lo que dijo el LLM.
+- ⚠️ **Anti-abuso refinado:** con chat anónimo, el límite-por-identidad es BACHE (borran LocalStorage/incógnito);
+  **el muro real es el TECHO GLOBAL de gasto**. App Check frena bots básicos, no click-farms/DoW manual.
+- ✅ **TTL** conversaciones anónimas muertas (24-48h auto-borrado; Ley 1581 minimización + costo).
+- ✅ **Latencia:** onCall CO→us-central1 + Anthropic = 4-6s → indicador "Escribiendo…" inmediato + evaluar streaming.
+- ✅ Ya existen y se reusan: `handoverToWhatsApp()`+`buildWhatsAppSummary()` (handoff con contexto, :1555/:1563);
+  `normalize.js` ya acepta teléfono-sin-email (:31-33); `summarizeChat` (truncamiento de memoria).
+
+### Plan EPIC FINAL (6 fases REORDENADAS, foco único)
+- **F1 — Guards + frenar hemorragia:** App Check `enforce` en chatLLM + **gate de costo server-side = TECHO
+  GLOBAL** (techo MANUAL del dueño + auto-enforce + modo-captura "déjanos WhatsApp" + alertas 50/80/100%) +
+  rate-limit por IP/App Check (bache, no muro) + tope turnos (~15) + **truncamiento de memoria (~6 msgs)** +
+  fix ingestión (lead sin handle = `incompleto`) + **TTL** conversaciones anónimas. [Máximo valor, mínimo riesgo.]
+- **F2 — Flujo de captura** (ANTES del bot, beneficia al bot viejo): **quitar cédula**; mínimo nombre+celular;
+  correo opcional; **fallback WhatsApp** en el punto del form (reusa `handoverToWhatsApp`); consent Ley 1581
+  inline (texto + link); saludo tono COLOMBIA + botones tontos.
+- **F3 — Bot LLM + Tool Calling** tras `engine:'v2'`, reusando UX v1 + contratos. Tools: `search_inventory`
+  (payload capado), `submit_lead` con `lead_quality` GRATIS + **validación backend** + **guardrail anti-negociación**.
+  El LLM PROMUEVE hot→asesor, nunca rechaza. Indicador "Escribiendo…".
+- **F4 — UX rediseño widget cliente:** MÓDULO PARALELO v2 (montaje nuevo, v1 intacto hasta retirar flag).
+- **F5 — UX rediseño chat interno admin:** fase SEPARADA (distinto archivo/usuarios/riesgo).
+- **F6 — Poda:** borrar motor determinista `js/ai/` (5,600L) AL FINAL, con v2 estable.
+
+### Progreso F1 + refinamientos IAP (2026-06-23)
+- **F1.a ✅ COMMITTEADO (`f747f5e`):** techo global Anthropic-aware (`checkMonthlyBudget`/`recordSpend`,
+  `config/altorCost.monthlyBudgetUsd` default $15, `altorSpend/{YYYY-MM}`) + memoria corta `MAX_HISTORY_MSGS=8`.
+  Verificado: `_brain.enabled=false` (LLM apagado) → sin gasto vivo → deploy de F1 como unidad.
+- **IAP — ingestión: el `throw` de `normalizeSolicitud` SE QUEDA.** Protege el camino de FORMULARIOS web
+  (rechaza envíos sin email NI tel = spam). Quitarlo = contactos basura. El bot aún no escribe `solicitudes`
+  (eso es F3). → **cero-pérdida se mueve a F2** (capturar handle/WhatsApp ANTES de escalar), no debilitando el guard.
+- **IAP — TTL/auto-borrado: es DESTRUCTIVO + decisión LEGAL de retención (Ley 1581) → NO se improvisa.**
+  Pendiente decisión dueño: (a) ventana de retención (recom. conservadora ~30 días), (b) borrar vs anonimizar.
+  + el esquema necesita verificación fina (`radicado` se asigna en la creación → "sin radicado" NO es marcador
+  limpio de anónimo). Patrón base = `autoResolveIdleChats` (función programada existente).
+- **F1.c — App Check: foundation VERIFICADA.** La web activa App Check (`firebase-config.js:146`,
+  reCAPTCHA v3 `6Lfz…` + auto-refresh). Falta antes del enforce: confirmar que la llamada a `chatLLM` viaja
+  sobre la app firmada (anti lead-block; por eso está en monitor). **Mejor activar el enforce JUSTO ANTES de
+  encender el bot (F3)** — con el bot apagado no protege nada y no se puede verificar con tráfico real.
+
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
 - [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).
-- [x] Comité ACOTADO ✅ (2026-06-22): costo-Anthropic · Ley 1581 · breaker-vaporware · premisa-híbrida. Crudo `242bc41`.
-- [x] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ✅ 2026-06-23 (§ arriba): claim de colisión REFUTADO; GAP real = anónimos se PIERDEN (no se fusionan); consent ya plomeado.
-- [ ] **Decisión del dueño: (1) LLM-puro vs HÍBRIDO · (2) techo de costo USD/mes · (3) borrar `js/ai/`.**
-- [ ] Implementar tras decisiones — F1 con captura-de-handle + consentimiento + F2 con breaker server-side + telemetría de costo.
+- [x] Comité ACOTADO #1 ✅ (2026-06-22): costo-Anthropic · Ley 1581 · breaker-vaporware · premisa-híbrida. Crudo `242bc41`.
+- [x] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ✅ 2026-06-23: claim de colisión REFUTADO; GAP real = anónimos se PIERDEN; consent ya plomeado.
+- [x] Diagnóstico ARQUITECTURA verificado ✅ 2026-06-23 (`dual-core.js`): el híbrido viejo = Free Core determinista 5,600L (lo que falló); chatLLM sin AppCheck + inventario-en-prompt + sin tool-use.
+- [x] Comité ACOTADO #2 (arquitectura) ✅ 2026-06-23: convergencia 4/4 en **B-moderno** (router=UI + LLM+tools); captcha-UI=cosmético→App Check enforce; tope $12-15/mes; F1-primero.
+- [x] **Capa 3 — Gemini red-team ✅ 2026-06-23**: recomendó A (no B); verificado por-claim (precio refutado: Haiku 4.5 = $1/$5, no $0.25/$1.25). Crudo bóveda `2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
+- [x] **VEREDICTO FINAL ✅: Opción A** (solo-LLM + Tool Calling + botones tontos de navegación), guards-first. A↔B parcialmente semántica; con guards las ventajas de B son marginales; A gana por mantenibilidad + corte limpio + honra el instinto del dueño.
+- [x] **EPIC expandido + Comité #3 (captura/UX/qualifier) ✅ 2026-06-23** + **Gemini red-team del EPIC ✅** (reorden captura↔bot + 4 guardrails). Pipeline completo = 3 comités + 2 Gemini, verificado por-claim. Crudos bóveda.
+- [ ] **Confirmación dueño: plan EPIC 6 fases REORDENADAS (captura antes del bot) + techo $15/mes (techo global = el muro).**
+- [ ] Implementar F1→F6 (plan arriba), verificación por fase §G.4. **F1 (candados + frenar hemorragia + TTL) primero** — bajo riesgo, valor inmediato.

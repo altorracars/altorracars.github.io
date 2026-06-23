@@ -1020,6 +1020,23 @@ exports.updateUserRoleV2 = onCall(callableOptionsV2, async (request) => {
 const RATE_LIMIT_PER_DAY = 30;          // antes 60 — protección anti-abuso
 const MAX_INVENTORY_VEHICLES = 10;      // antes 30 — system prompt más liviano
 
+// ── F1.a (EPIC ALTOR Hub v2, 2026-06-23) — control de costo ──────────────────
+// Memoria corta: solo los últimos N mensajes van al LLM. Cada turno reenvía el
+// historial → el costo crece cuadrático; cortarlo lo vuelve lineal. El resumen
+// (chatSummary) cubre el contexto viejo. (Gemini + comité FinOps.)
+const MAX_HISTORY_MSGS = 8;
+// TECHO GLOBAL de gasto (el muro real anti-Denial-of-Wallet; ningún truco de
+// identidad lo brinca). El dueño lo cambia en config/altorCost.monthlyBudgetUsd;
+// si falta, este default. Las Billing Alerts de GCP NO ven el gasto de Anthropic
+// → el contador DEBE vivir aquí, en nuestro código.
+const DEFAULT_MONTHLY_BUDGET_USD = 15;
+// Precios Claude Haiku 4.5 (USD/millón de tokens) — catálogo Anthropic 2026.
+// (NO es 3.5 Haiku $0.25/$1.25; el 4.5 es $1/$5.)
+const PRICE_IN_PER_MTOK = 1.0;
+const PRICE_OUT_PER_MTOK = 5.0;
+const PRICE_CACHE_WRITE_PER_MTOK = 1.25; // cache_creation (~1.25× input)
+const PRICE_CACHE_READ_PER_MTOK = 0.10;  // cache_read (~0.1× input)
+
 /**
  * callAnthropic — Claude Messages API
  * docs: https://docs.anthropic.com/en/api/messages
@@ -1301,6 +1318,54 @@ async function checkRateLimit(sessionId) {
     return true;
 }
 
+// ── F1.a (EPIC) — helpers del techo global de gasto ─────────────────────────
+/** Costo USD real de una respuesta Anthropic desde su `usage` (Haiku 4.5). */
+function computeAnthropicCostUsd(usage) {
+    if (!usage) return 0;
+    const inTok = usage.input_tokens || 0;
+    const outTok = usage.output_tokens || 0;
+    const cw = usage.cache_creation_input_tokens || 0;
+    const cr = usage.cache_read_input_tokens || 0;
+    return (inTok * PRICE_IN_PER_MTOK + outTok * PRICE_OUT_PER_MTOK +
+            cw * PRICE_CACHE_WRITE_PER_MTOK + cr * PRICE_CACHE_READ_PER_MTOK) / 1e6;
+}
+
+/** Clave de mes 'YYYY-MM' (el techo es mensual). */
+function spendMonthKey() { return new Date().toISOString().slice(0, 7); }
+
+/**
+ * Lee el techo del mes (config/altorCost.monthlyBudgetUsd, default $15) y el
+ * gasto acumulado (altorSpend/{YYYY-MM}.usd). Devuelve si ya se alcanzó.
+ * Si el techo es 0/ausente usa el default → nunca corta por config-cero.
+ */
+async function checkMonthlyBudget() {
+    const month = spendMonthKey();
+    const [cfgSnap, spendSnap] = await Promise.all([
+        db.doc('config/altorCost').get().catch(() => null),
+        db.doc('altorSpend/' + month).get().catch(() => null)
+    ]);
+    const cfg = (cfgSnap && cfgSnap.exists) ? cfgSnap.data() : null;
+    const budgetUsd = (cfg && typeof cfg.monthlyBudgetUsd === 'number' && cfg.monthlyBudgetUsd > 0)
+        ? cfg.monthlyBudgetUsd : DEFAULT_MONTHLY_BUDGET_USD;
+    const spentUsd = (spendSnap && spendSnap.exists && typeof spendSnap.data().usd === 'number')
+        ? spendSnap.data().usd : 0;
+    return { exceeded: spentUsd >= budgetUsd, spentUsd: spentUsd, budgetUsd: budgetUsd };
+}
+
+/** Acumula el gasto real del mes (atómico, best-effort). */
+async function recordSpend(costUsd) {
+    if (!costUsd || costUsd <= 0) return;
+    const month = spendMonthKey();
+    try {
+        await db.doc('altorSpend/' + month).set({
+            usd: admin.firestore.FieldValue.increment(costUsd),
+            calls: admin.firestore.FieldValue.increment(1),
+            month: month,
+            lastAt: new Date().toISOString()
+        }, { merge: true });
+    } catch (e) { console.warn('[recordSpend] no registrado:', e.message); }
+}
+
 exports.chatLLM = onCall({
     region: 'us-central1',
     secrets: [llmApiKey],
@@ -1346,6 +1411,20 @@ exports.chatLLM = onCall({
             text: 'Has alcanzado el límite diario de respuestas automáticas. Te conecto con un asesor humano.',
             cta: { label: 'Hablar con asesor', action: 'escalate' },
             rateLimited: true
+        };
+    }
+
+    // 3.5 F1.a (EPIC) — TECHO GLOBAL de gasto Anthropic-aware: el muro real
+    // anti-Denial-of-Wallet. Si el gasto del mes alcanzó el techo del dueño, el
+    // bot NO muere — pasa a modo captura (asesor/WhatsApp). El dueño mueve el
+    // techo en config/altorCost.monthlyBudgetUsd (default $15).
+    const budget = await checkMonthlyBudget();
+    if (budget.exceeded) {
+        console.warn('[chatLLM] techo de gasto alcanzado: $' + budget.spentUsd.toFixed(4) + ' / $' + budget.budgetUsd);
+        return {
+            text: 'En este momento te atiende mejor uno de nuestros asesores. Déjanos tu nombre y WhatsApp y te contactamos enseguida. 🙌',
+            cta: { label: 'Hablar con asesor', action: 'escalate' },
+            budgetExceeded: true
         };
     }
 
@@ -1402,7 +1481,14 @@ exports.chatLLM = onCall({
         .map((m) => ({
             role: m.role === 'user' ? 'user' : 'assistant',
             content: m.content.slice(0, 4000) // cap por mensaje para safety
-        }));
+        }))
+        // F1.a (EPIC) — memoria corta: solo los últimos N mensajes. Corta el
+        // costo cuadrático (cada turno reenvía el historial); el resumen cubre
+        // lo viejo.
+        .slice(-MAX_HISTORY_MSGS);
+    // Anthropic exige primer mensaje = 'user': si el corte dejó un 'assistant'
+    // al inicio, lo descartamos para no romper la alternancia.
+    while (cleanMessages.length && cleanMessages[0].role !== 'user') cleanMessages.shift();
 
     if (cleanMessages.length === 0 || cleanMessages[cleanMessages.length - 1].role !== 'user') {
         throw new HttpsError('invalid-argument', 'last message must be from user');
@@ -1445,6 +1531,13 @@ exports.chatLLM = onCall({
             // Remover el tag del text para que no aparezca al cliente
             finalText = finalText.replace(/\[CTA:[^:\]]+:[a-z\-]+\]\s*$/i, '').trim();
         }
+    }
+
+    // F1.a (EPIC) — registrar el gasto real del mes para el techo global.
+    // Solo Anthropic (la fórmula de precio es Haiku 4.5). Se espera para que
+    // complete antes de que la instancia se congele.
+    if (provider === 'anthropic') {
+        await recordSpend(computeAnthropicCostUsd(result.usage));
     }
 
     return {

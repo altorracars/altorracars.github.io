@@ -127,11 +127,13 @@ skills, verificar el largo antes de instalar) en `skills/<nombre>/` → (5) la *
     mantenibilidad/integración) + Impact Analysis + "contexto manda, no microservicios por moda". Es la versión afinada que
     hace innecesario adoptar `engineering:architecture`/`system-design` (genéricas, asumen SaaS/cloud pago). Doctrina always-on
     en `CLAUDE.md §3.8`; manifiesto en `46-ESCALABILIDAD`.
-  - ⚠️ **Defecto a corregir** (en la conversación dueña de las skills, no aquí — son co-editadas en paralelo): `description`
-    parseada >1024 (límite uploader): `comite-expertos` 1038, `legal-colombia` 1148; `arquitecto-software` 934 OK.
-    🧮 **Gotcha (medir bien)**: el límite es **1024 en `String.length` de JS** (NO bytes). `wc -m` cuenta bytes y
-    sobre-estima por acentos/flechas (→, é, ñ) → falso positivo. Medir con `node -e "...m[1].length"`.
-    `validacion-live-chrome` nació en 1222→recortada a **953 OK** (2026-06-23, el dueño chocó el límite al instalar manual).
+  - 🧮 **Límite `description` ≤1024 (instalador manual)** — regla segura: **≤1024 BYTES UTF-8** (si bytes ≤1024,
+    chars también; los acentos/flechas `→ é ñ` pesan doble). **Medir con node** (`Buffer.byteLength`/`.length`),
+    NO con `wc -m`. **Audit 2026-06-23** (94 `SKILL.md` × 5 ubicaciones: 4 repos + `~/.claude/skills/`): **0 sobre
+    1024**. La nota vieja (`comite-expertos` 1038 / `legal-colombia` 1148) era STALE — hoy miden 915 / **1014** bytes
+    (ya recortadas). Único caso real: `validacion-live-chrome` 1222→**953 chars / 964 bytes ✅** (el dueño chocó el
+    límite al instalar manual). ⚠️ **Vigilar**: `legal-colombia` 1014 bytes = solo 10 de margen (no editar aún: bajo
+    límite + skill co-editada en paralelo). **Gate**: `npm run skills:desc-check` (`scripts/skill-desc-check.mjs`, sale 1 si alguna >1024).
 - **`validacion-live-chrome`** (2026-06-23, TODO-36 → ADR §232) — INSTRUMENTO de verificación LIVE post-merge:
   genero un prompt+esquema-de-observabilidad para la extensión "Claude in Chrome" del dueño (su sesión logueada;
   credenciales solo él, L-08), él lo ejecuta en la web en vivo y me pega la observabilidad → actúo (caza-bugs→fix).

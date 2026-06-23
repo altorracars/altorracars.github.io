@@ -3669,6 +3669,15 @@
             firstName = String(session.nombre).trim().split(/\s+/)[0];
         }
 
+        // F2.b (EPIC) — botones tontos de arranque (comité #3): el usuario nuevo TOCA en vez de teclear.
+        // Reusan el mecanismo data-quick-reply (listener delegado panel.click → send(payload)) y el
+        // CSS .cnc-quick-replies/.cnc-quick-reply ya existentes → cero wiring/CSS nuevo.
+        var starterQR = '<div class="cnc-quick-replies">' +
+            '<button class="cnc-quick-reply" data-quick-reply="Muéstrame los autos disponibles">🚗 Ver disponibles</button>' +
+            '<button class="cnc-quick-reply" data-quick-reply="Quiero buscar un auto por presupuesto">💰 Por presupuesto</button>' +
+            '<button class="cnc-quick-reply" data-quick-reply="Quiero hablar con un asesor">💬 Hablar con asesor</button>' +
+        '</div>';
+
         // Variante 1: Returning user (prioridad más alta)
         if (isReturningUser) {
             var greetReturning = firstName
@@ -3678,6 +3687,7 @@
                 '<strong>' + greetReturning + '</strong>' +
                 '<br><br>' +
                 'Soy ALTOR. ¿Seguimos donde dejamos la conversación o necesitas algo nuevo?' +
+                starterQR +
             '</div>';
         }
 
@@ -3693,6 +3703,7 @@
                     '<br><br>' +
                     'Veo que estás mirando el <strong>' + escapeHtml(vehTitle) + '</strong>. ' +
                     '¿Tienes preguntas sobre este auto, o quieres ver opciones similares?' +
+                    starterQR +
                 '</div>';
             }
         }
@@ -3703,6 +3714,7 @@
                 '<strong>¡Hola ' + escapeHtml(firstName) + '! 👋 Soy ALTOR</strong>' +
                 '<br><br>' +
                 'Soy el Asistente Virtual IA de Altorra Cars. ¿En qué te ayudo hoy?' +
+                starterQR +
             '</div>';
         }
 
@@ -3711,6 +3723,7 @@
             '<strong>👋 ¡Hola! Soy ALTOR</strong>, el Asistente Virtual IA de Altorra Cars.' +
             '<br><br>' +
             'Pregúntame sobre vehículos, financiación, citas, peritaje o lo que necesites. Si quieres, puedo conectarte directo con un asesor humano.' +
+            starterQR +
         '</div>';
     }
 

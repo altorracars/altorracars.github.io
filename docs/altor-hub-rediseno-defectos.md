@@ -46,5 +46,13 @@ cede stacking cuando el dropdown abre).
 
 ---
 
+## Flujo comercial / Copywriting (nueva dimensión del validador)
+> El validador ahora también caza copy + flujo comercial (saludo→cierre): mensajes duplicados, CTAs
+> prematuros/repetidos, tono/voz de marca, pasos que sobran/faltan, fricción comercial. (Skill §0/§3.)
+
 ## Resueltos
-(ninguno aún)
+- **F#1 · 🟠 FLUJO · gate de cita · fechas duplicadas** (cazado 2026-06-23, fix `02a79a7`) — el bloque
+  "Mañana/Esta semana/Próxima semana" salía 2× (pedido del gate + respuesta diferida post-gate). Causa:
+  los gate-requests (cita/vender/financiación) sin `quickReplies` → el caller (concierge.js:1085) les ponía
+  las contextuales del intent; pero el gate pide DATOS por el form, no fechas. Fix: `quickReplies:[]` en
+  los 3 gate-requests. ✅ Pendiente de re-validación live.

@@ -20,4 +20,4 @@
 - cron↔cache = patrón conocido (L-02, hija `31-LECCIONES-GIT`).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · index cinematic vanilla ✅ · cerebro autónomo ✅ (v6 en ejecución) · SEO ✅ · bot/RBAC/Hub ✅ (**ALTOR en reestructura**: TODO-34 diseño✅ triple-validado, F1/F2 pend 3 decisiones dueño)
+`js/` modular ✅ · index cinematic vanilla ✅ · cerebro autónomo ✅ (v6 en ejecución) · SEO ✅ · bot/RBAC/Hub ✅ (**EPIC ALTOR Hub v2 EN CURSO = foco único**: arquitectura Opción A decidida; **F1.a✅** techo-gasto + **F2.a✅** cédula-fuera en `dev`; LLM apagado `_brain.enabled=false`; 🔜 F2.b WhatsApp-gate. Detalle→spec TODO-34 §EPIC)

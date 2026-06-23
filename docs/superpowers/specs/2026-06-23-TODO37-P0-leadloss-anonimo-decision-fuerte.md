@@ -30,18 +30,31 @@ Agentes: `a1f890f32c7c1de42` (reglas/seguridad) · `ab9aa324dbf7930d0` (frontend
 - **C recomendado**: callable `enrichLead(leadId,{nombre,telefono,email,consent})` (Admin SDK, bypassa rules, UPDATE DIRIGIDO por leadId, valida consentimiento Ley 1581 server-side). Cero duplicado, preserva `createdAt`, cliente nunca toca el canónico (M-18). Costo: +1 función (barato).
 - **Anti-fantasma estructural**: la ingestión NUNCA debe fabricar nombre placeholder ("Cliente os6i1s") → escribir `name:null, status:anonymous`; promover a `qualified` solo al enriquecer. Job de expiración de anónimos viejos.
 
-## 4. Veredicto preliminar del presidente (a verificar con Gemini)
-**D (ya, bleed-stop directo, sin reglas) + C (estructural, vía Decisión Fuerte) + dejar de fabricar placeholder + regla UPDATE INTACTA.** B-diferido como fallback $0 SOLO si se refuerza dedup por leadId/sessionId. Legal: el punto de validación de consentimiento (Ley 1581) → revisar con `legal-colombia` al diseñar C.
+## 4. Gemini (consejo externo) VERIFICADO + VEREDICTO FINAL
+Gemini (Antigravity, code-aware) confirmó diagnóstico + rumbo (C+D, regla estricta, rechaza A/B). **Verificación paso 4 (no asumir):**
+- ✅ Diagnóstico exacto; `escalateToLive` (concierge.js:1300) también llama `createSoftContact` → `_leadCreated=true` casi siempre → el gate cae en update. Verificado.
+- ⚠️ **CORRECCIÓN**: Gemini dijo que `isEditorOrAbove` revisa *Custom Claims*; el código (firestore.rules:21-22 + 54-57) usa **lookup `usuarios/{uid}`** (callejón a / §159.3; claims = Fase 5). Mismo resultado (no-admin denegado, incl. cliente logueado sin doc en `usuarios/`), mecanismo distinto. **Gana el código.**
+- ✅ Matices nuevos válidos: (i) **Callables sin caché offline** → `enrichLead` falla inmediato en red mala → la cola local (D) es load-bearing para reintentar offline; (ii) **idempotencia** (`set({merge:true})`, no-op si ya enriquecido); (iii) App Check.
 
-## 5. Pendiente
-- ⏳ **Gemini (Antigravity)**: verificar adversarialmente diagnóstico + C-vs-B + ¿C sobre-ingeniería? + ángulo 1581 + que la regla siga estricta. (Prompt entregado al dueño en chat.)
-- ⏳ Veredicto final → impl por fase: **Fase 0 = D** (bleed-stop) → **Fase 1 = C** + stop-placeholder → **Fase 2** App Check en `solicitudes` + dedup cascada + job reconciliación.
-- ⏳ Re-validación LIVE (validador) tras cada fase.
+**DECISIÓN (presidente, con 2 divergencias razonadas de Gemini):**
+1. **C** = callable `enrichLead(leadId,{nombre,telefono,email,consent})` — Admin SDK, `merge:true`, idempotente por leadId, valida consent server-side. UPDATE DIRIGIDO (cero duplicado).
+2. **D** = quitar `.catch(){}` mudo (1236/1255); confirmar SOLO tras ACK; en fallo → cola local idempotente + reintento + **WhatsApp prellenado**; clasificar permission-denied vs red.
+3. **Regla UPDATE INTACTA** (ratificado ×comité ×Gemini).
+4. **Stop placeholder**: ingestión escribe `name:null, status:anonymous`, jamás "Cliente os6i1s".
+5. **DIVERGENCIA App Check**: Gemini pide forzarlo en el callable; **NO lo fuerzo aún** — el cerebro defiere App Check enforce (§41: riesgo lead-block silencioso + tráfico bajo) y forzarlo en `enrichLead` reintroduciría el lead-block que estamos arreglando. Interim sin App Check: leadId 20-char alta entropía + el callable **exige `sessionId` y lo cruza con `doc.sessionId`** (no enumerable) + guard de estado (solo enriquecer docs anonymous/sin-email) + rate-limit. App Check se suma como capa con la decisión global §41.
+6. **DIVERGENCIA mecanismo**: corregido claims→lookup (arriba).
+Legal: consent timestamp + versión-de-texto server-side (audit trail anti-SIC); **NO almacenar IP sin base legal** (IP = PII bajo 1581 → gate abogado P4); el TEXTO de consentimiento sigue en gate P4 (`legal-colombia`).
+
+## 5. Plan por fases (post-veredicto)
+- **Fase 0 (bleed-stop, DIRECTO, sin reglas/función)**: gate result-aware (los writes devuelven promesa; `handleGateSubmit` espera el ACK; "¡Listo!" SOLO tras éxito; en fallo → WhatsApp prellenado con nombre/celular); matar catch mudo (1236/1255). Detiene la mentira + salva el lead vía WhatsApp HOY. **← implementable ya, bajo riesgo.**
+- **Fase 1 (C, Decisión Fuerte)**: function `enrichLead` (merge+idempotente+sessionId-match+status-guard) + wiring cliente (gate llama `enrichLead` en vez de `updateSoftContact` para no-admin) + stop-placeholder en la ingestión + cola local. Deploy Claude (`firebase deploy --only functions`). Re-validar live.
+- **Fase 2**: dedup cascada (leadId→sessionId→tel→email) 2ª red + job expiración de anónimos + App Check enforce (con §41).
+- Re-validación LIVE (validador adversarial) tras Fase 0 y Fase 1.
 
 ## Checklist
 - [x] Verificación de causa raíz — `js/concierge/concierge.js:2712` (gate→update) + `firestore.rules:773` (update solo-admin) + `js/concierge/concierge.js:1236` (catch mudo)
 - [x] Comité acotado (3 expertos) capturado — síntesis §3 + agentIds `a1f890f32c7c1de42`/`ab9aa324dbf7930d0`/`a6ad4676a43e357fe`
-- [ ] Consejo externo Gemini verificado
-- [ ] Veredicto final + autorización dueño
-- [ ] Fase 0 (D) implementada + re-validada live
+- [x] Consejo externo Gemini verificado — §4 (confirmó C+D; corregí claim claims→lookup `firestore.rules:21`; divergencia App Check razonada)
+- [x] Veredicto final — §4 (C+D, regla intacta, App Check diferido con mitigaciones, consent server-side)
+- [ ] Autorización dueño + Fase 0 (D) implementada + re-validada live
 - [ ] Fase 1 (C) implementada + re-validada live

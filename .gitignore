@@ -59,5 +59,9 @@ backups/
 # Respaldo reversible de fotos huérfanas (salida de scripts/storage-orphans.mjs --backup — NO versionar)
 orphans_backup/
 
+# Snapshot temporal de functions desplegadas (salida de `npm run deadcode:check` — NO versionar)
+.deadcode-fns.json
+_fnlist.json
+
 # Cuarentena de legacy (no se sirve; ver _legacy/README.md)
 # _legacy/  <- se MANTIENE versionado a propósito, comentado aquí solo como nota

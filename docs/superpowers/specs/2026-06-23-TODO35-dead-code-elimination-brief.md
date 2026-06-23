@@ -52,3 +52,15 @@ revivida); (4) **sin test/rollback** que lo cazara.
 ## Salida esperada de la sesión fresca
 VEREDICTO (skill/agente/gate definido) + implementación verificada + propagación a los 4 cerebros + (si es
 gobernanza) ADR en `99` + flag en `05`. Capturar deliberación (crudo+síntesis) en bóveda.
+
+---
+
+## ✅ VEREDICTO (2026-06-23 — pipeline `proceso-decision-fuerte`: verificar→arquitecto→comité#1→Gemini→verificar→veredicto)
+**Decisión = COMBINACIÓN, secuenciada por 80/20** (no una sola skill/agente):
+1. **P0 — GATE mecánico `scripts/deadcode-check.mjs` + `npm run deadcode:check`** ✅ **CONSTRUIDO Y PROBADO 2026-06-23.** Diff POR NOMBRE: `firebase functions:list --json` ↔ `exports.X` del source (parse estático, NO `require` — side-effects). Una desplegada que no está en el source = HUÉRFANA (el 8º servidor). Necesita firebase auth (red) → separado del `brain:check` offline. **Resultado live: 59 source / 58 deployed · 0 huérfanas · 0 dups · `migrateLegacyUsers` en source sin desplegar (one-shot → candidata `_legacy/`).**
+2. **P1 — Skill global `anti-codigo-muerto`** (skills/ de los 4 repos): doctrina + procedimiento al estrenar (¿qué viejo reemplaza? cuarentena `_legacy/` → grep referencias → proxy-telemetría si dudas → humano borra en PR tras ≥15d logs limpios) + checklist 4-causas-KC + **tombstones de flags** (Gemini: nunca reciclar nombre; namespacing versionado) + **"prueba el camino vivo con el motor ACTUAL"** (lección botones, M-19) + **invariante: la cuarentena del backend dura > el caché de GH-Pages** (Gemini). 🔜 PENDIENTE BUILD.
+3. **P2 — Workflow `auditoria-codigo-viejo` BOUNDED** (roles foreground, NO fan-out que cuelga L-50): detector-código-viejo · caza-bugs · anticipador seguridad/dinero/UX/plataforma. 🔜 PENDIENTE BUILD.
+4. **DIFERIDO (epic futuro, NO ahora)**: migración a ESM nativo (Gemini lo proponía para que knip/eslint detecten JS muerto) — es reescritura masiva del código global-scope = riesgo > beneficio hoy; el gate+skill+telemetría dan la seguridad sin eso.
+
+**Verificado vs refutado de Gemini** (regla de oro paso 4): ✅ functions-diff factible (probado); ✅ tombstones/cache-invariant/DOM-disconnect (cazadas que el comité no vio); ⚠️ REFUTADO `require(index.js)` → parse estático; ⚠️ REFINADO "Remoto−Local" → por-nombre (las 5 de southamerica-east1 NO son huérfanas, evita falso positivo); ⚠️ TEMPERADO ESM → epic diferido. Crudo Gemini: `architecture_cleanup_design.md` (Downloads dueño). Comité#1 (4 expertos foreground) → síntesis en `99` al cerrar.
+**Pendiente para CERRAR TODO-35**: build P1 (skill ×4) + P2 (workflow) + ADR `99` + flag `05` + crudo a bóveda. Luego → frenar el bot (opción a/b).

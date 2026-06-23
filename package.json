@@ -10,7 +10,8 @@
     "brain:check": "node scripts/brain-check.mjs",
     "brain:diff": "node scripts/brain-diff.mjs",
     "brain:index": "node scripts/brain-index.mjs",
-    "orphans:scan": "node scripts/storage-orphans.mjs"
+    "orphans:scan": "node scripts/storage-orphans.mjs",
+    "deadcode:check": "firebase functions:list --json > .deadcode-fns.json && node scripts/deadcode-check.mjs .deadcode-fns.json"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

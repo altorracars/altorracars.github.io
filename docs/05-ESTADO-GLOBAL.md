@@ -20,4 +20,4 @@
 - cron↔cache = patrón conocido (L-02, hija `31-LECCIONES-GIT`).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · index cinematic vanilla ✅ · cerebro autónomo ✅ (v6 en ejecución) · SEO ✅ · bot/RBAC/Hub ✅ (**EPIC ALTOR Hub v2 = foco único**: F1.a+F2+F3+TTL+wiring **✅ DEPLOYED** (#917 merged · Pages live · chatLLM v2 + TTL dry-run en prod); bot v2 LISTO — **falta solo el toggle `_brain.enabled=true` en portal** (Cerebro→Activo). 🟡 LLM aún apagado. Detalle→spec §EPIC)
+`js/` modular ✅ · index cinematic vanilla ✅ · cerebro autónomo ✅ (v6 en ejecución) · SEO ✅ · bot/RBAC/Hub ✅ (**EPIC ALTOR Hub v2 = foco único**: F1.a+F2+F3+TTL+wiring **✅ DEPLOYED** (#917 merged · Pages live · chatLLM v2 + TTL dry-run en prod); bot v2 LISTO — **bloqueado por saldo Anthropic**; falta recargar → toggle `_brain.enabled=true` (admin clásico→Cerebro). 🟡 LLM apagado. Detalle→spec §EPIC)

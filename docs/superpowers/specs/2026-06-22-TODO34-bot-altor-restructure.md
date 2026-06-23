@@ -250,6 +250,42 @@ Crudo `2026-06-23-TODO34-gemini-redteam-EPIC-CRUDO.md`. Verificado/adoptado:
   sobre la app firmada (anti lead-block; por eso está en monitor). **Mejor activar el enforce JUSTO ANTES de
   encender el bot (F3)** — con el bot apagado no protege nada y no se puede verificar con tráfico real.
 
+### F3 — diseño de implementación (execution-ready, 2026-06-23)
+> Estado: **DISEÑO listo; implementación GATED por decisión dueño** (techo $/mes + timing App Check). Todo
+> dormiente tras DOBLE LLAVE: `engine:'v2'` (off) + `_brain.enabled` (off). Verificado en código `functions/index.js`.
+
+**Arquitectura (Opción A verificada):** solo-LLM + Tool Calling real. El inventario SALE del prompt (hoy
+`composeSystemPrompt` lo inyecta inline, `index.js:1190`) y el hack `[CTA:]` (`index.js:1462-1476`) se reemplaza
+por tool-use real (`callAnthropic` HOY no envía `tools[]`, `index.js:1063` — ese es el gap a llenar).
+
+1. **Tools server-side (payload CAPADO — anti Tool-Hallucination/DDoS, Gemini):**
+   - `search_inventory({marca?,modelo?,year_min?,year_max?,precio_max?,tipo?})` → reusa `fetchInventoryForLLM`
+     con filtros; devuelve **máx 3** vehículos JSON ultraligero (id/marca/modelo/year/precio/url). El render del
+     carro lo hace código determinista desde Firestore, NUNCA specs en texto del LLM.
+   - `submit_lead({nombre,celular,correo?,lead_quality:'hot'|'warm'|'cold',intent})` → escribe el lead. **Validación
+     BACKEND** (Gemini-EPIC): nombre tipo "Mickey Mouse" o celular ≠ `^3[0-9]{9}$` → degrada `lead_quality` a
+     cold/spam ignorando lo que dijo el LLM (anti prompt-injection). **Cero-pérdida:** sin handle → doc
+     `incompleto`/origen 'bot' (NO toca el `throw` de `normalizeSolicitud` que protege los FORMULARIOS web — se queda, IAP).
+   - (opcional) `get_faq(tema)` → FAQs sin stuffing.
+2. **System prompt (rewrite de `composeSystemPrompt`):** role + reglas + anti-jailbreak + **guardrail
+   anti-negociación EN MAYÚSCULAS** ("ESTRICTAMENTE PROHIBIDO NEGOCIAR PRECIOS O ACEPTAR OFERTAS; LOS PRECIOS SON
+   FINALES" — alucinación financiera/legal, Gemini-EPIC) + "si no sabes, llama una tool o escala". SIN inventario
+   inline. Mantener el `cache_control` del system (−90% input; Haiku 4.5 lo soporta).
+3. **Tool-use loop en `callAnthropic`:** añadir `tools:[...]` al body; si `stop_reason==='tool_use'` → ejecutar
+   tool(s) server-side → append `tool_result` → re-llamar (**máx ~3 iteraciones/turno**, anti-loop). Acumular
+   `usage` de CADA iteración a `recordSpend` (el techo global F1.a ya cuenta tokens reales).
+4. **Flag `engine:'v2'`:** el cliente manda `engine` en `data`; el server bifurca v2 (tool loop) vs v1 (`[CTA:]`
+   actual) — **v1 INTACTO** hasta retirar el flag (corte limpio = F6). A/B por sessionId 10%→100%.
+5. **GATE antes de encender (F1 diferido):** `enforceAppCheck:true` en el `onCall` (hoy AUSENTE, `index.js:1369`)
+   + rate-limit por App Check token/IP (no `sessionId`) + turn-cap ~15 (escala a humano) + indicador
+   "Escribiendo…" (latencia 4-6s onCall→Anthropic). Activar JUSTO antes del flip (verificable solo con tráfico real).
+6. **Verificación F3:** unit del tool loop (mock Anthropic `tool_use`); E2E live `engine:'v2'` cohorte 10%
+   (post-merge, dueño); **recorrer `submit_lead` cero-pérdida end-to-end** (anónimo sin handle → `incompleto`, NO se pierde).
+
+**GO-conditions (dueño) para arrancar F3:** (1) confirmar techo $/mes (default **$15** ya activo en
+`config/altorCost`) · (2) OK a activar App Check enforce justo antes del flip · (3) decisión TTL retención
+(borrar vs anonimizar + ventana, Ley 1581).
+
 ## Checklist
 - [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
 - [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).
@@ -261,4 +297,6 @@ Crudo `2026-06-23-TODO34-gemini-redteam-EPIC-CRUDO.md`. Verificado/adoptado:
 - [x] **VEREDICTO FINAL ✅: Opción A** (solo-LLM + Tool Calling + botones tontos de navegación), guards-first. A↔B parcialmente semántica; con guards las ventajas de B son marginales; A gana por mantenibilidad + corte limpio + honra el instinto del dueño. Evidencia: ADJUDICACIÓN en `research-archive/2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
 - [x] **EPIC expandido + Comité #3 (captura/UX/qualifier) ✅ 2026-06-23** + **Gemini red-team del EPIC ✅** (reorden captura↔bot + 4 guardrails). Pipeline completo = 3 comités + 2 Gemini, verificado por-claim. Crudos bóveda.
 - [ ] **Confirmación dueño: plan EPIC 6 fases REORDENADAS (captura antes del bot) + techo $15/mes (techo global = el muro).**
+- [x] **Implementación: F1.a ✅ · F2.a ✅ · F2.b ✅** (2026-06-23, en `dev`): techo gasto + memoria corta · cédula fuera · WhatsApp en gate + voz Colombia.
+- [x] **F3 diseño execution-ready ✅ 2026-06-23** (§F3 arriba: tools + system-prompt rewrite + tool-loop en `callAnthropic` + flag `engine:'v2'` + gate App Check). Pend GO dueño.
 - [ ] Implementar F1→F6 (plan arriba), verificación por fase §G.4. **F1 (candados + frenar hemorragia + TTL) primero** — bajo riesgo, valor inmediato.

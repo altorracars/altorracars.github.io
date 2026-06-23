@@ -901,6 +901,40 @@
     margin-top: 2px;
     min-height: 1em;
 }
+/* F2.b (EPIC) — fallback WhatsApp en el gate (rescate cero-pérdida). Clases NUEVAS (aditivo §3.2). */
+.cnc-gate-or {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0;
+    color: rgba(232, 216, 179, 0.4);
+    font-size: 0.68rem;
+}
+.cnc-gate-or::before,
+.cnc-gate-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(184, 150, 88, 0.18);
+}
+.cnc-gate-wa {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: rgba(37, 211, 102, 0.12);
+    color: #25d366;
+    border: 1px solid rgba(37, 211, 102, 0.35);
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 140ms ease, transform 140ms ease;
+}
+.cnc-gate-wa:hover { background: rgba(37, 211, 102, 0.2); transform: translateY(-1px); }
+.cnc-gate-wa:active { transform: scale(0.98); }
+.cnc-gate-wa i { width: 15px; height: 15px; }
 @media (max-height: 600px) {
     /* Pantallas cortas (mobile landscape, laptops chicos) — más compacto aún */
     .cnc-gate { padding: 10px 12px; }
@@ -913,6 +947,8 @@
     .cnc-gate-form input[type="email"] { padding: 6px 8px; font-size: 0.82rem; }
     .cnc-gate-form label { font-size: 0.68rem; }
     .cnc-gate-submit { padding: 8px; font-size: 0.85rem; }
+    .cnc-gate-wa { padding: 7px; font-size: 0.8rem; }
+    .cnc-gate-or { margin: 0; }
 }
 @media (max-width: 480px) {
     .cnc-gate-row { flex-direction: column; }

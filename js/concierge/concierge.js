@@ -326,11 +326,11 @@
         // 3. Intent: greeting — respuesta natural, NO menú
         if (classification.intent === 'greeting' && classification.confidence >= 0.3) {
             var greetVariants = firstName ? [
-                '¡Hola ' + firstName + '! 👋 Bien por aquí, listo para ayudarte. ¿Qué andás buscando?',
+                '¡Hola ' + firstName + '! 👋 Con gusto te ayudo. ¿Qué estás buscando?',
                 'Hola de nuevo ' + firstName + '. ¿En qué puedo ayudarte hoy?',
                 '¡Qué tal ' + firstName + '! Cuéntame qué necesitas.'
             ] : [
-                '¡Hola! 👋 Bien por aquí, listo para ayudarte. ¿Qué andás buscando?',
+                '¡Hola! 👋 Con gusto te ayudo. ¿Qué estás buscando?',
                 '¡Qué tal! ¿En qué puedo ayudarte hoy?',
                 'Hola, gusto saludarte. Cuéntame qué necesitas.'
             ];
@@ -2281,23 +2281,27 @@
             // Lead Capture Gate — visible si gateCompleted === false
             '<div class="cnc-gate" id="cncGate" style="display:none;">' +
                 '<div class="cnc-gate-head">' +
-                    '<div class="cnc-gate-title">Antes de empezar</div>' +
-                    '<div class="cnc-gate-sub">Cuéntanos quién eres para que podamos darte el mejor servicio.</div>' +
+                    '<div class="cnc-gate-title">Déjanos tus datos</div>' +
+                    '<div class="cnc-gate-sub">Solo necesitamos cómo contactarte. Toma 10 segundos.</div>' +
                 '</div>' +
                 '<form class="cnc-gate-form" id="cncGateForm" autocomplete="on" novalidate>' +
+                    // F2 (EPIC): mínimo viable = nombre + celular (lo obligatorio arriba).
                     '<div class="cnc-gate-row">' +
                         '<label><span>Nombre *</span><input type="text" name="nombre" required minlength="2" autocomplete="given-name"></label>' +
-                        '<label><span>Apellido *</span><input type="text" name="apellido" required minlength="2" autocomplete="family-name"></label>' +
+                        '<label><span>Celular (WhatsApp) *</span><input type="tel" name="celular" required pattern="3[0-9]{9}" inputmode="numeric" autocomplete="tel-national" placeholder="3201234567"></label>' +
                     '</div>' +
+                    // F2 (EPIC): CÉDULA RETIRADA (mayor fricción/fuga de leads; se pide al formalizar con un
+                    // humano, no en el chat). apellido + correo ahora OPCIONALES.
                     '<div class="cnc-gate-row">' +
-                        '<label><span>Cédula *</span><input type="tel" name="cedula" required pattern="[0-9]{5,12}" inputmode="numeric" placeholder="Sin puntos"></label>' +
-                        '<label><span>Celular *</span><input type="tel" name="celular" required pattern="3[0-9]{9}" inputmode="numeric" autocomplete="tel-national" placeholder="3201234567"></label>' +
+                        '<label><span>Apellido</span><input type="text" name="apellido" autocomplete="family-name" placeholder="Opcional"></label>' +
+                        '<label><span>Correo</span><input type="email" name="correo" autocomplete="email" placeholder="Opcional"></label>' +
                     '</div>' +
-                    '<label><span>Correo *</span><input type="email" name="correo" required autocomplete="email" placeholder="tu@correo.com"></label>' +
+                    // ⚖️ Ley 1581: el mecanismo de consentimiento existe; el TEXTO legal exacto + link a la
+                    // Política de Tratamiento de Datos = gate P4 (abogado, §42-LEGAL). NO finalizar sin revisión legal.
                     '<label class="cnc-gate-consent"><input type="checkbox" name="consent" required>' +
-                        '<span>Autorizo que un asesor de Altorra Cars me contacte por email/WhatsApp.</span>' +
+                        '<span>Autorizo a Altorra Cars a contactarme y a tratar mis datos personales.</span>' +
                     '</label>' +
-                    '<button type="submit" class="cnc-gate-submit">Iniciar conversación</button>' +
+                    '<button type="submit" class="cnc-gate-submit">Continuar</button>' +
                     '<div class="cnc-gate-error" id="cncGateError" role="alert" aria-live="polite"></div>' +
                 '</form>' +
             '</div>' +
@@ -2450,9 +2454,8 @@
     function isGateRequired() {
         // FASE 2.B — Si gate ya completado (sea por form o por auth profile), skip
         if (session.gateCompleted && session.profile) return false;
-        // Si el cliente está logueado con perfil COMPLETO (auth + email + nombre + cedula),
-        // saltamos el gate. Si falta cedula (usuario viejo pre-fix), pedimos solo eso
-        // a través de maybeAskForProfile más adelante en lugar del gate completo.
+        // F2 (EPIC): si el cliente está logueado con lo esencial (uid + nombre + celular),
+        // saltamos el gate. (Cédula/correo ya NO son obligatorios — se retiró la cédula del chat.)
         if (session.uid && session.email && session.nombre) return false;
         // §86 Sprint C-S8 — Progressive profiling: gate NO es forzoso al
         // primer mensaje. Solo aparece cuando el bot lo solicita
@@ -2534,8 +2537,8 @@
         session.email = profile.correo;
         session.nombre = (profile.nombre + ' ' + profile.apellido).trim();
         session.telefono = profile.celular;
-        // Si tiene los datos esenciales (incluyendo cédula), saltamos el gate
-        if (profile.nombre && profile.correo && profile.cedula && profile.celular) {
+        // F2 (EPIC): mínimo esencial = nombre + celular (cédula/correo ya no obligatorios) → saltamos el gate
+        if (profile.nombre && profile.celular) {
             session.profile = profile;
             session.gateCompleted = true;
             session.level = Math.max(session.level || 0, 2);
@@ -2649,23 +2652,21 @@
         var fd = {
             nombre: (form.nombre.value || '').trim(),
             apellido: (form.apellido.value || '').trim(),
-            cedula: (form.cedula.value || '').trim(),
             celular: (form.celular.value || '').trim(),
             correo: (form.correo.value || '').trim().toLowerCase(),
             consent: !!form.consent.checked
         };
 
-        // Validaciones explícitas (los HTML5 validators a veces no disparan bien en mobile)
+        // F2 (EPIC): mínimo viable = nombre + celular. apellido + correo OPCIONALES; cédula RETIRADA.
+        // (Validaciones explícitas: los HTML5 validators a veces no disparan bien en mobile.)
         if (fd.nombre.length < 2) return fail('Por favor escribe tu nombre.');
-        if (fd.apellido.length < 2) return fail('Por favor escribe tu apellido.');
-        if (!/^[0-9]{5,12}$/.test(fd.cedula)) return fail('Cédula inválida (solo números, 5-12 dígitos).');
         if (!/^3[0-9]{9}$/.test(fd.celular)) return fail('Celular inválido (formato colombiano: 3XX XXX XXXX).');
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fd.correo)) return fail('Correo inválido.');
+        if (fd.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fd.correo)) return fail('Correo inválido.');
         if (!fd.consent) return fail('Necesitamos tu autorización para contactarte.');
 
         // Persistir en sesión
         session.profile = fd;
-        session.nombre = fd.nombre + ' ' + fd.apellido;
+        session.nombre = (fd.nombre + ' ' + fd.apellido).trim();
         session.email = fd.correo;
         session.telefono = fd.celular;
         session.gateCompleted = true;

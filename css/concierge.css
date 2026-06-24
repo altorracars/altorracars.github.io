@@ -1418,9 +1418,13 @@
     font-size: 0.9rem;
     color: #fff;
     line-height: 1.2;
-    white-space: nowrap;
+    /* backlog #2 (2026-06-23): el título ("toyota HILUX 4X4 2018") se cortaba con … en 1 línea
+       (clientWidth 92 < scrollWidth 126). Clamp a 2 líneas → se ve completo; ellipsis solo si excede 2. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-word;
 }
 .cnc-vcard-meta {
     font-size: 0.75rem;

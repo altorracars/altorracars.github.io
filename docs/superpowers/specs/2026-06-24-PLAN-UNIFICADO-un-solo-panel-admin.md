@@ -72,5 +72,32 @@ Core (firebase/auth/store/audit-write/router/shell/login/design-system) · domai
 - **TODO-01** (Cloudflare+Vite) → diferido (dominio); define el stack final del portal.
 - **TODO-28/29/30/32** (cerebro/gobernanza) → meta; TODO-30 gobierna CÓMO se despliega el portal.
 
-## 9. Pendiente Decisión Fuerte (Gemini) → §10 cuando se verifique
-Red-team de: la re-decisión del Hub (admin-app vs sandbox-monolito), la migración auth/sesión única, el orden de fases (¿el más corto y seguro?), el riesgo de cutover, el cierre de fugas, y el stack final (Vite admin-app vs no-bundler widget vs Cloudflare+Vite whole-site).
+## 9. Decisión Fuerte CERRADA — Gemini red-team VERIFICADO claim-a-claim (la joya)
+> Política de arquitecto (dueño): **cero monolitos · escalabilidad · mantenibilidad · corrección de errores · pensado para miles de usuarios.** El North Star (matar el monolito, portal modular `admin-app/` Vite) la cumple; los ajustes de Gemini la vuelven **production-safe a escala**.
+
+### §9.A — Verificación de los 6 hallazgos de Gemini contra el CÓDIGO
+| # | Claim de Gemini | Verificación (archivo) | Veredicto |
+|---|---|---|---|
+| 1 | admin-app usa `persistentSingleTabManager` (multi-tab Hub+Pipeline colapsa) + NO inicializa RTDB que el Hub usa para presence/typing/transfer | `admin-app/src/core/firebase.js:49-51` (single-tab ✅) + sin import `firebase/database` ✅ · `admin-concierge.js:94-419` usa `window.rtdb.ref('/typing'|'/presence')` ✅ | ✅ **CONFIRMADO** |
+| 2 | apps Firebase con sesiones de auth aisladas en IndexedDB → mass-logout en cutover | `firebase.js:30` `APP_NAME='altorra-crm'` + comentario "sesiones de auth separadas… del viejo `altorra-admin`" ✅ | ✅ **CONFIRMADO** (corrección menor: viejo = `altorra-admin`, NO `[DEFAULT]`; el riesgo se mantiene) |
+| 3 | F-7 (purgar el CRM POST-cutover) = borrar la BD viva de producción | crítica lógica del plan ✅ | ✅ **CONFIRMADO** — fallo de secuencia mío |
+| 4 | Enrutar chats anónimos a `failedIngestions` no cierra la fuga; el esquema los rechaza | `normalize.js:60-61` `throw 'No se puede deduplicar: solicitud sin email ni teléfono'` ✅ | ✅ **CONFIRMADO** |
+| 5 | Bot v2 "sin-bundler" vs TODO-01 Cloudflare+Vite whole-site = deuda contradictoria | TODO-01 Vite real (survey) ✅ | ✅ **CONFIRMADO** (supera mi "no-bundler" — que era correcto en LCP pero crea deuda vs el stack futuro) |
+| 6 | admin viejo es PWA real (SW zombie tras cutover sirve shell viejo / intercepta fetch) | `manifest-admin.json` (admin.html:192) + `admin-pwa.js` registra SW + `service-worker.js`/`firebase-messaging-sw.js` ✅ | ✅ **CONFIRMADO** |
+**+ Gemini REVIRTIÓ su verdicto previo:** confirma que mover el Hub a `admin-app/` es el único camino lógico para matar el monolito (mi U1/U2 validado).
+
+### §9.B — Ajustes ADOPTADOS (6 bloqueos de Gemini → correcciones al plan)
+1. **Persistencia + RTDB:** `admin-app/firebase.js` → `persistentMultipleTabManager` + `import {getDatabase} from 'firebase/database'` e init `rtdb` ANTES de portar el Hub (presence/typing/transfer). Prep técnica de F-0.5.
+2. **Auth/sesión:** **script puente** que migre el token de IndexedDB `altorra-admin`→`altorra-crm` en el cutover (o promover `admin-app` a sesión canónica) → cero doble-login. Diseño en F-0.
+3. **Secuencia (el fallo más grave):** **F-7 ELIMINADO como post-cutover.** El **clean-slate + E2E "cero fugas" se hace en STAGING (nuevo F-0.5)** ANTES de go-live (TODO-30 Doble-Llave). Reconciliación con el dueño: "limpiar todo y arrancar de cero" = **reset PRE-lanzamiento de la data de dev/test**, NUNCA purgar producción viva. + bot v2 con **payload retro-compatible** con `admin-concierge.js` durante la transición.
+4. **Cierre de fugas (real):** parchear `contactDedupKey` (`normalize.js:28`) para aceptar fallback **`session:ID`** → el chat abandonado se ingiere como **lead "Anónimo"** en el pipeline canónico (NO una bandeja muerta paralela).
+5. **Stack:** **bot v2 se construye en Vite** desde hoy (emite IIFE único para incrustar en el público legacy mientras dure). Alinea con el whole-site Vite + la política anti-monolito. Supersede la decisión "no-bundler" del verdicto F4/F5 §C.
+6. **Cutover PWA-safe:** el checklist de F-6 DEBE incluir: **paridad FCM/Web-Push en Vite** + multi-tab + RTDB + un **script que des-registre (`unregister`) los Service Workers viejos** de la raíz del dominio desde el `index.html` de Vite (mata el SW zombie en los celulares de los asesores).
+
+### §9.C — SECUENCIA REVISADA (un solo camino, endurecido)
+- **F-0** Decisión Fuerte Hub ✅ (Gemini revirtió → Hub a `admin-app/`) + diseño del script-puente de auth.
+- **F-0.5 (NUEVO)** Prep técnica + **STAGING**: `persistentMultipleTabManager` + RTDB en admin-app · dedup `session:ID` · bot v2 en Vite · **clean-slate + E2E "cero fugas" en staging** (TODO-30 Doble-Llave) → go/no-go.
+- **F-1** Bot widget público en Vite (track propio, retro-compatible) · **F-2** Config (Usuarios→Roles→Deptos→Workflows→Auditoría→Ajustes) · **F-3** Dashboard · **F-4** Comunicaciones (Hub v2 + KB + Unmatched como módulos admin-app) · **F-5** cierre de fugas (dedup anónimo + reprocesador DLQ) ·
+- **F-6 CUTOVER PWA-safe:** paridad + **unregister SW viejos** + bridge auth → `admin.html` a `_legacy/`.
+- ~~F-7~~ → absorbido en F-0.5 (staging), NO post-prod.
+- Diferidos: LLM-enable (saldo) · TODO-25/26 · TODO-23 resto · TODO-01 (define el Cloudflare final).

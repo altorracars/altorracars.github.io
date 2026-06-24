@@ -40,6 +40,8 @@ const NAV = [
   { id: 'usuarios', label: 'Usuarios', icon: '👥', ready: true, perm: 'users.read' },
   // PLAN-UNIFICADO F-2 (2/6) §239: roles + matriz de permisos (port admin-roles).
   { id: 'roles', label: 'Roles', icon: '🛡️', ready: true, perm: 'roles.read' },
+  // PLAN-UNIFICADO F-2 (3/6) §240: catálogo departamental ④a (port admin-departments).
+  { id: 'departamentos', label: 'Departamentos', icon: '🏢', ready: true, perm: ['departments.read', 'departments.manage'] },
 ];
 
 const TITLES = {
@@ -59,6 +61,7 @@ const TITLES = {
   respaldos: 'Respaldos del CRM e inventario',
   usuarios: 'Usuarios y permisos',
   roles: 'Roles y permisos',
+  departamentos: 'Departamentos',
 };
 
 export function mountShell(appRoot) {

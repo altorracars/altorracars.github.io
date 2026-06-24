@@ -69,7 +69,7 @@ Para un widget premium → **modal in-app** en vez del confirm nativo. **Evidenc
 **Síntoma** (validado LIVE 2026-06-24 por Claude vía extensión Chrome — reporte del dueño con captura): al pedir datos, el formulario se ve "media conversación, medio formulario". Quedan visibles A LA VEZ: el form, los mensajes (comprimidos a ~156px), los **quick-actions** ("Hablar con asesor") y la **barra de texto**.
 **Causa (verificada por DOM)**: el panel `#altorra-concierge` (fixed, z9999, 504px) apila hermanos `cnc-header(71)·cnc-gate(154)·cnc-quick-actions(57)·cnc-messages(156)·cnc-input-wrap(63)`. `#cncGate` es **un bloque más en la pila**, no un takeover → no oculta messages/quick-actions/input. Mostrar CTAs+input durante la captura = fricción comercial (CTA en mal momento).
 **Fix (v2)**: el gate v2 ya nace como **overlay/takeover** (CustomEvent fuera del shadow, decisión #1 Gemini) que ocupa el cuerpo del panel y oculta mensajes/quick-actions/input mientras está activo. v1 patcheable con 1 regla CSS (gate como `position:absolute` cubriendo el cuerpo) si se quiere antes del v2.
-**Severidad ALTO**: es el momento de captura del lead (cero-pérdida). **Estado**: 🆕 validado → v2 tramo 3 (requisito: gate = full takeover + ocultar input/quick-actions).
+**Severidad ALTO**: es el momento de captura del lead (cero-pérdida). **Estado**: ✅ **FIX v1 APLICADO** 2026-06-24 (clase `cnc-gating` en el panel vía `applyGateVisibility` + CSS `display:none !important` para msgs/qa/input — robusto a re-renders; verificado en preview: gating ON→solo el form, OFF→restaura layout). Pend re-validación live post-merge. v2 lo hará como overlay nativo (tramo 3).
 
 ---
 

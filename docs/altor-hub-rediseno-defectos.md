@@ -93,6 +93,13 @@ surface tarjetas; mientras tanto, enlazar a resultados FILTRADOS (categoría/pre
 ### ✅ Positivo (no defecto) — entrada basura → fallback elegante
 "jk" (gibberish) → *"mmm, no estoy seguro de qué necesitas. ¿Me explicas un poquito más? (Por ejemplo: …)"* — el Free Core maneja lo desconocido con gracia. Preservar este tono en v2.
 
+### C#3/C#4 · 🟠 FLUJO (LLM-resuelto, NO bug de v1) · Free Core no entiende lenguaje humano natural
+**Síntoma** (validación live 2026-06-24, conversando como cliente real):
+- *"Buenas, estoy buscando una camioneta para mi familia"* → el bot lo tomó como **saludo**: *"¡Hola! Todo excelente por acá. ¿Qué te trae por aquí?"* — un "todo excelente" como si le preguntaron cómo está; **ignoró** la intención camioneta/familia. El "Buenas" dominó el match.
+- *"tengo unos 60 millones, qué camioneta me recomiendas?"* → menú genérico *"¿qué duda tienes? Puedo ayudarte con…"* — no entendió presupuesto ni la pregunta de recomendación.
+**Causa**: Free Core pattern-matchea intents exactos; sin NLU no razona presupuesto/recomendación/frases naturales → small-talk o menú genérico. **NO es bug de v1**, es el límite del motor Free Core.
+**Fix**: el **LLM v2** (Tool Calling + `search_inventory`, TODO-34) maneja lenguaje natural + recomienda por presupuesto. Pend saldo Anthropic. **Implicación clave**: el barrido conversacional completo ("responde como debe ser") solo es SIGNIFICATIVO con el LLM ON. **Estado**: 🆕 documentado → cierra con LLM-on (v2).
+
 ## Resueltos
 - **F#1 · 🟠 FLUJO · gate de cita · fechas duplicadas** (cazado 2026-06-23, fix `02a79a7`) — el bloque
   "Mañana/Esta semana/Próxima semana" salía 2× (pedido del gate + respuesta diferida post-gate). Causa:

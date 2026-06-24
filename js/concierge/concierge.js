@@ -2653,10 +2653,12 @@
         var msgs = document.getElementById('cncMessages');
         var inp = document.getElementById('cncInputWrap');
         if (!gate) return;
+        var panel = gate.closest('.altorra-concierge');   // #7 F4/F5 — estado takeover
         if (isGateRequired()) {
             // §86 — Sub-header dinámico según el motivo del gate inline
             applyGateHeaderForReason(session.gateRequestReason || null);
             gate.style.display = 'flex';
+            if (panel) panel.classList.add('cnc-gating');   // #7 — gate = takeover (CSS oculta msgs/qa/input)
             if (qa) qa.style.display = 'none';
             // §86 — Si gate viene de progressive profiling (deferred query),
             // mantener mensajes VISIBLES arriba del gate para preservar el
@@ -2667,6 +2669,7 @@
             if (inp) inp.style.display = 'none';
         } else {
             gate.style.display = 'none';
+            if (panel) panel.classList.remove('cnc-gating');   // #7 — restaurar layout normal
             if (qa) qa.style.display = '';
             if (msgs) msgs.style.display = '';
             if (inp) inp.style.display = '';

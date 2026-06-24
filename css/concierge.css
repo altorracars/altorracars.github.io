@@ -813,6 +813,18 @@
     overflow-y: auto;
     background: linear-gradient(180deg, rgba(184, 150, 88, 0.04) 0%, transparent 60%);
 }
+/* #7 (F4/F5, validado live 2026-06-24) — gate = TAKEOVER limpio: el formulario
+   ocupa todo el cuerpo del panel; oculta mensajes/quick-actions/input mientras
+   pide datos. Clase de estado en el panel (robusta a re-renders que pisan el
+   display inline; el !important gana siempre). El v2 lo hace como overlay nativo. */
+.altorra-concierge.cnc-gating .cnc-messages,
+.altorra-concierge.cnc-gating .cnc-quick-actions,
+.altorra-concierge.cnc-gating .cnc-input-wrap {
+    display: none !important;
+}
+.altorra-concierge.cnc-gating .cnc-gate {
+    flex: 1 1 auto;
+}
 .cnc-gate-head { margin-bottom: 10px; }
 .cnc-gate-title {
     font-size: 0.95rem;

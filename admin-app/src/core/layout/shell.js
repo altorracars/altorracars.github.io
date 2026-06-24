@@ -36,6 +36,8 @@ const NAV = [
   { id: 'atributos', label: 'Atributos', icon: '🧩', ready: true, perm: ['settings.theme', 'settings.seo', 'settings.backup'] },
   // D4-09b: export/restore F34 — el server exige super_admin en los callables.
   { id: 'respaldos', label: 'Respaldos', icon: '💾', ready: true, perm: 'settings.backup' },
+  // PLAN-UNIFICADO F-2 §237 (gap §2.A): equipo + RBAC migrado del clásico admin-users.
+  { id: 'usuarios', label: 'Usuarios', icon: '👥', ready: true, perm: 'users.read' },
 ];
 
 const TITLES = {
@@ -53,6 +55,7 @@ const TITLES = {
   aliados: 'Aliados / Concesionarios',
   atributos: 'Atributos del inventario',
   respaldos: 'Respaldos del CRM e inventario',
+  usuarios: 'Usuarios y permisos',
 };
 
 export function mountShell(appRoot) {

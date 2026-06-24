@@ -5,9 +5,9 @@
 
 | Señal | Valor (última actualización: **2026-06-24**) |
 |---|---|
-| **Build** | 🟢 `main`: CRM canónico + E6 cutover 6/6 + RBAC ④a (④b parqueado) + CMS por marca ✅. **`dev` ADELANTE de `main`** (24/06): F4/F5 §236 (bot v2 + fixes #7/WhatsApp) + PLAN UNIFICADO §237 + F-0.5 — **pend merge del dueño + cron-bump** para verse live. |
-| **Cache version vigente** | **`v20260624033417`** (cron-CI 24/06 tras merge #936; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. `dev` sincronizada a `origin/main` (ff-only limpio). |
-| **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): commit+push=Claude en `dev`; **merge `dev`→`main`=dueño web** (§2); sync al arrancar. Deploys firebase=Claude (§1). `dev` adelante (24/06): §236/§237 + F-0.5 pend merge. |
+| **Build** | 🟢 `main`: CRM canónico + E6 + RBAC ④a (④b parqueado) + CMS marca + F4/F5/§237/F-0.5 ✅ (dueño mergeó #938-945). **`dev`=`origin/main`** (ff-only). **`dev` ADELANTE (24/06b)**: F-2 (1/6) `usuarios` admin-app §238 (source). **⚠️ dist admin-app GATEADO a staging** (batch F-0.5 multiTab/RTDB + F-2 sale junto tras E2E; §237.6). |
+| **Cache version vigente** | **`v20260624033417`** (cron-CI 24/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): commit+push=Claude en `dev`; **merge `dev`→`main`=dueño web** (§2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario único · CRUD · daily/hourly jobs · 22 functions CRM (**retry:true ×6**) · Rules E5 LIVE. App Check MONITOR (100% verif Storage/Auth/Firestore; enforce DIFERIDO — riesgo lead-block silencioso + tráfico bajo, §41). |
 
 ## ⚠️ Flags de riesgo activos

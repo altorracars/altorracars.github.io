@@ -4,7 +4,7 @@
 // permite deep-link vía ?lead= para abrirlo al cargar.
 // ============================================================
 
-const ROUTES = ['bandeja', 'pipeline', 'agenda', 'reportes', 'contactos', 'config', 'resenas', 'banners', 'contenido', 'vehiculos', 'marcas', 'aliados', 'atributos', 'respaldos'];
+const ROUTES = ['bandeja', 'pipeline', 'agenda', 'reportes', 'contactos', 'config', 'resenas', 'banners', 'contenido', 'vehiculos', 'marcas', 'aliados', 'atributos', 'respaldos', 'usuarios'];
 
 export function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '');

@@ -10,22 +10,22 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **Opus 4.8** (Fable 5 caído): footer `Modelo: Opus 4.8` + tag `⟦OPUS-4.8 · rev-Fable⟧` (detalle → `05`).
+> 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧭 **FOCO MAESTRO: PLAN UNIFICADO "un-solo-panel-admin"** (§237, dueño 24/06 "muchos planes, sin un camino") → un solo camino: `admin-app/` (Vite) = **portal único**, apagar `admin.html`. Spec `…PLAN-UNIFICADO…`. **Yo manejo el orden técnico** (NO preguntar "qué sigue"; solo decisiones del dueño: dinero/legal/go-no-go — mem `feedback-collaboration-style` 24/06).
-> ▶️ **RESUME (sesión nueva)**: F-0.5 = `admin-app/firebase.js` multiTab+RTDB ✅ · **F-2 (1/6) módulo `usuarios` ✅ §238** (lista+filtro-rol+alta/edición/baja+bloqueo, CEO con candado, port LIMPIO; `vite build` 113 mód, preview `?mock=1` verif). **⚠️ dist NO reconstruido = batch F-0.5+F-2 GATEADO a staging** (firebase.js foundational → su rebuild arrastra el multiTab/RTDB gateado §237.6; sale junto tras E2E staging). Sigue: **F-2 (2/6) Roles** (`admin-roles.js` 1737L → módulo `roles` CRUD de `roles/{id}`, color, isSystem inmutable) → Deptos → Workflows → visor Auditoría → Ajustes → F-1 bot v2 Vite + montar staging + clean-slate E2E → F-3 Dashboard → F-4 Hub→admin-app → F-5 fugas (dedup `session:ID`) → F-6 cutover. Receta de port de módulo → L-53 (`33`). Detalle → §238/§237.7 + plan §6.
-> ⚠️ **Pend merge+cron-bump**: fixes v1 **#7 gate-takeover** + **ícono WhatsApp** en `dev` (NO se ven live sin el bump del cron / Ctrl+Shift+R). Lead `PRUEBA-CLAUDE`/`3001112233` en prod → se purga en el clean-slate. Bot LLM DORMIENTE (#917) = saldo Anthropic (al final, no bloquea).
+> 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237 — dueño "muchos planes sin un camino") → un camino: `admin-app/` (Vite) = portal único, apagar `admin.html`. **Yo manejo el orden técnico** (NO preguntar "qué sigue"; solo dueño decide dinero/legal/go-no-go — mem `feedback-collaboration-style`).
+> ▶️ **RESUME**: F-0.5 (firebase.js multiTab+RTDB) ✅ · **F-2 (1/6) `usuarios` ✅ §238** (CEO candado, port LIMPIO, build+preview verif). **⚠️ dist GATEADO a staging** (batch F-0.5+F-2; firebase.js foundational, §237.6). Sigue **F-2 (2/6) Roles** (`admin-roles.js`→módulo `roles`, isSystem inmutable) → Deptos/Workflows/Auditoría/Ajustes → F-1 bot v2 Vite + staging + clean-slate E2E → F-3 Dashboard → F-4 Hub→admin-app → F-5 fugas (dedup `session:ID`) → F-6 cutover. Receta port → L-53. Detalle → §238/§237.7 + plan §6.
+> ⚠️ **Pend cron-bump**: §236 (#7 gate-takeover + ícono WhatsApp) ya en `main`; no se ven live hasta el bump del cron (Ctrl+Shift+R). Lead `PRUEBA-CLAUDE`/`3001112233` en prod → purga en clean-slate. Bot LLM DORMIENTE (#917) = saldo Anthropic (al final, no bloquea).
 
-> 🗄️ **Fuera del foco único (status en ledger TODO + `99`):** CRM E0→E6 ✅ en main (RBAC ④b parqueado) · CMS por marca ✅ (TODO-23 CMS total pend) · cerebro v6 ✅ (hardening TODO-28/29/30) · pendientes cliente → `05` flags (lead prueba `VMVMJG…` · F42 · billing GCP).
+> 🗄️ **Fuera del foco (status → TODO + `99`):** CRM E0→E6 ✅ main (④b parqueado) · CMS marca ✅ (TODO-23 resto) · cerebro v6 ✅ (TODO-28/29/30) · pendientes cliente → `05` flags.
 > ⚖️ **Gate P4 vigente** (durable): el TEXTO legal público (supresión/privacidad/**consent del gate F2**) NO se publica sin abogado (§42).
 >
 > **🚫 Callejones sin salida (NO reintentar)**:
 > (a) **NO custom claims ahora** — reglas Fase 1 usan lookup `usuarios/{uid}`; claims = Fase 5 (§159.3).
 > (b) **NO `preview_screenshot`** (se cuelga tras `preview_resize`, L-28) — usar `preview_snapshot`+`preview_eval`.
-> (c) Consejo Externo = Gemini-vía-Antigravity **code-aware solo-lectura** (§224 corrigió "no ve código"); triggers + refinamientos R1-R4 en `§15`; usar en seguridad/dinero/arquitectura ESTRUCTURAL, no rutina.
+> (c) Consejo Externo = Gemini/Antigravity **code-aware solo-lectura** (§224); cuándo + R1-R4 → `§15`; seguridad/dinero/arquitectura ESTRUCTURAL, no rutina.
 > (d) **NO E2E de forms en localhost** (L-08/§175) — E2E solo contra live; UI con stub `window.db`.
-> (e) **NO mutar docs de config de producción vía MCP** — el clasificador lo deniega; ruta correcta:
-> dejarlo como acción de 1 clic del dueño en el portal (patrón F39) o pedir autorización explícita.
+> (e) **NO mutar config de producción vía MCP** (el clasificador lo deniega) — ruta: acción de 1 clic del dueño (patrón F39) o autorización explícita.
+> (f) **NO fan-out grande/background de agentes en esta máquina** (cuelga en lecturas gateadas git/fuera-cwd + quema tokens, L-50/§226/§239) — usar ACOTADO: 1 agente in-cwd read-only o comité foreground sin tools (verificado: §237 + §239 acotados NO colgaron).
 
 ---
 
@@ -52,6 +52,7 @@
 | **TODO-33** | **Reconciliación CEREBRO ↔ WEB REAL** (brain-check valida estructura interna, no realidad externa). **PARCIAL ✅ §230**: 57 functions + colecciones reconciliadas. Resta: Storage/rules/índices + colecciones vacías. | 🔄 parcial | al final |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS-4.8⟧** Opción A (solo-LLM+Tool Calling+botones+guards); F1.a·F2·F3·TTL·wiring ✅ **DORMIENTE** (#917). FLIP = saldo Anthropic (al final). F4/F5→§236; ahora parte del PLAN UNIFICADO §237. | 🔄 dormiente | dueño: saldo·consent |
 | **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS-4.8⟧.** **P0 `deadcode:check`✅ + P1 skill `anti-codigo-muerto`✅ + propagada ×4+global ✅ (§232).** 🔜 P2 workflow bounded + limpiar bot viejo (en F4/F5). M-19. | 🔄 P0+P1✅ | resto: P2·bot |
+| **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
 | **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`). Portal único `admin-app/`, apagar `admin.html`. Survey+comité+Gemini verif (6 hallazgos). **F-0.5 ✅ · F-2 (1/6) Usuarios ✅ §238** (dist gateado a staging); camino F0..F6 → foco/RESUME arriba. **F4/F5 (bot v2) consolidado §236, su resto = F-1 aquí.** | 🔄 F-2 (1/6) | dueño: dinero/legal/go-no-go |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.

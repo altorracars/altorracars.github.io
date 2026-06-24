@@ -93,6 +93,10 @@
         '.send{width:40px;height:40px;border-radius:50%;background:var(--g);border:none;cursor:pointer;',
         'display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
         '.send svg{width:19px;height:19px;color:var(--on-g);}',
+        '.typing{display:flex;gap:4px;align-items:center;padding:13px 14px;width:auto;}',
+        '.td{width:6px;height:6px;border-radius:50%;background:var(--tx2);animation:tb 1.2s infinite;}',
+        '.td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}',
+        '@keyframes tb{0%,60%,100%{opacity:.3;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}',
         '.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}'
     ].join('');
 
@@ -123,6 +127,53 @@
         { ic: 'card', label: 'Financiación a tu medida', payload: 'Quiero información sobre financiación', cls: 'qb-s' },
         { ic: 'cal', label: 'Agendar una visita', payload: 'Quiero agendar una visita', cls: 'qb-s' }
     ];
+
+    /* ── Motor FREE CORE determinista (buttons-only, sin NLU — D1) ──────
+       Cada payload de botón → respuesta + sub-botones. NO depende de v1:
+       en Free Core no hay texto libre, solo este árbol finito. El NLU pesado
+       (generateBotResponse de v1) solo se necesita con texto libre = modo LLM. */
+    var FREE_CORE = {
+        'Muéstrame los autos disponibles': {
+            text: 'Con gusto. ¿Qué tipo de carro estás buscando?',
+            quickReplies: [
+                { ic: 'car', label: 'SUV / Camioneta', payload: 'Muéstrame SUVs disponibles', cls: 'qb-s' },
+                { ic: 'car', label: 'Sedán', payload: 'Muéstrame sedanes disponibles', cls: 'qb-s' },
+                { ic: 'car', label: 'Ver todo el catálogo', payload: '__goto_catalogo__', cls: 'qb-p' }
+            ]
+        },
+        'Muéstrame SUVs disponibles': {
+            text: 'Tenemos SUVs y camionetas en stock. Te abro el catálogo filtrado para que las veas con fotos y precios.',
+            quickReplies: [
+                { ic: 'car', label: 'Ver camionetas', payload: '__goto_catalogo__', cls: 'qb-p' },
+                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+            ]
+        },
+        'Muéstrame sedanes disponibles': {
+            text: 'Tenemos sedanes disponibles. Te abro el catálogo filtrado para verlos al detalle.',
+            quickReplies: [
+                { ic: 'car', label: 'Ver sedanes', payload: '__goto_catalogo__', cls: 'qb-p' },
+                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+            ]
+        },
+        'Quiero información sobre financiación': {
+            text: 'Te financiamos con cuotas a tu medida y aprobación rápida. Para darte un plan exacto, agenda una cita o te paso con un asesor.',
+            quickReplies: [
+                { ic: 'cal', label: 'Agendar para cotizar', payload: 'Quiero agendar una visita', cls: 'qb-p' },
+                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+            ]
+        },
+        'Quiero agendar una visita': { text: 'Perfecto, agendemos tu visita.', action: 'gate', gateFor: 'cita' },
+        'Quiero hablar con un asesor': { text: 'Te conecto con un asesor de Altorra ahora mismo.', action: 'escalate' }
+    };
+    function freeCoreReply(payload) {
+        return FREE_CORE[payload] || {
+            text: '¿Te muestro el catálogo o prefieres que te pase con un asesor?',
+            quickReplies: [
+                { ic: 'car', label: 'Ver catálogo', payload: '__goto_catalogo__', cls: 'qb-p' },
+                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+            ]
+        };
+    }
 
     /* Crea un botón quick-reply de forma segura (icono confiable + label textContent) */
     function makeQB(def, onClick) {
@@ -238,10 +289,12 @@
             var self = this;
 
             if (getInputMode(this.state) === 'buttons') {
-                zone.appendChild(frag('<div class="hint">Elige una opción para empezar</div>'));
+                var list = this.state.pendingQuickReplies || QR_WELCOME;
+                var hint = this.state.pendingQuickReplies ? 'Elige una opción' : 'Elige una opción para empezar';
+                zone.appendChild(frag('<div class="hint">' + hint + '</div>'));
                 var btns = document.createElement('div');
                 btns.className = 'btns';
-                QR_WELCOME.forEach(function (def) {
+                list.forEach(function (def) {
                     btns.appendChild(makeQB(def, function (p) { self.send(p); }));
                 });
                 // escape hatch SIEMPRE (D1): buttons-only nunca es trampa
@@ -285,20 +338,77 @@
 
         send(text) {
             if (!text) return;
+            if (text === '__goto_catalogo__') { this._goto('busqueda.html'); return; }  // acción, no mensaje
             this.state.messages.push({ from: 'user', text: text });
+            this.state.pendingQuickReplies = null;
             this._persist();
             this._renderBody();
-            // TRAMO SIGUIENTE: enrutar al motor (window.AltorraDualCore.respond /
-            // _altorraConciergeRespondLocal) y, en acción de alto valor, disparar el
-            // gate de captura FUERA del shadow (CustomEvent, #1 Gemini):
-            //   this.dispatchEvent(new CustomEvent('altor:request-gate',{bubbles:true,composed:true,detail:{...}}));
-            // Tramo 1: solo eco visual de que el riel funciona.
+            this._renderInput();
+            var self = this;
+            this._showTyping();
+
+            if (getInputMode(this.state) === 'buttons') {
+                // Free Core determinista (árbol de botones, sin NLU — D1)
+                var r = freeCoreReply(text);
+                setTimeout(function () {
+                    self._hideTyping();
+                    self.state.messages.push({ from: 'bot', text: r.text });
+                    self.state.pendingQuickReplies = r.quickReplies || null;
+                    self._persist(); self._renderBody(); self._renderInput();
+                    if (r.action === 'gate') self._requestGate(r.gateFor || 'general');
+                    if (r.action === 'escalate') self._requestAdvisor();
+                }, 450);
+            } else {
+                // Modo libre (LLM / live) → motor compartido DualCore (LLM si Premium on)
+                var done = function (txt) {
+                    self._hideTyping();
+                    self.state.messages.push({ from: 'bot', text: txt });
+                    self._persist(); self._renderBody();
+                };
+                if (window.AltorraDualCore && window.AltorraDualCore.respond) {
+                    window.AltorraDualCore.respond(text, self.state)
+                        .then(function (resp) { done((resp && resp.text) || 'No te entendí bien, ¿lo reformulas?'); })
+                        .catch(function () { done('Tuve un problema. ¿Te paso con un asesor?'); });
+                } else {
+                    setTimeout(function () { done('El asistente IA no está disponible ahora. ¿Te conecto con un asesor?'); }, 400);
+                }
+            }
+        }
+
+        _goto(url) { try { window.location.href = url; } catch (e) {} }
+
+        _showTyping() {
+            var box = this.shadowRoot.querySelector('.body');
+            if (!box || box.querySelector('.typing')) return;
+            box.appendChild(frag('<div class="bot typing"><span class="td"></span><span class="td"></span><span class="td"></span></div>'));
+            box.scrollTop = box.scrollHeight;
+        }
+        _hideTyping() {
+            var t = this.shadowRoot.querySelector('.typing');
+            if (t && t.parentNode) t.parentNode.removeChild(t);
+        }
+
+        /* Gate de captura / asesor: modales FUERA del shadow (#1 Gemini) vía
+           CustomEvent. El handler global se cablea en tramo 3; aquí dispara +
+           fallback visible para no dejar al usuario sin respuesta. */
+        _requestGate(gateFor) {
+            this.dispatchEvent(new CustomEvent('altor:request-gate', {
+                bubbles: true, composed: true, detail: { gateFor: gateFor, session: this.session() }
+            }));
             var self = this;
             setTimeout(function () {
-                self.state.messages.push({ from: 'bot', text: 'Recibido. (motor v2 — wiring en el siguiente tramo)' });
-                self._persist();
-                self._renderBody();
-            }, 400);
+                self.state.messages.push({ from: 'bot', text: 'Para agendar necesito tu nombre y celular (autorizas el tratamiento de datos, Ley 1581). — captura completa en el siguiente tramo.' });
+                self._persist(); self._renderBody();
+            }, 300);
+        }
+        _requestAdvisor() {
+            this.state.mode = 'live';   // humano → entrada libre (D1)
+            this.state.pendingQuickReplies = null;
+            this.dispatchEvent(new CustomEvent('altor:request-advisor', {
+                bubbles: true, composed: true, detail: { session: this.session() }
+            }));
+            this._persist();
+            this._renderInput();        // re-render: ahora barra de texto (modo live)
         }
 
         openWithVehicleContext(opts) {   // deep-link desde detalle-vehiculo (contrato v1)

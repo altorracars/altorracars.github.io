@@ -6,7 +6,7 @@
 | Señal | Valor (última actualización: **2026-06-23**) |
 |---|---|
 | **Build** | 🟢 Todo en `main` (último merge 22/06 #896): **borradores TODO-24 f1+2 LIVE** (recuperación local opt-in §107-safe + aislamiento por-cuenta, §227; f3 Storage: 406 fotos huérfanas PURGADAS ✅ §230) + **E6 cutover 6/6** + **RBAC ④a COMPLETO** (§219; **④b PARQUEADO** → floor server-side antes de enforce `nivel`) + **CMS por marca COMPLETO** (§220-§226). Vender=Pipeline. dealers F2 (TODO-25). |
-| **Cache version vigente** | **`v20260623030518`** (cron-CI 23/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. `dev` sincronizada a `origin/main` (merge cron limpio). |
+| **Cache version vigente** | **`v20260624033417`** (cron-CI 24/06 tras merge #936; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. `dev` sincronizada a `origin/main` (ff-only limpio). |
 | **Branch activa** | 🟢 **Rama ÚNICA de trabajo `dev`** (§231): commit+push=Claude SIEMPRE en `dev`; **merge `dev`→`main`=dueño web** (§2); sync `dev` a `origin/main` al arrancar; borrar ramas mergeadas (viejas borradas 22/06 → solo `main`+`dev`). Deploys firebase=Claude (§1). Maratón 22/06 (§229-§231) en `dev`, pend merge. |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario único · CRUD · daily/hourly jobs · 22 functions CRM (**retry:true ×6**) · Rules E5 LIVE. App Check MONITOR (100% verif Storage/Auth/Firestore; enforce DIFERIDO — riesgo lead-block silencioso + tráfico bajo, §41). |
 

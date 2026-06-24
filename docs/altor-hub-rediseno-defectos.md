@@ -22,10 +22,15 @@ renderiza BIEN (horizontal) — el bug es específico del **banner de advertenci
 **Fix sugerido**: `.cnc-sla-banner-text { flex:1; min-width:0; }` + botones (Continuar WhatsApp / Seguir
 esperando) en su propia fila debajo, no superpuestos.
 **Evidencia**: screenshot del dueño 2026-06-23 + medición de layout del validador.
-**Estado**: 🆕 confirmado · **SIGUE ABIERTO** — ⚠️ la 4ª pasada del validador lo marcó "resuelto" pero
-miró OTRO elemento ("⚡ Respuesta en menos de 24h" del wizard de financiación, que sí está horizontal),
-NO el banner SLA `.cnc-sla-banner--warning` (ese solo aparece tras escalar + superar el umbral, que no
-disparó). El SLA banner NO está verificado fijo. Candidato a fix rápido standalone (CTA WhatsApp).
+**⚠️ CORRECCIÓN de la causa raíz** (la del validador era ERRADA): el texto `.cnc-sla-banner-text` YA tenía
+`flex:1; min-width:0` (verificado en `css/concierge.css`). La causa REAL: el `@media (min-width:700px)`
+activaba el layout `row` según el **VIEWPORT**, pero el widget es 380px (panel `width:380px`) → en desktop
+el banner pasaba a row dentro del widget → icon+text+actions(`flex-shrink:0`, 2 botones anchos) en 380px →
+el texto colapsaba a ~15px → vertical + scroll-trap. (Móvil <700px quedaba column → bien.)
+**Fix sugerido (REVISADO)**: quitar el `@media (min-width:700px)` → banner SIEMPRE column (correcto a cualquier
+ancho del widget). Si el panel se hiciera ancho, `@container`, nunca viewport.
+**Estado**: ✅ **FIX APLICADO** (`fe60fc6`, 2026-06-23) · 🔜 pendiente re-validación live (desktop + escalar a
+asesor + superar umbral). Lección: el validador puede dar un root-cause plausible-pero-falso → SIEMPRE verificar el CSS real.
 
 ### #2 · 🟡 MEDIO · Widget bot · tarjeta de vehículo · título truncado
 **Síntoma**: `.cnc-vcard-title` con `white-space:nowrap; overflow:hidden; text-overflow:ellipsis`,

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALTOR Bot v2 — demo de tramo 1 (Fase D)</title>
+<style>
+  body{margin:0;min-height:100vh;background:#0E0B07;color:#9A9081;font-family:system-ui,sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:40px 20px;}
+  h1{font-size:18px;color:#F4EEE3;font-weight:500;}
+  p{font-size:13px;line-height:1.6;}
+  .ctrls{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;}
+  .ctrls button{background:#1E1810;border:1px solid #2C241A;color:#D9CDB8;padding:9px 14px;
+    border-radius:10px;cursor:pointer;font-size:13px;}
+  .ctrls button.on{background:#B89658;color:#17130E;border-color:#B89658;}
+  code{color:#D9BD83;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>ALTOR Bot v2 — harness de demo (tramo 1)</h1>
+    <p>Estado Free Core buttons-only (D6). Usa los controles para probar la <strong>entrada engine-aware ternaria</strong> (D1) y el deep-link de vehículo. El FAB dorado está abajo a la derecha.</p>
+    <div class="ctrls">
+      <button id="b-free" class="on">Motor: Free Core (botones)</button>
+      <button id="b-llm">Motor: LLM (chat libre)</button>
+      <button id="b-live">Modo: asesor en vivo</button>
+      <button id="b-deep">Simular deep-link vehículo</button>
+    </div>
+    <p>Esperado: Free Core → solo botones + "Hablar con un asesor". LLM/Live → barra de texto, sin botones. El widget vive en un <code>&lt;altor-bot&gt;</code> con Shadow DOM (estilos aislados).</p>
+  </div>
+
+  <altor-bot></altor-bot>
+
+  <script src="altor-bot.js"></script>
+  <script>
+    (function () {
+      var el = document.querySelector('altor-bot');
+      function setMode(engine, mode, btn) {
+        document.querySelectorAll('.ctrls button').forEach(function (b) { b.classList.remove('on'); });
+        if (btn) btn.classList.add('on');
+        el.state.engine = engine; el.state.mode = mode;
+        el._renderInput();
+        el.open();
+      }
+      document.getElementById('b-free').onclick = function () { setMode('freecore', 'bot', this); };
+      document.getElementById('b-llm').onclick = function () { setMode('llm', 'bot', this); };
+      document.getElementById('b-live').onclick = function () { setMode('freecore', 'live', this); };
+      document.getElementById('b-deep').onclick = function () {
+        el.openWithVehicleContext({ id: 'demo-hilux', title: 'Toyota Hilux 4x4 2018' });
+      };
+    })();
+  </script>
+</body>
+</html>

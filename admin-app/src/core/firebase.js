@@ -11,8 +11,9 @@ import { initializeApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAuth } from 'firebase/auth';
 import {
-  initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
 } from 'firebase/firestore';
+import { getDatabase } from 'firebase/database';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 
@@ -43,12 +44,19 @@ export const auth = getAuth(app);
 // F40a (ADR §178, E1a): persistencia OFFLINE — el patio tiene señal
 // intermitente. Los flujos de CAPTURA (lead rápido, quick-log, notas) son
 // escrituras directas validadas por Rules → se encolan sin señal y
-// sincronizan solos. Lo TRANSACCIONAL (conversión, cupos) sí exige red y
-// la UI lo declara. singleTabManager: el asesor usa UNA pestaña en el
-// celular; evita el coste/edge-cases del multi-tab.
+// sincronizan solos. Lo TRANSACCIONAL (conversión, cupos) sí exige red y la UI lo declara.
+// PLAN-UNIFICADO F-0.5 (Gemini red-team verificado §9.B.1): multiTabManager —
+// el portal único aloja el Hub (realtime) Y el Pipeline en pestañas distintas;
+// singleTab rompía el sync de la 2ª pestaña. Prerrequisito para portar el Hub (F-4).
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) }),
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
 });
+
+// RTDB (PLAN-UNIFICADO F-0.5, §9.B.1): el Hub usa Realtime Database para
+// presence/typing/transfer (admin-concierge.js `window.rtdb` /presence /typing).
+// El portal nuevo lo inicializa ANTES de portar el Hub (F-4) o los sockets
+// fallan en silencio. databaseURL ya está en FIREBASE_CONFIG.
+export const rtdb = getDatabase(app);
 
 // Callables del CRM (crmPurgeLead F15, crmRunSlaSweep F37, …).
 export const fns = getFunctions(app, 'us-central1');

@@ -32,11 +32,12 @@ ancho del widget). Si el panel se hiciera ancho, `@container`, nunca viewport.
 **Estado**: ✅ **FIX APLICADO** (`fe60fc6`, 2026-06-23) · 🔜 pendiente re-validación live (desktop + escalar a
 asesor + superar umbral). Lección: el validador puede dar un root-cause plausible-pero-falso → SIEMPRE verificar el CSS real.
 
-### #2 · 🟡 MEDIO · Widget bot · tarjeta de vehículo · título truncado
+### #2 · ✅ RESUELTO · Widget bot · tarjeta de vehículo · título truncado
 **Síntoma**: `.cnc-vcard-title` con `white-space:nowrap; overflow:hidden; text-overflow:ellipsis`,
-clientWidth 92px vs scrollWidth 126px → "toyota HILUX 4X4 2018" se corta con "…". Año/modelo no se ve.
-**Fix sugerido**: permitir 2 líneas (clamp) o ensanchar la tarjeta del chat.
-**Evidencia**: medición del validador 2026-06-23.
+clientWidth 92px vs scrollWidth 126px → "toyota HILUX 4X4 2018" se corta con "…". (Diagnóstico del
+validador CORRECTO — verificado en `css/concierge.css:1416`.)
+**Fix aplicado** (2026-06-23): clamp a 2 líneas (`-webkit-line-clamp:2` + `word-break:break-word`) → título
+completo; ellipsis solo si excede 2 líneas. 🔜 pendiente re-validación live.
 
 ### #3 · 🟡 MEDIO · Header · "Cerrar sesión" atenuado + 2 clics (intermitente)
 **Síntoma**: el ítem "Cerrar sesión" se ve más tenue que "Mi perfil"/"Mis favoritos"; a veces exige 2 clics.
@@ -48,9 +49,12 @@ dropdown y el re-bind del botón tras re-render del header (`auth.js:1355-1368`)
 ### #4 · 🟡 MEDIO · z-index · el widget tapa el dropdown de cuenta del header
 **Síntoma**: con el chat abierto (esquina sup-derecha), el menú "Daniel → Mi perfil / Cerrar sesión"
 queda solapado/detrás del widget; hay que cerrar el chat para operarlo.
-**Fix sugerido**: coordinar z-index/posición (el dropdown del header debe ganar al widget, o el widget
-cede stacking cuando el dropdown abre).
-**Evidencia**: validador 2026-06-23.
+**Datos verificados (2026-06-23)**: panel widget `.cnc-panel` **z-index 9999** (concierge.css:305) > dropdown
+`.hdr-user-dropdown` **z-index 9000** (style.css:7008) → el widget gana. **⚠️ Subir solo el z-index del
+dropdown puede NO bastar**: si el header crea un *stacking context* con z-index < 9999, el hijo no puede
+superar al widget desde dentro — habría que subir el HEADER o que el widget ceda. Es coordinación
+cross-component → **mejor en el bloque F4/F5** (no piecemeal, evita efectos colaterales).
+**Estado**: 🆕 verificado, diferido a F4/F5 (cross-component).
 
 ### #5 · 🟢 BAJO · Hero · contador parpadea "+90 vehículos" → "+27"
 **Síntoma**: el contador del hero muestra transitoriamente "+90 vehículos" al cargar y se asienta en "+27"

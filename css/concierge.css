@@ -947,6 +947,7 @@
 .cnc-gate-wa:hover { background: rgba(37, 211, 102, 0.2); transform: translateY(-1px); }
 .cnc-gate-wa:active { transform: scale(0.98); }
 .cnc-gate-wa i { width: 15px; height: 15px; }
+.cnc-gate-wa .cnc-wa-glyph { width: 17px; height: 17px; flex-shrink: 0; }
 @media (max-height: 600px) {
     /* Pantallas cortas (mobile landscape, laptops chicos) — más compacto aún */
     .cnc-gate { padding: 10px 12px; }

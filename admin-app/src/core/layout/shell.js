@@ -38,6 +38,8 @@ const NAV = [
   { id: 'respaldos', label: 'Respaldos', icon: '💾', ready: true, perm: 'settings.backup' },
   // PLAN-UNIFICADO F-2 §237 (gap §2.A): equipo + RBAC migrado del clásico admin-users.
   { id: 'usuarios', label: 'Usuarios', icon: '👥', ready: true, perm: 'users.read' },
+  // PLAN-UNIFICADO F-2 (2/6) §239: roles + matriz de permisos (port admin-roles).
+  { id: 'roles', label: 'Roles', icon: '🛡️', ready: true, perm: 'roles.read' },
 ];
 
 const TITLES = {
@@ -56,6 +58,7 @@ const TITLES = {
   atributos: 'Atributos del inventario',
   respaldos: 'Respaldos del CRM e inventario',
   usuarios: 'Usuarios y permisos',
+  roles: 'Roles y permisos',
 };
 
 export function mountShell(appRoot) {

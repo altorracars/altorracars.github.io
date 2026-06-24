@@ -25,6 +25,7 @@ import './styles/lists.css';
 import './styles/backup.css';
 import './styles/vehicles.css';
 import './styles/usuarios.css';
+import './styles/roles.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -48,12 +49,13 @@ import { mountBackup } from './modules/backup/backup.ui.js';
 import { mountVehicles } from './modules/vehicles/vehicles.ui.js';
 import { mountCmsDinamico } from './modules/cms-dinamico/cms.ui.js';
 import { mountUsuarios } from './modules/usuarios/usuarios.ui.js';
+import { mountRoles } from './modules/roles/roles.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

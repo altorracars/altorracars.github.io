@@ -1,0 +1,74 @@
+/* ============================================================
+   ROLES (PLAN-UNIFICADO F-2, §239) — RBAC: tarjetas + matriz de permisos.
+   Tokens HarmonyOS; el color del rol entra inline (dato del doc).
+   ============================================================ */
+
+.rol { display: flex; flex-direction: column; width: 100%; min-width: 0; height: 100%; }
+
+.rol-toolbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
+  padding: var(--s-3) var(--s-6); border-bottom: 1px solid var(--surface-stroke);
+}
+.rol-toolbar .search { flex: 1 1 240px; max-width: 360px; }
+
+.rol-host { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--s-4) var(--s-6) var(--s-8); }
+.rol-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s-4); }
+
+/* ── Tarjeta ── */
+.rol-card {
+  display: flex; flex-direction: column; gap: var(--s-3);
+  padding: var(--s-4); background: var(--surface-card);
+  border: 1px solid var(--surface-stroke); border-radius: var(--r-lg); box-shadow: var(--shadow-2);
+}
+.rol-card__head { display: flex; align-items: center; gap: var(--s-3); }
+.rol-card__dot {
+  flex: 0 0 auto; display: inline-grid; place-content: center;
+  width: 38px; height: 38px; border-radius: var(--r-md);
+  font-family: var(--font-display); font-weight: 700; font-size: var(--t-body);
+  color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+}
+.rol-card__meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rol-card__name { font-size: var(--t-body); }
+.rol-card__badges { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.rol-card__desc { min-height: 2.6em; }
+.rol-card__stats { display: flex; gap: var(--s-4); }
+.rol-card__actions { display: flex; gap: var(--s-2); margin-top: auto; }
+
+/* ── Modal (más ancho que el de usuarios; matriz scrollable) ── */
+.rol-modal { width: min(720px, 94vw); }
+.rol-modal__meta { display: grid; grid-template-columns: 1fr 200px; gap: var(--s-3); }
+.rol-color-row { display: flex; gap: var(--s-2); align-items: center; }
+.rol-color { width: 46px; padding: 2px; flex: 0 0 auto; height: 40px; }
+.rol-hex { flex: 1 1 auto; }
+.rol-modal__perms { margin-top: var(--s-2); }
+.rol-modal__subtitle { font-family: var(--font-display); font-size: var(--t-body); margin: var(--s-2) 0; }
+.rol-matrix__summary { margin-bottom: var(--s-2); }
+.rol-matrix { max-height: 42vh; overflow-y: auto; display: flex; flex-direction: column; gap: var(--s-2); padding-right: var(--s-1); }
+
+.rol-cat { border: 1px solid var(--surface-stroke); border-radius: var(--r-md); overflow: hidden; }
+.rol-cat__head {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: var(--s-2) var(--s-3); background: var(--surface-stroke);
+  font-weight: 600; font-size: var(--t-caption); cursor: pointer;
+}
+.rol-cat__name { flex: 1 1 auto; }
+.rol-cat__list { display: grid; grid-template-columns: 1fr 1fr; gap: 1px var(--s-3); padding: var(--s-2) var(--s-3); }
+
+.rol-perm { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) 0; cursor: pointer; }
+.rol-perm__info { display: flex; flex-direction: column; min-width: 0; }
+.rol-perm__name { font-size: var(--t-caption); }
+.rol-perm--critical .rol-perm__name { color: var(--danger); }
+.rol-perm__id { font-size: 10px; color: var(--ink-text-faint); }
+
+.rol-wildcard {
+  padding: var(--s-3); border-radius: var(--r-md);
+  background: var(--gold-100); color: var(--gold-800); font-size: var(--t-caption);
+}
+:root[data-theme="dark"] .rol-wildcard { background: rgba(184,146,74,0.18); color: var(--gold-200); }
+
+@media (max-width: 560px) {
+  .rol-toolbar { padding-left: var(--s-4); padding-right: var(--s-4); }
+  .rol-host { padding-left: var(--s-4); padding-right: var(--s-4); }
+  .rol-modal__meta { grid-template-columns: 1fr; }
+  .rol-cat__list { grid-template-columns: 1fr; }
+}

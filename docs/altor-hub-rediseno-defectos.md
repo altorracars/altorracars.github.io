@@ -65,6 +65,12 @@ placeholder neutro hasta que cargue. **Evidencia**: validador 2026-06-23 (explor
 **Síntoma**: el confirm nativo del navegador bloquea el render hasta navegar (ya flagueado §233/§235 follow-up).
 Para un widget premium → **modal in-app** en vez del confirm nativo. **Evidencia**: validador 2026-06-23 (re-confirmado).
 
+### #7 · 🔴 ALTO · Widget bot · gate de captura NO es takeover (form + chat + input + quick-actions a la vez)
+**Síntoma** (validado LIVE 2026-06-24 por Claude vía extensión Chrome — reporte del dueño con captura): al pedir datos, el formulario se ve "media conversación, medio formulario". Quedan visibles A LA VEZ: el form, los mensajes (comprimidos a ~156px), los **quick-actions** ("Hablar con asesor") y la **barra de texto**.
+**Causa (verificada por DOM)**: el panel `#altorra-concierge` (fixed, z9999, 504px) apila hermanos `cnc-header(71)·cnc-gate(154)·cnc-quick-actions(57)·cnc-messages(156)·cnc-input-wrap(63)`. `#cncGate` es **un bloque más en la pila**, no un takeover → no oculta messages/quick-actions/input. Mostrar CTAs+input durante la captura = fricción comercial (CTA en mal momento).
+**Fix (v2)**: el gate v2 ya nace como **overlay/takeover** (CustomEvent fuera del shadow, decisión #1 Gemini) que ocupa el cuerpo del panel y oculta mensajes/quick-actions/input mientras está activo. v1 patcheable con 1 regla CSS (gate como `position:absolute` cubriendo el cuerpo) si se quiere antes del v2.
+**Severidad ALTO**: es el momento de captura del lead (cero-pérdida). **Estado**: 🆕 validado → v2 tramo 3 (requisito: gate = full takeover + ocultar input/quick-actions).
+
 ---
 
 ## Flujo comercial / Copywriting (nueva dimensión del validador)
@@ -79,6 +85,13 @@ inventario en el chat; siempre apunta al catálogo → un comprador con presupue
 lo tiene, F3-a/b). + copy de Free Core mejorable. **Fix**: al encender v2 (saldo) → search_inventory
 surface tarjetas; mientras tanto, enlazar a resultados FILTRADOS (categoría/precio) en vez de "ver catálogo".
 **Evidencia**: validador 2026-06-23 (journey comercial).
+
+### C#2 · 🟠 MEDIO · Doble pregunta del nombre (prosa + formulario)
+**Síntoma** (LIVE 2026-06-24): en el flujo de financiación el bot pide el nombre DOS veces — en prosa *"Por cierto, ¿cómo te llamas? Así puedo personalizarte la atención. 😊"* Y ADEMÁS el formulario del gate tiene campo "Nombre" → el cliente no sabe si escribirlo en el chat o en el form. Redundante/confuso.
+**Fix**: una sola vía — si el gate (form) captura el nombre, quitar la pregunta en prosa. En v2: valor-primero en el saludo; el nombre se pide UNA sola vez, en el gate. **Estado**: 🆕 → v2.
+
+### ✅ Positivo (no defecto) — entrada basura → fallback elegante
+"jk" (gibberish) → *"mmm, no estoy seguro de qué necesitas. ¿Me explicas un poquito más? (Por ejemplo: …)"* — el Free Core maneja lo desconocido con gracia. Preservar este tono en v2.
 
 ## Resueltos
 - **F#1 · 🟠 FLUJO · gate de cita · fechas duplicadas** (cazado 2026-06-23, fix `02a79a7`) — el bloque

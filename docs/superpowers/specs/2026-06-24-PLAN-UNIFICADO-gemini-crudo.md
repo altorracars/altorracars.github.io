@@ -1,0 +1,16 @@
+# CRUDO — Gemini red-team del PLAN UNIFICADO (2026-06-24) ⟦OPUS-4.8⟧
+
+> Crudo de la deliberación externa (§G.4). Síntesis verificada → `…PLAN-UNIFICADO-un-solo-panel-admin.md §9`.
+> Gemini (Antigravity, code-aware solo-lectura). **NO apruebo el plan en su estado actual** (su veredicto).
+
+## Los 6 hallazgos (fieles)
+1. **Hub → admin-app vs sandbox-monolito.** Fallo: el Hub exige realtime/concurrencia multi-pestaña, pero `admin-app/src/core/firebase.js:49-51` usa `persistentSingleTabManager` → 2ª pestaña pierde sync; y admin-app NO inicializa RTDB (`@firebase/database`), motor de presence/transfer/typing en `admin-concierge.js:75-220` → sockets fallan en silencio. **Re-veredicto: reconsidero mi postura F4/F5 — tienes razón, mover el Hub a admin-app es el único camino para matar el monolito. PERO inviable salvo que cambies a `persistentMultipleTabManager` e importes RTDB hoy.**
+2. **Auth/sesión.** admin.html (compat) sesión en IndexedDB namespace; Vite `initializeApp(config,'altorra-crm')` con IndexedDB aislado → al apagar admin.html, deslogueo masivo / doble-login en operación. Fix: script puente que migre tokens IndexedDB `[DEFAULT/altorra-admin]`→`altorra-crm`, o promover admin-app a instancia canónica.
+3. **Secuencia (el más grave).** F-7 "purgar TODO el CRM post-cutover para re-validar" = **borrar la BD viva de producción**. Incompatible. Fix: el E2E Clean-Slate va en **Staging (F-0.5, TODO-30 Doble-Llave)**, luego prod por run-paralelo. + bot público (F-1): payload retro-compatible con `admin-concierge.js` viejo o el monolito crashea renderizando objetos nuevos antes de F-4.
+4. **Cierre de fugas.** Enrutar chats anónimos a `failedIngestions` = basurero paralelo, no cierra la fuga; `normalize.js:61` `throw 'No se puede deduplicar: solicitud sin email ni teléfono'`. Fix: parchear `contactDedupKey` para aceptar `session:ID_HUB` como fallback → el chat abandonado se ingiere como lead "Anónimo" en el pipeline canónico.
+5. **Stack.** Exigir bot v2 "sin-bundler" mientras TODO-01 quiere Cloudflare+Vite whole-site = deuda contradictoria. Fix: construye bot v2 en Vite hoy; si hay que incrustarlo en el público legacy, emite IIFE único vía Rollup/Vite. No sacrifiques la arquitectura futura por un entorno que ya dictaminaste apagar.
+6. **Retiro de admin.html (PWA).** El monolito es PWA real (`manifest-admin.json`, Service Workers, FCM Push). Cuarentena por redirección deja SW "zombie" sirviendo el shell viejo / interceptando fetch en caídas de red. Fix: checklist de cutover (F-6) DEBE incluir paridad Web-Push/FCM en Vite + `persistentMultipleTabManager` + RTDB + script en el `index.html` de Vite que `unregister` forzoso de los SW de la raíz del dominio (aniquila el caché del monolito en móviles de asesores).
+
+**Veredicto final Gemini:** "Tu dirección de un solo portal es correcta, y mi veredicto previo priorizó un aislamiento que hoy ya no es tu meta. Pero tu secuencia F-7 y la config Vite/Ingestión actuales harán explotar la BD y romperán el Hub en producción si no aplicas estos bloqueos."
+
+## Verificación (la joya) → §9.A del plan: los **6 CONFIRMADOS** contra código (corrección menor #2: viejo=`altorra-admin`, no `[DEFAULT]`). Ajustes adoptados → §9.B/§9.C.

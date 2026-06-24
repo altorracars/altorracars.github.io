@@ -3,21 +3,21 @@
 > **Nodo: signos vitales.** AUTO-CARGA (con `CLAUDE.md` + `10`). Tablero, no bitácora: solo señales
 > ACTUALES (pisar, no apilar); lo histórico vive en `99` (ADR). Tope ~25 líneas / ~2.8k chars (§G.5).
 
-| Señal | Valor (última actualización: **2026-06-23**) |
+| Señal | Valor (última actualización: **2026-06-24**) |
 |---|---|
-| **Build** | 🟢 Todo en `main` (último merge 22/06 #896): **borradores TODO-24 f1+2 LIVE** (recuperación local opt-in §107-safe + aislamiento por-cuenta, §227; f3 Storage: 406 fotos huérfanas PURGADAS ✅ §230) + **E6 cutover 6/6** + **RBAC ④a COMPLETO** (§219; **④b PARQUEADO** → floor server-side antes de enforce `nivel`) + **CMS por marca COMPLETO** (§220-§226). Vender=Pipeline. dealers F2 (TODO-25). |
+| **Build** | 🟢 `main`: CRM canónico + E6 cutover 6/6 + RBAC ④a (④b parqueado) + CMS por marca ✅. **`dev` ADELANTE de `main`** (24/06): F4/F5 §236 (bot v2 + fixes #7/WhatsApp) + PLAN UNIFICADO §237 + F-0.5 — **pend merge del dueño + cron-bump** para verse live. |
 | **Cache version vigente** | **`v20260624033417`** (cron-CI 24/06 tras merge #936; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; invalida con Ctrl+Shift+R). SW == cache-manager ✅. `dev` sincronizada a `origin/main` (ff-only limpio). |
-| **Branch activa** | 🟢 **Rama ÚNICA de trabajo `dev`** (§231): commit+push=Claude SIEMPRE en `dev`; **merge `dev`→`main`=dueño web** (§2); sync `dev` a `origin/main` al arrancar; borrar ramas mergeadas (viejas borradas 22/06 → solo `main`+`dev`). Deploys firebase=Claude (§1). Maratón 22/06 (§229-§231) en `dev`, pend merge. |
+| **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): commit+push=Claude en `dev`; **merge `dev`→`main`=dueño web** (§2); sync al arrancar. Deploys firebase=Claude (§1). `dev` adelante (24/06): §236/§237 + F-0.5 pend merge. |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario único · CRUD · daily/hourly jobs · 22 functions CRM (**retry:true ×6**) · Rules E5 LIVE. App Check MONITOR (100% verif Storage/Auth/Firestore; enforce DIFERIDO — riesgo lead-block silencioso + tráfico bajo, §41). |
 
 ## ⚠️ Flags de riesgo activos
 - 🤖 **Modelo de trabajo: Opus 4.8** (Fable 5 NO disponible, 2026-06-12). Cada entrega marcada **`⟦OPUS-4.8 · rev-Fable⟧`** (rev. cuando Fable vuelva; dueño avisa). Detalle → `10` + memoria.
 - 🔒 **Blindaje** (canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor · SEC-01 RBAC-read pendiente (→E5) · Legal `42` (gate abogado, F14 en E3 lo necesita).
 - 🔴 **Billing GCP se cayó ~2h el 2026-06-09** (recuperado, L-38). **Causa SIN identificar (cliente: console.cloud.google.com/billing)** o se repetirá.
-- 🧹 Cliente: descartar lead de prueba `VMVMJG…` (Bandeja → spam_prueba) + anunciar F42. (Festivos ✅ en `config/availability`.)
+- 🧹 Leads de prueba en prod: `VMVMJG…` + **`PRUEBA-CLAUDE`/`3001112233`** (validación pipeline 24/06) → se purgan en el **clean-slate del PLAN UNIFICADO** (no antes). + anunciar F42. (Festivos ✅.)
 - 📊 App Check: 403 de reCAPTCHA al bot del E2E = esperado (monitor OK); gate de enforce con tráfico humano → lóbulo `41`.
 - ⚖️ Texto legal PÚBLICO de supresión/privacidad = gate P4 (abogado, `42-LEGAL`) — el mecanismo F14 ya está live.
 - cron↔cache = patrón conocido (L-02, hija `31-LECCIONES-GIT`).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · index cinematic vanilla ✅ · cerebro autónomo ✅ (v6 en ejecución) · SEO ✅ · bot/RBAC/Hub ✅ (**EPIC ALTOR Hub v2 = foco único**: F1.a+F2+F3+TTL+wiring **✅ DEPLOYED** (#917 merged · Pages live · chatLLM v2 + TTL dry-run en prod); bot v2 LISTO — **bloqueado por saldo Anthropic**; falta recargar → toggle `_brain.enabled=true` (admin clásico→Cerebro). 🟡 LLM apagado. Detalle→spec §EPIC)
+`js/` modular ✅ · cerebro autónomo v6 ✅ · CRM canónico (`contacts/leads/activities/deals` + 6 canales ingestión) LIVE ✅. **🧭 FOCO MAESTRO = PLAN UNIFICADO un-solo-panel-admin (§237)**: portal único `admin-app/` (Vite) absorbe todo + apaga `admin.html`; F-0.5 iniciado (multiTab+RTDB en `dev`, dist NO reconstruido). Bot LLM (#917) DEPLOYED **DORMIENTE** (saldo Anthropic = al final). **F4/F5 §236** (bot v2 Web Component + fixes #7 gate-takeover/ícono WhatsApp) en `dev` **pend merge+cron-bump** (no se ven live sin bump/Ctrl+Shift+R). Detalle → `10` RESUME.

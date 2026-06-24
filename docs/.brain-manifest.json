@@ -76,11 +76,11 @@
     }
   ],
   "deepAudit": {
-    "last": "2026-06-21",
-    "coveredHeaderCount": 259,
+    "last": "2026-06-24",
+    "coveredHeaderCount": 272,
     "maxAdrGap": 12,
     "maxDays": 30,
-    "_que": "comite v6 = linea base; Nivel-2 #1 = item U (§206); Nivel-2 #2 = falencias del lazo (§207, M-16, TODO-29)"
+    "_que": "comite v6 = linea base; N2 #1 = item U (§206); N2 #2 = falencias del lazo (§207, M-16, TODO-29); N2 #3 = §226 (maquinaria/L-50); N2 #4 = §239 (post F-2: boot-cap reincidente M-10 + gap source/dist)"
   },
   "orphanAllowlist": []
 }

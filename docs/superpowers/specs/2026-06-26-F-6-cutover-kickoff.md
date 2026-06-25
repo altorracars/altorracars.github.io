@@ -37,11 +37,20 @@ hay que distinguir el del admin del público (por scope/scriptURL) y solo des-re
 El portal nuevo NO usa SW propio → no agrega zombie nuevo. (Validar en celular real tras desplegar.)
 
 ## §3 — Checklist de PARIDAD (gate del flip — §9.C "trigger de retiro del monolito")
-Antes de mandar `admin.html`→`_legacy/`, confirmar que el portal nuevo cubre TODO lo del viejo:
-- [ ] Hub detalle/claim/responder/typing/presence/gestión validados LIVE (necesita chat real).
-- [ ] Cada sección del admin viejo tiene equivalente en admin-app (F-2..F-5 lo cubren; barrer admin.html).
-- [ ] FCM / Web-Push paridad en el portal nuevo (el viejo notificaba; ¿el nuevo?) — red-team #2.
-- [ ] Multi-tab + RTDB + offline OK en el nuevo (F-0.5).
+**Auditoría 26/06 (verificada):** las **19 `data-section` del admin viejo tienen equivalente** en admin-app
+(audit→auditoria · banners · brands→marcas · calendar→config · concierge→**hub** · crm→bandeja/pipeline/
+contactos/agenda · dashboard→inicio · dealers→aliados · departments→departamentos · kb→cerebro · lists→
+atributos · reports→reportes · reviews→resenas · roles · settings→ajustes · unmatched · users→usuarios ·
+vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir antes del flip):**
+- ⚠️ **FCM / Web-Push**: el admin-app NO inicializa messaging (verificado: solo `messagingSenderId` en
+  config, cero `getMessaging`/`getToken`); el viejo sí (`js/admin/admin-fcm.js`). → asesores pierden el
+  push del navegador al cutover (Telegram sigue como canal primario, `onSolicitudCreated`). **Red-team #2.
+  Decisión: portar FCM a admin-app, o aceptar Telegram-only.**
+- ⚠️ **Editor de plantillas de mensaje** (`sec-templates`/`admin-templates.js`): sin módulo en admin-app
+  (el Hub tiene quick-replies hardcodeados, pero no gestión de plantillas guardadas `config/messageTemplates`). Menor.
+- ◽ **Editar perfil propio** (`sec-profile`): verificar si existe en admin-app. Menor.
+- [ ] **Hub detalle/claim/responder/typing/presence/gestión validados LIVE** (necesita chat real) — el gap más importante.
+- [ ] Multi-tab + RTDB + offline OK en el nuevo (F-0.5, verificado parcial en el smoke).
 - [ ] El dato que entra por el bot/form aparece en el CRM del portal nuevo (multi-superficie).
 
 ## §4 — Secuencia del cutover (cuando §3 ✅ + go/no-go dueño)
@@ -55,8 +64,9 @@ Antes de mandar `admin.html`→`_legacy/`, confirmar que el portal nuevo cubre T
 
 ## Checklist (la sesión del cutover lo tickea con evidencia)
 - [x] Storage/SW verificado en vivo (§0) · [x] Decisión auth = re-login (§1)
+- [x] **Paridad §3 auditada**: 19/19 secciones ✅; GAPS = FCM/Web-Push (decidir portar vs Telegram-only) · plantillas · perfil
 - [ ] Hub detalle validado live (chat real)
+- [ ] Decidir FCM (portar a admin-app o Telegram-only) + plantillas
 - [ ] Script unregister-SW (NO matar SW público) + validado en celular
-- [ ] Paridad §3 ✅
 - [ ] Flip `admin.html`→`_legacy/` + redirect (go/no-go dueño)
 - [ ] ADR §251 + post-cutover live OK

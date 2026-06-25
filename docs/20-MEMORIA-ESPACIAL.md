@@ -116,8 +116,8 @@ admin-app/src/
   core/advisors.js — lista de asesores (usuarios → fallback rotación crmIntake)
   styles/    shell · login · inbox · contacts · pipeline · agenda · capture · config
 ```
-- **Módulos portados del clásico (E6 fase ②/③)**: `reviews`(§190) · `banners`(§191) · `vehiculos`(wizard, §199-203) · `marcas`(§192) · `aliados`/dealers(§204, ⟦OPUS-4.8⟧, port verbatim de `concesionarios`; FASE 2 D5-03 gated) · `atributos`(lists, §194) · `backup`/respaldos(§195). Todos siguen el patrón `*.data.js`+`*.ui.js`+`styles/*.css`, registro en router/main/shell, optimistic UI. **Slug del docId = regex del clásico, NO `brands.slugify` NFD** (L-42).
-- **PLAN-UNIFICADO (§237)**: **F-2 Config** (6 módulos `usuarios`→`ajustes`, §238-245) + **F-3 `dashboard`=Inicio** (§246, KPIs+NBA+pendientes, reusa `reports`/`inbox.domain`). **dist gateado** (§237.6).
+- **Módulos portados del clásico (E6 ②/③, §190-204)**: `reviews`·`banners`·`vehiculos`(wizard)·`marcas`·`aliados`/dealers(D5-03 gated)·`atributos`(lists)·`backup`. Todos: patrón `*.data.js`+`*.ui.js`+`styles/*.css`, registro router/main/shell, optimistic UI. **Slug docId = regex del clásico, NO `brands.slugify` NFD** (L-42).
+- **PLAN-UNIFICADO (§237)** módulos nuevos de admin-app: **F-2 Config** (`usuarios`→`ajustes`, §238-245) · **F-3 `dashboard`=Inicio** (§246) · **F-4 Comunicaciones** EN CURSO: `unmatched`✅(§247) + KB/Hub pend. Patrón visor=`auditoria`; Inicio reusa `reports`/`inbox.domain`. **dist gateado** (§237.6).
 - **Ruteo**: `router.js` (hash `#/inicio`=default landing F-3, `#/bandeja`,…) → `main.mountRoute` monta en el outlet con **cleanup del anterior** (cancela `onSnapshot`) + cierra el 360. `shell.setActive` resalta nav+título.
 - **lead → deal**: la Bandeja trabaja `leads`; "Convertir a oportunidad" crea un `deal` (Pipeline). No mezclar (L-29).
 - **Agenda**: lee `activities` con `dueAt` (rango campo único → índice auto, sin compuesto, L-30); "📅 Agendar" en el 360 crea la cita. `dayKey` LOCAL (no UTC).

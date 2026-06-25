@@ -50,6 +50,8 @@ const NAV = [
   { id: 'auditoria', label: 'Auditoría', icon: '🗂️', ready: true, perm: 'audit.read' },
   // PLAN-UNIFICADO F-2 (6/6): Ajustes — apariencia (tema) + SEO/sitemap. Cierra el GAP Config.
   { id: 'ajustes', label: 'Ajustes', icon: '🎛️', ready: true, perm: ['settings.theme', 'settings.seo'] },
+  // PLAN-UNIFICADO F-4 (gap §2.B Comunicaciones): "Lo que no entendí" — visor de unmatchedQueries (fugas de leads del bot). KB + Hub vienen después.
+  { id: 'unmatched', label: 'No entendí', icon: '🤔', ready: true, perm: 'unmatched.read' },
 ];
 
 const TITLES = {
@@ -74,6 +76,7 @@ const TITLES = {
   workflows: 'Automatización',
   auditoria: 'Auditoría',
   ajustes: 'Ajustes',
+  unmatched: 'Lo que no entendí',
 };
 
 export function mountShell(appRoot) {

@@ -1,0 +1,214 @@
+// ============================================================
+// "Lo que no entendí" (PLAN-UNIFICADO F-4, gap §2.B) — UI.
+// VISOR de las preguntas que el bot no supo responder. Triage-first:
+// bucket "Sin revisar" por defecto (lo accionable), marca vista / promueve a
+// FAQ / descarta. Port de admin-unmatched.js al patrón admin-app (visor
+// auditoría §243). RBAC: read=unmatched.read · seen/promote=unmatched.promote
+// · delete=unmatched.delete (alineado a firestore.rules → no pintamos botones
+// que el server rechazaría). ⟦OPUS-4.8 · rev-Fable⟧
+// ============================================================
+
+import { el, clear } from '../../core/dom.js';
+import { store } from '../../core/store.js';
+import { toast } from '../../core/toast.js';
+import { hasPermission } from '../../core/auth.js';
+import { timeAgo } from '../../domain/format.js';
+import { subscribeUnmatched, markSeen, markAllSeen, deleteEntry, MOCK_UNMATCHED } from './unmatched.data.js';
+
+const FILTERS = [
+  { id: 'unseen', label: 'Sin revisar' },
+  { id: 'all', label: 'Todas' },
+  { id: 'promoted', label: 'Promovidas' },
+];
+
+// createdAt puede venir como Timestamp Firestore o string ISO (port).
+function tsISO(ts) {
+  if (!ts) return null;
+  if (ts.toMillis) return new Date(ts.toMillis()).toISOString();
+  const d = new Date(ts);
+  return isNaN(d) ? null : d.toISOString();
+}
+
+export function mountUnmatched(root) {
+  const ui = { entries: [], loaded: false, sub: null, filter: 'unseen' };
+  const canRead = hasPermission('unmatched.read');
+  const canPromote = hasPermission('unmatched.promote');
+  const canDelete = hasPermission('unmatched.delete');
+
+  const wrap = el('section', { class: 'unm' });
+  clear(root); root.append(wrap);
+
+  if (!canRead) {
+    wrap.append(stateNode('🔒', 'Sin permiso', 'Necesitas el permiso unmatched.read para ver esta sección.'));
+    return function cleanup() {};
+  }
+
+  // ── Optimistic local patch (la UI no espera al server) ──
+  function patch(docId, fields) {
+    const i = ui.entries.findIndex((e) => e._docId === docId);
+    if (i !== -1) { ui.entries[i] = { ...ui.entries[i], ...fields }; render(); }
+  }
+  function removeLocal(docId) {
+    ui.entries = ui.entries.filter((e) => e._docId !== docId); render();
+  }
+
+  // ── Acciones ──
+  async function doSeen(e) {
+    if (!canPromote) return;
+    patch(e._docId, { seen: true });
+    if (store.get().mock) { toast('Marcada como vista', 'ok'); return; }
+    try { await markSeen(e._docId); } catch (err) { patch(e._docId, { seen: false }); toast('No se pudo marcar como vista', 'error'); }
+  }
+
+  async function doMarkAll() {
+    if (!canPromote) return;
+    const pend = ui.entries.filter((e) => !e.seen && !e.promotedToFAQ);
+    if (!pend.length) { toast('Nada para marcar — ya estás al día', 'info'); return; }
+    if (store.get().mock) { pend.forEach((e) => patch(e._docId, { seen: true })); toast(`${pend.length} marcadas como vistas`, 'ok'); return; }
+    try { const n = await markAllSeen(ui.entries); toast(`${n} marcadas como vistas`, 'ok'); }
+    catch (err) { toast('No se pudo marcar todas', 'error'); }
+  }
+
+  // Promover a FAQ: el módulo Cerebro AI (KB) llega en el siguiente paso de F-4.
+  // Degradación honesta hasta entonces: copia la pregunta + guía. (TODO: al
+  // portar KB, reemplazar por handoff store→ruta cerebro con prefill.)
+  function doPromote(e) {
+    if (!canPromote) return;
+    const q = e.query || '';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(q).then(
+        () => toast('Pregunta copiada — créala como FAQ en Cerebro AI (llega en el próximo paso de F-4)', 'info'),
+        () => toast(`Crea una FAQ con: "${q.slice(0, 70)}"`, 'info'),
+      );
+    } else {
+      toast(`Crea una FAQ con: "${q.slice(0, 70)}"`, 'info');
+    }
+  }
+
+  async function doDelete(e) {
+    if (!canDelete) { toast('Solo super admin puede eliminar', 'error'); return; }
+    if (!window.confirm('¿Eliminar esta query del histórico?\n\nNo afecta al cliente, solo limpia tu bandeja.')) return;
+    const prev = ui.entries.slice();
+    removeLocal(e._docId);
+    if (store.get().mock) { toast('Query eliminada', 'ok'); return; }
+    try { await deleteEntry(e._docId); toast('Query eliminada', 'ok'); }
+    catch (err) { ui.entries = prev; render(); toast('No se pudo eliminar', 'error'); }
+  }
+
+  // ── Toolbar (filtros + acciones) ──
+  const chipsWrap = el('div', { class: 'unm__chips', role: 'tablist', 'aria-label': 'Filtro' });
+  const markAllBtn = canPromote ? el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['✓ Marcar todas']) : null;
+  if (markAllBtn) markAllBtn.addEventListener('click', doMarkAll);
+  const toolbar = el('div', { class: 'unm__toolbar' }, [chipsWrap, el('div', { class: 'u-row u-row--tight' }, [markAllBtn])]);
+
+  const list = el('div', { class: 'unm__list' });
+  wrap.append(toolbar, list);
+
+  function counts() {
+    let unseen = 0, promoted = 0;
+    ui.entries.forEach((e) => { if (e.promotedToFAQ) promoted++; else if (!e.seen) unseen++; });
+    return { unseen, promoted, all: ui.entries.length };
+  }
+
+  function renderChips() {
+    const c = counts();
+    clear(chipsWrap);
+    FILTERS.forEach((f) => {
+      const on = ui.filter === f.id;
+      const n = f.id === 'all' ? c.all : f.id === 'promoted' ? c.promoted : c.unseen;
+      const chip = el('button', { class: 'chip' + (on ? ' chip--active' : ''), role: 'tab', 'aria-selected': String(on), type: 'button' }, [
+        el('span', { text: f.label }),
+        el('span', { class: 'chip__count', text: String(n) }),
+      ]);
+      chip.addEventListener('click', () => { ui.filter = f.id; render(); });
+      chipsWrap.append(chip);
+    });
+  }
+
+  function visible() {
+    if (ui.filter === 'all') return ui.entries;
+    if (ui.filter === 'promoted') return ui.entries.filter((e) => !!e.promotedToFAQ);
+    return ui.entries.filter((e) => !e.seen && !e.promotedToFAQ);
+  }
+
+  function entryRow(e) {
+    const status = e.promotedToFAQ
+      ? el('span', { class: 'badge badge--ok', text: '✓ Promovida' })
+      : e.seen ? el('span', { class: 'badge', text: 'Vista' })
+        : el('span', { class: 'badge badge--gold', text: 'Nueva' });
+    const sentiment = e.sentiment === 'negative' ? el('span', { class: 'badge badge--danger', text: '😠 Negativo' })
+      : e.sentiment === 'positive' ? el('span', { class: 'badge badge--ok', text: '😊 Positivo' }) : null;
+    const iso = tsISO(e.createdAt);
+
+    const actions = [];
+    if (canPromote && !e.seen && !e.promotedToFAQ) {
+      const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', title: 'Marcar como vista' }, ['👁 Vista']);
+      b.addEventListener('click', () => doSeen(e)); actions.push(b);
+    }
+    if (canPromote) {
+      const b = e.promotedToFAQ
+        ? el('button', { class: 'btn btn--ghost btn--sm', type: 'button', disabled: true }, ['✓ Ya en KB'])
+        : el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['＋ Crear FAQ']);
+      if (!e.promotedToFAQ) b.addEventListener('click', () => doPromote(e));
+      actions.push(b);
+    }
+    if (canDelete) {
+      const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', title: 'Eliminar' }, ['🗑']);
+      b.addEventListener('click', () => doDelete(e)); actions.push(b);
+    }
+
+    const kws = (e.keywords && e.keywords.length)
+      ? el('div', { class: 'unm__kws' }, e.keywords.map((k) => el('span', { class: 'unm__kw', text: k })))
+      : null;
+
+    return el('article', { class: 'unm__entry' }, [
+      el('div', { class: 'unm__entry-head' }, [
+        el('div', { class: 'unm__entry-meta u-row u-row--tight' }, [
+          status, sentiment,
+          el('span', { class: 'u-caption u-faint', text: iso ? timeAgo(iso) : '' }),
+          e.sourcePage ? el('span', { class: 'u-caption u-faint', title: e.sourcePage, text: '↗ ' + e.sourcePage }) : null,
+        ]),
+        el('div', { class: 'unm__entry-actions u-row u-row--tight' }, actions),
+      ]),
+      el('div', { class: 'unm__query', text: e.query || '' }),
+      kws,
+    ]);
+  }
+
+  function render() {
+    renderChips();
+    clear(list);
+    if (!ui.loaded) { list.append(el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando…' })])); return; }
+    if (!ui.entries.length) {
+      list.append(stateNode('✅', 'Sin preguntas sin responder', 'El bot está respondiendo bien. Cuando algo no lo entienda, aparecerá aquí como señal de venta a recuperar.'));
+      return;
+    }
+    const rows = visible();
+    if (!rows.length) {
+      list.append(stateNode('🔍', 'Nada en este filtro', ui.filter === 'unseen' ? '¡Bandeja al día! No hay preguntas sin revisar.' : 'Sin registros en este filtro.'));
+      return;
+    }
+    rows.forEach((e) => list.append(entryRow(e)));
+  }
+
+  function stateNode(icon, title, msg) {
+    return el('div', { class: 'state' }, [
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', text: icon }),
+      el('div', { class: 'state__title', text: title }),
+      el('div', { class: 'state__msg', text: msg }),
+    ]);
+  }
+
+  // ── Boot ──
+  if (store.get().mock) {
+    ui.entries = MOCK_UNMATCHED.slice(); ui.loaded = true; render();
+  } else {
+    render();
+    ui.sub = subscribeUnmatched(
+      (l) => { ui.entries = l; ui.loaded = true; render(); },
+      (e) => { ui.loaded = true; toast(e && e.code === 'permission-denied' ? 'Sin permiso para ver esta sección.' : 'No se pudo cargar.', 'error'); render(); },
+    );
+  }
+
+  return function cleanup() { if (ui.sub) ui.sub(); ui.sub = null; };
+}

@@ -10,14 +10,12 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** — **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ TODO** (26/06 "autorizo todo en una sesión fresca"): ejecutar **(1) auth=RE-LOGIN · (2) PORTAR FCM a admin-app · (3) SW-unregister(⚠️NO matar SW público)+flip**. Runway+decisiones+paridad = spec `2026-06-26-F-6-cutover-kickoff`. NO re-preguntar go/no-go; PERO no flipear sin: **detalle Hub validado LIVE** (chat real — `conciergeChats` vacía en prod) + paridad §3 cerrada + post-cutover en celular. Paridad: 19/19 secciones ✅.
-> ✅ **Cerrado 26/06**: F-4 Hub COMPLETO (§249) · F-5 fugas DEPLOYED LIVE (§250) · dist rebuilt+live · **Hub live SMOKE ✅** (carga/listeners/interactividad limpio; detalle=mock §249, espera chat real). Deploys=míos sin go/no-go (mem `feedback-auto-deploy-crm`). LLM/bot=saldo (TODO-34).
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ — F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ TODO** (26/06). Spec = `2026-06-26-F-6-cutover-kickoff` (runway+decisiones+checklist). **Prep autónoma 25/06** (detalle → spec + `05`): ✅ FCM portado a admin-app + ✅ premisa §2 SW corregida (no hay SW de admin separado → unregister DESCARTADO). **FLIP irreversible = GATED** (dueño/tráfico): Hub-detalle-LIVE (chat real, `conciergeChats` vacía) · banner re-login · FCM end-to-end en device · `admin.html`→`_legacy/`+redirect · celular post-cutover. NO re-preguntar go/no-go; la autorización abre el gate, NO salta la verificación.
+> ✅ **Cerrado previo**: F-4 Hub (§249) · F-5 fugas LIVE (§250) · Hub SMOKE ✅ (detalle=mock, espera chat real). Deploys=míos (mem `feedback-auto-deploy-crm`). LLM/bot=saldo (TODO-34). **Bug pre-existente marcado** (spawn_task): `onChatTransferred` (functions §88) trata `fcmTokens` como string pero son objetos `{token,…}` → push de transferencia falla; fix = extraer `.token` (como `onChatEscalated`). Deploy functions.
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` (Vite) = portal único, apagar `admin.html`. **Yo manejo el orden técnico** (dueño decide dinero/legal/go-no-go — mem `feedback-collaboration-style`).
-> 🧭 **Camino**: F-2 ✅ → F-3 ✅ → **F-4 ✅** (§247-249) → **F-5 ✅ DEPLOYED** (§250) → **dist rebuilt ✅** (gate levantado) → **F-6 cutover** (último, irreversible). Receta L-53.
-> ⚠️ **Pend**: lead `PRUEBA-CLAUDE`/`3001112233` → purga en clean-slate · bot LLM DORMIENTE (#917)=saldo Anthropic. (Estado build/cache/sync → `05`.)
+> 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` = portal único, apagar `admin.html`. Camino F-2..F-5 ✅ → **F-6 flip** (último, irreversible; receta L-53). Yo manejo el orden técnico; dueño decide dinero/legal/go-no-go (mem `feedback-collaboration-style`). **Pend**: lead `PRUEBA-CLAUDE`/`3001112233`→purga en clean-slate · bot LLM DORMIENTE (#917)=saldo. (Build/cache/sync → `05`.)
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >

@@ -1,0 +1,75 @@
+/* ============================================================
+   FCM — tarjeta de permiso de notificaciones (PLAN-UNIFICADO F-6, paridad §3).
+   Anima solo opacity/transform (doctrina perf §3.1). Tokens del design system.
+   ============================================================ */
+.fcm-prompt {
+  position: fixed;
+  z-index: 60;
+  right: var(--s-5);
+  bottom: var(--s-5);
+  /* width explícito: anclada solo a right/bottom (sin left), un flex fixed sin
+     width colapsa a su contenido. max-width evita desbordar viewports angostos. */
+  width: 340px;
+  max-width: calc(100vw - 2 * var(--s-5));
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke);
+  box-shadow: var(--shadow-32);
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity var(--dur-3) var(--ease-fluent-decel),
+    transform var(--dur-3) var(--ease-fluent-decel);
+}
+.fcm-prompt.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fcm-prompt__icon {
+  font-size: 24px;
+  line-height: 1;
+  flex: none;
+}
+.fcm-prompt__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+.fcm-prompt__title {
+  font-weight: 700;
+  font-size: var(--t-body);
+}
+.fcm-prompt__text {
+  font-size: var(--t-caption);
+  line-height: var(--t-caption-lh);
+}
+.fcm-prompt__actions {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+
+@media (max-width: 560px) {
+  .fcm-prompt {
+    left: var(--s-4);
+    right: var(--s-4);
+    bottom: var(--s-4);
+    /* width:auto deja que left+right controlen el ancho (estira de borde a borde). */
+    width: auto;
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcm-prompt {
+    transition: opacity var(--dur-2) linear;
+    transform: none;
+  }
+  .fcm-prompt.is-in {
+    transform: none;
+  }
+}

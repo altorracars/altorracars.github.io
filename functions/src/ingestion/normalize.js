@@ -54,23 +54,37 @@ function mapConsent(sol, policyVersion) {
  * Devuelve {dedupKey, contact, lead, activity}; NO toca Firestore (lógica pura).
  */
 function normalizeSolicitud(sol, solId, policyVersion) {
-  const dedupKey = contactDedupKey({
+  let dedupKey = contactDedupKey({
     email: sol.email, phone: sol.telefono, prefijoPais: sol.prefijoPais,
   });
+  // F-5 (§4 + plan §9.B.4): un chat concierge ABANDONADO (soft-lead sin email
+  // ni teléfono pero CON sessionId) NO se pierde en `failedIngestions` — se
+  // ingiere como lead "Anónimo" usando `session:<sessionId>` como clave de
+  // dedup (determinista → re-ingerir el MISMO chat = MISMO contacto, cero
+  // duplicado; ingestLeadTransaction ya lo soporta: wantedKeys=[] → contacto
+  // por fallbackId, sin entradas en el índice email/teléfono). El fallback
+  // vive SOLO aquí (solicitudes web): lead_intake/cliente exigen contacto real
+  // (un lead rápido sin teléfono es error de dato → debe seguir fallando).
+  const anon = !dedupKey;
+  if (anon && sol.sessionId) dedupKey = 'session:' + String(sol.sessionId).trim();
   if (!dedupKey) {
-    throw new Error('No se puede deduplicar: solicitud sin email ni teléfono (' + solId + ')');
+    throw new Error('No se puede deduplicar: solicitud sin email, teléfono ni sessionId (' + solId + ')');
   }
   const email = String(sol.email || '').trim().toLowerCase();
   const phone = normalizePhone(sol.telefono, sol.prefijoPais);
-  const fullName = String(sol.nombre || '').trim() || 'Sin nombre';
+  const fullName = String(sol.nombre || '').trim() || (anon ? 'Anónimo' : 'Sin nombre');
   const consent = mapConsent(sol, policyVersion);
   const source = sol.origen || (sol.source && sol.source.page) || 'web';
   const createdAt = sol.createdAt || new Date().toISOString();
+  // Lead recuperado de un chat anónimo: tag para que el asesor lo reconozca
+  // (es señal de venta a recuperar, no un contacto identificado).
+  const tags = Array.isArray(sol.tags) ? sol.tags.slice() : [];
+  if (anon && !tags.includes('chat-anonimo')) tags.push('chat-anonimo');
 
   const contact = {
     fullName, email, phone, type: 'lead', source,
     ownerId: null, ownerName: null, score: 0, rating: 'cold', lifecycleStage: 'lead',
-    tags: Array.isArray(sol.tags) ? sol.tags.slice() : [],
+    tags,
     consent, doNotContact: !consent.email, clienteUid: sol.userId || null,
     lastActivityAt: createdAt, createdAt, updatedAt: createdAt, _version: 1,
   };

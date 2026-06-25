@@ -4234,6 +4234,9 @@ exports.onClienteCreated = require('./src/ingestion/onClienteCreated').onCliente
 exports.onSubscriptionCreated = require('./src/ingestion/onSubscriptionCreated').onSubscriptionCreated;
 // F36 §178: lead rápido (WhatsApp/walk-in/llamada/referido) → canónico.
 exports.onLeadIntakeCreated = require('./src/ingestion/onLeadIntakeCreated').onLeadIntakeCreated;
+// F-5 (§4): reprocesador del dead-letter `failedIngestions` (cada 30 min) —
+// recupera leads que CF dejó de reintentar + el backlog de chats anónimos.
+exports.crmReprocessFailedIngestions = require('./src/ingestion/reprocessFailedIngestions').crmReprocessFailedIngestions;
 
 // ========== CRM OPS — F34 red de seguridad (ADR §176 E0) ==========
 // Export/restore del CRM a Storage privado. Restore = dryRun por defecto.

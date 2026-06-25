@@ -10,8 +10,8 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (3/3) Hub · sub-incremento 3c**: transfer + close + reopen + super-release + notes internas (las mutaciones de GESTIÓN), sobre el lazo claim+responder 3b ya en `dev`. (⚠️ claim YA quedó en 3b, NO en 3c — re-scope verificado.) Luego **3d** smart suggestions (LLM summary diferido=saldo) → cierra F-4. Runway/checklist = spec `…F-4-3of3-hub-kickoff.md`. Módulo en `admin-app/src/modules/hub/`. Patrón=**L-53/L-54**.
-> ✅ **Cerrado 26/06**: **F-4 (3/3) 3a+3b** = VISOR + LAZO HUMANO del Hub (`modules/hub/`): 3a lista/detalle/presence read; 3b claim transaccional optimista + responder optimista (⏱/✓/✓✓/retry) + typing bidireccional RTDB + read-receipt. RBAC `concierge.read/respond/claim` = rules. Verif `?mock=1`; realtime=live-only. Source-only, dist GATEADO. Antes: **F-4 (1-2/3)** (§247-248) + **F-3** (§246). ADR §249 al cerrar F-4 completo (3a-3d).
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (3/3) Hub · sub-incremento 3d (ÚLTIMO)**: smart suggestions (heurístico, sin LLM) + botón "Resumen" con **LLM summary DIFERIDO** (degradar hasta saldo Anthropic, como el brain config §248). Sobre 3a+3b+3c ya en `dev`. **Al cerrar 3d → F-4 COMPLETO** → consolidar **ADR §249** (3a-3d) + fila `00` + lección a `30` + cerrar TODO-34/§EPIC bot + poda de `10`/`05` (están sobre cap). Sigue **F-5** (fugas: dedup `session:ID`). Spec `…F-4-3of3-hub-kickoff.md`. Módulo `admin-app/src/modules/hub/`.
+> ✅ **Cerrado 26/06**: **F-4 (3/3) 3a+3b+3c** = Hub funcional casi completo (`modules/hub/`): 3a visor/presence · 3b claim transaccional + responder optimista (⏱/✓/✓✓/retry) + typing RTDB · 3c close/reopen/transfer(modal presence)/super-release/notas-internas. RBAC `concierge.*` = rules. Verif `?mock=1`; realtime=live-only. Source-only, dist GATEADO. Antes: **F-4 (1-2/3)** (§247-248) + **F-3** (§246). ADR §249 al cerrar 3d.
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 

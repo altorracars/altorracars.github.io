@@ -1,13 +1,15 @@
 // ============================================================
 // ALTOR Hub (PLAN-UNIFICADO F-4 3/3, gap §2.B Comunicaciones) — UI.
 // Consola de chat asesor↔cliente. Port de js/admin/admin-concierge.js al
-// patrón admin-app. SUB-INCREMENTO 3a = VISOR de solo lectura: 2 zonas
-// (lista de chats + filtros · detalle con mensajes) + presence "X está
-// atendiendo" (read). Las MUTACIONES (enviar/claim/transfer/close/notes)
-// llegan en 3b-3c → aquí solo se LEE (cero interferencia con el Hub viejo
-// que sigue vivo en admin.html durante el run-paralelo, §237.6).
-// RBAC: read=concierge.read (alineado a firestore.rules:937 → no pintamos
-// acciones que el server rechazaría). ⟦OPUS-4.8 · rev-Fable⟧
+// patrón admin-app.
+//   3a = VISOR read-only (lista + mensajes + presence).
+//   3b = LAZO HUMANO: claim (tomar) + responder (optimista) + typing
+//        bidireccional + read-receipts. El viejo gatea responder tras claim
+//        (§26.4 "Claiming Estricto") → aquí igual: input bloqueado hasta tomar.
+//   Pendiente 3c: transfer/close/reopen/super-release/notes · 3d: IA.
+// RBAC = firestore.rules:937 (read=concierge.read · respond=concierge.respond
+//   · claim=concierge.claim) → no se pinta acción que el server rechazaría.
+// Run-paralelo (§237.6): el Hub viejo sigue vivo en admin.html. ⟦OPUS-4.8 · rev-Fable⟧
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
@@ -17,6 +19,8 @@ import { hasPermission } from '../../core/auth.js';
 import { timeAgo, initials } from '../../domain/format.js';
 import {
   subscribeChats, subscribeChatMessages, subscribeAttendingPresence,
+  claimChat, sendAsesorMessage, markChatRead,
+  setAdminTyping, clearAdminTyping, subscribeClientTyping,
   MOCK_CHATS, MOCK_MESSAGES, MOCK_ATTENDING,
 } from './hub.data.js';
 
@@ -25,7 +29,6 @@ const FILTERS = [
   { id: 'pinned', label: 'Fijados' },
   { id: 'archived', label: 'Archivados' },
 ];
-
 const MODE_ICON = { wa_handed_over: '📲', live: '👨', bot: '🤖' };
 const MODE_LABEL = { wa_handed_over: 'WhatsApp', live: 'En vivo', bot: 'Bot AI' };
 const CLOSED_REASON = {
@@ -34,6 +37,8 @@ const CLOSED_REASON = {
   sla_breach_handover: 'Cliente prefirió WhatsApp por SLA',
   idle_timeout: 'Cerrada por inactividad',
 };
+const TYPING_THROTTLE_MS = 1000;
+const TYPING_CLEAR_MS = 3000;
 
 export function mountHub(root) {
   const canRead = hasPermission('concierge.read');
@@ -47,18 +52,31 @@ export function mountHub(root) {
   }
 
   const isMock = !!store.get().mock;
+  const canRespond = hasPermission('concierge.respond');
+  const canClaim = hasPermission('concierge.claim') || canRespond;
+  const isSuper = hasPermission('*');
+
+  const asesor = () => {
+    const s = store.get();
+    return {
+      uid: s.user ? s.user.uid : null,
+      nombre: (s.profile && s.profile.nombre) || (s.user && s.user.email) || 'Asesor',
+      photoURL: (s.profile && s.profile.photoURL) || null,
+    };
+  };
+
   const ui = {
     chats: [], loaded: false, filter: 'active', activeId: null,
-    messages: [], msgLoaded: false, attending: {},
-    chatsSub: null, msgSub: null, presenceSub: null,
+    messages: [], pending: [], msgLoaded: false, attending: {}, clientTyping: false,
+    chatsSub: null, msgSub: null, presenceSub: null, typingSub: null,
+    typingThrottle: false, typingClearTimer: null, forceScroll: false,
   };
 
   // ── Layout: 2 columnas (lista | detalle) ──
   const chips = el('div', { class: 'hub__chips', role: 'tablist', 'aria-label': 'Filtro de conversaciones' });
   const listEl = el('div', { class: 'hub__list' });
   const listCol = el('div', { class: 'hub__col hub__col--list' }, [
-    el('div', { class: 'hub__list-head' }, [chips]),
-    listEl,
+    el('div', { class: 'hub__list-head' }, [chips]), listEl,
   ]);
   const detailEl = el('div', { class: 'hub__detail' });
   const detailCol = el('div', { class: 'hub__col hub__col--detail' }, [detailEl]);
@@ -111,7 +129,6 @@ export function mountHub(root) {
     const name = c.userNombre || c.userEmail || ('Cliente ' + c._docId.slice(-6));
     const unread = (c.unreadByAdmin || 0) || (c.forceUnreadByAdmin ? 1 : 0);
     const att = ui.attending[c._docId];
-
     const badges = [];
     if (c.isPinned) badges.push(el('span', { class: 'hub__row-tag', title: 'Fijado', text: '📌' }));
     if (c.isArchived) badges.push(el('span', { class: 'hub__row-tag', title: 'Archivado', text: '🗄️' }));
@@ -155,35 +172,136 @@ export function mountHub(root) {
     rows.forEach((c) => listEl.append(chatRow(c)));
   }
 
-  /* ── Detalle ────────────────────────────────────────────── */
+  /* ── Apertura de chat ───────────────────────────────────── */
   function openChat(sessionId) {
     if (ui.activeId === sessionId) { wrap.setAttribute('data-pane', 'detail'); return; }
+    teardownActiveChat();
     ui.activeId = sessionId;
-    ui.messages = [];
-    ui.msgLoaded = false;
+    ui.messages = []; ui.pending = []; ui.msgLoaded = false; ui.clientTyping = false;
+    ui.forceScroll = true;
     wrap.setAttribute('data-pane', 'detail');
-    renderList();      // refresca el "is-active"
+    renderList();
     renderDetail();
 
-    if (ui.msgSub) { ui.msgSub(); ui.msgSub = null; }
     if (isMock) {
       ui.messages = (MOCK_MESSAGES[sessionId] || []).slice();
-      ui.msgLoaded = true;
-      renderDetail();
+      ui.msgLoaded = true; renderDetail();
       return;
     }
+    // Limpia el badge "no leído" al abrir (best-effort, no bloquea la UI).
+    markChatRead(sessionId).catch(() => {});
     ui.msgSub = subscribeChatMessages(
       sessionId,
-      (msgs) => { if (ui.activeId === sessionId) { ui.messages = msgs; ui.msgLoaded = true; renderDetail(); } },
+      (msgs) => {
+        if (ui.activeId !== sessionId) return;
+        ui.messages = msgs;
+        // Reconcilia optimistas: descarta los confirmados que ya llegaron del server.
+        ui.pending = ui.pending.filter((p) => !(p.firestoreId && msgs.some((m) => m._id === p.firestoreId)));
+        ui.msgLoaded = true; renderDetail();
+      },
       () => { if (ui.activeId === sessionId) { ui.msgLoaded = true; toast('No se pudieron cargar los mensajes.', 'error'); renderDetail(); } },
     );
+    ui.typingSub = subscribeClientTyping(sessionId, (typing) => {
+      if (ui.activeId !== sessionId || ui.clientTyping === typing) return;
+      ui.clientTyping = typing; renderDetail();
+    });
   }
 
-  function activeChat() {
-    return ui.chats.find((c) => c._docId === ui.activeId) || null;
+  function teardownActiveChat() {
+    if (ui.msgSub) { ui.msgSub(); ui.msgSub = null; }
+    if (ui.typingSub) { ui.typingSub(); ui.typingSub = null; }
+    if (ui.typingClearTimer) { clearTimeout(ui.typingClearTimer); ui.typingClearTimer = null; }
+    ui.typingThrottle = false;
+    if (!isMock && ui.activeId) { const a = asesor(); if (a.uid) clearAdminTyping(ui.activeId, a.uid); }
   }
 
-  function bubble(m) {
+  function activeChat() { return ui.chats.find((c) => c._docId === ui.activeId) || null; }
+
+  /* ── Acciones (claim / responder) ───────────────────────── */
+  function doClaim(chat) {
+    if (!canClaim) return;
+    const a = asesor();
+    // Optimista: el banner "Estás atendiendo" aparece YA.
+    const snap = { claimedBy: chat.claimedBy, claimedByName: chat.claimedByName, claimedAt: chat.claimedAt, mode: chat.mode };
+    chat.claimedBy = a.uid; chat.claimedByName = a.nombre; chat.claimedAt = new Date().toISOString(); chat.mode = 'live';
+    renderList(); renderDetail();
+    if (isMock) { toast('Tomaste la conversación', 'ok'); return; }
+    claimChat(chat._docId, a).catch((err) => {
+      // Rollback
+      Object.assign(chat, snap); renderList(); renderDetail();
+      const msg = err && err.code === 'already-claimed' ? ((err.claimedByName || 'Otro asesor') + ' tomó este chat primero.')
+        : err && err.code === 'chat-closed' ? 'Este chat ya está cerrado.'
+          : err && err.code === 'chat-not-found' ? 'No encontramos el chat en el servidor.'
+            : (err && err.code === 'permission-denied') ? 'Sin permiso para tomar este chat.'
+              : 'No se pudo tomar el chat.';
+      toast(msg, 'error');
+    });
+  }
+
+  function doSend() {
+    const inputEl = detailEl.querySelector('.hub__composer-input');
+    if (!inputEl) return;
+    const text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    stopTyping();
+
+    const a = asesor();
+    const tempId = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const optimistic = { _id: tempId, _tempId: tempId, _status: 'pending', from: 'asesor', text, timestamp: new Date().toISOString(), asesorUid: a.uid, asesorNombre: a.nombre };
+    ui.pending.push(optimistic);
+    // Reordena la lista (lastMessage) optimista.
+    const chat = activeChat();
+    if (chat) { chat.lastMessage = text.slice(0, 80); chat.lastMessageAt = optimistic.timestamp; renderList(); }
+    ui.forceScroll = true; renderDetail();
+
+    if (isMock) { optimistic._status = 'sent'; renderDetail(); return; }
+
+    sendAsesorMessage(ui.activeId, text, a)
+      .then((id) => { optimistic.firestoreId = id; optimistic._status = 'sent'; renderDetail(); })
+      .catch(() => { optimistic._status = 'failed'; renderDetail(); toast('No se pudo enviar. Tocá "Reintentar".', 'error'); });
+  }
+
+  function retrySend(p) {
+    if (p._status !== 'failed') return;
+    p._status = 'pending'; renderDetail();
+    if (isMock) { p._status = 'sent'; renderDetail(); return; }
+    sendAsesorMessage(ui.activeId, p.text, asesor())
+      .then((id) => { p.firestoreId = id; p._status = 'sent'; renderDetail(); })
+      .catch(() => { p._status = 'failed'; renderDetail(); toast('Sigue fallando el envío.', 'error'); });
+  }
+
+  /* ── Typing (asesor → RTDB), debounce 1s + auto-clear 3s ── */
+  function onComposerInput() {
+    if (isMock || !ui.activeId) return;
+    const a = asesor();
+    if (ui.typingThrottle) { resetTypingClear(a); return; }
+    ui.typingThrottle = true;
+    setTimeout(() => { ui.typingThrottle = false; }, TYPING_THROTTLE_MS);
+    setAdminTyping(ui.activeId, true, a);
+    resetTypingClear(a);
+  }
+  function resetTypingClear(a) {
+    if (ui.typingClearTimer) clearTimeout(ui.typingClearTimer);
+    ui.typingClearTimer = setTimeout(() => setAdminTyping(ui.activeId, false, a), TYPING_CLEAR_MS);
+  }
+  function stopTyping() {
+    if (ui.typingClearTimer) { clearTimeout(ui.typingClearTimer); ui.typingClearTimer = null; }
+    ui.typingThrottle = false;
+    if (!isMock && ui.activeId) setAdminTyping(ui.activeId, false, asesor());
+  }
+
+  /* ── Detalle (rebuild completo, preserva el texto del composer) ── */
+  function effectiveStatus(m, chat) {
+    const s = m._status || 'sent';
+    if (s !== 'sent') return s;
+    if (!chat || !chat.lastReadByUser) return 'sent';
+    const mt = new Date(m.timestamp).getTime();
+    const rt = new Date(chat.lastReadByUser).getTime();
+    return (!Number.isNaN(mt) && !Number.isNaN(rt) && mt <= rt) ? 'read' : 'sent';
+  }
+
+  function bubble(m, chat) {
     if (m.from === 'system') {
       return el('div', { class: 'hub-msg hub-msg--system' }, [
         el('div', { class: 'hub-msg__sys', text: m.text || '' }),
@@ -192,39 +310,59 @@ export function mountHub(root) {
     }
     const side = m.from === 'asesor' ? 'out' : 'in';
     const kind = m.from === 'user' ? 'user' : m.from === 'asesor' ? 'asesor' : 'bot';
-    return el('div', { class: `hub-msg hub-msg--${side} hub-msg--${kind}` }, [
+    let statusEl = null;
+    if (m.from === 'asesor') {
+      const st = effectiveStatus(m, chat);
+      if (st === 'pending') statusEl = el('span', { class: 'hub-msg__st', title: 'Enviando', text: '⏱' });
+      else if (st === 'read') statusEl = el('span', { class: 'hub-msg__st hub-msg__st--read', title: 'Leído', text: '✓✓' });
+      else if (st === 'failed') {
+        statusEl = el('button', { class: 'hub-msg__retry', type: 'button', title: 'Reintentar envío' }, ['↻ Reintentar']);
+        statusEl.addEventListener('click', () => retrySend(m));
+      } else statusEl = el('span', { class: 'hub-msg__st', title: 'Enviado', text: '✓' });
+    }
+    return el('div', { class: `hub-msg hub-msg--${side} hub-msg--${kind}` + (m._status === 'failed' ? ' hub-msg--failed' : '') }, [
       el('div', { class: 'hub-msg__bubble' }, [
         kind === 'bot' ? el('span', { class: 'hub-msg__who u-caption', text: '🤖 Bot' }) : null,
         el('span', { class: 'hub-msg__text', text: m.text || '' }),
       ]),
-      el('div', { class: 'hub-msg__time u-caption u-faint', text: timeAgo(m.timestamp) }),
+      el('div', { class: 'hub-msg__time u-caption u-faint' }, [el('span', { text: timeAgo(m.timestamp) }), statusEl]),
     ]);
   }
 
   function renderDetail() {
+    // Preserva texto/foco del composer a través del rebuild.
+    const prev = detailEl.querySelector('.hub__composer-input');
+    const prevVal = prev ? prev.value : null;
+    const prevFocus = prev && document.activeElement === prev;
+    const prevSel = prev ? prev.selectionStart : null;
+    const prevMsgs = detailEl.querySelector('.hub__msgs');
+    const wasNearBottom = prevMsgs ? (prevMsgs.scrollHeight - prevMsgs.scrollTop - prevMsgs.clientHeight) < 120 : true;
+
     clear(detailEl);
     const chat = activeChat();
     if (!chat) {
-      detailEl.append(stateNode('💬', 'Selecciona una conversación', 'Elige un chat de la lista para ver el historial. (Responder, tomar y transferir llegan en los próximos incrementos.)'));
+      detailEl.append(stateNode('💬', 'Selecciona una conversación', 'Elige un chat de la lista para verlo y responder.'));
       return;
     }
 
     const name = chat.userNombre || chat.userEmail || ('Cliente ' + chat._docId.slice(-6));
-    const currentUid = store.get().user ? store.get().user.uid : null;
+    const me = asesor().uid;
     const isClosed = chat.status === 'closed';
-    const claimedByOther = !!(chat.claimedBy && chat.claimedBy !== currentUid);
+    const claimedByOther = !!(chat.claimedBy && chat.claimedBy !== me);
+    const claimedByMe = !!(chat.claimedBy && chat.claimedBy === me);
+    const unclaimed = !chat.claimedBy && !isClosed;
+    const canWrite = !isClosed && !unclaimed && (claimedByMe || isSuper);
+    const lockReadonly = claimedByOther && !isSuper;
     const att = ui.attending[chat._docId];
 
-    // Header: back (mobile) + cliente + meta
+    // Header
     const back = el('button', { class: 'hub__back icon-btn', type: 'button', 'aria-label': 'Volver a la lista' }, [el('span', { 'aria-hidden': 'true', text: '←' })]);
     back.addEventListener('click', () => { wrap.setAttribute('data-pane', 'list'); });
-
     const metaBits = [el('span', { class: 'hub__detail-mode', text: MODE_LABEL[chat.mode] || MODE_LABEL.bot })];
     if (chat.userEmail) metaBits.push(el('span', { class: 'u-faint', text: '· ' + chat.userEmail }));
     if (chat.telefono) metaBits.push(el('span', { class: 'u-faint', text: '· ' + chat.telefono }));
     if (chat.sourceVehicleId) metaBits.push(el('span', { class: 'u-faint', text: '· vehículo #' + chat.sourceVehicleId }));
-
-    const head = el('div', { class: 'hub__detail-head' }, [
+    detailEl.append(el('div', { class: 'hub__detail-head' }, [
       back,
       el('div', { class: 'hub__detail-id' }, [
         el('div', { class: 'hub__detail-name' }, [
@@ -233,41 +371,80 @@ export function mountHub(root) {
         ]),
         el('div', { class: 'hub__detail-meta u-caption u-row u-row--tight' }, metaBits),
       ]),
-    ]);
-    detailEl.append(head);
+    ]));
 
-    // Banners (read-only)
+    // Banners (read)
     if (isClosed) {
       const reason = CLOSED_REASON[chat.closedReason] || 'Conversación finalizada';
       const by = chat.closedByName || (chat.closedByRole === 'client' ? 'el cliente' : 'un asesor');
       detailEl.append(banner('🔒', reason, 'Por ' + by + (chat.closedAt ? ' · ' + timeAgo(chat.closedAt) : ''), 'closed'));
     }
     if (claimedByOther) {
-      detailEl.append(banner('🔒', (chat.claimedByName || 'Otro asesor') + ' está atendiendo este chat', chat.claimedAt ? 'Tomado ' + timeAgo(chat.claimedAt) : 'Solo quien lo tomó puede responder.', 'claimed'));
+      detailEl.append(banner(isSuper ? '⚠️' : '🔒',
+        (chat.claimedByName || 'Otro asesor') + ' está atendiendo este chat',
+        isSuper ? 'Si escribes acá interrumpís su atención.' : (chat.claimedAt ? 'Tomado ' + timeAgo(chat.claimedAt) : 'Solo quien lo tomó puede responder.'), 'claimed'));
     }
-    if (att) {
-      detailEl.append(banner('👀', att.nombre + ' está mirando este chat ahora mismo', 'Presencia en tiempo real.', 'attending'));
+    if (att) detailEl.append(banner('👀', att.nombre + ' está mirando este chat ahora mismo', 'Presencia en tiempo real.', 'attending'));
+    if (claimedByMe && !isClosed) detailEl.append(banner('✅', 'Estás atendiendo este chat', 'Otros asesores no pueden responder.', 'mine'));
+
+    // Banner CLAIM (tomar conversación)
+    if (unclaimed && canClaim) {
+      const claimBtn = el('button', { class: 'btn btn--gold', type: 'button' }, ['✋ Tomar conversación']);
+      claimBtn.addEventListener('click', () => doClaim(chat));
+      detailEl.append(el('div', { class: 'hub__claim' }, [
+        el('div', { class: 'hub__claim-info' }, [
+          el('div', { class: 'hub__claim-title', text: 'Conversación sin asignar' }),
+          el('div', { class: 'hub__claim-sub u-caption u-faint', text: 'Tomala para responderle al cliente. Mientras la atendés, otros asesores no podrán escribir.' }),
+        ]),
+        claimBtn,
+      ]));
     }
 
-    // Mensajes
+    // Mensajes (server + optimistas) ordenados por timestamp
     const msgsBox = el('div', { class: 'hub__msgs' });
-    if (!ui.msgLoaded) {
-      msgsBox.append(loadingNode());
-    } else if (!ui.messages.length) {
-      msgsBox.append(el('div', { class: 'hub__msgs-empty u-caption u-faint', text: 'Sin mensajes en esta conversación.' }));
-    } else {
-      ui.messages.forEach((m) => msgsBox.append(bubble(m)));
+    const items = ui.messages.concat(ui.pending).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    if (!ui.msgLoaded) msgsBox.append(loadingNode());
+    else if (!items.length) msgsBox.append(el('div', { class: 'hub__msgs-empty u-caption u-faint', text: 'Sin mensajes en esta conversación.' }));
+    else items.forEach((m) => msgsBox.append(bubble(m, chat)));
+    if (ui.clientTyping) {
+      msgsBox.append(el('div', { class: 'hub-msg hub-msg--in hub__typing' }, [
+        el('div', { class: 'hub__typing-dots' }, [el('span'), el('span'), el('span')]),
+        el('span', { class: 'u-caption u-faint', text: 'El cliente está escribiendo…' }),
+      ]));
     }
     detailEl.append(msgsBox);
 
-    // Footer read-only (3a): la caja de respuesta llega en 3b.
-    detailEl.append(el('div', { class: 'hub__ro-note u-caption u-faint' }, [
-      el('span', { 'aria-hidden': 'true', text: '👁 ' }),
-      el('span', { text: 'Vista de solo lectura — responder, tomar y transferir llegan en los próximos incrementos.' }),
-    ]));
+    // Composer (3b) — gateado por claim/estado
+    if (canWrite) {
+      const input = el('input', { class: 'form-input hub__composer-input', type: 'text', placeholder: 'Responder como asesor…', autocomplete: 'off' });
+      input.addEventListener('input', onComposerInput);
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } });
+      const sendBtn = el('button', { class: 'btn btn--gold', type: 'button' }, ['Enviar']);
+      sendBtn.addEventListener('click', doSend);
+      detailEl.append(el('div', { class: 'hub__composer' }, [input, sendBtn]));
+    } else if (!unclaimed) {
+      // cerrado o bloqueado por otro asesor → input deshabilitado con motivo
+      detailEl.append(el('div', { class: 'hub__composer hub__composer--disabled' }, [
+        el('input', { class: 'form-input', type: 'text', disabled: true,
+          placeholder: isClosed ? '🔒 Conversación cerrada — solo lectura' : '🔒 Atendido por ' + (chat.claimedByName || 'otro asesor') }),
+      ]));
+    } else if (unclaimed && !canClaim) {
+      detailEl.append(el('div', { class: 'hub__ro-note u-caption u-faint' }, [el('span', { text: '👁 Solo lectura — necesitas permiso para tomar y responder conversaciones.' })]));
+    }
 
-    // Auto-scroll al final de los mensajes.
-    requestAnimationFrame(() => { msgsBox.scrollTop = msgsBox.scrollHeight; });
+    // Scroll: al fondo si veníamos pegados o tras enviar/abrir.
+    if (wasNearBottom || ui.forceScroll) {
+      requestAnimationFrame(() => { msgsBox.scrollTop = msgsBox.scrollHeight; });
+      ui.forceScroll = false;
+    }
+    // Restaura el composer
+    if (prevVal != null) {
+      const nowInput = detailEl.querySelector('.hub__composer-input');
+      if (nowInput) {
+        nowInput.value = prevVal;
+        if (prevFocus) { nowInput.focus(); try { nowInput.setSelectionRange(prevSel, prevSel); } catch (_) {} }
+      }
+    }
   }
 
   /* ── Helpers de nodos ───────────────────────────────────── */
@@ -300,22 +477,19 @@ export function mountHub(root) {
   } else {
     renderList(); renderDetail();
     ui.chatsSub = subscribeChats(
-      (list) => {
-        ui.chats = list; ui.loaded = true; renderList();
-        if (ui.activeId) renderDetail(); // refresca header/banners del chat activo
-      },
+      (list) => { ui.chats = list; ui.loaded = true; renderList(); if (ui.activeId) renderDetail(); },
       (e) => { ui.loaded = true; toast(e && e.code === 'permission-denied' ? 'Sin permiso para ver el Hub.' : 'No se pudo cargar el Hub.', 'error'); renderList(); },
     );
     ui.presenceSub = subscribeAttendingPresence(
       (map) => { ui.attending = map; renderList(); if (ui.activeId) renderDetail(); },
-      () => {}, // presence es best-effort: si falla, el visor sigue sin el indicador
+      () => {},
     );
   }
 
   return function cleanup() {
+    teardownActiveChat();
     if (ui.chatsSub) ui.chatsSub();
-    if (ui.msgSub) ui.msgSub();
     if (ui.presenceSub) ui.presenceSub();
-    ui.chatsSub = ui.msgSub = ui.presenceSub = null;
+    ui.chatsSub = ui.presenceSub = null;
   };
 }

@@ -113,14 +113,57 @@
   background: var(--surface-stroke); color: var(--ink-text-muted);
   font-size: var(--t-caption); text-align: center;
 }
-.hub-msg__time { padding: 0 var(--s-1); }
+.hub-msg__time { display: flex; align-items: center; gap: 6px; padding: 0 var(--s-1); }
 
-/* Footer read-only */
+/* Footer read-only (3a — fallback sin permiso de claim) */
 .hub__ro-note {
   flex: 0 0 auto; display: flex; align-items: center; gap: 6px; justify-content: center;
   padding: var(--s-3) var(--s-5); border-top: 1px solid var(--surface-stroke);
   background: var(--surface-mica);
 }
+
+/* ─────────── 3b: claim · composer · estados de mensaje · typing ─────────── */
+.hub__banner--mine { border-color: color-mix(in srgb, #2e9d5b 40%, var(--surface-stroke)); }
+
+.hub__claim {
+  flex: 0 0 auto; display: flex; align-items: center; gap: var(--s-3);
+  margin: var(--s-3) var(--s-5) 0; padding: var(--s-4);
+  border-radius: var(--r-md); border: 1px dashed var(--surface-stroke-hi);
+  background: var(--surface-card);
+}
+.hub__claim-info { flex: 1 1 auto; min-width: 0; }
+.hub__claim-title { font-weight: 700; font-family: var(--font-display); }
+.hub__claim-sub { margin-top: 2px; }
+.hub__claim .btn { flex: 0 0 auto; }
+
+.hub__composer {
+  flex: 0 0 auto; display: flex; gap: var(--s-2);
+  padding: var(--s-3) var(--s-5); border-top: 1px solid var(--surface-stroke);
+  background: var(--surface-mica);
+}
+.hub__composer .form-input { flex: 1 1 auto; min-width: 0; }
+.hub__composer .btn { flex: 0 0 auto; }
+.hub__composer--disabled .form-input { cursor: not-allowed; }
+
+/* Estado de los mensajes del asesor (✓/✓✓/⏱/reintentar) */
+.hub-msg__st { font-size: var(--t-caption); opacity: 0.7; }
+.hub-msg__st--read { color: #2e9d5b; opacity: 1; }
+.hub-msg__retry {
+  border: 0; background: transparent; cursor: pointer; padding: 0;
+  color: var(--danger); font-size: var(--t-caption); font-weight: 700;
+}
+.hub-msg--failed .hub-msg__bubble { outline: 1px solid rgba(232, 93, 93, 0.5); }
+
+/* "El cliente está escribiendo…" */
+.hub__typing { flex-direction: row; align-items: center; gap: var(--s-2); }
+.hub__typing-dots { display: inline-flex; gap: 3px; }
+.hub__typing-dots span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink-text-faint); animation: hub-typing 1.2s infinite ease-in-out;
+}
+.hub__typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.hub__typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes hub-typing { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
 
 /* ─────────── Estado vacío centrado ─────────── */
 .hub__col--detail .state { margin: auto; }

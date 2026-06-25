@@ -23,8 +23,11 @@
 
 import {
   collection, onSnapshot, query, orderBy, limit,
+  doc, addDoc, updateDoc, getDocFromServer, runTransaction, increment,
 } from 'firebase/firestore';
-import { ref, onValue } from 'firebase/database';
+import {
+  ref, onValue, set as rtdbSet, remove as rtdbRemove, onDisconnect,
+} from 'firebase/database';
 import { db, rtdb } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 
@@ -87,6 +90,110 @@ export function subscribeAttendingPresence(onMap, onError) {
     });
     onMap(map);
   }, (err) => onError && onError(err));
+}
+
+/* ══ ESCRITURAS (3b: claim + responder + typing + read) ════════════════
+ * Port de admin-concierge.js write-path. RBAC alineado a firestore.rules:937
+ * + database.rules.json. La UI gatea optimista; aquí solo el round-trip server.
+ * ════════════════════════════════════════════════════════════════════ */
+
+const nowISO = () => new Date().toISOString();
+
+/**
+ * Toma (claim) un chat: pre-check en SERVER (sin flash de UI falso) + Firestore
+ * Transaction (read-then-write atómico: dos asesores no pueden ganar el lock a la
+ * vez). Port de claimChat/_claimChatTransactional (§60.1.1). Tras ganar el lock,
+ * best-effort: system message "✓ X tomó…" + lastMessage (para que el cliente y la
+ * lista lo vean). Gated: concierge.claim/respond (rules update conciergeChats).
+ * Resuelve {success, claimedByName} · rechaza {code:'already-claimed'|'chat-closed'|'chat-not-found', claimedByName?}.
+ */
+export async function claimChat(sessionId, asesor) {
+  const ref = doc(db, 'conciergeChats', sessionId);
+  const { uid, nombre } = asesor;
+  const ts = nowISO();
+
+  // PRE-CHECK server: evita optimistic→rollback si la lista local está stale.
+  const pre = await getDocFromServer(ref);
+  if (!pre.exists()) { const e = new Error('chat-not-found'); e.code = 'chat-not-found'; throw e; }
+  const pd = pre.data();
+  if (pd.status === 'closed') { const e = new Error('chat-closed'); e.code = 'chat-closed'; throw e; }
+  if (pd.claimedBy && pd.claimedBy !== uid) {
+    const e = new Error('already-claimed'); e.code = 'already-claimed'; e.claimedByName = pd.claimedByName || 'Otro asesor'; throw e;
+  }
+
+  const result = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) { const e = new Error('chat-not-found'); e.code = 'chat-not-found'; throw e; }
+    const d = snap.data();
+    if (d.status === 'closed') { const e = new Error('chat-closed'); e.code = 'chat-closed'; throw e; }
+    if (d.claimedBy && d.claimedBy !== uid) {
+      const e = new Error('already-claimed'); e.code = 'already-claimed'; e.claimedByName = d.claimedByName || 'Otro asesor'; throw e;
+    }
+    tx.update(ref, {
+      claimedBy: uid, claimedByName: nombre, claimedAt: ts, mode: 'live',
+      assignedTo: uid, assignedToName: nombre, // compat CRM legacy
+    });
+    return { success: true, claimedByName: nombre };
+  });
+
+  // Best-effort: el cliente ve "✓ X tomó la conversación" + reordena la lista.
+  try {
+    await addDoc(collection(db, 'conciergeChats', sessionId, 'messages'), {
+      from: 'system', systemType: 'asesor_joined',
+      text: '✓ ' + nombre + ' tomó esta conversación. En breve te atenderá.',
+      timestamp: ts, asesorNombre: nombre, asesorUid: uid,
+    });
+    await updateDoc(ref, { lastMessage: '✓ ' + nombre + ' tomó la conversación', lastMessageAt: ts });
+  } catch (_) { /* best-effort */ }
+  return result;
+}
+
+/**
+ * Envía un mensaje del asesor (subcol messages) + actualiza el parent
+ * (lastMessage/At + unreadByUser++). La UI maneja el optimista; aquí el write.
+ * Gated: concierge.respond + claim==me (firestore.rules messages create 'asesor').
+ * Devuelve el id del doc creado. */
+export async function sendAsesorMessage(sessionId, text, asesor) {
+  const ts = nowISO();
+  const msg = {
+    from: 'asesor', text, timestamp: ts,
+    asesorUid: asesor.uid, asesorNombre: asesor.nombre, asesorPhotoURL: asesor.photoURL || null,
+  };
+  const created = await addDoc(collection(db, 'conciergeChats', sessionId, 'messages'), msg);
+  // Parent en background (no bloquea el optimista): lastMessage + unread cliente.
+  updateDoc(doc(db, 'conciergeChats', sessionId), {
+    lastMessage: text.slice(0, 80), lastMessageAt: ts, unreadByUser: increment(1),
+  }).catch(() => {});
+  return created.id;
+}
+
+/** Marca el chat leído por el asesor (limpia el badge + read-receipt). Throttle en UI. */
+export async function markChatRead(sessionId) {
+  await updateDoc(doc(db, 'conciergeChats', sessionId), {
+    unreadByAdmin: 0, forceUnreadByAdmin: false, lastReadByAdmin: nowISO(),
+  });
+}
+
+/* ── Typing (RTDB) ─────────────────────────────────────────── */
+// Escribe el estado "asesor escribiendo" en /typing/{sid}/asesor_{uid}
+// (rules: $asesorKey == 'asesor_' + auth.uid; .validate exige typing+ts+name).
+export function setAdminTyping(sessionId, isTyping, asesor) {
+  const r = ref(rtdb, '/typing/' + sessionId + '/asesor_' + asesor.uid);
+  rtdbSet(r, { name: asesor.nombre || 'Asesor', typing: !!isTyping, ts: Date.now() }).catch(() => {});
+  if (isTyping) { try { onDisconnect(r).remove(); } catch (_) {} } // limpia si se cae la pestaña
+}
+
+export function clearAdminTyping(sessionId, uid) {
+  try { rtdbRemove(ref(rtdb, '/typing/' + sessionId + '/asesor_' + uid)); } catch (_) {}
+}
+
+/** Suscripción al "cliente escribiendo" (/typing/{sid}/user). onTyping(bool). */
+export function subscribeClientTyping(sessionId, onTyping) {
+  const r = ref(rtdb, '/typing/' + sessionId + '/user');
+  return onValue(r, (snap) => {
+    const d = snap.val();
+    onTyping(!!(d && d.typing && (Date.now() - (d.ts || 0)) < 5000));
+  }, () => {});
 }
 
 /* ── Mock (?mock=1) ─────────────────────────────────────────── */

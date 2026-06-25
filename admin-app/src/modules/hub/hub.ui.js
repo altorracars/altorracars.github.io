@@ -3,12 +3,12 @@
 // Consola de chat asesor↔cliente. Port de js/admin/admin-concierge.js al
 // patrón admin-app.
 //   3a = VISOR read-only (lista + mensajes + presence).
-//   3b = LAZO HUMANO: claim (tomar) + responder (optimista) + typing
-//        bidireccional + read-receipts. El viejo gatea responder tras claim
-//        (§26.4 "Claiming Estricto") → aquí igual: input bloqueado hasta tomar.
-//   Pendiente 3c: transfer/close/reopen/super-release/notes · 3d: IA.
-// RBAC = firestore.rules:937 (read=concierge.read · respond=concierge.respond
-//   · claim=concierge.claim) → no se pinta acción que el server rechazaría.
+//   3b = LAZO HUMANO: claim (tomar) + responder (optimista) + typing + read.
+//   3c = GESTIÓN: cerrar/reabrir · transferir (modal por presence) ·
+//        liberar (super) · notas internas (subcol, el cliente no las ve).
+//   Pendiente 3d: smart suggestions + LLM summary (diferido = saldo).
+// RBAC = firestore.rules:937 (concierge.read/respond/claim/close/reopen/
+//   transfer/delete) → no se pinta acción que el server rechazaría.
 // Run-paralelo (§237.6): el Hub viejo sigue vivo en admin.html. ⟦OPUS-4.8 · rev-Fable⟧
 // ============================================================
 
@@ -21,7 +21,9 @@ import {
   subscribeChats, subscribeChatMessages, subscribeAttendingPresence,
   claimChat, sendAsesorMessage, markChatRead,
   setAdminTyping, clearAdminTyping, subscribeClientTyping,
-  MOCK_CHATS, MOCK_MESSAGES, MOCK_ATTENDING,
+  closeChatDoc, reopenChatDoc, releaseClaim, getOnlineAdvisors, transferChat,
+  addInternalNote, subscribeNotes,
+  MOCK_CHATS, MOCK_MESSAGES, MOCK_ATTENDING, MOCK_ADVISORS, MOCK_NOTES,
 } from './hub.data.js';
 
 const FILTERS = [
@@ -54,6 +56,9 @@ export function mountHub(root) {
   const isMock = !!store.get().mock;
   const canRespond = hasPermission('concierge.respond');
   const canClaim = hasPermission('concierge.claim') || canRespond;
+  const canClose = hasPermission('concierge.close');
+  const canReopen = hasPermission('concierge.reopen');
+  const canTransfer = hasPermission('concierge.transfer');
   const isSuper = hasPermission('*');
 
   const asesor = () => {
@@ -67,17 +72,16 @@ export function mountHub(root) {
 
   const ui = {
     chats: [], loaded: false, filter: 'active', activeId: null,
-    messages: [], pending: [], msgLoaded: false, attending: {}, clientTyping: false,
-    chatsSub: null, msgSub: null, presenceSub: null, typingSub: null,
+    messages: [], pending: [], notes: [], msgLoaded: false, attending: {}, clientTyping: false,
+    noteMode: false, transfer: { open: false, loading: false, advisors: null },
+    chatsSub: null, msgSub: null, presenceSub: null, typingSub: null, notesSub: null,
     typingThrottle: false, typingClearTimer: null, forceScroll: false,
   };
 
   // ── Layout: 2 columnas (lista | detalle) ──
   const chips = el('div', { class: 'hub__chips', role: 'tablist', 'aria-label': 'Filtro de conversaciones' });
   const listEl = el('div', { class: 'hub__list' });
-  const listCol = el('div', { class: 'hub__col hub__col--list' }, [
-    el('div', { class: 'hub__list-head' }, [chips]), listEl,
-  ]);
+  const listCol = el('div', { class: 'hub__col hub__col--list' }, [el('div', { class: 'hub__list-head' }, [chips]), listEl]);
   const detailEl = el('div', { class: 'hub__detail' });
   const detailCol = el('div', { class: 'hub__col hub__col--detail' }, [detailEl]);
   wrap.append(listCol, detailCol);
@@ -92,7 +96,6 @@ export function mountHub(root) {
     });
     return { active, pinned, archived };
   }
-
   function renderChips() {
     const c = counts();
     clear(chips);
@@ -107,7 +110,6 @@ export function mountHub(root) {
       chips.append(chip);
     });
   }
-
   function visibleChats() {
     const list = ui.chats.filter((c) => {
       if (c.isDeleted) return false;
@@ -124,7 +126,6 @@ export function mountHub(root) {
     });
     return list;
   }
-
   function chatRow(c) {
     const name = c.userNombre || c.userEmail || ('Cliente ' + c._docId.slice(-6));
     const unread = (c.unreadByAdmin || 0) || (c.forceUnreadByAdmin ? 1 : 0);
@@ -133,10 +134,8 @@ export function mountHub(root) {
     if (c.isPinned) badges.push(el('span', { class: 'hub__row-tag', title: 'Fijado', text: '📌' }));
     if (c.isArchived) badges.push(el('span', { class: 'hub__row-tag', title: 'Archivado', text: '🗄️' }));
     if (c.status === 'closed') badges.push(el('span', { class: 'hub__row-tag', title: 'Cerrado', text: '✓' }));
-
     const row = el('button', {
-      class: 'hub__row' + (c._docId === ui.activeId ? ' is-active' : '') + (unread ? ' has-unread' : ''),
-      type: 'button',
+      class: 'hub__row' + (c._docId === ui.activeId ? ' is-active' : '') + (unread ? ' has-unread' : ''), type: 'button',
     }, [
       el('span', { class: 'avatar avatar--sm', 'aria-hidden': 'true', text: initials(name) }),
       el('span', { class: 'hub__row-body' }, [
@@ -156,7 +155,6 @@ export function mountHub(root) {
     row.addEventListener('click', () => openChat(c._docId));
     return row;
   }
-
   function renderList() {
     renderChips();
     clear(listEl);
@@ -177,25 +175,23 @@ export function mountHub(root) {
     if (ui.activeId === sessionId) { wrap.setAttribute('data-pane', 'detail'); return; }
     teardownActiveChat();
     ui.activeId = sessionId;
-    ui.messages = []; ui.pending = []; ui.msgLoaded = false; ui.clientTyping = false;
-    ui.forceScroll = true;
+    ui.messages = []; ui.pending = []; ui.notes = []; ui.msgLoaded = false;
+    ui.clientTyping = false; ui.noteMode = false; ui.forceScroll = true;
     wrap.setAttribute('data-pane', 'detail');
-    renderList();
-    renderDetail();
+    renderList(); renderDetail();
 
     if (isMock) {
       ui.messages = (MOCK_MESSAGES[sessionId] || []).slice();
+      ui.notes = (MOCK_NOTES[sessionId] || []).slice();
       ui.msgLoaded = true; renderDetail();
       return;
     }
-    // Limpia el badge "no leído" al abrir (best-effort, no bloquea la UI).
     markChatRead(sessionId).catch(() => {});
     ui.msgSub = subscribeChatMessages(
       sessionId,
       (msgs) => {
         if (ui.activeId !== sessionId) return;
         ui.messages = msgs;
-        // Reconcilia optimistas: descarta los confirmados que ya llegaron del server.
         ui.pending = ui.pending.filter((p) => !(p.firestoreId && msgs.some((m) => m._id === p.firestoreId)));
         ui.msgLoaded = true; renderDetail();
       },
@@ -205,39 +201,37 @@ export function mountHub(root) {
       if (ui.activeId !== sessionId || ui.clientTyping === typing) return;
       ui.clientTyping = typing; renderDetail();
     });
+    ui.notesSub = subscribeNotes(sessionId, (list) => { if (ui.activeId === sessionId) { ui.notes = list; renderDetail(); } }, () => {});
   }
 
   function teardownActiveChat() {
     if (ui.msgSub) { ui.msgSub(); ui.msgSub = null; }
     if (ui.typingSub) { ui.typingSub(); ui.typingSub = null; }
+    if (ui.notesSub) { ui.notesSub(); ui.notesSub = null; }
     if (ui.typingClearTimer) { clearTimeout(ui.typingClearTimer); ui.typingClearTimer = null; }
     ui.typingThrottle = false;
+    if (ui.transfer.open) { ui.transfer.open = false; renderTransferModal(); }
     if (!isMock && ui.activeId) { const a = asesor(); if (a.uid) clearAdminTyping(ui.activeId, a.uid); }
   }
-
   function activeChat() { return ui.chats.find((c) => c._docId === ui.activeId) || null; }
 
-  /* ── Acciones (claim / responder) ───────────────────────── */
+  /* ── Acciones: claim / responder ────────────────────────── */
   function doClaim(chat) {
     if (!canClaim) return;
     const a = asesor();
-    // Optimista: el banner "Estás atendiendo" aparece YA.
     const snap = { claimedBy: chat.claimedBy, claimedByName: chat.claimedByName, claimedAt: chat.claimedAt, mode: chat.mode };
     chat.claimedBy = a.uid; chat.claimedByName = a.nombre; chat.claimedAt = new Date().toISOString(); chat.mode = 'live';
     renderList(); renderDetail();
     if (isMock) { toast('Tomaste la conversación', 'ok'); return; }
     claimChat(chat._docId, a).catch((err) => {
-      // Rollback
       Object.assign(chat, snap); renderList(); renderDetail();
       const msg = err && err.code === 'already-claimed' ? ((err.claimedByName || 'Otro asesor') + ' tomó este chat primero.')
         : err && err.code === 'chat-closed' ? 'Este chat ya está cerrado.'
           : err && err.code === 'chat-not-found' ? 'No encontramos el chat en el servidor.'
-            : (err && err.code === 'permission-denied') ? 'Sin permiso para tomar este chat.'
-              : 'No se pudo tomar el chat.';
+            : (err && err.code === 'permission-denied') ? 'Sin permiso para tomar este chat.' : 'No se pudo tomar el chat.';
       toast(msg, 'error');
     });
   }
-
   function doSend() {
     const inputEl = detailEl.querySelector('.hub__composer-input');
     if (!inputEl) return;
@@ -245,23 +239,18 @@ export function mountHub(root) {
     if (!text) return;
     inputEl.value = '';
     stopTyping();
-
     const a = asesor();
     const tempId = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const optimistic = { _id: tempId, _tempId: tempId, _status: 'pending', from: 'asesor', text, timestamp: new Date().toISOString(), asesorUid: a.uid, asesorNombre: a.nombre };
     ui.pending.push(optimistic);
-    // Reordena la lista (lastMessage) optimista.
     const chat = activeChat();
     if (chat) { chat.lastMessage = text.slice(0, 80); chat.lastMessageAt = optimistic.timestamp; renderList(); }
     ui.forceScroll = true; renderDetail();
-
     if (isMock) { optimistic._status = 'sent'; renderDetail(); return; }
-
     sendAsesorMessage(ui.activeId, text, a)
       .then((id) => { optimistic.firestoreId = id; optimistic._status = 'sent'; renderDetail(); })
       .catch(() => { optimistic._status = 'failed'; renderDetail(); toast('No se pudo enviar. Tocá "Reintentar".', 'error'); });
   }
-
   function retrySend(p) {
     if (p._status !== 'failed') return;
     p._status = 'pending'; renderDetail();
@@ -271,9 +260,110 @@ export function mountHub(root) {
       .catch(() => { p._status = 'failed'; renderDetail(); toast('Sigue fallando el envío.', 'error'); });
   }
 
-  /* ── Typing (asesor → RTDB), debounce 1s + auto-clear 3s ── */
+  /* ── Acciones de gestión (3c) ───────────────────────────── */
+  function doClose(chat) {
+    if (!window.confirm('¿Cerrar esta conversación?\n\nEl cliente verá un aviso de cierre. Los mensajes se conservan.')) return;
+    const a = asesor(); const ts = new Date().toISOString();
+    const snap = { status: chat.status, closedAt: chat.closedAt, closedBy: chat.closedBy, closedByName: chat.closedByName, closedReason: chat.closedReason, lastMessage: chat.lastMessage, lastMessageAt: chat.lastMessageAt };
+    chat.status = 'closed'; chat.closedAt = ts; chat.closedBy = a.uid; chat.closedByName = a.nombre; chat.closedReason = 'admin_resolved';
+    chat.lastMessage = '✓ Conversación cerrada por ' + a.nombre; chat.lastMessageAt = ts;
+    ui.forceScroll = true; renderList(); renderDetail();
+    if (isMock) { ui.messages.push({ _id: 's_' + Date.now(), from: 'system', text: '✓ ' + a.nombre + ' cerró esta conversación. Iniciá una nueva cuando quieras.', timestamp: ts }); renderDetail(); toast('Conversación cerrada', 'ok'); return; }
+    closeChatDoc(chat._docId, a).then(() => toast('Conversación cerrada', 'ok'))
+      .catch(() => { Object.assign(chat, snap); renderList(); renderDetail(); toast('No se pudo cerrar.', 'error'); });
+  }
+  function doReopen(chat) {
+    if (!window.confirm('¿Reabrir esta conversación?\n\nEl cliente podrá volver a escribir aquí.')) return;
+    const a = asesor(); const ts = new Date().toISOString();
+    const snap = { status: chat.status, lastMessage: chat.lastMessage, lastMessageAt: chat.lastMessageAt };
+    chat.status = 'active'; chat.lastMessage = '↻ Conversación reabierta por ' + a.nombre; chat.lastMessageAt = ts;
+    ui.forceScroll = true; renderList(); renderDetail();
+    if (isMock) { ui.messages.push({ _id: 's_' + Date.now(), from: 'system', text: '↻ ' + a.nombre + ' reabrió la conversación. Podés seguir escribiendo.', timestamp: ts }); renderDetail(); toast('Conversación reabierta', 'ok'); return; }
+    reopenChatDoc(chat._docId, a).then(() => toast('Conversación reabierta', 'ok'))
+      .catch(() => { Object.assign(chat, snap); renderList(); renderDetail(); toast('No se pudo reabrir.', 'error'); });
+  }
+  function doRelease(chat) {
+    const a = asesor();
+    const snap = { claimedBy: chat.claimedBy, claimedByName: chat.claimedByName };
+    chat.claimedBy = null; chat.claimedByName = null; renderList(); renderDetail();
+    if (isMock) { toast('Lock liberado', 'ok'); return; }
+    releaseClaim(chat._docId, a).then(() => toast('Lock liberado — otro asesor puede tomar el chat', 'ok'))
+      .catch(() => { Object.assign(chat, snap); renderList(); renderDetail(); toast('No se pudo liberar.', 'error'); });
+  }
+
+  // Transfer modal (overlay independiente del renderDetail)
+  let transferEl = null;
+  function openTransfer() {
+    ui.transfer = { open: true, loading: true, advisors: null };
+    renderTransferModal();
+    if (isMock) { ui.transfer.loading = false; ui.transfer.advisors = MOCK_ADVISORS.slice(); renderTransferModal(); return; }
+    getOnlineAdvisors(asesor().uid)
+      .then((list) => { ui.transfer.loading = false; ui.transfer.advisors = list; renderTransferModal(); })
+      .catch(() => { ui.transfer.loading = false; ui.transfer.advisors = []; renderTransferModal(); });
+  }
+  function closeTransfer() { ui.transfer.open = false; renderTransferModal(); }
+  function doTransfer(adv) {
+    const chat = activeChat();
+    if (!chat) return;
+    if (!window.confirm('¿Transferir esta conversación a ' + adv.nombre + '?\n\nRecibirá una notificación.')) return;
+    const a = asesor();
+    const snap = { claimedBy: chat.claimedBy, claimedByName: chat.claimedByName };
+    chat.claimedBy = adv.uid; chat.claimedByName = adv.nombre; renderList(); renderDetail();
+    closeTransfer();
+    if (isMock) { toast('Conversación transferida a ' + adv.nombre, 'ok'); return; }
+    transferChat(chat._docId, adv.uid, adv.nombre, a).then(() => toast('Transferida a ' + adv.nombre, 'ok'))
+      .catch((err) => {
+        Object.assign(chat, snap); renderList(); renderDetail();
+        const m = err && err.code === 'chat-closed' ? 'No se puede transferir un chat cerrado.'
+          : err && err.code === 'chat-not-found' ? 'El chat ya no existe.' : 'No se pudo transferir.';
+        toast(m, 'error');
+      });
+  }
+  function renderTransferModal() {
+    if (transferEl) { transferEl.remove(); transferEl = null; }
+    if (!ui.transfer.open) return;
+    const list = el('div', { class: 'hub__tr-list' });
+    if (ui.transfer.loading) list.append(el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando asesores…' })]));
+    else if (!ui.transfer.advisors || !ui.transfer.advisors.length) list.append(stateNode('👥', 'Nadie disponible', 'No hay otros asesores online ahora. Solo se transfiere a asesores con sesión activa.'));
+    else ui.transfer.advisors.forEach((adv) => {
+      const item = el('button', { class: 'hub__tr-item', type: 'button' }, [
+        el('span', { class: 'avatar avatar--sm hub__tr-status hub__tr-status--' + (adv.status === 'away' ? 'away' : 'online'), 'aria-hidden': 'true', text: initials(adv.nombre) }),
+        el('span', { class: 'hub__tr-info' }, [
+          el('span', { class: 'hub__tr-name u-truncate', text: adv.nombre }),
+          el('span', { class: 'hub__tr-meta u-caption u-faint', text: (adv.cargo || '') + ' · ' + (adv.status === 'away' ? 'Ausente' : 'Online') }),
+        ]),
+        el('span', { 'aria-hidden': 'true', text: '›' }),
+      ]);
+      item.addEventListener('click', () => doTransfer(adv));
+      list.append(item);
+    });
+    const closeBtn = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cerrar' }, [el('span', { 'aria-hidden': 'true', text: '✕' })]);
+    closeBtn.addEventListener('click', closeTransfer);
+    const panel = el('div', { class: 'hub__tr-panel', role: 'dialog', 'aria-label': 'Transferir conversación' }, [
+      el('div', { class: 'hub__tr-head' }, [el('strong', { text: '🔁 Transferir conversación' }), closeBtn]),
+      list,
+    ]);
+    transferEl = el('div', { class: 'hub__tr-backdrop' }, [panel]);
+    transferEl.addEventListener('click', (e) => { if (e.target === transferEl) closeTransfer(); });
+    wrap.append(transferEl);
+  }
+
+  /* ── Notas internas (3c) ────────────────────────────────── */
+  function toggleNoteMode() { ui.noteMode = !ui.noteMode; renderDetail(); }
+  function doNote() {
+    const inputEl = detailEl.querySelector('.hub__composer-input');
+    if (!inputEl) return;
+    const text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    const a = asesor();
+    if (isMock) { ui.notes.push({ _id: 'n_' + Date.now(), _isNote: true, text, authorName: a.nombre, timestamp: new Date().toISOString() }); ui.forceScroll = true; renderDetail(); toast('Nota guardada', 'ok'); return; }
+    addInternalNote(ui.activeId, text, a).then(() => toast('Nota interna guardada', 'ok')).catch(() => toast('No se pudo guardar la nota.', 'error'));
+  }
+
+  /* ── Typing (asesor → RTDB) ─────────────────────────────── */
   function onComposerInput() {
-    if (isMock || !ui.activeId) return;
+    if (isMock || ui.noteMode || !ui.activeId) return; // en nota privada NO se emite typing
     const a = asesor();
     if (ui.typingThrottle) { resetTypingClear(a); return; }
     ui.typingThrottle = true;
@@ -300,8 +390,17 @@ export function mountHub(root) {
     const rt = new Date(chat.lastReadByUser).getTime();
     return (!Number.isNaN(mt) && !Number.isNaN(rt) && mt <= rt) ? 'read' : 'sent';
   }
-
   function bubble(m, chat) {
+    if (m._isNote) {
+      return el('div', { class: 'hub-msg hub-msg--note' }, [
+        el('div', { class: 'hub-msg__note-head u-caption' }, [
+          el('span', { class: 'hub-msg__note-badge', text: '🔒 Nota privada' }),
+          el('span', { class: 'u-faint', text: m.authorName || 'Asesor' }),
+        ]),
+        el('div', { class: 'hub-msg__note-body', text: m.text || '' }),
+        el('div', { class: 'hub-msg__time u-caption u-faint', text: timeAgo(m.timestamp) }),
+      ]);
+    }
     if (m.from === 'system') {
       return el('div', { class: 'hub-msg hub-msg--system' }, [
         el('div', { class: 'hub-msg__sys', text: m.text || '' }),
@@ -330,7 +429,6 @@ export function mountHub(root) {
   }
 
   function renderDetail() {
-    // Preserva texto/foco del composer a través del rebuild.
     const prev = detailEl.querySelector('.hub__composer-input');
     const prevVal = prev ? prev.value : null;
     const prevFocus = prev && document.activeElement === prev;
@@ -341,7 +439,7 @@ export function mountHub(root) {
     clear(detailEl);
     const chat = activeChat();
     if (!chat) {
-      detailEl.append(stateNode('💬', 'Selecciona una conversación', 'Elige un chat de la lista para verlo y responder.'));
+      detailEl.append(stateNode('💬', 'Selecciona una conversación', 'Elige un chat de la lista para verlo y gestionarlo.'));
       return;
     }
 
@@ -352,16 +450,21 @@ export function mountHub(root) {
     const claimedByMe = !!(chat.claimedBy && chat.claimedBy === me);
     const unclaimed = !chat.claimedBy && !isClosed;
     const canWrite = !isClosed && !unclaimed && (claimedByMe || isSuper);
-    const lockReadonly = claimedByOther && !isSuper;
     const att = ui.attending[chat._docId];
 
-    // Header
+    // Header + acciones
     const back = el('button', { class: 'hub__back icon-btn', type: 'button', 'aria-label': 'Volver a la lista' }, [el('span', { 'aria-hidden': 'true', text: '←' })]);
     back.addEventListener('click', () => { wrap.setAttribute('data-pane', 'list'); });
     const metaBits = [el('span', { class: 'hub__detail-mode', text: MODE_LABEL[chat.mode] || MODE_LABEL.bot })];
     if (chat.userEmail) metaBits.push(el('span', { class: 'u-faint', text: '· ' + chat.userEmail }));
     if (chat.telefono) metaBits.push(el('span', { class: 'u-faint', text: '· ' + chat.telefono }));
     if (chat.sourceVehicleId) metaBits.push(el('span', { class: 'u-faint', text: '· vehículo #' + chat.sourceVehicleId }));
+    const headActions = [];
+    if (!isClosed && canClose && (!claimedByOther || isSuper)) {
+      const closeBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['✓ Cerrar chat']);
+      closeBtn.addEventListener('click', () => doClose(chat));
+      headActions.push(closeBtn);
+    }
     detailEl.append(el('div', { class: 'hub__detail-head' }, [
       back,
       el('div', { class: 'hub__detail-id' }, [
@@ -371,23 +474,32 @@ export function mountHub(root) {
         ]),
         el('div', { class: 'hub__detail-meta u-caption u-row u-row--tight' }, metaBits),
       ]),
+      headActions.length ? el('div', { class: 'hub__detail-actions u-row u-row--tight' }, headActions) : null,
     ]));
 
-    // Banners (read)
+    // Banners
     if (isClosed) {
       const reason = CLOSED_REASON[chat.closedReason] || 'Conversación finalizada';
       const by = chat.closedByName || (chat.closedByRole === 'client' ? 'el cliente' : 'un asesor');
-      detailEl.append(banner('🔒', reason, 'Por ' + by + (chat.closedAt ? ' · ' + timeAgo(chat.closedAt) : ''), 'closed'));
+      const reopenBtn = canReopen ? actionBtn('↻ Reabrir', () => doReopen(chat)) : null;
+      detailEl.append(banner('🔒', reason, 'Por ' + by + (chat.closedAt ? ' · ' + timeAgo(chat.closedAt) : ''), 'closed', reopenBtn ? [reopenBtn] : null));
     }
     if (claimedByOther) {
+      const relBtn = isSuper ? actionBtn('🔓 Liberar', () => doRelease(chat)) : null;
       detailEl.append(banner(isSuper ? '⚠️' : '🔒',
         (chat.claimedByName || 'Otro asesor') + ' está atendiendo este chat',
-        isSuper ? 'Si escribes acá interrumpís su atención.' : (chat.claimedAt ? 'Tomado ' + timeAgo(chat.claimedAt) : 'Solo quien lo tomó puede responder.'), 'claimed'));
+        isSuper ? 'Si escribes acá interrumpís su atención.' : (chat.claimedAt ? 'Tomado ' + timeAgo(chat.claimedAt) : 'Solo quien lo tomó puede responder.'),
+        'claimed', relBtn ? [relBtn] : null));
     }
     if (att) detailEl.append(banner('👀', att.nombre + ' está mirando este chat ahora mismo', 'Presencia en tiempo real.', 'attending'));
-    if (claimedByMe && !isClosed) detailEl.append(banner('✅', 'Estás atendiendo este chat', 'Otros asesores no pueden responder.', 'mine'));
+    if (claimedByMe && !isClosed) {
+      const acts = [];
+      if (canTransfer) acts.push(actionBtn('🔁 Transferir', openTransfer));
+      if (isSuper) acts.push(actionBtn('🔓 Liberar', () => doRelease(chat)));
+      detailEl.append(banner('✅', 'Estás atendiendo este chat', 'Otros asesores no pueden responder.', 'mine', acts.length ? acts : null));
+    }
 
-    // Banner CLAIM (tomar conversación)
+    // Banner CLAIM
     if (unclaimed && canClaim) {
       const claimBtn = el('button', { class: 'btn btn--gold', type: 'button' }, ['✋ Tomar conversación']);
       claimBtn.addEventListener('click', () => doClaim(chat));
@@ -400,9 +512,9 @@ export function mountHub(root) {
       ]));
     }
 
-    // Mensajes (server + optimistas) ordenados por timestamp
+    // Mensajes (server + optimistas + notas) ordenados por timestamp
     const msgsBox = el('div', { class: 'hub__msgs' });
-    const items = ui.messages.concat(ui.pending).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const items = ui.messages.concat(ui.pending).concat(ui.notes).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     if (!ui.msgLoaded) msgsBox.append(loadingNode());
     else if (!items.length) msgsBox.append(el('div', { class: 'hub__msgs-empty u-caption u-faint', text: 'Sin mensajes en esta conversación.' }));
     else items.forEach((m) => msgsBox.append(bubble(m, chat)));
@@ -414,16 +526,18 @@ export function mountHub(root) {
     }
     detailEl.append(msgsBox);
 
-    // Composer (3b) — gateado por claim/estado
+    // Composer (con toggle de nota interna)
     if (canWrite) {
-      const input = el('input', { class: 'form-input hub__composer-input', type: 'text', placeholder: 'Responder como asesor…', autocomplete: 'off' });
+      const noteToggle = el('button', { class: 'btn btn--ghost btn--sm hub__note-toggle' + (ui.noteMode ? ' is-active' : ''), type: 'button', 'aria-pressed': String(ui.noteMode), title: 'Nota interna — el cliente NO la verá' }, ['🔒']);
+      noteToggle.addEventListener('click', toggleNoteMode);
+      const input = el('input', { class: 'form-input hub__composer-input', type: 'text', autocomplete: 'off',
+        placeholder: ui.noteMode ? '🔒 Nota privada del asesor (el cliente NO la verá)…' : 'Responder como asesor…' });
       input.addEventListener('input', onComposerInput);
-      input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } });
-      const sendBtn = el('button', { class: 'btn btn--gold', type: 'button' }, ['Enviar']);
-      sendBtn.addEventListener('click', doSend);
-      detailEl.append(el('div', { class: 'hub__composer' }, [input, sendBtn]));
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ui.noteMode ? doNote() : doSend(); } });
+      const sendBtn = el('button', { class: 'btn btn--gold', type: 'button' }, [ui.noteMode ? 'Guardar nota' : 'Enviar']);
+      sendBtn.addEventListener('click', () => (ui.noteMode ? doNote() : doSend()));
+      detailEl.append(el('div', { class: 'hub__composer' + (ui.noteMode ? ' hub__composer--note' : '') }, [noteToggle, input, sendBtn]));
     } else if (!unclaimed) {
-      // cerrado o bloqueado por otro asesor → input deshabilitado con motivo
       detailEl.append(el('div', { class: 'hub__composer hub__composer--disabled' }, [
         el('input', { class: 'form-input', type: 'text', disabled: true,
           placeholder: isClosed ? '🔒 Conversación cerrada — solo lectura' : '🔒 Atendido por ' + (chat.claimedByName || 'otro asesor') }),
@@ -432,29 +546,27 @@ export function mountHub(root) {
       detailEl.append(el('div', { class: 'hub__ro-note u-caption u-faint' }, [el('span', { text: '👁 Solo lectura — necesitas permiso para tomar y responder conversaciones.' })]));
     }
 
-    // Scroll: al fondo si veníamos pegados o tras enviar/abrir.
-    if (wasNearBottom || ui.forceScroll) {
-      requestAnimationFrame(() => { msgsBox.scrollTop = msgsBox.scrollHeight; });
-      ui.forceScroll = false;
-    }
-    // Restaura el composer
+    if (wasNearBottom || ui.forceScroll) { requestAnimationFrame(() => { msgsBox.scrollTop = msgsBox.scrollHeight; }); ui.forceScroll = false; }
     if (prevVal != null) {
       const nowInput = detailEl.querySelector('.hub__composer-input');
-      if (nowInput) {
-        nowInput.value = prevVal;
-        if (prevFocus) { nowInput.focus(); try { nowInput.setSelectionRange(prevSel, prevSel); } catch (_) {} }
-      }
+      if (nowInput) { nowInput.value = prevVal; if (prevFocus) { nowInput.focus(); try { nowInput.setSelectionRange(prevSel, prevSel); } catch (_) {} } }
     }
   }
 
   /* ── Helpers de nodos ───────────────────────────────────── */
-  function banner(icon, title, sub, variant) {
+  function actionBtn(label, onClick) {
+    const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, [label]);
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function banner(icon, title, sub, variant, actions) {
     return el('div', { class: 'hub__banner hub__banner--' + variant }, [
       el('span', { class: 'hub__banner-icon', 'aria-hidden': 'true', text: icon }),
       el('div', { class: 'hub__banner-info' }, [
         el('div', { class: 'hub__banner-title', text: title }),
         sub ? el('div', { class: 'hub__banner-sub u-caption u-faint', text: sub }) : null,
       ]),
+      actions && actions.length ? el('div', { class: 'hub__banner-actions u-row u-row--tight' }, actions) : null,
     ]);
   }
   function stateNode(icon, title, msg) {
@@ -464,9 +576,7 @@ export function mountHub(root) {
       el('div', { class: 'state__msg', text: msg }),
     ]);
   }
-  function loadingNode() {
-    return el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando…' })]);
-  }
+  function loadingNode() { return el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando…' })]); }
 
   /* ── Boot ───────────────────────────────────────────────── */
   if (isMock) {
@@ -481,8 +591,7 @@ export function mountHub(root) {
       (e) => { ui.loaded = true; toast(e && e.code === 'permission-denied' ? 'Sin permiso para ver el Hub.' : 'No se pudo cargar el Hub.', 'error'); renderList(); },
     );
     ui.presenceSub = subscribeAttendingPresence(
-      (map) => { ui.attending = map; renderList(); if (ui.activeId) renderDetail(); },
-      () => {},
+      (map) => { ui.attending = map; renderList(); if (ui.activeId) renderDetail(); }, () => {},
     );
   }
 

@@ -26,7 +26,7 @@ import {
   doc, addDoc, updateDoc, getDocFromServer, runTransaction, increment,
 } from 'firebase/firestore';
 import {
-  ref, onValue, set as rtdbSet, remove as rtdbRemove, onDisconnect,
+  ref, onValue, get as rtdbGet, set as rtdbSet, remove as rtdbRemove, onDisconnect,
 } from 'firebase/database';
 import { db, rtdb } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
@@ -196,6 +196,118 @@ export function subscribeClientTyping(sessionId, onTyping) {
   }, () => {});
 }
 
+/* ══ GESTIÓN (3c: close / reopen / release / transfer / notas) ═════════
+ * Mutaciones de gestión. ⚠️ ORDEN vs rules: el create de `messages` se
+ * bloquea si parent.status=='closed' (salvo super) → en CLOSE el system-msg
+ * va ANTES del status:'closed'; en REOPEN el status:'active' va ANTES del msg.
+ * ════════════════════════════════════════════════════════════════════ */
+
+/** Cierra el chat. Gated concierge.close + claim==me (rules). System-msg primero (chat aún activo). */
+export async function closeChatDoc(sessionId, asesor) {
+  const ts = nowISO();
+  try {
+    await addDoc(collection(db, 'conciergeChats', sessionId, 'messages'), {
+      from: 'system', systemType: 'closed',
+      text: '✓ ' + asesor.nombre + ' cerró esta conversación. Iniciá una nueva cuando quieras.',
+      timestamp: ts, asesorNombre: asesor.nombre, asesorUid: asesor.uid,
+    });
+  } catch (_) { /* best-effort: la UI ya refleja el cierre optimista */ }
+  await updateDoc(doc(db, 'conciergeChats', sessionId), {
+    status: 'closed', closedAt: ts, closedBy: asesor.uid, closedByName: asesor.nombre,
+    resolvedAt: ts, resolvedBy: asesor.uid, // aliases legacy (pipelines viejos)
+    lastMessage: '✓ Conversación cerrada por ' + asesor.nombre, lastMessageAt: ts,
+  });
+}
+
+/** Reabre un chat cerrado. Gated concierge.reopen. status:'active' ANTES del system-msg. */
+export async function reopenChatDoc(sessionId, asesor) {
+  const ts = nowISO();
+  await updateDoc(doc(db, 'conciergeChats', sessionId), {
+    status: 'active', reopenedAt: ts, reopenedBy: asesor.uid,
+    lastMessage: '↻ Conversación reabierta por ' + asesor.nombre, lastMessageAt: ts,
+  });
+  try {
+    await addDoc(collection(db, 'conciergeChats', sessionId, 'messages'), {
+      from: 'system', systemType: 'reopened',
+      text: '↻ ' + asesor.nombre + ' reabrió la conversación. Podés seguir escribiendo.',
+      timestamp: ts, asesorNombre: asesor.nombre, asesorUid: asesor.uid,
+    });
+  } catch (_) { /* best-effort */ }
+}
+
+/** Libera el lock (super override). Otro asesor puede tomar el chat. */
+export async function releaseClaim(sessionId, asesor) {
+  await updateDoc(doc(db, 'conciergeChats', sessionId), {
+    claimedBy: null, claimedByName: null, claimReleasedBy: asesor.uid, claimReleasedAt: nowISO(),
+  });
+}
+
+/** Lee /presence una vez → lista de asesores (editor/super) online, no-self, no-stale. Para el modal de transfer. */
+export async function getOnlineAdvisors(excludeUid) {
+  const snap = await rtdbGet(ref(rtdb, '/presence'));
+  const data = snap.val() || {};
+  const cutoff = Date.now() - PRESENCE_STALE_MS;
+  const map = {};
+  Object.keys(data).forEach((k) => {
+    const e = data[k];
+    if (!e || !e.uid || !e.online) return;
+    if (e.uid === excludeUid) return;
+    if (e.rol !== 'super_admin' && e.rol !== 'editor') return;
+    const lastSeen = e.lastSeen || 0;
+    if (lastSeen < cutoff) return;
+    const prev = map[e.uid];
+    if (!prev || lastSeen > prev.lastSeen) {
+      map[e.uid] = {
+        uid: e.uid, nombre: e.nombre || e.email || 'Asesor', photoURL: e.photoURL || null,
+        status: e.status || 'online', cargo: e.cargo || e.rol || '', lastSeen,
+      };
+    }
+  });
+  return Object.values(map);
+}
+
+/** Transfiere el chat a otro asesor (runTransaction) + system-msg. Gated concierge.transfer/respond + claim==me. */
+export async function transferChat(sessionId, toUid, toName, asesor) {
+  const r = doc(db, 'conciergeChats', sessionId);
+  const ts = nowISO();
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(r);
+    if (!snap.exists()) { const e = new Error('chat-not-found'); e.code = 'chat-not-found'; throw e; }
+    if (snap.data().status === 'closed') { const e = new Error('chat-closed'); e.code = 'chat-closed'; throw e; }
+    tx.update(r, {
+      claimedBy: toUid, claimedByName: toName, claimedAt: ts,
+      _transferredFrom: asesor.uid, _transferredFromName: asesor.nombre, _transferredAt: ts,
+    });
+  });
+  try {
+    await addDoc(collection(db, 'conciergeChats', sessionId, 'messages'), {
+      from: 'system', systemType: 'transferred',
+      text: '🔁 ' + asesor.nombre + ' transfirió esta conversación a ' + toName + '.',
+      timestamp: ts, transferFromUid: asesor.uid, transferToUid: toUid,
+    });
+    await updateDoc(r, { lastMessage: '🔁 Transferida a ' + toName, lastMessageAt: ts });
+  } catch (_) { /* best-effort */ }
+}
+
+/* ── Notas internas (subcol notes/ — el cliente NUNCA las ve) ── */
+/** Crea una nota privada del asesor. Gated concierge.respond (rules notes create). */
+export async function addInternalNote(sessionId, text, asesor) {
+  await addDoc(collection(db, 'conciergeChats', sessionId, 'notes'), {
+    text: text.trim(), authorUid: asesor.uid, authorName: asesor.nombre,
+    authorPhotoURL: asesor.photoURL || null, timestamp: nowISO(),
+  });
+}
+
+/** Suscripción a las notas internas (subcol notes/, timestamp asc). Marca _isNote. */
+export function subscribeNotes(sessionId, onData, onError) {
+  const q = query(collection(db, 'conciergeChats', sessionId, 'notes'), orderBy('timestamp', 'asc'));
+  return onSnapshot(q, (snap) => {
+    const list = [];
+    snap.forEach((d) => list.push({ _id: d.id, _isNote: true, ...d.data() }));
+    onData(list);
+  }, (e) => onError && onError(e));
+}
+
 /* ── Mock (?mock=1) ─────────────────────────────────────────── */
 const _now = Date.now();
 const iso = (minAgo) => new Date(_now - minAgo * 60000).toISOString();
@@ -239,4 +351,17 @@ export const MOCK_MESSAGES = {
 // Otro asesor (Camila) mirando el chat de Luz → demo del indicador "atendiendo".
 export const MOCK_ATTENDING = {
   sess_luz03: { uid: 'u_otro', nombre: 'Camila (Ventas)', photoURL: null, status: 'online', lastSeen: _now - 30000 },
+};
+
+// Asesores online para el modal de transferencia (?mock=1).
+export const MOCK_ADVISORS = [
+  { uid: 'u_otro', nombre: 'Camila (Ventas)', photoURL: null, status: 'online', cargo: 'Asesora comercial', lastSeen: _now - 30000 },
+  { uid: 'u_diego', nombre: 'Diego Hernández', photoURL: null, status: 'away', cargo: 'Postventa', lastSeen: _now - 120000 },
+];
+
+// Notas internas por chat (?mock=1) — el cliente NUNCA las ve.
+export const MOCK_NOTES = {
+  sess_ana01: [
+    { _id: 'n1', _isNote: true, text: 'Cliente VIP — ya compró un Logan en 2024. Priorizar.', authorName: 'Rodrigo (CEO)', timestamp: iso(8) },
+  ],
 };

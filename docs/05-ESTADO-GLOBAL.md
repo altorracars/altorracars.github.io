@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-25**) |
 |---|---|
-| **Build** | 🟢 `main`: CRM canónico + E6 + RBAC + CMS + **F-2 Config 6/6 + F-3 Inicio ✅** (dueño mergeó hasta #957; §238-246). **`dev` adelante: F-4 Comunicaciones (1-2/3) `unmatched`+`cerebro` ✅ (§247-248) + (3/3) Hub `3a`+`3b` ✅** (`modules/hub/`: visor + claim/responder optimista + typing RTDB; verif mock, realtime=live-only; source-only, pushed). Sigue 3c gestión. **⚠️ dist admin-app = build VIEJO pre-F-2..F-4 (06-22), servido en `/admin-app/dist/` run paralelo §159; rebuild GATEADO** (batch tras E2E staging; §237.6). |
+| **Build** | 🟢 `main`: CRM canónico + E6 + RBAC + CMS + **F-2 Config 6/6 + F-3 Inicio ✅** (dueño mergeó hasta #957; §238-246). **`dev` adelante: F-4 Comunicaciones (1-2/3) `unmatched`+`cerebro` ✅ (§247-248) + (3/3) Hub `3a`+`3b`+`3c` ✅** (`modules/hub/`: visor + claim/responder/typing + gestión close/reopen/transfer/notas; verif mock, realtime=live-only; source-only, pushed). Sigue 3d IA (ÚLTIMO) → cierra F-4. **⚠️ dist admin-app = build VIEJO pre-F-2..F-4 (06-22), servido en `/admin-app/dist/` run paralelo §159; rebuild GATEADO** (batch tras E2E staging; §237.6). |
 | **Cache version vigente** | **`v20260625033233`** (cron-CI 25/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): commit+push=Claude; **merge `dev`→`main`=dueño web** (§2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 22 functions CRM (**retry ×6**) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

@@ -68,7 +68,8 @@
   padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--surface-stroke);
 }
 .hub__back { display: none; flex: 0 0 auto; }
-.hub__detail-id { min-width: 0; }
+.hub__detail-id { min-width: 0; flex: 1 1 auto; }
+.hub__detail-actions { flex: 0 0 auto; }
 .hub__detail-name { display: flex; align-items: center; gap: var(--s-2); font-family: var(--font-display); font-weight: 700; font-size: var(--t-body-lg); }
 .hub__detail-meta { color: var(--ink-text-muted); margin-top: 2px; }
 .hub__detail-mode { font-weight: 600; }
@@ -81,7 +82,8 @@
   background: var(--surface-card);
 }
 .hub__banner-icon { flex: 0 0 auto; font-size: 16px; }
-.hub__banner-info { min-width: 0; }
+.hub__banner-info { min-width: 0; flex: 1 1 auto; }
+.hub__banner-actions { flex: 0 0 auto; }
 .hub__banner-title { font-weight: 600; font-size: var(--t-body); }
 .hub__banner--closed { border-color: var(--surface-stroke-hi); }
 .hub__banner--claimed { border-color: color-mix(in srgb, var(--gold-500) 40%, var(--surface-stroke)); }
@@ -167,6 +169,60 @@
 
 /* ─────────── Estado vacío centrado ─────────── */
 .hub__col--detail .state { margin: auto; }
+
+/* ─────────── 3c: notas internas · toggle · modal transfer ─────────── */
+.hub-msg--note { align-self: stretch; max-width: 100%; }
+.hub-msg__note-head { display: flex; align-items: center; gap: var(--s-2); }
+.hub-msg__note-badge {
+  font-weight: 700; padding: 1px 8px; border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--gold-500) 18%, transparent); color: var(--gold-700);
+}
+:root[data-theme="dark"] .hub-msg__note-badge { color: var(--gold-300); }
+.hub-msg__note-body {
+  margin-top: 4px; padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md); border-left: 3px solid var(--gold-500);
+  background: color-mix(in srgb, var(--gold-500) 8%, var(--surface-card));
+  font-size: var(--t-body); white-space: pre-wrap; word-break: break-word;
+}
+
+.hub__note-toggle { flex: 0 0 auto; }
+.hub__note-toggle.is-active { background: color-mix(in srgb, var(--gold-500) 22%, transparent); border-color: var(--gold-500); }
+.hub__composer--note .form-input { border-color: var(--gold-500); }
+
+.hub__tr-backdrop {
+  position: fixed; inset: 0; z-index: 9000;
+  display: grid; place-items: center; padding: var(--s-4);
+  background: rgba(0, 0, 0, 0.4);
+}
+.hub__tr-panel {
+  width: min(420px, 100%); max-height: 70vh; display: flex; flex-direction: column;
+  background: var(--surface-acrylic-hi);
+  -webkit-backdrop-filter: var(--blur-thick); backdrop-filter: var(--blur-thick);
+  border: 1px solid var(--surface-stroke-hi); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-32); animation: hub-pop var(--dur-2) var(--ease-fluent);
+}
+@keyframes hub-pop { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+.hub__tr-head {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-4) var(--s-4) var(--s-3); border-bottom: 1px solid var(--surface-stroke);
+}
+.hub__tr-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); }
+.hub__tr-item {
+  display: flex; align-items: center; gap: var(--s-3); width: 100%; text-align: left;
+  padding: var(--s-3); border-radius: var(--r-md);
+  background: var(--surface-card); border: 1px solid var(--surface-stroke); cursor: pointer;
+  transition: background var(--dur-2) var(--ease-fluent), border-color var(--dur-2) var(--ease-fluent);
+}
+.hub__tr-item:hover { background: var(--surface-stroke); border-color: var(--surface-stroke-hi); }
+.hub__tr-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.hub__tr-name { font-weight: 600; }
+.hub__tr-status { position: relative; }
+.hub__tr-status::after {
+  content: ''; position: absolute; right: -1px; bottom: -1px;
+  width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--surface-card);
+}
+.hub__tr-status--online::after { background: #2e9d5b; }
+.hub__tr-status--away::after { background: #d8a23b; }
 
 /* ─────────── Responsive (1 pane a la vez) ─────────── */
 @media (max-width: 760px) {

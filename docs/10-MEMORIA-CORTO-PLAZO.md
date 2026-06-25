@@ -10,13 +10,13 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (3/3) Hub · sub-incremento 3d (ÚLTIMO)**: smart suggestions (heurístico, sin LLM) + botón "Resumen" con **LLM summary DIFERIDO** (degradar hasta saldo Anthropic, como el brain config §248). Sobre 3a+3b+3c ya en `dev`. **Al cerrar 3d → F-4 COMPLETO** → consolidar **ADR §249** (3a-3d) + fila `00` + lección a `30` + cerrar TODO-34/§EPIC bot + poda de `10`/`05` (están sobre cap). Sigue **F-5** (fugas: dedup `session:ID`). Spec `…F-4-3of3-hub-kickoff.md`. Módulo `admin-app/src/modules/hub/`.
-> ✅ **Cerrado 26/06**: **F-4 (3/3) 3a+3b+3c** = Hub funcional casi completo (`modules/hub/`): 3a visor/presence · 3b claim transaccional + responder optimista (⏱/✓/✓✓/retry) + typing RTDB · 3c close/reopen/transfer(modal presence)/super-release/notas-internas. RBAC `concierge.*` = rules. Verif `?mock=1`; realtime=live-only. Source-only, dist GATEADO. Antes: **F-4 (1-2/3)** (§247-248) + **F-3** (§246). ADR §249 al cerrar 3d.
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-5: cierre de fugas** (PLAN-UNIFICADO §237 §9.C): (a) dedup de chats anónimos por `session:ID` + (b) reprocesador del DLQ `failedIngestions`. Luego **F-6** cutover PWA-safe (unregister SW viejos + bridge auth + `admin.html`→`_legacy/`). Receta L-53; detalle → spec `…PLAN-UNIFICADO…` §9.C.
+> ✅ **Cerrado 26/06: F-4 COMPLETO** (gap §2.B Comunicaciones) = Hub `admin-concierge.js`(2979L)→`admin-app/modules/hub/` en 4 incrementos (3a visor · 3b claim/responder/typing · 3c gestión · 3d IA) → **ADR §249**. Antes: F-4 (1-2/3) §247-248 · F-3 §246. ⚠️ **E2E live del Hub pendiente** (typing/presence/fallos = live-only → batch staging §237.6). LLM summary + bot flip = saldo (TODO-34).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
 > 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` (Vite) = portal único, apagar `admin.html`. **Yo manejo el orden técnico** (dueño decide dinero/legal/go-no-go — mem `feedback-collaboration-style`).
-> 🧭 **Camino**: F-2 ✅ (§238-245) → F-3 Dashboard → F-4 Hub→admin-app → F-5 fugas (dedup `session:ID`) → F-6 cutover PWA-safe. **⚠️ dist admin-app GATEADO a staging** (§237.6, batch tras E2E). Receta L-53.
+> 🧭 **Camino**: F-2 ✅ (§238-245) → F-3 ✅ (§246) → **F-4 ✅ COMPLETO** (§247-249: unmatched+cerebro+Hub) → **F-5 fugas** (dedup `session:ID`) → F-6 cutover PWA-safe. **⚠️ dist admin-app GATEADO a staging** (§237.6, batch tras E2E). Receta L-53.
 > ⚠️ **Pend**: lead `PRUEBA-CLAUDE`/`3001112233` → purga en clean-slate · bot LLM DORMIENTE (#917)=saldo Anthropic. (Estado build/cache/sync → `05`.)
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
@@ -56,7 +56,7 @@
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |
 | **TODO-41** | **Motor de automatización → server-side ⟦OPUS-4.8⟧** (§242.5): hoy el engine de reglas (`admin-automation.js`) corre client-side SOLO en sesión super_admin → frágil (sin super_admin abierto, no corre). Migrar a Cloud Function. + gap RBAC: mapear `workflows.edit`→write de `config/automationRules` en rules. | 🔮 | post-cutover / escala |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5 ✅ · F-2 6/6 ✅** (§238-245) **· F-3 Inicio ✅** (§246) **· F-4 (1-2/3) `unmatched`+`cerebro` ✅** (§247-248, handoff E2E). **F-1 spec'd** (LLM=saldo). Sigue F-4 (3/3) Hub → F-5→F-6. | 🔄 F-2+F-3+F-4(1-2/3) ✅ | dueño: dinero/legal/go-no-go |
+| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5✅·F-2 6/6✅** (§238-245) **·F-3✅** (§246) **·F-4 COMPLETO✅** (§247-249: unmatched+cerebro+Hub). **F-1 spec'd** (LLM=saldo). Sigue **F-5** (fugas) → F-6 cutover. ⚠️ E2E live + dist batch = staging (§237.6). | 🔄 F-2..F-4 ✅ | dueño: dinero/legal/go-no-go |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

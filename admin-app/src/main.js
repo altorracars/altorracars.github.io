@@ -9,6 +9,7 @@ import './core/design-system/base.css';
 import './core/design-system/components.css';
 import './styles/shell.css';
 import './styles/login.css';
+import './styles/dashboard.css';
 import './styles/inbox.css';
 import './styles/contacts.css';
 import './styles/pipeline.css';
@@ -37,6 +38,7 @@ import { initAuth } from './core/auth.js';
 import { currentRoute, onRouteChange } from './core/router.js';
 import { mountShell } from './core/layout/shell.js';
 import { mountLogin } from './core/layout/login.js';
+import { mountDashboard } from './modules/dashboard/dashboard.ui.js';
 import { mountInbox } from './modules/inbox/inbox.ui.js';
 import { mountPipeline } from './modules/deals/deals.ui.js';
 import { mountAgenda } from './modules/agenda/agenda.ui.js';
@@ -65,7 +67,7 @@ applyInitialTheme();
 applyInitialAccent();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes };
+const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

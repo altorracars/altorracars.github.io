@@ -10,14 +10,14 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN (fresca) ARRANCA AQUÍ** — elegir (money-free): **F-1.a** = build Vite→IIFE del bot v2 + wiring tras flag (v1 intacto), spec `…F-1-bot-v2-vite-kickoff.md` (§0 estado + §2 arquitectura); **o F-3 Dashboard** (camino crítico, patrón F-2). F-1 = paralelo. **F-1.d (LLM) + prod = gates del dueño.**
-> ✅ **Cerrado 25/06**: TODO-42 ×3 (§244.8) · **F-2 6/6** (§245) · destilado kernel · F-1 spec'd.
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 Comunicaciones** (camino crítico, el más pesado: Hub v2 + KB + Unmatched como módulos admin-app; preservar RBAC concierge/claim/transfer/notes/typing/presencia) **o F-1** (bot widget público v2 en Vite, track paralelo; spec `…F-1-bot-v2-vite-kickoff.md`; build pesado=sesión fresca, F-1.d LLM=saldo dueño). Patrón de port = **L-53/L-54**.
+> ✅ **Cerrado 26/06**: **F-3 Inicio/Dashboard** (§246, landing admin-app: KPIs+NBA+pendientes). 25/06: F-2 6/6 (§245).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
 > 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` (Vite) = portal único, apagar `admin.html`. **Yo manejo el orden técnico** (dueño decide dinero/legal/go-no-go — mem `feedback-collaboration-style`).
 > 🧭 **Camino**: F-2 ✅ (§238-245) → F-3 Dashboard → F-4 Hub→admin-app → F-5 fugas (dedup `session:ID`) → F-6 cutover PWA-safe. **⚠️ dist admin-app GATEADO a staging** (§237.6, batch tras E2E). Receta L-53.
-> ⚠️ **Pend**: cron-bump para §236 (#7/ícono WhatsApp ya en `main`, no live sin bump/Ctrl+Shift+R) · lead `PRUEBA-CLAUDE`/`3001112233` → purga en clean-slate · bot LLM DORMIENTE (#917)=saldo Anthropic.
+> ⚠️ **Pend**: lead `PRUEBA-CLAUDE`/`3001112233` → purga en clean-slate · bot LLM DORMIENTE (#917)=saldo Anthropic. (Estado build/cache/sync → `05`.)
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >
@@ -56,7 +56,7 @@
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |
 | **TODO-41** | **Motor de automatización → server-side ⟦OPUS-4.8⟧** (§242.5): hoy el engine de reglas (`admin-automation.js`) corre client-side SOLO en sesión super_admin → frágil (sin super_admin abierto, no corre). Migrar a Cloud Function. + gap RBAC: mapear `workflows.edit`→write de `config/automationRules` en rules. | 🔮 | post-cutover / escala |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5 ✅ · F-2 COMPLETO 6/6 ✅** (§238-245). **F-1 (bot v2 Vite) arrancado** → spec `…F-1-bot-v2-vite-kickoff.md` (build pesado = sesión fresca; F-1.d LLM = saldo). Camino F-1→F-3→F-4→F-5→F-6. | 🔄 F-2 ✅, F-1 spec'd | dueño: dinero/legal/go-no-go |
+| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5 ✅ · F-2 6/6 ✅** (§238-245) **· F-3 Inicio ✅** (§246). **F-1 (bot v2 Vite) spec'd** (`…F-1-bot-v2-vite-kickoff.md`; F-1.d LLM=saldo). Sigue **F-4 Hub** (crítico) / F-1 (paralelo) → F-5→F-6. | 🔄 F-2+F-3 ✅ | dueño: dinero/legal/go-no-go |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -64,4 +64,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§244 → `99`/`00`/`30`. **24-25/06**: PLAN UNIFICADO §237 · F-2 1-5/6 (§238/240-243) · auditoría N2 §239 · spec-kit ×4 · **HUB Visibilidad §244** (IoC+D′, $0) + propagación ×3 siblings §244.8. Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§246 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2 6/6 + F-3 Inicio (§238-246) · auditoría N2 §239 · HUB Visibilidad §244+§244.8. Defectos bot → `altor-hub-rediseno-defectos.md`.

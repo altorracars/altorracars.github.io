@@ -15,6 +15,8 @@ import { initials } from '../../domain/format.js';
 const APP_VERSION = '0.4.1';
 
 const NAV = [
+  // PLAN-UNIFICADO F-3 §237: el Inicio del portal (KPIs + NBA + pendientes). Sin perm: lo ve todo el equipo.
+  { id: 'inicio', label: 'Inicio', icon: '🏠', ready: true },
   { id: 'bandeja', label: 'Bandeja', icon: '📥', ready: true },
   { id: 'pipeline', label: 'Pipeline', icon: '🎯', ready: true },
   { id: 'agenda', label: 'Agenda', icon: '📅', ready: true },
@@ -51,6 +53,7 @@ const NAV = [
 ];
 
 const TITLES = {
+  inicio: 'Inicio',
   bandeja: 'Bandeja Inteligente',
   pipeline: 'Pipeline de ventas',
   agenda: 'Agenda',
@@ -97,7 +100,7 @@ export function mountShell(appRoot) {
     el('div', { class: 'sidebar__foot u-caption u-faint' }, [`v${APP_VERSION} · Fase 4`]),
   ]);
 
-  const titleH = el('h1', { class: 'topbar__h', text: TITLES.bandeja });
+  const titleH = el('h1', { class: 'topbar__h', text: TITLES.inicio });
   const crumb = el('span', { class: 'topbar__crumb u-caption u-faint', text: store.get().mock ? 'modo demo' : 'tiempo real' });
   const title = el('div', { class: 'topbar__title' }, [titleH, crumb]);
 
@@ -140,7 +143,7 @@ export function mountShell(appRoot) {
       btn.classList.toggle('is-active', on);
       if (on) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
     });
-    titleH.textContent = TITLES[route] || TITLES.bandeja;
+    titleH.textContent = TITLES[route] || TITLES.inicio;
   }
 
   return { outlet, detailRoot, setActive };

@@ -92,6 +92,9 @@
 
 ### L-53 · Receta de "port de módulo al portal `admin-app/` (Vite)" — el patrón repetible del PLAN-UNIFICADO F-2..F-4 → detalle en `33-LECCIONES-FRONTEND.md`
 
+### L-54 · Módulo en blanco SIN error de consola = `render()` post-`await` lanza en un `load()` fire-and-forget → unhandled rejection silenciosa ⟦OPUS-4.8⟧
+**Disparador**: un módulo de `admin-app/` (o cualquier `mount(root){ …; load(); return cleanup }`) monta su shell pero queda VACÍO, y la consola NO muestra error. **Causa**: el `render()` que corre *después* del `await` está fuera del `try/catch` de `load()`; como `load()` se invoca sin `.catch` (fire-and-forget), un throw ahí (ej. leer `m.pending.length` cuando `compute()` no devuelve `pending`) se vuelve **unhandled rejection** — invisible salvo con un listener `window.addEventListener('unhandledrejection', …)`. **Receta**: (1) al depurar un módulo en blanco, inyecta primero el listener de `unhandledrejection` vía `preview_eval` ANTES de teorizar; (2) cuida que el modelo de `compute()` contenga TODO lo que `render()` lee (desajuste de forma = el bug clásico); (3) opcional: `load().catch(…)` o envolver el `render()` final en try. F-3 §246.
+
 ---
 
 ## 🪞 Meta: fallos del propio cerebro (Reflejo de Autocrítica `CLAUDE.md §G.4`)

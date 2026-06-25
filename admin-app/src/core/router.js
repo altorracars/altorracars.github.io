@@ -4,12 +4,13 @@
 // permite deep-link vía ?lead= para abrirlo al cargar.
 // ============================================================
 
-const ROUTES = ['bandeja', 'pipeline', 'agenda', 'reportes', 'contactos', 'config', 'resenas', 'banners', 'contenido', 'vehiculos', 'marcas', 'aliados', 'atributos', 'respaldos', 'usuarios', 'roles', 'departamentos', 'workflows', 'auditoria', 'ajustes'];
+const ROUTES = ['inicio', 'bandeja', 'pipeline', 'agenda', 'reportes', 'contactos', 'config', 'resenas', 'banners', 'contenido', 'vehiculos', 'marcas', 'aliados', 'atributos', 'respaldos', 'usuarios', 'roles', 'departamentos', 'workflows', 'auditoria', 'ajustes'];
 
 export function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '');
   const [name] = hash.split('/');
-  return ROUTES.includes(name) ? name : 'bandeja';
+  // PLAN-UNIFICADO F-3 §237: el portal aterriza en su Inicio (antes Bandeja).
+  return ROUTES.includes(name) ? name : 'inicio';
 }
 
 export function navigate(name) {

@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (3/3) Hub** (`admin-concierge.js` 2979L → admin-app; EL GIGANTE: RTDB presence/typing/transfer + claim/notes/read-receipts; F-0.5 ya listo; **sesión dedicada, descomponer**). Alterna: **F-1** bot público Vite (spec kickoff; LLM=saldo) · diferido: brain/LLM config (con el bot). Patrón=**L-53/L-54**.
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (3/3) Hub** (`admin-concierge.js` 2979L → admin-app; EL GIGANTE: RTDB presence/typing + claim/transfer/notes/close; F-0.5 ya listo). **Runway = spec `…F-4-3of3-hub-kickoff.md`** (sub-incrementos 3a-3d; descomponer). Alterna: **F-1** bot público Vite (LLM=saldo). Patrón=**L-53/L-54**.
 > ✅ **Cerrado 26/06**: **F-4 (1-2/3)** `unmatched`+`cerebro` (§247-248, handoff E2E) + **F-3 Inicio** (§246) + GC índice 00. 25/06: F-2 6/6 (§245).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).

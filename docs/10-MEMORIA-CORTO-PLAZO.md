@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> ✅ **Recién cerrado (25/06)**: TODO-42 (§244.8) · **F-2 6/6 COMPLETO** (§245 `ajustes`) · destilado kernel (CLAUDE.md/05 bajo tope). **▶️ F-1 (bot v2 Vite) ARRANCADO** — spec `docs/superpowers/specs/2026-06-25-F-1-bot-v2-vite-kickoff.md` (Vite-IIFE + F-1.a→d + triaje defectos + gates). **Build pesado → sesión fresca** (relevo §G.2, lógica compleja). F-1.d LLM = saldo dueño.
+> ✅ **Recién cerrado (25/06)**: TODO-42 (§244.8) · **F-2 6/6 COMPLETO** (§245) · destilado kernel. **▶️ F-1 (bot v2 Vite) ARRANCADO** — spec `…F-1-bot-v2-vite-kickoff.md` (Vite-IIFE + F-1.a→d + triaje + gates). **Build pesado → sesión fresca** (relevo §G.2). F-1.d LLM = saldo dueño.
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 

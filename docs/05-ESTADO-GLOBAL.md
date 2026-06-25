@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-25**) |
 |---|---|
-| **Build** | 🟢 `main`: CRM canónico + E6 + RBAC ④a + CMS marca + F4/F5/§237/F-0.5 + **F-2 source 6/6 ✅** (dueño mergeó hasta #955; §238-245 = usuarios/roles/deptos/workflows/auditoria/ajustes). **`dev` sincronizado con main** (25/06, sync de arranque). **⚠️ dist admin-app = build VIEJO pre-F-2 (06-22), servido en `/admin-app/dist/` run paralelo §159; el rebuild con F-2 sigue GATEADO** (batch tras E2E; §237.6). |
+| **Build** | 🟢 `main`: CRM canónico + E6 + RBAC ④a + CMS marca + F4/F5/§237/F-0.5 + **F-2 source 6/6 ✅** (dueño mergeó hasta #955; §238-245). **`dev` adelante: F-3 Inicio/Dashboard ✅** (§246, landing accionable admin-app, source-only, pushed). **⚠️ dist admin-app = build VIEJO pre-F-2/F-3 (06-22), servido en `/admin-app/dist/` run paralelo §159; rebuild GATEADO** (batch F-2+F-3 tras E2E staging; §237.6). |
 | **Cache version vigente** | **`v20260625033233`** (cron-CI 25/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): commit+push=Claude; **merge `dev`→`main`=dueño web** (§2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 22 functions CRM (**retry ×6**) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

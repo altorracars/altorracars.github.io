@@ -39,7 +39,7 @@ de mis capacidades. Implicaciones:
 | Skill (name) | Carpeta (si difiere) | Para qué | Disp. |
 |---|---|---|---|
 | `brainstorming` | | Explorar intención/requisitos ANTES de construir | ✅ |
-| `spec-kit` | | **Spec-Driven Development** (método GitHub spec-kit, MIT): idea→spec→clarify→plan→tasks→analyze→implement, con [NEEDS CLARIFICATION] + constitución + test-first. Plantillas en `references/`. Para features/proyectos NUEVOS no triviales. Global+repo (§instalado 2026-06-24). | ✅ |
+| `spec-kit` | | **Spec-Driven Development** (método GitHub spec-kit, MIT): idea→spec→clarify→plan→tasks→analyze→implement con [NEEDS CLARIFICATION]+constitución+test-first. Plantillas en `references/` + subagentes `spec-analyze`/`plan-auditor` (en `agents/` + `~/.claude/agents/`). Para features NUEVAS no triviales. Global + 4 repos (2026-06-24/25). | ✅ |
 | `writing-plans` | | Escribir plan de implementación multi-paso | ✅ |
 | `executing-plans` | | Ejecutar un plan con checkpoints de revisión | ✅ |
 | `subagent-driven-development` | | Ejecutar plan con subagentes en la sesión | ✅ |

@@ -10,12 +10,12 @@
 
 ## 🎯 Foco actual
 
-> ✅ **Recién cerrado (25/06)**: TODO-42 propagación HUB visibilidad (§244.8, ×3 siblings pusheados, dueño mergea) · **F-2 6/6 COMPLETO** (§245 módulo `ajustes` — cierra el GAP Config; admin.html pierde su última exclusiva). **▶️ AHORA: F-1** (bot v2 público en Vite, §236).
+> ✅ **Recién cerrado (25/06)**: TODO-42 (§244.8) · **F-2 6/6 COMPLETO** (§245 `ajustes`) · destilado kernel (CLAUDE.md/05 bajo tope). **▶️ F-1 (bot v2 Vite) ARRANCADO** — spec `docs/superpowers/specs/2026-06-25-F-1-bot-v2-vite-kickoff.md` (Vite-IIFE + F-1.a→d + triaje defectos + gates). **Build pesado → sesión fresca** (relevo §G.2, lógica compleja). F-1.d LLM = saldo dueño.
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
 > 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237) → un camino: `admin-app/` (Vite) = portal único, apagar `admin.html`. **Yo manejo el orden técnico** (solo dueño decide dinero/legal/go-no-go — mem `feedback-collaboration-style`).
-> ▶️ **F-2 (cerrar GAP Config) COMPLETO ✅**: 6/6 (§238/240/241/242/243/**245 `ajustes`**, port LIMPIO). **⚠️ dist admin-app GATEADO a staging** (§237.6; sale en batch tras E2E). Camino: **F-1** bot v2 Vite (retro-compat §236) → F-3 Dashboard → F-4 Hub→admin-app → F-5 fugas (dedup `session:ID`) → F-6 cutover PWA-safe. Receta → L-53. Detalle → §245/§237.7 + plan §6.
+> 🧭 **Camino PLAN UNIFICADO**: F-2 ✅ (§238-245, GAP Config cerrado) · **F-1 bot v2** (spec kickoff ↑; paralelo, no bloquea) → F-3 Dashboard → F-4 Hub→admin-app → F-5 fugas (dedup `session:ID`) → F-6 cutover PWA-safe. **⚠️ dist admin-app GATEADO a staging** (§237.6, batch tras E2E). Receta L-53.
 > ⚠️ **Pend**: cron-bump para §236 (#7/ícono WhatsApp ya en `main`, no live sin bump/Ctrl+Shift+R) · lead `PRUEBA-CLAUDE`/`3001112233` → purga en clean-slate · bot LLM DORMIENTE (#917)=saldo Anthropic.
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
@@ -55,7 +55,7 @@
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |
 | **TODO-41** | **Motor de automatización → server-side ⟦OPUS-4.8⟧** (§242.5): hoy el engine de reglas (`admin-automation.js`) corre client-side SOLO en sesión super_admin → frágil (sin super_admin abierto, no corre). Migrar a Cloud Function. + gap RBAC: mapear `workflows.edit`→write de `config/automationRules` en rules. | 🔮 | post-cutover / escala |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5 ✅ · F-2 COMPLETO 6/6 ✅** (§238/240/241/242/243/245; dist gateado a staging); sigue F-1(bot v2)→F-3→F-4→F-5→F-6. F4/F5(bot)=§236. | 🔄 F-2 ✅, sigue F-1 | dueño: dinero/legal/go-no-go |
+| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5 ✅ · F-2 COMPLETO 6/6 ✅** (§238-245). **F-1 (bot v2 Vite) arrancado** → spec `…F-1-bot-v2-vite-kickoff.md` (build pesado = sesión fresca; F-1.d LLM = saldo). Camino F-1→F-3→F-4→F-5→F-6. | 🔄 F-2 ✅, F-1 spec'd | dueño: dinero/legal/go-no-go |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

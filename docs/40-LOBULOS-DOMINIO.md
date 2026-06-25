@@ -44,6 +44,14 @@ para lóbulos de dominio. No reutilizar.
 > (~88 skills + anomalías, auditado 2026-06-03). Consúltalo al disparar Trigger 🔵
 > para saber QUÉ skill tienes para un dominio.
 >
+> 🌐 **Doctrina de VISIBILIDAD (HUB · ADR §244, TODO-42)**: para SEO/AEO/GA4/GSC/Maps/SSG/feeds/imágenes
+> de CUALQUIER proyecto → **paquete de 7 skills portables** (`ssg-static-prerender`·`semantic-schema-aeo`·
+> `ga4-lead-tracking`·`maps-gbp-local`·`search-console-setup-y-diagnostico`·`product-feeds`·`image-pipeline`)
+> + agente `seo-auditor`. Modelo **Altorra=HUB**: construye/propaga skills+agentes y consolida los cerebros.
+> Arquitectura: **`tenant_config.json` por proyecto + Core Library IoC (funciones puras) + D′ vendored**
+> (sin lockstep, $0). Reglas duras: schema-en-HTML-del-build · **cero-demo** · status:published · NAP maestro ·
+> Consent v2. El conocimiento PORTABLE vive en las skills (no aquí); esto es solo el puntero + el modelo HUB.
+>
 > ⚠️ **Estructura real**: `skills/` es **plano** (`skills/<nombre>/SKILL.md`), NO tiene
 > subcarpetas `anthropic-skills/` ni `superpowers/`. Y **el repo NO es la fuente** de
 > las skills cargadas en sesión: mi config solo habilita el plugin `superpowers` +

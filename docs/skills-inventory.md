@@ -32,7 +32,7 @@ de mis capacidades. Implicaciones:
 
 ---
 
-## 🌐 Paquete de Visibilidad (HUB Altorra Cars CONSTRUYE + propaga · TODO-35, ADR §244, 2026-06-25)
+## 🌐 Paquete de Visibilidad (HUB Altorra Cars CONSTRUYE + propaga · TODO-42, ADR §244, 2026-06-25)
 > 7 skills PORTABLES (vertical JewelryStore/AutoDealer/RealEstateAgent vía `tenant_config.json`) + agente
 > `seo-auditor` (read-only). **Cars = HUB**: las construye con skill-creator y las propaga ×4 cerebros. Arquitectura
 > HUB **IoC + core-funciones-puras + D′ vendored** (comité+Gemini verificado → bóveda `…visibilidad-HUB-arquitectura-comite-crudo.md`).

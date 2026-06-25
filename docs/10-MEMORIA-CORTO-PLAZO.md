@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** — **F-6 cutover PWA-safe** · runway = spec `2026-06-26-F-6-cutover-kickoff` (storage/SW verificado live + decisiones ahí). **Decisión: auth = RE-LOGIN único, NO bridge** (§1 spec; si dueño insiste→Decisión Fuerte). Resto: script unregister-SW-viejo (⚠️ NO matar SW público) + paridad → `admin.html`→`_legacy/`. **GATE del flip**: detalle Hub validado LIVE (necesita chat real — `conciergeChats` vacía en prod) + go/no-go dueño.
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** — **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ TODO** (26/06 "autorizo todo en una sesión fresca"): ejecutar **(1) auth=RE-LOGIN · (2) PORTAR FCM a admin-app · (3) SW-unregister(⚠️NO matar SW público)+flip**. Runway+decisiones+paridad = spec `2026-06-26-F-6-cutover-kickoff`. NO re-preguntar go/no-go; PERO no flipear sin: **detalle Hub validado LIVE** (chat real — `conciergeChats` vacía en prod) + paridad §3 cerrada + post-cutover en celular. Paridad: 19/19 secciones ✅.
 > ✅ **Cerrado 26/06**: F-4 Hub COMPLETO (§249) · F-5 fugas DEPLOYED LIVE (§250) · dist rebuilt+live · **Hub live SMOKE ✅** (carga/listeners/interactividad limpio; detalle=mock §249, espera chat real). Deploys=míos sin go/no-go (mem `feedback-auto-deploy-crm`). LLM/bot=saldo (TODO-34).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).

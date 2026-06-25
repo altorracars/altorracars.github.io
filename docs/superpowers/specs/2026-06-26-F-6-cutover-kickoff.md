@@ -4,8 +4,14 @@
 > IRREVERSIBLE-ish (cuarentena, no borrado). Prerrequisitos: portal nuevo live ✅ (F-2..F-5 +
 > Hub en `/admin-app/dist/`) + Hub validado live (smoke ✅; detalle/interacción pend chat real).
 > Este spec captura la INVESTIGACIÓN verificada en vivo (26/06) + las decisiones, para que la
-> sesión que ejecute el cutover no re-investigue. NO ejecutar el flip sin: (a) detalle del Hub
-> validado live, (b) go/no-go del dueño (toca la operación de los asesores).
+> sesión que ejecute el cutover no re-investigue.
+>
+> ✅ **GO — el dueño PRE-AUTORIZÓ todo F-6 para una sesión fresca (26/06, "autorizo todo en una
+> sesión fresca cerremos")**: ejecutar **(1) auth = RE-LOGIN** (§1) · **(2) PORTAR FCM** al admin-app
+> (gap §3, autorizado) · **(3) SW-unregister + flip**. NO re-preguntar el go/no-go. **PERO la
+> disciplina de ejecución se mantiene**: NO mandar `admin.html`→`_legacy/` sin (a) detalle del Hub
+> validado LIVE (necesita un chat real — pedir al dueño o esperar tráfico) y (b) checklist §3 cerrado
+> + (c) validación post-cutover en celular real. La autorización abre el gate; no salta la verificación.
 
 ## §0 — Estado verificado en vivo (Chrome, navegador del dueño, 26/06)
 Storage del origen `altorracars.github.io` (leído con la extensión, solo claves+longitud, NO tokens):

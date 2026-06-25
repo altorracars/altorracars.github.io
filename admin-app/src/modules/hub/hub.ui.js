@@ -211,6 +211,7 @@ export function mountHub(root) {
     if (ui.typingClearTimer) { clearTimeout(ui.typingClearTimer); ui.typingClearTimer = null; }
     ui.typingThrottle = false;
     if (ui.transfer.open) { ui.transfer.open = false; renderTransferModal(); }
+    closeSummary();
     if (!isMock && ui.activeId) { const a = asesor(); if (a.uid) clearAdminTyping(ui.activeId, a.uid); }
   }
   function activeChat() { return ui.chats.find((c) => c._docId === ui.activeId) || null; }
@@ -291,8 +292,9 @@ export function mountHub(root) {
       .catch(() => { Object.assign(chat, snap); renderList(); renderDetail(); toast('No se pudo liberar.', 'error'); });
   }
 
-  // Transfer modal (overlay independiente del renderDetail)
+  // Overlays independientes del renderDetail (sobreviven a los rebuilds)
   let transferEl = null;
+  let summaryEl = null;
   function openTransfer() {
     ui.transfer = { open: true, loading: true, advisors: null };
     renderTransferModal();
@@ -460,6 +462,9 @@ export function mountHub(root) {
     if (chat.telefono) metaBits.push(el('span', { class: 'u-faint', text: '· ' + chat.telefono }));
     if (chat.sourceVehicleId) metaBits.push(el('span', { class: 'u-faint', text: '· vehículo #' + chat.sourceVehicleId }));
     const headActions = [];
+    const sumBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['📄 Resumen']);
+    sumBtn.addEventListener('click', () => openSummary(chat));
+    headActions.push(sumBtn);
     if (!isClosed && canClose && (!claimedByOther || isSuper)) {
       const closeBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['✓ Cerrar chat']);
       closeBtn.addEventListener('click', () => doClose(chat));
@@ -526,6 +531,22 @@ export function mountHub(root) {
     }
     detailEl.append(msgsBox);
 
+    // Smart suggestions (3d) — heurísticas por keyword, llenan el composer al click.
+    if (canWrite && !ui.noteMode) {
+      const sugs = smartSuggestions(chat, items);
+      if (sugs.length) {
+        const chips = sugs.map((s) => {
+          const chip = el('button', { class: 'hub__suggest-chip', type: 'button', title: s.text }, [
+            el('span', { class: 'hub__suggest-tag', text: s.tag }),
+            el('span', { class: 'u-truncate', text: s.text.slice(0, 60) + (s.text.length > 60 ? '…' : '') }),
+          ]);
+          chip.addEventListener('click', () => { const inp = detailEl.querySelector('.hub__composer-input'); if (inp) { inp.value = s.text; inp.focus(); } });
+          return chip;
+        });
+        detailEl.append(el('div', { class: 'hub__suggest' }, [el('span', { class: 'hub__suggest-label u-caption u-faint', text: '✨ Sugerencias' })].concat(chips)));
+      }
+    }
+
     // Composer (con toggle de nota interna)
     if (canWrite) {
       const noteToggle = el('button', { class: 'btn btn--ghost btn--sm hub__note-toggle' + (ui.noteMode ? ' is-active' : ''), type: 'button', 'aria-pressed': String(ui.noteMode), title: 'Nota interna — el cliente NO la verá' }, ['🔒']);
@@ -577,6 +598,78 @@ export function mountHub(root) {
     ]);
   }
   function loadingNode() { return el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando…' })]); }
+
+  /* ── Smart suggestions (3d) — heurísticas por keyword (sin LLM/NER) ── */
+  function smartSuggestions(chat, items) {
+    let lastUser = null;
+    for (let i = items.length - 1; i >= 0; i--) { if (items[i].from === 'user') { lastUser = items[i]; break; } }
+    if (!lastUser) return [];
+    const text = lastUser.text || '';
+    const firstName = (chat.userNombre || '').split(' ')[0] || '';
+    const greet = firstName ? 'Hola ' + firstName + ', ' : 'Hola, ';
+    const out = [];
+    if (/precio|cuanto|cuánto|cuesta|cotizaci|valor/i.test(text)) out.push({ tag: '💵 Cotización', text: greet + 'te preparo la cotización con todas las condiciones (financiación, peritaje, garantía). ¿Tienes una hora para que te la presente?' });
+    if (/agendar|cita|visita|ver el|conocer|cuando puedo|cuándo puedo|sábado|domingo/i.test(text)) out.push({ tag: '📅 Agendar', text: greet + '¡con gusto te agendo una cita! ¿Qué horario te queda mejor: mañana, tarde o final del día?' });
+    if (/financ|cuota|pagar|crédito|credito|inicial/i.test(text)) out.push({ tag: '💳 Financiación', text: greet + 'tenemos planes de financiación con cuota inicial desde 30%. ¿Cuál es tu cuota inicial disponible y a qué plazo te gustaría pagarlo?' });
+    if (/domicilio|env[íi]o|barranquilla|bogot|medell|envian|env[íi]an/i.test(text)) out.push({ tag: '🚚 Envío', text: greet + 'coordinamos el envío del vehículo a tu ciudad. ¿Te explico los pasos y costos?' });
+    out.push({ tag: '👋 Saludo', text: greet + 'soy tu asesor de Altorra Cars. Cuéntame un poco más sobre lo que buscas y te ayudo enseguida.' });
+    const seen = {}; const uniq = [];
+    out.forEach((s) => { const k = s.text.slice(0, 40); if (!seen[k]) { seen[k] = true; uniq.push(s); } });
+    return uniq.slice(0, 3);
+  }
+
+  /* ── Resumen de handover (3d) — local; el resumen IA queda DIFERIDO (saldo) ── */
+  function buildSummaryText(chat, total, nUser, nAsesor, statusTxt, claimTxt, lastUsers) {
+    const lines = ['RESUMEN — ' + (chat.userNombre || chat.userEmail || 'Cliente')];
+    if (chat.userEmail) lines.push('Email: ' + chat.userEmail);
+    if (chat.telefono) lines.push('Tel: ' + chat.telefono);
+    if (chat.sourceVehicleId) lines.push('Vehículo: #' + chat.sourceVehicleId);
+    lines.push('Conversación: ' + total + ' mensajes (' + nUser + ' cliente / ' + nAsesor + ' asesor)');
+    lines.push('Estado: ' + statusTxt + ' · ' + claimTxt);
+    if (lastUsers.length) { lines.push('Últimos mensajes del cliente:'); lastUsers.forEach((m) => lines.push('- ' + (m.text || ''))); }
+    return lines.join('\n');
+  }
+  function sumSection(title, children) { return el('section', { class: 'hub__sum-sec' }, [el('h4', { class: 'hub__sum-h', text: title })].concat(children)); }
+  function closeSummary() { if (summaryEl) { summaryEl.remove(); summaryEl = null; } }
+  function openSummary(chat) {
+    const items = ui.messages.concat(ui.pending);
+    const userMsgs = items.filter((m) => m.from === 'user');
+    const asesorMsgs = items.filter((m) => m.from === 'asesor');
+    const lastUsers = userMsgs.slice(-3);
+    const statusTxt = chat.status === 'closed' ? 'Cerrada' : 'Activa';
+    const claimTxt = chat.claimedBy ? ('Atendido por ' + (chat.claimedByName || 'un asesor')) : 'Sin asignar';
+    const txt = buildSummaryText(chat, items.length, userMsgs.length, asesorMsgs.length, statusTxt, claimTxt, lastUsers);
+
+    closeSummary();
+    const body = el('div', { class: 'hub__sum-body' }, [
+      sumSection('Cliente', [
+        el('div', { text: chat.userNombre || chat.userEmail || ('Cliente ' + chat._docId.slice(-6)) }),
+        chat.userEmail ? el('div', { class: 'u-caption u-faint', text: '📧 ' + chat.userEmail }) : null,
+        chat.telefono ? el('div', { class: 'u-caption u-faint', text: '📲 ' + chat.telefono }) : null,
+        chat.sourceVehicleId ? el('div', { class: 'u-caption u-faint', text: '🚗 Vehículo #' + chat.sourceVehicleId }) : null,
+      ]),
+      sumSection('Conversación', [
+        el('div', { class: 'u-caption', text: items.length + ' mensajes · ' + userMsgs.length + ' del cliente · ' + asesorMsgs.length + ' del asesor' }),
+        el('div', { class: 'u-caption u-faint', text: 'Estado: ' + statusTxt + ' · ' + claimTxt }),
+      ]),
+      sumSection('Últimos mensajes del cliente', lastUsers.length
+        ? lastUsers.map((m) => el('div', { class: 'hub__sum-msg', text: '“' + (m.text || '') + '”' }))
+        : [el('div', { class: 'u-faint u-caption', text: 'Sin mensajes del cliente todavía.' })]),
+    ]);
+    const copyBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['📋 Copiar']);
+    copyBtn.addEventListener('click', () => { try { navigator.clipboard.writeText(txt); toast('Resumen copiado', 'ok'); } catch (_) { toast('No se pudo copiar', 'error'); } });
+    const closeBtn = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cerrar' }, [el('span', { 'aria-hidden': 'true', text: '✕' })]);
+    closeBtn.addEventListener('click', closeSummary);
+    const panel = el('div', { class: 'hub__sum-panel', role: 'dialog', 'aria-label': 'Resumen de la conversación' }, [
+      el('div', { class: 'hub__sum-head' }, [el('strong', { text: '📄 Resumen para handover' }), closeBtn]),
+      body,
+      el('div', { class: 'hub__sum-ia u-caption' }, [el('span', { text: '✨ Resumen con IA — disponible cuando se active el asistente LLM (saldo Anthropic).' })]),
+      el('div', { class: 'hub__sum-foot' }, [copyBtn]),
+    ]);
+    summaryEl = el('div', { class: 'hub__sum-backdrop' }, [panel]);
+    summaryEl.addEventListener('click', (e) => { if (e.target === summaryEl) closeSummary(); });
+    wrap.append(summaryEl);
+  }
 
   /* ── Boot ───────────────────────────────────────────────── */
   if (isMock) {

@@ -2824,12 +2824,19 @@ exports.onChatTransferred = onDocumentUpdated({
     try {
         const newClaimerSnap = await db.collection('usuarios').doc(newClaimerUid).get();
         if (newClaimerSnap.exists) {
-            const fcmTokens = newClaimerSnap.data().fcmTokens || [];
-            if (fcmTokens.length > 0) {
+            // fcmTokens se almacena como OBJETOS {token, deviceLabel, addedAt, lastUsedAt}
+            // (lo escriben admin-fcm.js y admin-app/src/core/fcm.js). El Admin SDK
+            // espera el token como STRING → extraer .token antes de send (igual que
+            // onChatEscalated). Sin esto el send recibía un objeto → invalid-argument
+            // y el push de transferencia FALLABA siempre.
+            const tokenStrings = (newClaimerSnap.data().fcmTokens || [])
+                .map(t => t && t.token)
+                .filter(Boolean);
+            if (tokenStrings.length > 0) {
                 const messaging = admin.messaging();
-                const fcmPromises = fcmTokens.map(token =>
+                const fcmPromises = tokenStrings.map(tok =>
                     messaging.send({
-                        token: token,
+                        token: tok,
                         notification: {
                             title: '🔁 Chat transferido a ti',
                             body: prevClaimerName + ' te transfirió la conversación de ' + clienteName + ' (' + radicado + ')'
@@ -2840,7 +2847,7 @@ exports.onChatTransferred = onDocumentUpdated({
                             }
                         }
                     }).catch(err => {
-                        console.warn('[onChatTransferred] FCM token failed', token.slice(-8), err.message);
+                        console.warn('[onChatTransferred] FCM token failed', tok.slice(-8), err.message);
                         return null;
                     })
                 );

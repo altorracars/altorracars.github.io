@@ -44,6 +44,8 @@ const NAV = [
   { id: 'departamentos', label: 'Departamentos', icon: '🏢', ready: true, perm: ['departments.read', 'departments.manage'] },
   // PLAN-UNIFICADO F-2 (4/6) §242: automatización — toggle de reglas + historial (port admin-automation).
   { id: 'workflows', label: 'Automatización', icon: '⚡', ready: true, perm: 'workflows.read' },
+  // PLAN-UNIFICADO F-2 (5/6) §243: visor de auditoría — el LECTOR de auditLog (audit.js ya escribe).
+  { id: 'auditoria', label: 'Auditoría', icon: '🗂️', ready: true, perm: 'audit.read' },
 ];
 
 const TITLES = {
@@ -65,6 +67,7 @@ const TITLES = {
   roles: 'Roles y permisos',
   departamentos: 'Departamentos',
   workflows: 'Automatización',
+  auditoria: 'Auditoría',
 };
 
 export function mountShell(appRoot) {

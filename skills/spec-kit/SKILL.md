@@ -70,11 +70,14 @@ comando-por-comando + checklists → `references/workflow.md`.
 4. **plan** → `specs/<...>/plan.md` (+ `data-model.md`, `contracts/`, `research.md`, `quickstart.md`;
    plantilla `references/plan-template.md`). Stack + arquitectura + **Constitution Check** (gate
    antes de Fase 0; re-check tras el diseño). Aquí aplica `arquitecto-software` (6 pilares).
+   → **Audita el plan** con el subagente **`plan-auditor`** (revisión adversarial vs constitución+spec,
+   caza sobre-ingeniería y requisitos sin cubrir) ANTES de generar tareas.
 5. **tasks** → `specs/<...>/tasks.md` (plantilla `references/tasks-template.md`). Desglose ordenado
    por fases (Setup → Foundational[bloquea todo] → User Stories[por prioridad, paralelizables] →
    Polish), notación `[ID] [P?] [Story]`, test-antes-de-implementación.
 6. **analyze** (opcional, recomendado) → validación CRUZADA spec↔plan↔tasks: huecos de cobertura,
-   inconsistencias, requisitos sin tarea, tareas sin requisito. No edita; reporta.
+   inconsistencias, requisitos sin tarea, tareas sin requisito. No edita; reporta. → subagente
+   **`spec-analyze`** (read-only) hace exactamente esto y devuelve veredicto READY / NOT-READY.
 7. **implement** → ejecuta las tareas en orden, TDD donde aplique. Al tocar estado observable,
    recorre el **camino vivo** (`caza-bugs`). Verifica contra los criterios de éxito de la spec.
 
@@ -100,6 +103,14 @@ una user story concreta). Usa SIEMPRE la plantilla de `references/`; no improvis
 Una corrida SDD está completa cuando: spec sin `[NEEDS CLARIFICATION]` · plan pasó Constitution
 Check · tasks cubren todos los `FR-###` (analyze limpio) · implement verificado contra los
 criterios de éxito MEDIBLES de la spec (no "parece andar"). Si falta uno, vuelve a su fase.
+
+## 8. Subagentes companion (las "herramientas" del método)
+Dos subagentes read-only (en `~/.claude/agents/`; fuente versionada en `agents/` de esta skill):
+- **`plan-auditor`** — revisión adversarial del `plan.md` vs constitución+spec ANTES de tareas
+  (caza sobre-ingeniería, complejidad sin justificar, requisitos sin cubrir). Sesgo: simplicidad.
+- **`spec-analyze`** — chequeo CRUZADO spec↔plan↔tasks ANTES de implementar (FR sin tarea, tareas
+  huérfanas, `[NEEDS CLARIFICATION]` abiertos, violaciones de constitución). Veredicto READY/NOT.
+Ambos REPORTAN, no editan (fiel a "analyze no edita"). Invócalos por nombre vía Task.
 
 > Crédito: método y plantillas derivados de **github/spec-kit** (MIT). Esta skill es una adaptación
 > portable; la fuente canónica del CLI/commands evoluciona en el repo original.

@@ -206,6 +206,11 @@
 - **Causa**: (a) prioricé features nuevas visibles sobre limpiar/cuarentenar lo viejo; (b) traté TODO-35 como "después" cuando ERA el gate que prevenía justo esto; (c) rompí caza-bugs: no recorrí el camino vivo con el MOTOR ACTUAL (Free Core), asumí el v2 futuro. Familia M-16 (doctrina sin gate = teatro).
 - **Corrección**: (1) TODO-35 → 🔴 ACTIVO bloqueante, no "sesión fresca" indefinida. (2) El gate de dead/old-code se DISPARA en el workflow ANTES de cerrar cualquier feature (no opcional). (3) Todo cambio frontend que llega a vivo se prueba contra el motor ACTUAL, no el planeado. (4) Limpiar/cuarentenar lo viejo = parte del DoD, no apilar.
 
+### M-20 · Un HIT de grep/search prueba que el patrón está PRESENTE, no QUÉ HACE el código — leer la semántica del match antes de construir encima ⟦OPUS-4.8⟧
+- **Defecto (spec F-6 §2, 2026-06-25)**: una sesión previa grepeó "admin-pwa.js registra un SW" (match real) e INFIRIÓ que existía un SW dedicado del admin que des-registrar en el cutover. Al LEER el archivo (§3.3): `admin-pwa.js:106-122` solo re-registra el SW **PÚBLICO** (`/service-worker.js` scope `/`) — NO hay SW de admin separado. El "fix" planeado (script `getRegistrations()→unregister`) habría MATADO el SW público (roto el offline del sitio).
+- **Causa**: confiar en la PRESENCIA del match como si fuera COMPRENSIÓN. Familia M-02/M-11 (verifica-no-asumas); refinamiento: el grep es índice, no entendimiento.
+- **Corrección**: antes de basar una decisión (sobre todo cara/irreversible) en un grep-hit, ABRE el archivo y lee qué HACE el código matcheado. Un claim de arquitectura ("hay un SW del admin") exige leer el callsite, no solo que el término aparezca. [HONOR]
+
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md`
@@ -213,6 +218,8 @@
 ### L-22 · "Un azul que no sé de dónde sale" — paleta oscura FRÍA con hardcodeados dispersos (§150) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-23 · La regla universal `* { max-width:100% }` (style.css:6450) COLAPSA el `width` explícito de elementos `position:absolute` → detalle en `33-LECCIONES-FRONTEND.md`
+
+### L-54 · Un flex `fixed`/`absolute` SIN `width` anclado a un solo borde COLAPSA a su contenido (`max-width` no otorga ancho); verifica con viewport de ancho REAL (headless da `innerWidth:0`) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-24 · Un enlace `?param=` solo filtra si la página destino LEE el param — y el filtro puede YA existir con otro nombre → detalle en `33-LECCIONES-FRONTEND.md`
 

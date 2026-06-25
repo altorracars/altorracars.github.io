@@ -152,5 +152,11 @@
 - **Gotcha deploy**: `admin-app/dist/` está VERSIONADO y servido en `/admin-app/dist/` (run paralelo). Si un cambio foundational (`core/firebase.js`) está gateado a staging, **NO reconstruyas dist** al portar un módulo nuevo (su rebuild arrastra lo gateado) → commitea **source-only**, el batch sale junto tras el E2E de staging (§237.6/§238).
 - **Familia**: §202 (port verbatim por interop) · §204 (dealers) · §238 (usuarios) · L-28 (NO screenshot tras resize).
 
+### L-54 · Un elemento `position:fixed`/`absolute` en `display:flex` SIN `width` y anclado a UN solo borde COLAPSA a su contenido — `max-width` no OTORGA ancho ⟦OPUS-4.8⟧
+- **Síntoma (F-6 FCM card §251)**: tarjeta anclada `right`+`bottom` con `max-width:360px` pero **sin `width`** → render a **34px** de ancho, texto en columna de 1 char, off-screen. En mobile NO pasaba: la media query la anclaba `left`+`right` → los dos bordes le daban el ancho.
+- **Causa**: `max-width` LIMITA, no OTORGA ancho. Un flex `fixed` sin `width` toma su `max-content`; un hijo flex con `min-width:0` deja al texto encogerse casi a 0; anclado a un solo borde nada lo estira. Cara OPUESTA de L-23 (allá un `*{max-width:100%}` colapsa un width explícito; aquí FALTA el width).
+- **Receta**: `width` explícito en desktop (`width:340px; max-width:calc(100vw - 2*var(--s-5))`); en la media query mobile que usa `left`+`right`, `width:auto` para que los dos bordes manden. **Verifica con un viewport de ancho REAL** (`preview_resize {width:1280,height:800}`) — el "native size" del preview headless da `innerWidth:0` → activa la media query mobile y TODO colapsa (falso bug que te manda a perseguir la CSS equivocada). NO `preview_screenshot` tras `resize` (L-28).
+- **Familia**: L-23 (max-width universal colapsa width) · L-28 (no screenshot tras resize) · L-53 (DS tokens admin-app).
+
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

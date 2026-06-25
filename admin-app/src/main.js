@@ -34,6 +34,7 @@ import './styles/ajustes.css';
 import './styles/cerebro.css';
 import './styles/unmatched.css';
 import './styles/hub.css';
+import './styles/fcm.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -67,6 +68,7 @@ import { applyInitialAccent } from './modules/ajustes/ajustes.data.js';
 import { mountCerebro } from './modules/cerebro/cerebro.ui.js';
 import { mountUnmatched } from './modules/unmatched/unmatched.ui.js';
 import { mountHub } from './modules/hub/hub.ui.js';
+import { initFcm } from './core/fcm.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
@@ -96,6 +98,9 @@ function enterApp() {
   mountDetailPanel(shell.detailRoot);
   mountRoute(currentRoute());
   offRoute = onRouteChange(mountRoute);
+  // F-6 paridad §3 (red-team #2): web-push de asesores en el portal nuevo.
+  // No bloquea el arranque (async, self-guard); silencioso si no hay soporte/permiso.
+  initFcm();
 }
 
 function teardownApp() {

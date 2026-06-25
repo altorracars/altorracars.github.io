@@ -46,6 +46,8 @@ const NAV = [
   { id: 'workflows', label: 'Automatización', icon: '⚡', ready: true, perm: 'workflows.read' },
   // PLAN-UNIFICADO F-2 (5/6) §243: visor de auditoría — el LECTOR de auditLog (audit.js ya escribe).
   { id: 'auditoria', label: 'Auditoría', icon: '🗂️', ready: true, perm: 'audit.read' },
+  // PLAN-UNIFICADO F-2 (6/6): Ajustes — apariencia (tema) + SEO/sitemap. Cierra el GAP Config.
+  { id: 'ajustes', label: 'Ajustes', icon: '🎛️', ready: true, perm: ['settings.theme', 'settings.seo'] },
 ];
 
 const TITLES = {
@@ -68,6 +70,7 @@ const TITLES = {
   departamentos: 'Departamentos',
   workflows: 'Automatización',
   auditoria: 'Auditoría',
+  ajustes: 'Ajustes',
 };
 
 export function mountShell(appRoot) {

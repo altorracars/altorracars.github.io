@@ -5,10 +5,10 @@
 
 | Señal | Valor (última actualización: **2026-06-25**) |
 |---|---|
-| **Build** | 🟢 `main`: CRM canónico + E6 + RBAC + CMS + **F-2 Config 6/6 + F-3 Inicio ✅** (dueño mergeó hasta #957; §238-246). **`dev` adelante: F-4 Comunicaciones (1-2/3) `unmatched`+`cerebro` ✅ (§247-248) + (3/3) Hub ✅ → **F-4 COMPLETO** (§249: `modules/hub/` visor+claim/responder/typing+gestión+IA; verif mock, **E2E live pendiente**=staging; source-only, pushed). **F-5 source ✅** (§250: dedup `session:ID` + reprocesador DLQ; normalize 24/24 + emulador 5/5) → **deploy functions PENDIENTE go/no-go dueño** (cambia captura leads prod, TODO-30). Sigue **F-6** cutover. **⚠️ dist admin-app = build VIEJO pre-F-2..F-4 (06-22), servido en `/admin-app/dist/` run paralelo §159; rebuild GATEADO** (batch tras E2E staging; §237.6). |
+| **Build** | 🟢 `main`==`dev` (dueño mergeó F-2..F-5, §238-250): CRM canónico + E6 + RBAC + CMS + **F-2..F-3 ✅** + **F-4 COMPLETO** (Hub→`admin-app/modules/hub/`, §247-249) + **F-5 ✅ DEPLOYED LIVE** (§250: dedup `session:ID` + reprocesador DLQ `crmReprocessFailedIngestions` — functions en prod 26/06; backlog DLQ=0). **⚠️ dist admin-app GATEADO** (build VIEJO pre-F-2..F-4 servido en `/admin-app/dist/` §159; rebuild + Hub E2E live = batch staging §237.6). Sigue **F-6** cutover. |
 | **Cache version vigente** | **`v20260625033233`** (cron-CI 25/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): commit+push=Claude; **merge `dev`→`main`=dueño web** (§2); sync al arrancar. Deploys firebase=Claude (§1). |
-| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 22 functions CRM (**retry ×6**) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
+| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
 
 ## ⚠️ Flags de riesgo activos
 - 🤖 **Modelo: Opus 4.8** (Fable 5 NO disponible, 2026-06-12). Entregas marcadas **`⟦OPUS-4.8 · rev-Fable⟧`** (rev. cuando Fable vuelva). Detalle → `10` + memoria.

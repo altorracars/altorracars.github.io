@@ -11,8 +11,7 @@
 ## 🎯 Foco actual
 
 > 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-6 cutover PWA-safe** (§9.C): unregister SW viejos desde el `index.html` de Vite (mata SW zombie en celulares de asesores) + bridge auth IndexedDB `altorra-admin`→`altorra-crm` + checklist de paridad → `admin.html`→`_legacy/` (cuarentena `anti-codigo-muerto`, NO borrar). Riesgos PWA: §9.B.6 / red-team #2,#6. Spec `…PLAN-UNIFICADO…` §9.C.
-> ⚠️ **DECISIÓN DUEÑO pendiente — deploy F-5**: `firebase deploy --only functions:onSolicitudCreated,crmReprocessFailedIngestions` (go/no-go; cambia captura de leads en prod, TODO-30). Source listo+tested en `dev`; sin deploy la fuga sigue abierta.
-> ✅ **Cerrado 26/06: F-5 source** (cierre de fugas §4, **ADR §250**): (a) fallback `session:ID` en `normalizeSolicitud`→chat anónimo=lead "Anónimo"+tag (antes lanzaba→DLQ); (b) `crmReprocessFailedIngestions` (onSchedule 30min) reprocesa `failedIngestions` idempotente+bounded. Tests: normalize 24/24 + emulador reproc 5/5. ADITIVO (no-regresión email/tel). · **F-4 COMPLETO** (Hub, §249) · F-4(1-2/3) §247-248 · F-3 §246. Hub E2E live + dist = batch staging. LLM/bot flip = saldo (TODO-34).
+> ✅ **Cerrado 26/06: F-5 DEPLOYED LIVE** (cierre de fugas §4, **ADR §250**): (a) fallback `session:ID` en `normalizeSolicitud`→chat anónimo=lead "Anónimo"+tag; (b) `crmReprocessFailedIngestions` (onSchedule 30min) reprocesa `failedIngestions` idempotente+bounded. **Desplegado a prod 26/06** (onSolicitudCreated update + reprocesador create, ambas ACTIVE; backlog DLQ=0). Tests: normalize 24/24 + emulador 5/5. · **F-4 COMPLETO** (Hub, §249, dueño mergeó) · F-3 §246. Hub E2E live + dist = batch staging. LLM/bot flip = saldo (TODO-34). · **Deploys = míos, sin pedir go/no-go** (corrección dueño 26/06; mem `feedback-auto-deploy-crm`).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 

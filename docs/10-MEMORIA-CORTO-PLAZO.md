@@ -10,8 +10,9 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-5: cierre de fugas** (PLAN-UNIFICADO §237 §9.C): (a) dedup de chats anónimos por `session:ID` + (b) reprocesador del DLQ `failedIngestions`. Luego **F-6** cutover PWA-safe (unregister SW viejos + bridge auth + `admin.html`→`_legacy/`). Receta L-53; detalle → spec `…PLAN-UNIFICADO…` §9.C.
-> ✅ **Cerrado 26/06: F-4 COMPLETO** (gap §2.B Comunicaciones) = Hub `admin-concierge.js`(2979L)→`admin-app/modules/hub/` en 4 incrementos (3a visor · 3b claim/responder/typing · 3c gestión · 3d IA) → **ADR §249**. Antes: F-4 (1-2/3) §247-248 · F-3 §246. ⚠️ **E2E live del Hub pendiente** (typing/presence/fallos = live-only → batch staging §237.6). LLM summary + bot flip = saldo (TODO-34).
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-6 cutover PWA-safe** (§9.C): unregister SW viejos desde el `index.html` de Vite (mata SW zombie en celulares de asesores) + bridge auth IndexedDB `altorra-admin`→`altorra-crm` + checklist de paridad → `admin.html`→`_legacy/` (cuarentena `anti-codigo-muerto`, NO borrar). Riesgos PWA: §9.B.6 / red-team #2,#6. Spec `…PLAN-UNIFICADO…` §9.C.
+> ⚠️ **DECISIÓN DUEÑO pendiente — deploy F-5**: `firebase deploy --only functions:onSolicitudCreated,crmReprocessFailedIngestions` (go/no-go; cambia captura de leads en prod, TODO-30). Source listo+tested en `dev`; sin deploy la fuga sigue abierta.
+> ✅ **Cerrado 26/06: F-5 source** (cierre de fugas §4, **ADR §250**): (a) fallback `session:ID` en `normalizeSolicitud`→chat anónimo=lead "Anónimo"+tag (antes lanzaba→DLQ); (b) `crmReprocessFailedIngestions` (onSchedule 30min) reprocesa `failedIngestions` idempotente+bounded. Tests: normalize 24/24 + emulador reproc 5/5. ADITIVO (no-regresión email/tel). · **F-4 COMPLETO** (Hub, §249) · F-4(1-2/3) §247-248 · F-3 §246. Hub E2E live + dist = batch staging. LLM/bot flip = saldo (TODO-34).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
@@ -56,7 +57,7 @@
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |
 | **TODO-41** | **Motor de automatización → server-side ⟦OPUS-4.8⟧** (§242.5): hoy el engine de reglas (`admin-automation.js`) corre client-side SOLO en sesión super_admin → frágil (sin super_admin abierto, no corre). Migrar a Cloud Function. + gap RBAC: mapear `workflows.edit`→write de `config/automationRules` en rules. | 🔮 | post-cutover / escala |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5✅·F-2 6/6✅** (§238-245) **·F-3✅** (§246) **·F-4 COMPLETO✅** (§247-249: unmatched+cerebro+Hub). **F-1 spec'd** (LLM=saldo). Sigue **F-5** (fugas) → F-6 cutover. ⚠️ E2E live + dist batch = staging (§237.6). | 🔄 F-2..F-4 ✅ | dueño: dinero/legal/go-no-go |
+| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5✅·F-2 6/6✅** (§238-245) **·F-3✅** (§246) **·F-4 COMPLETO✅** (§247-249: unmatched+cerebro+Hub) **·F-5 source✅** (§250: fugas, tested). **F-1 spec'd** (LLM=saldo). Sigue **F-6** cutover PWA-safe. ⚠️ deploy F-5 functions + Hub E2E live + dist batch = go/no-go dueño/staging (§237.6/TODO-30). | 🔄 F-2..F-5 ✅ | dueño: dinero/legal/go-no-go |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

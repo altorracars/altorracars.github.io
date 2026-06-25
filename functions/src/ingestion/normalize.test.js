@@ -70,8 +70,30 @@ describe('normalizeSolicitud', () => {
     expect(out.activity.relatedTo.type).toBe('lead');
     expect(out.activity.relatedTo.name).toBe('Juan Pérez');
   });
-  it('lanza si la solicitud no tiene email ni teléfono (no se puede deduplicar)', () => {
+  it('lanza si la solicitud no tiene email, teléfono NI sessionId (no se puede deduplicar)', () => {
     expect(() => normalizeSolicitud({ nombre: 'X' }, 'sol-2', 'v1')).toThrow(/dedup/i);
+  });
+
+  // ── F-5 (§4): cierre de fuga — chat anónimo abandonado ──
+  it('F-5: chat anónimo (sin email/tel pero CON sessionId) → dedupKey session: + lead "Anónimo" + tag', () => {
+    const out = normalizeSolicitud({ sessionId: 'cnc_abc123', origen: 'concierge', comentarios: 'me interesa el Mazda' }, 'sol-anon', 'v1');
+    expect(out.dedupKey).toBe('session:cnc_abc123');
+    expect(out.contact.fullName).toBe('Anónimo');
+    expect(out.lead.fullName).toBe('Anónimo');
+    expect(out.contact.type).toBe('lead');
+    expect(out.contact.tags).toContain('chat-anonimo');
+  });
+  it('F-5: respeta el nombre si el chat anónimo lo capturó (sigue marcando el tag)', () => {
+    const out = normalizeSolicitud({ sessionId: 'cnc_x', nombre: 'Ana' }, 'sol-anon2', 'v1');
+    expect(out.dedupKey).toBe('session:cnc_x');
+    expect(out.contact.fullName).toBe('Ana');
+    expect(out.contact.tags).toContain('chat-anonimo');
+  });
+  it('F-5 no-regresión: email/teléfono MANDAN sobre sessionId (no se marca anónimo)', () => {
+    const out = normalizeSolicitud({ ...baseSol, sessionId: 'cnc_y' }, 'sol-5', 'v1');
+    expect(out.dedupKey).toBe('email:juan@mail.com');
+    expect(out.contact.fullName).toBe('Juan Pérez');
+    expect(out.contact.tags).not.toContain('chat-anonimo');
   });
 });
 

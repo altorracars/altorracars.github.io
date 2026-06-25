@@ -44,4 +44,5 @@ export const store = createStore({
   theme: 'light',
   mock: false,         // modo demo sin Firebase (?mock=1)
   detailLeadId: null,  // panel Customer 360 abierto (null = cerrado)
+  kbPrefill: null,     // handoff Unmatched→Cerebro AI (F-4): {question, keywords, unmatchedId}
 });

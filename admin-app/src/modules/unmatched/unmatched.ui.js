@@ -11,6 +11,7 @@
 import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { navigate } from '../../core/router.js';
 import { hasPermission } from '../../core/auth.js';
 import { timeAgo } from '../../domain/format.js';
 import { subscribeUnmatched, markSeen, markAllSeen, deleteEntry, MOCK_UNMATCHED } from './unmatched.data.js';
@@ -69,20 +70,13 @@ export function mountUnmatched(root) {
     catch (err) { toast('No se pudo marcar todas', 'error'); }
   }
 
-  // Promover a FAQ: el módulo Cerebro AI (KB) llega en el siguiente paso de F-4.
-  // Degradación honesta hasta entonces: copia la pregunta + guía. (TODO: al
-  // portar KB, reemplazar por handoff store→ruta cerebro con prefill.)
+  // Promover a FAQ (F-4 2/3): handoff a Cerebro AI vía store. El módulo
+  // `cerebro` lee `kbPrefill` al montar, abre el form prellenado y, al guardar,
+  // marca esta query como `promotedToFAQ` (unmatched.data markPromoted).
   function doPromote(e) {
     if (!canPromote) return;
-    const q = e.query || '';
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(q).then(
-        () => toast('Pregunta copiada — créala como FAQ en Cerebro AI (llega en el próximo paso de F-4)', 'info'),
-        () => toast(`Crea una FAQ con: "${q.slice(0, 70)}"`, 'info'),
-      );
-    } else {
-      toast(`Crea una FAQ con: "${q.slice(0, 70)}"`, 'info');
-    }
+    store.set({ kbPrefill: { question: e.query || '', keywords: e.keywords || [], unmatchedId: e._docId } });
+    navigate('cerebro');
   }
 
   async function doDelete(e) {

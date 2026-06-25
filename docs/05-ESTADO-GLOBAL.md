@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-25**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev` (dueño mergeó F-2..F-5, §238-250): CRM canónico + E6 + RBAC + CMS + **F-2..F-3 ✅** + **F-4 COMPLETO** (Hub→`admin-app/modules/hub/`, §247-249) + **F-5 ✅ DEPLOYED LIVE** (§250: dedup `session:ID` + reprocesador DLQ `crmReprocessFailedIngestions` — functions en prod 26/06; backlog DLQ=0). **⚠️ dist admin-app GATEADO** (build VIEJO pre-F-2..F-4 servido en `/admin-app/dist/` §159; rebuild + Hub E2E live = batch staging §237.6). Sigue **F-6** cutover. |
+| **Build** | 🟢 `main`==`dev` (dueño mergeó F-2..F-5, §238-250): CRM canónico + E6 + RBAC + CMS + **F-2..F-3 ✅** + **F-4 COMPLETO** (Hub→`admin-app/modules/hub/`, §247-249) + **F-5 ✅ DEPLOYED LIVE** (§250: dedup `session:ID` + reprocesador DLQ `crmReprocessFailedIngestions` — functions en prod 26/06; backlog DLQ=0). **dist rebuilt + LIVE** (F-2..F-5+Hub en `/admin-app/dist/`, dueño mergeó); **Hub live SMOKE ✅** 26/06 (carga/listeners/interactividad limpio; detalle/interacción=mock §249, esperan chat real). Sigue **F-6** cutover. |
 | **Cache version vigente** | **`v20260625033233`** (cron-CI 25/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): commit+push=Claude; **merge `dev`→`main`=dueño web** (§2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

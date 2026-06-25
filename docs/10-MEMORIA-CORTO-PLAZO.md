@@ -62,4 +62,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§246 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2 6/6 + F-3 Inicio (§238-246) · auditoría N2 §239 · HUB Visibilidad §244+§244.8. Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§246 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2 6/6 + F-3 Inicio (§238-246) · auditoría N2 §239 · HUB Visibilidad §244+§244.8. **25/06**: F-6 prep (FCM port + banner re-login + fix `onChatTransferred`) · **flujo fuerte unificado W-11/`60-WORKFLOWS`/§251** (reconciliado con bersaglio). Defectos bot → `altor-hub-rediseno-defectos.md`.

@@ -76,8 +76,11 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
    el redirect (paso 2) + network-first del HTML + el cache-bump del cron cubren el zombie.
 2. Mover `admin.html` + sus assets exclusivos a `_legacy/` (cuarentena `anti-codigo-muerto`, NO borrar) +
    redirect `admin.html`→`/admin-app/dist/` (para bookmarks/PWA-instalada que aún peguen al viejo).
-3. Mensaje de re-login en el portal nuevo (§1) — el asesor sin sesión `altorra-crm` cae al login nuevo;
-   un banner contextual ("Actualizamos el portal, inicia sesión de nuevo") mejora la UX (menor).
+3. Mensaje de re-login en el portal nuevo (§1) — ✅ **BUILT (2026-06-25, login.js)**. El asesor sin
+   sesión `altorra-crm` cae al login nuevo; un banner contextual ("Renovamos el panel… iniciá sesión
+   de nuevo") se auto-muestra cuando detecta **marcadores localStorage del admin viejo** (mismo origen:
+   `altorra_admin_pwa_installed/_welcomed`, `altorra_fcm_prompted_at`). **Self-contained: NO depende del
+   redirect param**; dismiss persistente + auto-dismiss tras el 1er login nuevo. Verificado en preview.
 4. Cache bump del SITIO público (lo hace el cron, §05/L-02) → purga el `admin.html` viejo cacheado.
 5. Validación live post-cutover (celular asesor real, idealmente con la PWA vieja instalada: ¿ve el portal
    nuevo? ¿no el zombie? ¿recibe el push FCM?).
@@ -88,8 +91,9 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
 - [x] **Paridad §3 auditada**: 19/19 secciones ✅
 - [x] **FCM/Web-Push PORTADO** (2026-06-25, §251): `fcm.js`+`fcm.css`+wiring, build+boot+render verificados; PEND validación live end-to-end (device real)
 - [x] **Premisa §2 SW corregida** (no hay SW de admin separado → script unregister DESCARTADO; zombie cubierto por network-first+redirect+cache-bump)
+- [x] **Banner re-login BUILT** (2026-06-25, login.js): auto-detecta marcadores localStorage del admin viejo (self-contained, no necesita el redirect); dismiss persistente + auto-dismiss tras login. Verificado en preview.
 - [ ] Hub detalle validado live (chat real) — gate principal, necesita tráfico/dueño
-- [ ] Editor de plantillas + perfil propio: decidir portar vs aceptar gap (menores)
-- [ ] Flip `admin.html`→`_legacy/` + redirect + banner re-login (go/no-go dueño)
+- [x] **Gaps menores verificados (2026-06-25)**: perfil propio (`sec-profile`) y editor de plantillas (`sec-templates`/`config/messageTemplates`) NO existen en admin-app → decidir portar vs aceptar gap (el Hub espera validación live primero)
+- [ ] Flip `admin.html`→`_legacy/` + redirect (go/no-go dueño) — banner re-login ya BUILT
 - [ ] Cache-bump del cron post-flip + validación live en celular (incl. PWA vieja + push FCM)
 - [ ] ADR §251 cierre + post-cutover live OK

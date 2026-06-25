@@ -28,6 +28,7 @@ import './styles/usuarios.css';
 import './styles/roles.css';
 import './styles/departamentos.css';
 import './styles/workflows.css';
+import './styles/auditoria.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -54,12 +55,13 @@ import { mountUsuarios } from './modules/usuarios/usuarios.ui.js';
 import { mountRoles } from './modules/roles/roles.ui.js';
 import { mountDepartamentos } from './modules/departamentos/departamentos.ui.js';
 import { mountWorkflows } from './modules/workflows/workflows.ui.js';
+import { mountAuditoria } from './modules/auditoria/auditoria.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows };
+const MODULES = { bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

@@ -10,8 +10,8 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN (fresca) ARRANCA AQUÍ** — elegir (ambos money-free): **F-1.a** = build Vite→IIFE del bot v2 + wiring tras flag (v1 intacto), per spec `…F-1-bot-v2-vite-kickoff.md` (leer §0 estado verificado + §2 arquitectura); **o F-3 Dashboard** (camino crítico del portal, patrón F-2). F-1 es paralelo/no bloquea. **F-1.d (LLM) + prod = gates del dueño.**
-> ✅ **Cerrado 25/06**: TODO-42 propagación ×3 (§244.8) · **F-2 6/6** (§245 `ajustes`, GAP Config cerrado) · destilado kernel (3 nodos bajo tope) · F-1 spec'd.
+> 🚀 **PRÓXIMA SESIÓN (fresca) ARRANCA AQUÍ** — elegir (money-free): **F-1.a** = build Vite→IIFE del bot v2 + wiring tras flag (v1 intacto), spec `…F-1-bot-v2-vite-kickoff.md` (§0 estado + §2 arquitectura); **o F-3 Dashboard** (camino crítico, patrón F-2). F-1 = paralelo. **F-1.d (LLM) + prod = gates del dueño.**
+> ✅ **Cerrado 25/06**: TODO-42 ×3 (§244.8) · **F-2 6/6** (§245) · destilado kernel · F-1 spec'd.
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 

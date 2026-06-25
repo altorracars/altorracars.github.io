@@ -10,8 +10,8 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (3/3) Hub** (`admin-concierge.js` 2979L → admin-app; EL GIGANTE: RTDB presence/typing + claim/transfer/notes/close; F-0.5 ya listo). **Runway = spec `…F-4-3of3-hub-kickoff.md`** (sub-incrementos 3a-3d; descomponer). Alterna: **F-1** bot público Vite (LLM=saldo). Patrón=**L-53/L-54**.
-> ✅ **Cerrado 26/06**: **F-4 (1-2/3)** `unmatched`+`cerebro` (§247-248, handoff E2E) + **F-3 Inicio** (§246) + GC índice 00. 25/06: F-2 6/6 (§245).
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (3/3) Hub · sub-incremento 3b**: enviar mensaje (`concierge.respond`) + typing (RTDB `/typing`, write `asesor_<uid>`) + optimistic UI, sobre el visor 3a ya en `dev`. Luego **3c** (claim/transfer/close/reopen/notes) → **3d** (smart suggestions; LLM summary diferido=saldo). Runway/checklist = spec `…F-4-3of3-hub-kickoff.md`. Módulo en `admin-app/src/modules/hub/`. Alterna: **F-1** bot público Vite. Patrón=**L-53/L-54**.
+> ✅ **Cerrado 26/06**: **F-4 (3/3) 3a** = VISOR Hub read-only (`modules/hub/` data+ui+css, wiring router/shell/main, RBAC `concierge.read`, presence read 👀, responsive, verif `?mock=1`; source-only, dist GATEADO). Antes: **F-4 (1-2/3)** `unmatched`+`cerebro` (§247-248) + **F-3 Inicio** (§246). ADR §249 al cerrar F-4 completo (3a-3d).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 

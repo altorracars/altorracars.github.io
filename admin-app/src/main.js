@@ -33,6 +33,7 @@ import './styles/auditoria.css';
 import './styles/ajustes.css';
 import './styles/cerebro.css';
 import './styles/unmatched.css';
+import './styles/hub.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -65,13 +66,14 @@ import { mountAjustes } from './modules/ajustes/ajustes.ui.js';
 import { applyInitialAccent } from './modules/ajustes/ajustes.data.js';
 import { mountCerebro } from './modules/cerebro/cerebro.ui.js';
 import { mountUnmatched } from './modules/unmatched/unmatched.ui.js';
+import { mountHub } from './modules/hub/hub.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 applyInitialAccent();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes, cerebro: mountCerebro, unmatched: mountUnmatched };
+const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes, cerebro: mountCerebro, unmatched: mountUnmatched, hub: mountHub };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

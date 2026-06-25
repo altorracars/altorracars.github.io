@@ -1,0 +1,135 @@
+/* ============================================================
+   ALTOR HUB (F-4 3/3) — consola de 2 zonas: lista de chats | detalle.
+   Visor read-only (3a). Perf §3.1: sin transition:all, sin backdrop-filter
+   en la lista (N filas), transiciones solo en background/border.
+   ============================================================ */
+
+.hub {
+  flex: 1 1 auto; min-width: 0; min-height: 0;
+  display: flex; width: 100%;
+}
+
+/* ─────────── Columnas ─────────── */
+.hub__col { display: flex; flex-direction: column; min-height: 0; }
+.hub__col--list {
+  flex: 0 0 clamp(280px, 30%, 360px); min-width: 0;
+  border-right: 1px solid var(--surface-stroke);
+}
+.hub__col--detail { flex: 1 1 auto; min-width: 0; }
+
+/* ─────────── Lista ─────────── */
+.hub__list-head {
+  flex: 0 0 auto; padding: var(--s-4) var(--s-4) var(--s-3);
+  border-bottom: 1px solid var(--surface-stroke);
+}
+.hub__chips { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+
+.hub__list {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--s-2);
+  padding: var(--s-3) var(--s-3) var(--s-5);
+}
+
+.hub__row {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-3); border-radius: var(--r-lg);
+  background: var(--surface-card); border: 1px solid var(--surface-stroke);
+  cursor: pointer; text-align: left; width: 100%;
+  transition: background var(--dur-2) var(--ease-fluent),
+              border-color var(--dur-2) var(--ease-fluent);
+}
+.hub__row:hover { background: var(--surface-stroke); border-color: var(--surface-stroke-hi); }
+.hub__row:focus-visible { outline: 2px solid var(--gold-500); outline-offset: 2px; }
+.hub__row.is-active { border-color: var(--gold-500); background: var(--gold-100); }
+:root[data-theme="dark"] .hub__row.is-active { background: rgba(184,146,74,0.16); }
+.hub__row.has-unread .hub__row-name { font-weight: 800; }
+
+.hub__row-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.hub__row-top { display: flex; align-items: baseline; gap: var(--s-2); }
+.hub__row-name { flex: 1 1 auto; min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--t-body); }
+.hub__row-time { flex: 0 0 auto; }
+.hub__row-snip { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--ink-text-muted); font-size: var(--t-caption); }
+.hub__row-mode { flex: 0 0 auto; }
+.hub__row-tags { display: flex; gap: 4px; }
+.hub__row-tag { font-size: 11px; opacity: 0.7; }
+.hub__row-att { flex: 0 0 auto; font-size: 14px; }
+.hub__row-unread {
+  flex: 0 0 auto; min-width: 18px; height: 18px; padding: 0 5px;
+  display: inline-grid; place-content: center;
+  background: var(--gold-500); color: #fff;
+  font-size: 11px; font-weight: 700; border-radius: var(--r-pill);
+}
+
+/* ─────────── Detalle ─────────── */
+.hub__detail { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+.hub__detail-head {
+  flex: 0 0 auto; display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--surface-stroke);
+}
+.hub__back { display: none; flex: 0 0 auto; }
+.hub__detail-id { min-width: 0; }
+.hub__detail-name { display: flex; align-items: center; gap: var(--s-2); font-family: var(--font-display); font-weight: 700; font-size: var(--t-body-lg); }
+.hub__detail-meta { color: var(--ink-text-muted); margin-top: 2px; }
+.hub__detail-mode { font-weight: 600; }
+
+/* Banners read-only */
+.hub__banner {
+  flex: 0 0 auto; display: flex; align-items: center; gap: var(--s-3);
+  margin: var(--s-3) var(--s-5) 0; padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md); border: 1px solid var(--surface-stroke);
+  background: var(--surface-card);
+}
+.hub__banner-icon { flex: 0 0 auto; font-size: 16px; }
+.hub__banner-info { min-width: 0; }
+.hub__banner-title { font-weight: 600; font-size: var(--t-body); }
+.hub__banner--closed { border-color: var(--surface-stroke-hi); }
+.hub__banner--claimed { border-color: color-mix(in srgb, var(--gold-500) 40%, var(--surface-stroke)); }
+.hub__banner--attending { border-color: color-mix(in srgb, #2e9d5b 40%, var(--surface-stroke)); }
+
+/* Mensajes */
+.hub__msgs {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--s-3);
+  padding: var(--s-5);
+}
+.hub__msgs-empty { text-align: center; margin: auto; }
+
+.hub-msg { display: flex; flex-direction: column; gap: 3px; max-width: 78%; }
+.hub-msg--in { align-self: flex-start; align-items: flex-start; }
+.hub-msg--out { align-self: flex-end; align-items: flex-end; }
+.hub-msg--system { align-self: center; align-items: center; max-width: 90%; }
+
+.hub-msg__bubble {
+  padding: var(--s-3) var(--s-4); border-radius: var(--r-lg);
+  font-size: var(--t-body); line-height: 1.45; white-space: pre-wrap; word-break: break-word;
+}
+.hub-msg--user .hub-msg__bubble { background: var(--surface-card); border: 1px solid var(--surface-stroke); border-bottom-left-radius: var(--r-xs, 4px); }
+.hub-msg--bot .hub-msg__bubble { background: var(--surface-stroke); border-bottom-left-radius: var(--r-xs, 4px); }
+.hub-msg--asesor .hub-msg__bubble { background: var(--gold-500); color: #fff; border-bottom-right-radius: var(--r-xs, 4px); }
+.hub-msg__who { display: block; font-weight: 700; opacity: 0.6; margin-bottom: 2px; }
+.hub-msg__sys {
+  padding: 4px var(--s-3); border-radius: var(--r-pill);
+  background: var(--surface-stroke); color: var(--ink-text-muted);
+  font-size: var(--t-caption); text-align: center;
+}
+.hub-msg__time { padding: 0 var(--s-1); }
+
+/* Footer read-only */
+.hub__ro-note {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px; justify-content: center;
+  padding: var(--s-3) var(--s-5); border-top: 1px solid var(--surface-stroke);
+  background: var(--surface-mica);
+}
+
+/* ─────────── Estado vacío centrado ─────────── */
+.hub__col--detail .state { margin: auto; }
+
+/* ─────────── Responsive (1 pane a la vez) ─────────── */
+@media (max-width: 760px) {
+  .hub__col--list { flex: 1 1 auto; border-right: 0; }
+  .hub__col--detail { display: none; }
+  .hub[data-pane="detail"] .hub__col--list { display: none; }
+  .hub[data-pane="detail"] .hub__col--detail { display: flex; }
+  .hub__back { display: inline-grid; }
+}

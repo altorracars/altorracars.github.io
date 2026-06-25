@@ -50,7 +50,8 @@ const NAV = [
   { id: 'auditoria', label: 'Auditoría', icon: '🗂️', ready: true, perm: 'audit.read' },
   // PLAN-UNIFICADO F-2 (6/6): Ajustes — apariencia (tema) + SEO/sitemap. Cierra el GAP Config.
   { id: 'ajustes', label: 'Ajustes', icon: '🎛️', ready: true, perm: ['settings.theme', 'settings.seo'] },
-  // PLAN-UNIFICADO F-4 (gap §2.B Comunicaciones): Cerebro AI (FAQs del bot) + "Lo que no entendí" (unmatchedQueries = fugas). Hub viene después.
+  // PLAN-UNIFICADO F-4 (gap §2.B Comunicaciones): ALTOR Hub (consola de chat) + Cerebro AI (FAQs del bot) + "Lo que no entendí" (unmatchedQueries = fugas).
+  { id: 'hub', label: 'ALTOR Hub', icon: '💬', ready: true, perm: 'concierge.read' },
   { id: 'cerebro', label: 'Cerebro AI', icon: '🧠', ready: true, perm: 'kb.read' },
   { id: 'unmatched', label: 'No entendí', icon: '🤔', ready: true, perm: 'unmatched.read' },
 ];
@@ -77,6 +78,7 @@ const TITLES = {
   workflows: 'Automatización',
   auditoria: 'Auditoría',
   ajustes: 'Ajustes',
+  hub: 'ALTOR Hub',
   cerebro: 'Cerebro AI',
   unmatched: 'Lo que no entendí',
 };

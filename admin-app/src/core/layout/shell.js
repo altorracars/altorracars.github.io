@@ -42,6 +42,8 @@ const NAV = [
   { id: 'roles', label: 'Roles', icon: '🛡️', ready: true, perm: 'roles.read' },
   // PLAN-UNIFICADO F-2 (3/6) §240: catálogo departamental ④a (port admin-departments).
   { id: 'departamentos', label: 'Departamentos', icon: '🏢', ready: true, perm: ['departments.read', 'departments.manage'] },
+  // PLAN-UNIFICADO F-2 (4/6) §242: automatización — toggle de reglas + historial (port admin-automation).
+  { id: 'workflows', label: 'Automatización', icon: '⚡', ready: true, perm: 'workflows.read' },
 ];
 
 const TITLES = {
@@ -62,6 +64,7 @@ const TITLES = {
   usuarios: 'Usuarios y permisos',
   roles: 'Roles y permisos',
   departamentos: 'Departamentos',
+  workflows: 'Automatización',
 };
 
 export function mountShell(appRoot) {

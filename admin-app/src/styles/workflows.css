@@ -1,0 +1,61 @@
+/* ============================================================
+   WORKFLOWS / AUTOMATIZACIÓN (PLAN-UNIFICADO F-2, §242) — reglas + historial.
+   Tokens HarmonyOS. Toggle switch nativo (checkbox estilizado).
+   ============================================================ */
+
+.wf { display: flex; flex-direction: column; width: 100%; min-width: 0; height: 100%;
+  overflow-y: auto; padding: var(--s-5) var(--s-6) var(--s-8); gap: var(--s-3); }
+
+.wf-section-title { font-family: var(--font-display); font-size: var(--t-subtitle); font-weight: 700; margin: 0; }
+.wf-intro { display: flex; flex-direction: column; gap: var(--s-1); }
+
+/* ── Reglas ── */
+.wf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--s-4); }
+.wf-card {
+  display: flex; flex-direction: column; gap: var(--s-2);
+  padding: var(--s-4); background: var(--surface-card);
+  border: 1px solid var(--surface-stroke); border-radius: var(--r-lg); box-shadow: var(--shadow-2);
+  border-left: 3px solid var(--surface-stroke-hi);
+}
+.wf-card.is-on { border-left-color: var(--gold-500); }
+.wf-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.wf-card__status { display: flex; align-items: center; gap: var(--s-2); }
+.wf-card__dot { font-size: 15px; }
+.wf-card__name { font-size: var(--t-body); }
+.wf-card__desc { min-height: 2.6em; }
+.wf-card__foot { margin-top: auto; }
+
+/* ── Toggle switch ── */
+.wf-switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: 0 0 auto; cursor: pointer; }
+.wf-switch__cb { position: absolute; opacity: 0; width: 0; height: 0; }
+.wf-switch__slider {
+  position: absolute; inset: 0; border-radius: var(--r-pill);
+  background: var(--surface-stroke-hi); transition: background var(--dur-2) var(--ease-fluent);
+}
+.wf-switch__slider::before {
+  content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; box-shadow: var(--shadow-2);
+  transition: transform var(--dur-2) var(--ease-fluent);
+}
+.wf-switch__cb:checked + .wf-switch__slider { background: var(--gold-500); background-image: var(--grad-gold); }
+.wf-switch__cb:checked + .wf-switch__slider::before { transform: translateX(18px); }
+.wf-switch__cb:focus-visible + .wf-switch__slider { box-shadow: 0 0 0 3px rgba(212,168,90,0.25); }
+.wf-switch__cb:disabled + .wf-switch__slider { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Historial ── */
+.wf-hist-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); margin-top: var(--s-2); }
+.wf-hist { display: flex; flex-direction: column; gap: var(--s-1); }
+.wf-hist__row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap;
+  padding: var(--s-2) var(--s-3); background: var(--surface-card);
+  border: 1px solid var(--surface-stroke); border-radius: var(--r-md);
+}
+.wf-hist__main { display: flex; align-items: baseline; gap: var(--s-1); min-width: 0; flex: 1 1 200px; }
+.wf-hist__rule { font-weight: 600; font-size: var(--t-caption); }
+.wf-hist__meta { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; justify-content: flex-end; }
+
+.state--sm { padding: var(--s-6) var(--s-4); }
+
+@media (max-width: 560px) {
+  .wf { padding-left: var(--s-4); padding-right: var(--s-4); }
+}

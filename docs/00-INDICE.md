@@ -7,7 +7,7 @@
 >
 > **Cerebro completo**: 🧠 `CLAUDE.md` (router/identidad) · 🩺 `05-ESTADO-GLOBAL.md` (signos vitales)
 > · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura)
-> · 🧪 `30-LECCIONES.md` (experiencia/recetas; hija 🔧 `31-LECCIONES-GIT.md`) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
+> · 🧪 `30-LECCIONES.md` (experiencia/recetas; hija 🔧 `31-LECCIONES-GIT.md`) · 🔁 `60-WORKFLOWS.md` (workflows W-01..W-11; **W-11 = flujo fuerte**) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
 >
 > **Cómo usarlo (regla de oro anti-saturación)**:
 > 1. Busca aquí el § que necesitas y su línea de inicio.
@@ -28,6 +28,7 @@
 
 | Tu situación / síntoma | Ve a |
 |---|---|
+| Decisión Fuerte / auditoría / revisión / diseño-UI no trivial (¿aplico el flujo del dueño?) | 🔁 `60-WORKFLOWS` **W-11** (flujo COMPLETO o nada + 3 artefactos: mockup·prompt-Gemini·prompt-Chrome) + skill `proceso-decision-fuerte` |
 | ¿Dónde vive un módulo / ruta / flujo / componente? | 🗺️ `20-ESPACIAL` |
 | Voy a mover/renombrar archivos, refactor de estructura | 🔧 `31-LECCIONES-GIT` L-04 + 🧪 `30-LECCIONES` L-06/L-07/L-10 (cargador JS + generador + CSS dinámico) + 🗺️ `20-ESPACIAL` |
 | Conflicto al fusionar / cache / cron `[skip ci]` / toda op git | 🔧 `31-LECCIONES-GIT` (hija de 30: L-01..L-04) + `CLAUDE.md §4` |
@@ -342,6 +343,7 @@
 | §248 | **F-4 (2/3) Cerebro AI — gestión FAQs (`knowledgeBase`) en admin-app + handoff Unmatched→FAQ ⟦OPUS⟧** — port CRUD de admin-kb (lista priority-desc, modal crear/editar, toggle, borrar, bootstrap 25 FAQs); filtra doc `_brain`. RBAC gateado como rules (`kb.read/create/edit/delete/bootstrap`). **Alcance**: NO `findBest`/`recordUsage` (los usa el bot público, stack viejo) · brain/LLM config DIFERIDA (bot dormido). **Handoff E2E**: unmatched "Crear FAQ"→`store.kbPrefill`+`navigate('cerebro')`→form prellenado→`markPromoted`. Verif `?mock=1` OK. dist gateado. Sigue F-4(3/3) Hub. | 44130 |
 | §249 | **F-4 (3/3) ALTOR Hub → admin-app ⟦OPUS⟧ — F-4 COMPLETO** — port del GIGANTE `admin-concierge.js` (2979L) en 4 sub-incrementos: **3a** visor (lista/filtros/detalle/presence read) · **3b** lazo humano (claim `runTransaction` optimista + responder ⏱/✓/✓✓/retry + typing RTDB bidireccional + read) · **3c** gestión (close/reopen/transfer-modal-por-presence/super-release/notas-internas) · **3d** IA (smart suggestions heurísticas + Resumen handover local; LLM summary DIFERIDO=saldo). ⚠️ orden vs rules en close/reopen. RBAC `concierge.*`=rules. Verif `?mock=1`; **E2E live pendiente** (typing/presence live-only, staging §237.6). dist source-only. Cierra gap §2.B → sigue F-5. | 44142 |
 | §250 | **F-5 cierre de fugas CRM ⟦OPUS⟧** — (a) fallback `session:ID` en `normalizeSolicitud` → el chat concierge anónimo (sin email/tel) se ingiere como lead **"Anónimo"**+tag por la tx canónica (antes lanzaba→`failedIngestions`=fuga §4 #4) · (b) `crmReprocessFailedIngestions` (`onSchedule` 30min) reprocesa el DLQ por la ruta compartida, idempotente+bounded (MAX_ATTEMPTS→`needsManualReview`), recupera el backlog. ADITIVO (email/tel siguen mandando — test no-regresión). Tests: normalize 24/24 + emulador reproc 5/5. ⚠️ **deploy functions GATEADO** (go/no-go dueño, TODO-30). Sigue F-6 cutover. | 44154 |
+| §251 | **GOBERNANZA: FLUJO FUERTE unificado en W-11 ⟦OPUS⟧** — el flujo del dueño (comité+consejo+extensión+skills+agentes+**PLUGINS**+mockup) vivía partido→ se aplicaba a medias. Solución reconciliada ×cerebros: nodo **W-11 `60-WORKFLOWS.md`** (SSoT, 10 capas + REGLA DURA "completo o nada" + 3 artefactos: mockup·prompt-Gemini·prompt-Chrome, origen bersaglio) + capa **PLUGINS** y **orden 6-instrumentos en 2 fases** (evidencia→deliberación, aporte cars) en la skill compartida. Memorias `feedback_flujo_completo_nunca_parcial`/`_diseno_mockup`. PEND: replicar a inmob+insema (L-48). | 44166 |
 | §243 | **F-2 (5/6) `auditoria` (visor) en admin-app ⟦OPUS⟧** — LECTOR read-only de `auditLog` (el portal escribía vía audit.js, no leía): lista cronológica (onSnapshot 200) + buscador + filtro acción/usuario; inmutable (no borra). dist gateado. | 44069 |
 | §242 | **F-2 (4/6) `workflows`/Automatización en admin-app ⟦OPUS⟧** — port admin-automation: NO CRUD (verificar-no-asumir) sino 4 reglas FIJAS toggle + visor `automationLog`; motor sigue legacy client-side (→TODO-41) + gap RBAC `workflows.edit`. dist gateado. | 44057 |
 | §241 | **F-2 (3/6) `departamentos` en admin-app ⟦OPUS⟧** — catálogo ④a `departments/{id}` (grid+modal, id slug `dept_<slug>`). Guard §66 (no borrar con userCount>0, UI+rules). Port admin-departments. dist gateado. | 44045 |

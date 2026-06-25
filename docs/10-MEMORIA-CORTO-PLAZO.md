@@ -10,12 +10,13 @@
 
 ## 🎯 Foco actual
 
-> ✅ **Recién cerrado (25/06)**: TODO-42 (§244.8) · **F-2 6/6 COMPLETO** (§245) · destilado kernel. **▶️ F-1 (bot v2 Vite) ARRANCADO** — spec `…F-1-bot-v2-vite-kickoff.md` (Vite-IIFE + F-1.a→d + triaje + gates). **Build pesado → sesión fresca** (relevo §G.2). F-1.d LLM = saldo dueño.
+> 🚀 **PRÓXIMA SESIÓN (fresca) ARRANCA AQUÍ** — elegir (ambos money-free): **F-1.a** = build Vite→IIFE del bot v2 + wiring tras flag (v1 intacto), per spec `…F-1-bot-v2-vite-kickoff.md` (leer §0 estado verificado + §2 arquitectura); **o F-3 Dashboard** (camino crítico del portal, patrón F-2). F-1 es paralelo/no bloquea. **F-1.d (LLM) + prod = gates del dueño.**
+> ✅ **Cerrado 25/06**: TODO-42 propagación ×3 (§244.8) · **F-2 6/6** (§245 `ajustes`, GAP Config cerrado) · destilado kernel (3 nodos bajo tope) · F-1 spec'd.
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237) → un camino: `admin-app/` (Vite) = portal único, apagar `admin.html`. **Yo manejo el orden técnico** (solo dueño decide dinero/legal/go-no-go — mem `feedback-collaboration-style`).
-> 🧭 **Camino PLAN UNIFICADO**: F-2 ✅ (§238-245, GAP Config cerrado) · **F-1 bot v2** (spec kickoff ↑; paralelo, no bloquea) → F-3 Dashboard → F-4 Hub→admin-app → F-5 fugas (dedup `session:ID`) → F-6 cutover PWA-safe. **⚠️ dist admin-app GATEADO a staging** (§237.6, batch tras E2E). Receta L-53.
+> 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` (Vite) = portal único, apagar `admin.html`. **Yo manejo el orden técnico** (dueño decide dinero/legal/go-no-go — mem `feedback-collaboration-style`).
+> 🧭 **Camino**: F-2 ✅ (§238-245) → F-3 Dashboard → F-4 Hub→admin-app → F-5 fugas (dedup `session:ID`) → F-6 cutover PWA-safe. **⚠️ dist admin-app GATEADO a staging** (§237.6, batch tras E2E). Receta L-53.
 > ⚠️ **Pend**: cron-bump para §236 (#7/ícono WhatsApp ya en `main`, no live sin bump/Ctrl+Shift+R) · lead `PRUEBA-CLAUDE`/`3001112233` → purga en clean-slate · bot LLM DORMIENTE (#917)=saldo Anthropic.
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).

@@ -10,13 +10,13 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-6 cutover PWA-safe** (§9.C): unregister SW viejos desde el `index.html` de Vite (mata SW zombie en celulares de asesores) + bridge auth IndexedDB `altorra-admin`→`altorra-crm` + checklist de paridad → `admin.html`→`_legacy/` (cuarentena `anti-codigo-muerto`, NO borrar). Riesgos PWA: §9.B.6 / red-team #2,#6. Spec `…PLAN-UNIFICADO…` §9.C.
-> ✅ **Cerrado 26/06: F-5 DEPLOYED LIVE** (cierre de fugas §4, **ADR §250**): (a) fallback `session:ID` en `normalizeSolicitud`→chat anónimo=lead "Anónimo"+tag; (b) `crmReprocessFailedIngestions` (onSchedule 30min) reprocesa `failedIngestions` idempotente+bounded. **Desplegado a prod 26/06** (onSolicitudCreated update + reprocesador create, ambas ACTIVE; backlog DLQ=0). Tests: normalize 24/24 + emulador 5/5. · **F-4 COMPLETO** (Hub, §249, dueño mergeó) · F-3 §246. Hub E2E live + dist = batch staging. LLM/bot flip = saldo (TODO-34). · **Deploys = míos, sin pedir go/no-go** (corrección dueño 26/06; mem `feedback-auto-deploy-crm`).
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** — **F-6 cutover PWA-safe** (§9.C): unregister SW viejos desde `index.html` Vite (mata SW zombie en celus asesores) + **bridge auth IndexedDB `altorra-admin`→`altorra-crm`** (sensible — ¿Decisión Fuerte? mem `feedback-decision-fuerte`) + checklist paridad → `admin.html`→`_legacy/` (cuarentena, NO borrar). Riesgos §9.B.6/red-team #2,#6. **Prereqs: dist F-2..F-5 ya live (rebuilt) + falta Hub E2E live OK** (post-merge dueño + Pages ~5-6min + señal → valido vía Chrome, mem `feedback-live-validation-workflow`).
+> ✅ **Cerrado 26/06**: **F-4 Hub COMPLETO** (§249) · **F-5 fugas DEPLOYED LIVE** (§250: dedup `session:ID`→lead "Anónimo" + reprocesador DLQ `crmReprocessFailedIngestions`; prod OK, backlog=0; normalize 24/24+emu 5/5) · **dist admin-app rebuilt** (F-2..F-5+Hub servible en `/admin-app/dist/`). **Deploys = míos, sin go/no-go** (mem `feedback-auto-deploy-crm`). LLM/bot flip = saldo (TODO-34).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
 > 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` (Vite) = portal único, apagar `admin.html`. **Yo manejo el orden técnico** (dueño decide dinero/legal/go-no-go — mem `feedback-collaboration-style`).
-> 🧭 **Camino**: F-2 ✅ (§238-245) → F-3 ✅ (§246) → **F-4 ✅ COMPLETO** (§247-249: unmatched+cerebro+Hub) → **F-5 fugas** (dedup `session:ID`) → F-6 cutover PWA-safe. **⚠️ dist admin-app GATEADO a staging** (§237.6, batch tras E2E). Receta L-53.
+> 🧭 **Camino**: F-2 ✅ → F-3 ✅ → **F-4 ✅** (§247-249) → **F-5 ✅ DEPLOYED** (§250) → **dist rebuilt ✅** (gate levantado) → **F-6 cutover** (último, irreversible). Receta L-53.
 > ⚠️ **Pend**: lead `PRUEBA-CLAUDE`/`3001112233` → purga en clean-slate · bot LLM DORMIENTE (#917)=saldo Anthropic. (Estado build/cache/sync → `05`.)
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).

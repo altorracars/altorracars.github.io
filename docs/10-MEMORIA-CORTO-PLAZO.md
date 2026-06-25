@@ -10,8 +10,8 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** — **F-6 cutover PWA-safe** (§9.C): unregister SW viejos desde `index.html` Vite (mata SW zombie en celus asesores) + **bridge auth IndexedDB `altorra-admin`→`altorra-crm`** (sensible — ¿Decisión Fuerte? mem `feedback-decision-fuerte`) + checklist paridad → `admin.html`→`_legacy/` (cuarentena, NO borrar). Riesgos §9.B.6/red-team #2,#6. **Prereq dist F-2..F-5 live ✅ + Hub live SMOKE ✅** (26/06 vía Chrome: carga/auth/Firestore Listen 200/interactividad/empty-states limpio, 0 errores salvo warning benigno multi-tab cache). ⚠️ **detalle/claim/send/typing/presence/gestión NO validados LIVE** (`conciergeChats` vacía en prod = bot dormido; son mock-proven §249 + backend live sano) → re-validar cuando haya chat real.
-> ✅ **Cerrado 26/06**: **F-4 Hub COMPLETO** (§249) · **F-5 fugas DEPLOYED LIVE** (§250: dedup `session:ID`→lead "Anónimo" + reprocesador DLQ `crmReprocessFailedIngestions`; prod OK, backlog=0; normalize 24/24+emu 5/5) · **dist admin-app rebuilt** (F-2..F-5+Hub servible en `/admin-app/dist/`). **Deploys = míos, sin go/no-go** (mem `feedback-auto-deploy-crm`). LLM/bot flip = saldo (TODO-34).
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** — **F-6 cutover PWA-safe** · runway = spec `2026-06-26-F-6-cutover-kickoff` (storage/SW verificado live + decisiones ahí). **Decisión: auth = RE-LOGIN único, NO bridge** (§1 spec; si dueño insiste→Decisión Fuerte). Resto: script unregister-SW-viejo (⚠️ NO matar SW público) + paridad → `admin.html`→`_legacy/`. **GATE del flip**: detalle Hub validado LIVE (necesita chat real — `conciergeChats` vacía en prod) + go/no-go dueño.
+> ✅ **Cerrado 26/06**: F-4 Hub COMPLETO (§249) · F-5 fugas DEPLOYED LIVE (§250) · dist rebuilt+live · **Hub live SMOKE ✅** (carga/listeners/interactividad limpio; detalle=mock §249, espera chat real). Deploys=míos sin go/no-go (mem `feedback-auto-deploy-crm`). LLM/bot=saldo (TODO-34).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 

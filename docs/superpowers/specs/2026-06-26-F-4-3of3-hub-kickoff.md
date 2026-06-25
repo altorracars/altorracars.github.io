@@ -37,11 +37,11 @@ Módulo `admin-app/src/modules/hub/` siguiendo el patrón modular (data+ui+style
 Al terminar el Hub: **F-4 COMPLETO** → el gap §2.B (Comunicaciones) cerrado → sigue **F-5** (cierre de fugas: dedup `session:ID` para chats anónimos + reprocesador DLQ `failedIngestions`) → **F-6** cutover PWA-safe (unregister SW viejos + bridge auth + `admin.html`→`_legacy/`). Detalle del camino: spec `2026-06-24-PLAN-UNIFICADO-un-solo-panel-admin.md` §9.C.
 
 ## Checklist (la sesión del Hub la tickea con evidencia)
-- [ ] Leída la fuente `admin-concierge.js` + `admin-presence-ui.js` (mapa de funciones/estado)
-- [ ] Verificadas las RTDB rules para `/typing` y `/presence` desde app `altorra-crm`
-- [ ] (3a) Lista de chats + detalle (read) + presence — verificado `?mock=1`
+- [x] Leída la fuente `admin-concierge.js` (read-path: chats/messages/presence + renderChatDetail). `admin-presence-ui.js` NO requerido para 3a (presence read salió de `startAttendingPresenceListener`/`onAttendingPresenceSnapshot`).
+- [x] Verificadas las RTDB rules para `/typing` y `/presence`: `database.rules.json` → `.read = "auth != null"` (clave en `auth.uid`, NO en nombre de app → la app `altorra-crm` lee). Riesgo §3 RESUELTO.
+- [x] **(3a) Lista de chats + filtros/colas + detalle (read) + presence — verificado `?mock=1`** (lista+counts, header/radicado/meta, banners closed/claimed/attending, burbujas user/bot/asesor/system, responsive mobile 1-pane+back / desktop 2-pane, accent+dark). 0 errores de módulo.
 - [ ] (3b) Enviar mensaje + typing
 - [ ] (3c) Claim / transfer / close / reopen / notes
 - [ ] (3d) Smart suggestions (LLM summary diferido)
-- [ ] Wiring router/shell/main + RBAC `concierge.*` gateado como rules
-- [ ] dist NO reconstruido (source-only) · ADR §249 + índice + 05/10/20
+- [x] Wiring router/shell/main + RBAC `concierge.read` gateado como `firestore.rules:937` (no se pintan acciones que el server rechazaría). NAV "ALTOR Hub" 1º del grupo Comunicaciones.
+- [x] dist NO reconstruido (source-only, L-53/§237.6). [ ] ADR §249 (al cerrar F-4 completo, 3a-3d) + índice + 05/10/20.

@@ -31,6 +31,7 @@ import './styles/departamentos.css';
 import './styles/workflows.css';
 import './styles/auditoria.css';
 import './styles/ajustes.css';
+import './styles/unmatched.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -61,13 +62,14 @@ import { mountWorkflows } from './modules/workflows/workflows.ui.js';
 import { mountAuditoria } from './modules/auditoria/auditoria.ui.js';
 import { mountAjustes } from './modules/ajustes/ajustes.ui.js';
 import { applyInitialAccent } from './modules/ajustes/ajustes.data.js';
+import { mountUnmatched } from './modules/unmatched/unmatched.ui.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
 applyInitialAccent();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes };
+const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes, unmatched: mountUnmatched };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

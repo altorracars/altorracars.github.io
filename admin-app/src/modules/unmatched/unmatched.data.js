@@ -54,6 +54,17 @@ export async function deleteEntry(docId) {
   await deleteDoc(doc(db, 'unmatchedQueries', docId));
 }
 
+/**
+ * Marca una query como promovida a FAQ (handoff Unmatched→Cerebro AI, F-4 2/3):
+ * el módulo `cerebro` lo llama al guardar la FAQ prellenada. La saca del bucket
+ * "Sin revisar". Rules: update=unmatched.promote. */
+export async function markPromoted(docId, faqId) {
+  await updateDoc(doc(db, 'unmatchedQueries', docId), {
+    promotedToFAQ: true, promotedFAQId: faqId || null,
+    promotedAt: nowISO(), promotedBy: currentUid(), seen: true,
+  });
+}
+
 /* ── Mock (?mock=1) ─────────────────────────────────────────── */
 export const MOCK_UNMATCHED = [
   { _docId: 'u1', query: '¿Tienen el Renault Koleos 2021 en negro?', keywords: ['renault', 'koleos', 'negro'], createdAt: '2026-06-25T16:40:00Z', seen: false, sentiment: null, sourcePage: '/busqueda.html' },

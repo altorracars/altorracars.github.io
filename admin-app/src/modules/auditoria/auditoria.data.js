@@ -32,6 +32,7 @@ export const ACTION_LABELS = {
   role_create: 'creó rol', role_update: 'actualizó rol', role_delete: 'eliminó rol',
   dept_create: 'creó departamento', dept_update: 'actualizó departamento', dept_delete: 'eliminó departamento',
   workflow_enable: 'activó regla', workflow_disable: 'pausó regla',
+  kb_create: 'creó FAQ', kb_update: 'actualizó FAQ', kb_delete: 'eliminó FAQ', kb_bootstrap: 'sembró FAQs base',
 };
 
 export function actionLabel(action) {
@@ -49,6 +50,7 @@ export function actionEmoji(action) {
   if (a.startsWith('dept_')) return '🏢';
   if (a.startsWith('workflow_enable')) return '⚡';
   if (a.startsWith('workflow_')) return '⏸';
+  if (a.startsWith('kb_')) return '🧠';
   if (a.startsWith('vehicle_')) return '🚗';
   if (a.startsWith('brand_')) return '🏷️';
   if (a.startsWith('dealer_')) return '🤝';

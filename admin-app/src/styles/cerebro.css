@@ -1,0 +1,47 @@
+/* ============================================================
+   Cerebro AI / Knowledge Base (PLAN-UNIFICADO F-4 2/3) — FAQs del bot.
+   Tokens HarmonyOS verbatim. Reusa .rev-modal* (modal) + .field/.input.
+   ============================================================ */
+
+.kb { display: flex; flex-direction: column; width: 100%; min-width: 0; height: 100%; }
+
+.kb-toolbar {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-3); flex-wrap: wrap;
+  padding: var(--s-3) var(--s-6); border-bottom: 1px solid var(--surface-stroke);
+}
+
+.kb-host {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: var(--s-5) var(--s-6) var(--s-8);
+}
+.kb-list { display: flex; flex-direction: column; gap: var(--s-3); }
+
+.kb-card {
+  display: flex; flex-direction: column; gap: var(--s-2);
+  padding: var(--s-4);
+  background: var(--surface-card); border: 1px solid var(--surface-stroke); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+}
+.kb-card.is-disabled { opacity: 0.6; }
+.kb-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
+.kb-card__q { font-family: var(--font-display); font-size: var(--t-subtitle); line-height: 1.25; }
+.kb-card__meta { margin-top: 3px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.kb-card__a { font-size: var(--t-body); line-height: 1.45; white-space: pre-wrap; }
+.kb-card__kws { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.kb-kw {
+  font-size: var(--t-caption); padding: 2px var(--s-2); border-radius: var(--r-pill);
+  background: var(--surface-card-2); border: 1px solid var(--surface-stroke); color: var(--ink-text-muted);
+}
+.kb-card__actions { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; flex: 0 0 auto; }
+.kb-toggle { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+
+/* Modal: 2 columnas categoría/prioridad */
+.kb-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+
+@media (max-width: 560px) {
+  .kb-toolbar { padding-left: var(--s-4); padding-right: var(--s-4); }
+  .kb-host { padding-left: var(--s-4); padding-right: var(--s-4); }
+  .kb-card__head { flex-direction: column; }
+  .kb-grid2 { grid-template-columns: 1fr; }
+}

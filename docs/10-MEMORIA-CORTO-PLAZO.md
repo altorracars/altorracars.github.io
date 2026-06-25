@@ -10,8 +10,8 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (2/3) KB/Cerebro AI** (`admin-kb.js` 933L→admin-app; col. `knowledgeBase`, `kb.*`; ahí cablear 'Crear FAQ' de `unmatched`→prefill, ver §247.7). Luego **F-4 (3/3) Hub** (`admin-concierge.js` 2979L; RTDB/presence — F-0.5 listo). Alterna: **F-1** bot público Vite (spec kickoff; LLM=saldo). Patrón=**L-53/L-54**.
-> ✅ **Cerrado 26/06**: **F-4 (1/3) `unmatched`** visor (§247) + **F-3 Inicio** (§246). 25/06: F-2 6/6 (§245).
+> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ** (money-free) — **F-4 (3/3) Hub** (`admin-concierge.js` 2979L → admin-app; EL GIGANTE: RTDB presence/typing + claim/transfer/notes/close; F-0.5 ya listo). **Runway = spec `…F-4-3of3-hub-kickoff.md`** (sub-incrementos 3a-3d; descomponer). Alterna: **F-1** bot público Vite (LLM=saldo). Patrón=**L-53/L-54**.
+> ✅ **Cerrado 26/06**: **F-4 (1-2/3)** `unmatched`+`cerebro` (§247-248, handoff E2E) + **F-3 Inicio** (§246) + GC índice 00. 25/06: F-2 6/6 (§245).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
@@ -56,7 +56,7 @@
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |
 | **TODO-41** | **Motor de automatización → server-side ⟦OPUS-4.8⟧** (§242.5): hoy el engine de reglas (`admin-automation.js`) corre client-side SOLO en sesión super_admin → frágil (sin super_admin abierto, no corre). Migrar a Cloud Function. + gap RBAC: mapear `workflows.edit`→write de `config/automationRules` en rules. | 🔮 | post-cutover / escala |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5 ✅ · F-2 6/6 ✅** (§238-245) **· F-3 Inicio ✅** (§246) **· F-4 (1/3) `unmatched` ✅** (§247). **F-1 spec'd** (`…F-1-bot-v2-vite-kickoff.md`; LLM=saldo). Sigue F-4 (2/3) KB → (3/3) Hub → F-5→F-6. | 🔄 F-2+F-3+F-4(1/3) ✅ | dueño: dinero/legal/go-no-go |
+| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5 ✅ · F-2 6/6 ✅** (§238-245) **· F-3 Inicio ✅** (§246) **· F-4 (1-2/3) `unmatched`+`cerebro` ✅** (§247-248, handoff E2E). **F-1 spec'd** (LLM=saldo). Sigue F-4 (3/3) Hub → F-5→F-6. | 🔄 F-2+F-3+F-4(1-2/3) ✅ | dueño: dinero/legal/go-no-go |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

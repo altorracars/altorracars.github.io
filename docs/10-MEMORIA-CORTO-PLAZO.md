@@ -10,8 +10,8 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **PRÓXIMA SESIÓN ARRANCA AQUÍ — F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ TODO** (26/06). Spec = `2026-06-26-F-6-cutover-kickoff` (runway+decisiones+checklist). **Prep autónoma 25/06** (detalle → spec + `05`): ✅ FCM portado + ✅ premisa §2 SW corregida (unregister DESCARTADO) + ✅ banner re-login (login.js; auto-detecta marcadores localStorage del admin viejo, self-contained) + gaps perfil/plantillas verificados (no existen en admin-app → decidir portar vs aceptar). **FLIP irreversible = GATED** (dueño/tráfico): Hub-detalle-LIVE (chat real, `conciergeChats` vacía) · FCM end-to-end en device · `admin.html`→`_legacy/`+redirect · celular post-cutover. NO re-preguntar go/no-go; la autorización abre el gate, NO salta la verificación.
-> ✅ **Cerrado previo**: F-4 Hub (§249) · F-5 fugas LIVE (§250) · Hub SMOKE ✅ (detalle=mock, espera chat real). Deploys=míos (mem `feedback-auto-deploy-crm`). LLM/bot=saldo (TODO-34). **Bug `onChatTransferred` FCM FIXED+DEPLOYED (25/06)**: los tokens son OBJETOS `{token,deviceLabel,addedAt,lastUsedAt}`, no strings → **todo consumer extrae `.token`** (dato durable; ya consistente ×4 callsites). `functions:onChatTransferred` en prod.
+> 🚀 **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ** (26/06). Spec `2026-06-26-F-6-cutover-kickoff`. **Prep autónoma 25/06 ✅** (detalle→spec): FCM portado + premisa §2 SW corregida + banner re-login + gaps perfil/plantillas verificados. **FLIP irreversible = GATED** (dueño/tráfico): Hub-detalle-LIVE (chat real) · FCM en device · `admin.html`→`_legacy/`+redirect · celular. NO re-preguntar go/no-go; la autorización abre el gate, no salta la verificación.
+> ✅ **Cerrado previo**: F-4 Hub (§249) · F-5 fugas LIVE (§250) · Hub SMOKE ✅. Deploys=míos (mem). LLM/bot=saldo (TODO-34). Bug `onChatTransferred` FCM FIXED+deployed (los `fcmTokens` son OBJETOS → todo consumer extrae `.token`, dato durable).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
@@ -62,4 +62,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§246 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2 6/6 + F-3 Inicio (§238-246) · auditoría N2 §239 · HUB Visibilidad §244+§244.8. **25/06**: F-6 prep (FCM port + banner re-login + fix `onChatTransferred`) · **flujo fuerte unificado W-11/`60-WORKFLOWS`/§251** (reconciliado con bersaglio). Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§246 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2 6/6 + F-3 Inicio (§238-246) · auditoría N2 §239 · HUB Visibilidad §244+§244.8. **25/06**: F-6 prep (FCM port + banner re-login + fix `onChatTransferred`) · **flujo fuerte unificado W-11/`60-WORKFLOWS`/§251** (reconciliado con bersaglio) · **gate de calificación de leads §252** (1er caso real del flujo W-11: corta el flood de Telegram — chat sin teléfono no entra a `leads`; deploy OK + 28/28 tests; **PEND: E2E anónima con sesión fresca + purga `crmPurgeLead` de prueba/anónimos = dueño**). Defectos bot → `altor-hub-rediseno-defectos.md`.

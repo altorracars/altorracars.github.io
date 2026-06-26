@@ -11,6 +11,10 @@ import { navigate } from '../router.js';
 import { toggleTheme } from '../theme.js';
 import { signOutUser, displayName, displayRole, hasPermission } from '../auth.js';
 import { initials } from '../../domain/format.js';
+// W-11 F1(b) (rediseño portal §244): "Nuevo lead" siempre visible en el topbar
+// GLOBAL (antes solo vivía dentro de la Bandeja, inbox.ui.js). Reusa el form
+// rápido (camino primario <30s, ADR §178) — modal auto-contenido, sin acoplar al inbox.
+import { openQuickLeadForm } from '../../modules/capture/quick-lead.js';
 
 const APP_VERSION = '0.4.1';
 
@@ -138,7 +142,15 @@ export function mountShell(appRoot) {
     }, { title: displayName() });
   });
 
-  const topbar = el('header', { class: 'topbar' }, [title, el('div', { class: 'topbar__actions u-row' }, [themeBtn, userBtn])]);
+  // W-11 F1(b): CTA primario global de captura, gateado con el MISMO permiso que
+  // la Bandeja (`crm.edit`, ver inbox.ui.js) — sin permiso de edición no se renderiza
+  // (evita el CTA que viola RBAC: comité pt.4 "RBAC degenerado"). `el()` ignora null.
+  const newLeadBtn = hasPermission('crm.edit')
+    ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', 'aria-label': 'Registrar nuevo lead' }, ['＋ Nuevo lead'])
+    : null;
+  if (newLeadBtn) newLeadBtn.addEventListener('click', () => openQuickLeadForm());
+
+  const topbar = el('header', { class: 'topbar' }, [title, el('div', { class: 'topbar__actions u-row' }, [newLeadBtn, themeBtn, userBtn])]);
   const outlet = el('main', { class: 'outlet', id: 'outlet' });
   const detailRoot = el('div', { id: 'detail-root' });
 

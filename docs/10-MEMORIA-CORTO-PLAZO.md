@@ -18,9 +18,9 @@
 >
 > ✅ **CRM clean-slate hecho (26/06)**: 206 docs prueba purgados (L-53; backup en `backups/`). Sin tocar `clientes`/chats/`crm_alerts` (ofrecidos al dueño).
 >
-> 🎨 **REDISEÑO portal CRM (W-11) — EN CURSO, DETENIDO en prompt de Gemini** → spec `docs/superpowers/specs/2026-06-26-portal-crm-rediseno-W11.md` (Fase A+arquitecto+mockup+comité ✅). Comité reencuadró: **motor=Bandeja densa > chasis=nav**; regresión a cuidar = grupo colapsado oculta ítem activo (`setActive` no auto-expande). **⌘K→Ctrl+K y bajar/quitar command-palette (dueño: "no me beneficia")**. Sigue: dueño corre Gemini → veredicto → implementar F1.
+> 🎨 **REDISEÑO portal CRM (W-11) — VEREDICTO emitido** (spec `docs/superpowers/specs/2026-06-26-portal-crm-rediseno-W11.md`): Gemini convergió con el comité → **invertir prioridad: MOTOR (Bandeja densa: orden SLA/temp + multi-select reasignar) ANTES que el chasis**. **F1** = Bandeja densa + "Nuevo lead" en topbar + drawer móvil real; grupos con `<details>` + `setActive` abre el padre (fix regresión). Palette Ctrl+K DIFERIDO (dueño: "no me beneficia"); búsqueda-leads vive en Bandeja (Firestore sin full-text). **SIGUIENTE = build F1.**
 >
-> 🔎 **PENDIENTE-DUEÑO (canary aliados, 26/06)** → spec `docs/superpowers/specs/2026-06-26-aliados-flujo-reconciliacion-hallazgo.md`: ¿`usados-de-la-costa` (18 carros) es inventario PROPIO o aliado real? Define el fix de §205 (hoy `esPropio` falso para TODO el catálogo → strip VIN+seller del JSON-LD público) + el modelo TODO-25. **Señal: documentado ✅ ≠ ejecutado → auditoría de reconciliación dedicada (TODO-33).**
+> 🔎 **Canary aliados RESUELTO** (spec `docs/superpowers/specs/2026-06-26-aliados-flujo-reconciliacion-hallazgo.md`): `usados-de-la-costa`=**ALIADO** → §205 correcto (no bug); hueco real = **comisiones sin data → TODO-25 (comercial) URGENTE** (todo el inventario es de aliados). Señal doc✅≠ejecutado → **TODO-33 reconciliación (prioridad↑)**.
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >

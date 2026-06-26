@@ -21,10 +21,12 @@ El modelo asume "propio = `concesionario` vacío", pero **el 100% del catálogo 
 - El cerebro marca §204/§205 "✅" y lo están a nivel código — pero el **modelo comercial (propio/aliado/consigna/comisión) NUNCA se ejecutó**; el sistema vive sobre el string polimórfico sobrecargado `vehiculos.concesionario` ('' / slug / '_particular'), que ni siquiera usa '' ni '_particular' en la data real.
 - `brain-check` valida estructura INTERNA, no realidad externa → exactamente el hueco de **TODO-33** (Reconciliación cerebro↔web real, marcado "PARCIAL").
 
-## Pregunta de negocio (gate, solo el dueño)
-**¿`usados-de-la-costa` (18 carros) es inventario PROPIO de Altorra o un aliado real?**
-- Si PROPIO → §205 daña el SEO de casi todo el catálogo (fix urgente: marcar propios; o re-modelar tenencia). Además el "aliado" no debería ser el contenedor del inventario propio.
-- Si ALIADO → Altorra no tiene inventario propio registrado; TODO-25 (comisiones/liquidación) es aún más urgente y la data de comisión no existe.
+## Pregunta de negocio — RESUELTA por el dueño (2026-06-26): `usados-de-la-costa` = **ALIADO**
+Consecuencias confirmadas:
+- **§205 está CORRECTO** (no es bug): omite placa+`seller=AutoDealer Altorra` para carros de terceros, que es lo legalmente debido. NO hay misfire sobre carros propios (no existen carros propios registrados).
+- **Pero**: Altorra **no tiene inventario PROPIO** registrado → TODO el catálogo público sale sin `seller=Altorra` (defendible legal/negocio = modelo broker/consignación; tenerlo presente para SEO/marca).
+- **El hueco real = comercial/comisiones**: `comisionAltorra`/`utilidadAltorra`/`canalVenta` vacíos en todos → **no se registra lo que Altorra gana por venta de aliado**; el módulo Aliados muestra $0 siempre (engañoso). → **TODO-25 (restructura comercial + comisiones) sube de URGENCIA** (todo el negocio es de aliados).
+- Limpiar doc basura `concesionarios/dfsfdfdfs`.
 
 ## Recomendación
 1. Resolver la pregunta de negocio ↑ (define el fix de §205 y el modelo de TODO-25).

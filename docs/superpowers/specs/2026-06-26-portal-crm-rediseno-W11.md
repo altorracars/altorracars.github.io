@@ -10,9 +10,9 @@
 - ✅ 3. ARQUITECTO — dirección candidata concreta (6 pilares, abajo).
 - ✅ 4. MOCKUP — `visualize/show_widget` (artefacto #1, mostrado en chat).
 - ✅ 5. COMITÉ ×3 ACOTADO — inline+schema, sin tools (workflow `comite-rediseno-portal-crm`, 302k tok). Síntesis abajo.
-- 🔄 6. CONSEJO EXTERNO (Gemini) — **prompt entregado al dueño (artefacto #2); PUNTO DE PARADA.**
-- ⏳ 7. VEREDICTO — tras Gemini.
-- ⏳ 8. IMPLEMENTAR (por fases, abajo).
+- ✅ 6. CONSEJO EXTERNO (Gemini/Antigravity, code-aware) — respondió; verificado claim-por-claim. Síntesis abajo.
+- ✅ 7. VEREDICTO — emitido (abajo). Dirección CORREGIDA (invertir prioridad: motor primero).
+- 🔄 8. IMPLEMENTAR — F1 (Bandeja motor) = SIGUIENTE build enfocado.
 - ⏳ 9. EXTENSIÓN / validación live (artefacto #3) — tras merge del dueño.
 - ⏳ 10. CIERRE (ADR + 00 + 30 + cache §4).
 
@@ -34,12 +34,18 @@ Negocio: topbar con "Nuevo lead" siempre visible + búsqueda · Escalabilidad: n
 7. **Estados vacíos diseñados** por módulo (ícono+frase+CTA) = parte grande del "se ve pro" día 1.
 8. **Iconos**: emoji → SVG inline (`currentColor`), NO librería pesada (vanilla sin bundler real); mantener nombre accesible (label `.sr-only`, no `display:none`) para el rail colapsado.
 
-## Secuencia de implementación propuesta (no big-bang; cada fase verificada + cache §4)
-- **F1** agrupar `NAV[]` en 2 zonas (campo `group`/`tier`, regla RBAC <2→plano) — aditivo, $0, reversible. Gate: 25 rutas cargan+recargan, `setActive` correcto, rail @860px OK.
-- **F2** grupos colapsables + auto-expand del activo + persistencia localStorage (cierra la regresión bloqueante).
-- **F3** rediseño de la **Bandeja** (motor): tabla densa, orden SLA/temp, acciones masivas, estados vacíos.
-- **F4** command palette (solo secciones, Ctrl+K, overlay a11y propio) + iconos vectoriales + "Nuevo lead" en topbar.
-- **F5 (épica aparte)** móvil drawer + notificaciones + búsqueda de leads (Firestore).
+## VEREDICTO (post-Gemini, 26/06) — dirección CORREGIDA
+Gemini (Antigravity, code-aware) CONVERGIÓ con el comité y fue SUPERIOR en estrategia: **invertir la prioridad — MOTOR (Bandeja) primero, chasis (nav agrupada/iconos) al final**. Verificado claim-por-claim contra código (shell.js:17-57/141/155, shell.css:17/39/57/106 — todos ciertos). Refinamientos MÍOS (verify-Gemini):
+- `<details>` nativo para grupos + en `setActive` `btn.closest('details').open=true` = fix $0/a11y de la regresión. **Adoptado.**
+- Búsqueda de leads: Firestore free-tier SIN full-text → NUNCA palette global (descargaría toda la BD / paga Algolia). La búsqueda de leads vive en la Bandeja (filtros compuestos + paginación).
+- **Command palette: el dueño dijo "no me beneficia" + Ctrl+K (Windows, no ⌘) → DIFERIDO/opcional, fuera del camino crítico** (instrucción del dueño manda sobre Gemini).
+- Gemini se quedó corto (lo cubre el comité): `popover.js` NO basta para palette accesible (sin focus-trap/flechas); el drawer móvil NO es "~12 líneas" (necesita backdrop+focus-trap+Escape+aria+scroll-lock).
+
+### Secuencia corregida (no big-bang; cada fase verificada + Vite rebuild, sin cache ritual §204.7/§209.7)
+- **F1 — MOTOR + alcance** (máxima palanca): (a) **Bandeja densa** (tabla alta densidad; orden default SLA-vencido→por-vencer→temperatura; selección múltiple → reasignar/marcar-contactado; `--sla-*`/`--temp-*` como indicador de FILA, no tarjeta translúcida §3.1) + (b) **"Nuevo lead" siempre en topbar** + (c) **drawer móvil real** (off-canvas; asesor en la calle).
+- **F2 — chasis**: agrupación 2 zonas con `<details>` (diario vs config tras engranaje "Ajustes") + fix regresión `setActive`→abre `<details>` padre + iconos SVG (`currentColor`, sin librería pesada).
+- **F3 — opcional/diferido**: command palette Ctrl+K SOLO navegación/macros (gated por interés del dueño) + estados vacíos diseñados por módulo.
+- **Fuera de alcance (épicas Firestore aparte)**: notificaciones, búsqueda full-text de leads.
 
 ## Raw de la deliberación
 Comité: workflow `comite-rediseno-portal-crm` (run `wf_65915dbe-d1f`), 3 lentes (producto-ux · escéptico · arquitecto), schema. Output completo en el transcript del workflow (efímero) — síntesis arriba es lo durable.

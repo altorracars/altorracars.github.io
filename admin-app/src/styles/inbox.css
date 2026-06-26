@@ -64,6 +64,31 @@
 }
 .lead-card__actions .btn--wa svg { width: 17px; height: 17px; }
 
+/* ─────────── F1: selección múltiple ─────────── */
+/* Modificador: solo las tarjetas de lead seleccionables ganan la columna del checkbox
+   (pendientes/skeleton reusan .lead-card y NO se ven afectados). */
+.lead-card--selectable { grid-template-columns: 22px 12px 30px minmax(0, 1fr) auto; }
+.lead-card__sel {
+  width: 20px; height: 20px; padding: 0; border-radius: var(--r-xs);
+  border: 1.5px solid var(--surface-stroke-hi); background: var(--surface-card);
+  display: inline-grid; place-content: center; cursor: pointer; color: transparent;
+  transition: border-color var(--dur-1) var(--ease-fluent), background var(--dur-1) var(--ease-fluent);
+}
+.lead-card__sel svg { width: 13px; height: 13px; }
+.lead-card:hover .lead-card__sel { border-color: var(--gold-500); }
+.lead-card.is-selected { border-color: var(--gold-500); box-shadow: inset 0 0 0 1px var(--gold-500), var(--shadow-8); }
+.lead-card.is-selected .lead-card__sel { background: var(--gold-500); border-color: var(--gold-500); color: #fff; }
+
+.inbox__bulkbar {
+  display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; flex: 0 0 auto;
+  margin: 0 var(--s-6) var(--s-3); padding: var(--s-2) var(--s-4);
+  background: var(--gold-50); border: 1px solid var(--gold-200); border-radius: var(--r-md);
+}
+:root[data-theme="dark"] .inbox__bulkbar { background: rgba(184, 146, 74, 0.14); border-color: rgba(184, 146, 74, 0.3); }
+.inbox__bulkcount { font-weight: 700; font-size: var(--t-body); color: var(--gold-800); }
+:root[data-theme="dark"] .inbox__bulkcount { color: var(--gold-200); }
+@media (max-width: 560px) { .inbox__bulkbar { margin-left: var(--s-4); margin-right: var(--s-4); } }
+
 /* Skeleton (override del grid) */
 .lead-card--skeleton { display: flex; align-items: center; gap: var(--s-3); cursor: default; pointer-events: none; }
 .lead-card--skeleton:hover { box-shadow: var(--shadow-2); transform: none; border-color: var(--surface-stroke); }

@@ -216,6 +216,11 @@
 - **Causa**: caza-bugs aplicado a medias — recorrí el camino feliz y lo llamé "validado"; traté un paso que se portó raro como molestia (no señal); mandé 1 mensaje (no repetí → perdí el doble). La skill marca N→vacío como frontera pero no mapeé "finalizar chat"→esa frontera ni "repetir envío"→idempotencia.
 - **Corrección**: (1) skill global `caza-bugs` endurecida — un paso que se porta raro = **STOP+investiga** (nunca "anotar y seguir"); entidad con ciclo de vida → frontera = crear→…→**CERRAR/finalizar→reabrir** + **repetir la acción** + recorrer **ambos lados**. (2) "validado E2E" exige el ciclo COMPLETO, no el happy-path. Familia M-09 (cobertura de reflejos) + `verification-before-completion`. [HONOR]
 
+### M-22 · El cerebro documenta ESTRUCTURA pero no verifica REALIDAD — "✅" conflaciona DISEÑADO/DECIDIDO/CONSTRUIDO/DESPLEGADO/VERIFICADO-LIVE (auditoría §257) ⟦OPUS-4.8⟧
+- **Defecto (§257, dueño 2026-06-26)**: el dueño perdió confianza ("documentamos cosas que se nos perdieron"). Canary aliados: §204/§205 "✅" pero el flujo comercial nunca se ejecutó; automatización "portada ✅" pero el motor no corre (TODO-41). `brain-check` valida caps/refs/huérfanas, NO si el claim es CIERTO afuera (código/datos/deploy).
+- **Causa**: "✅" sin estado ni fecha-de-verificación lee "decidido/UI-portada" como "ejecutado/corriendo". (Veredicto balanceado §257: la MAYORÍA de los "✅" SÍ son reales — el defecto es la minoría que conflacionó estado.)
+- **Corrección/cura**: (1) **vocabulario de estados explícitos** — DISEÑADO ≠ DECIDIDO ≠ CONSTRUIDO ≠ DESPLEGADO ≠ VERIFICADO-LIVE; nunca "✅" a secas sobre realidad externa. (2) afirmación sobre realidad externa lleva **`verificado-vivo: <fecha>`** o se marca no-verificado (§3.3). (3) **check del linter que avisa stale** + reconciliación periódica = mecanización en `brain-check.mjs` (kernel ×3 → coordinado, **TODO-44**). Familia M-10/M-16 (la cura de una reincidencia es un GATE, no un reflejo). [HONOR hasta mecanizar en TODO-44]
+
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md`

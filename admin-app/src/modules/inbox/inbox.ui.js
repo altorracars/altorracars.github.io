@@ -34,6 +34,7 @@ const ICONS = {
   convert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M13 9l3 3-3 3"/></svg>',
   call: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
   more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
 };
 
 // P2.b (§178): presets de PRÓXIMO PASO — un prompt, un tap.
@@ -60,6 +61,7 @@ export function mountInbox(root) {
     filters: { type: '', channel: '', status: '' },
     search: '',
     showClosed: false, // F4-fase1: la vista default oculta cerrados (con contador)
+    selected: new Set(), // F1: selección múltiple para acciones masivas (id-based → sobrevive snapshots)
     leads: [],
     loading: true,
     error: null,
@@ -89,12 +91,14 @@ export function mountInbox(root) {
   elPendBtn.addEventListener('click', () => togglePendientes());
   const elPendPanel = el('div', { class: 'inbox__pendientes', hidden: true });
   const elToolbar = el('div', { class: 'inbox__toolbar' }, [elSearch, elFilters, elQuickBtn, elNewBtn, elPendBtn]);
+  // F1: barra de acciones masivas (visible solo con selección).
+  const elBulkBar = el('div', { class: 'inbox__bulkbar', role: 'toolbar', 'aria-label': 'Acciones en lote', hidden: true });
   const elList = el('div', { class: 'inbox__list', role: 'list', tabindex: '-1' });
   // F6 (§176): la UI enseña el rol de cada superficie — Bandeja = TRIAGE.
   const elHint = el('p', { class: 'u-muted u-caption', style: { margin: '0' } }, [
     'Aquí llegan los interesados: contacta y califica. Las ventas activas viven en el Pipeline.',
   ]);
-  const section = el('section', { class: 'inbox' }, [elHint, elQueues, elToolbar, elPendPanel, elList]);
+  const section = el('section', { class: 'inbox' }, [elHint, elQueues, elToolbar, elBulkBar, elPendPanel, elList]);
   clear(root);
   root.append(section);
 
@@ -242,7 +246,7 @@ export function mountInbox(root) {
   }
 
   // ── Render ──
-  function render() { renderQueues(); renderFilters(); renderList(); }
+  function render() { pruneSelection(); renderQueues(); renderFilters(); renderBulkBar(); renderList(); }
 
   function renderQueues() {
     const counts = queueCounts(ui.leads, uid);
@@ -357,10 +361,17 @@ export function mountInbox(root) {
     const what = [lead._type.icon + ' ' + lead._type.label, lead.sourceDetail, lead.vehicleOfInterestId ? '🚗 ' + lead.vehicleOfInterestId : '']
       .filter(Boolean).join(' · ');
 
+    const isSel = ui.selected.has(lead.id);
     const card = el('article', {
-      class: 'lead-card', role: 'listitem', tabindex: '0', 'data-id': lead.id,
+      class: 'lead-card' + (canEdit ? ' lead-card--selectable' : '') + (isSel ? ' is-selected' : ''),
+      role: 'listitem', tabindex: '0', 'data-id': lead.id,
       'aria-label': `${lead.fullName}, ${rm.label}`,
     }, [
+      canEdit ? el('button', {
+        class: 'lead-card__sel', type: 'button', 'data-action': 'select',
+        role: 'checkbox', 'aria-checked': String(isSel), 'aria-label': 'Seleccionar lead',
+        title: 'Seleccionar',
+      }, [el('span', { 'aria-hidden': 'true', html: ICONS.check })]) : null,
       el('span', { class: slaCls, title: slaLabel, 'aria-label': slaLabel }),
       el('span', { class: 'avatar avatar--sm', 'aria-hidden': 'true', text: initials(lead.fullName) }),
       el('div', { class: 'lead-card__main u-grow' }, [
@@ -439,6 +450,7 @@ export function mountInbox(root) {
   };
 
   function handleAction(action, lead, anchor) {
+    if (action === 'select') return toggleSelect(lead, anchor);
     if (action === 'open') return openDetail(lead.id);
     if (action === 'wa') return doWhatsapp(lead, anchor);
     if (action === 'call') return doCall(lead, anchor);
@@ -507,6 +519,96 @@ export function mountInbox(root) {
   }
 
   function openDetail(id) { store.set({ detailLeadId: id }); }
+
+  // ── F1: selección múltiple + acciones masivas ──
+  // Toggle SIN re-render de la lista (preserva scroll): actualiza la tarjeta + la barra.
+  function toggleSelect(lead, anchor) {
+    if (ui.selected.has(lead.id)) ui.selected.delete(lead.id); else ui.selected.add(lead.id);
+    const card = anchor && anchor.closest('.lead-card');
+    if (card) {
+      const on = ui.selected.has(lead.id);
+      card.classList.toggle('is-selected', on);
+      anchor.setAttribute('aria-checked', String(on));
+    }
+    renderBulkBar();
+  }
+  function pruneSelection() {
+    if (!ui.selected.size) return;
+    const ids = new Set(ui.leads.map((l) => l.id));
+    for (const id of [...ui.selected]) if (!ids.has(id)) ui.selected.delete(id);
+  }
+  function clearSelection() { ui.selected.clear(); render(); }
+  function selectedLeads() { return [...ui.selected].map((id) => ui.leads.find((l) => l.id === id)).filter(Boolean); }
+  function bulkOptimistic(leads, patch) {
+    leads.forEach((l) => { const i = ui.leads.findIndex((x) => x.id === l.id); if (i > -1) ui.leads[i] = enrich({ ...ui.leads[i], ...patch }); });
+  }
+  function bulkRollback(res, leads, prev) {
+    let any = false;
+    res.forEach((r, i) => {
+      if (r.status === 'rejected') { const l = leads[i]; const idx = ui.leads.findIndex((x) => x.id === l.id); if (idx > -1) { ui.leads[idx] = enrich({ ...ui.leads[idx], ...prev.get(l.id) }); any = true; } }
+    });
+    if (any) { syncLeads(); render(); }
+  }
+  function bulkToast(res, total, what) {
+    const failed = res.filter((r) => r.status === 'rejected').length;
+    if (!failed) toast(`✓ ${total} ${what}`, 'ok');
+    else toast(`${total - failed} ${what} · ${failed} fallaron`, failed === total ? 'error' : 'info');
+  }
+  async function bulkAssign(owner) {
+    const leads = selectedLeads(); if (!leads.length) return;
+    const prev = new Map(leads.map((l) => [l.id, { ownerId: l.ownerId || null, ownerName: l.ownerName || null }]));
+    bulkOptimistic(leads, { ownerId: owner ? owner.uid : null, ownerName: owner ? owner.nombre : null });
+    ui.selected.clear(); syncLeads(); render();
+    const what = owner ? `asignado${leads.length === 1 ? '' : 's'} a ${owner.nombre}` : 'sin asignar';
+    if (store.get().mock) { toast(`✓ ${leads.length} ${what}`, 'ok'); return; }
+    const res = await Promise.allSettled(leads.map((l) => assignLead(l.id, owner)));
+    bulkRollback(res, leads, prev); bulkToast(res, leads.length, what);
+  }
+  async function bulkSetStatus(status) {
+    const all = selectedLeads();
+    const leads = all.filter((l) => !(l.convertedTo && l.convertedTo.dealId) && l.status !== 'convertido');
+    const skipped = all.length - leads.length;
+    if (!leads.length) { toast('Esos leads ya son negocios: gestiónalos en el Pipeline', 'info'); return; }
+    const prev = new Map(leads.map((l) => [l.id, { status: l.status }]));
+    bulkOptimistic(leads, { status, lastActivityAt: new Date().toISOString() });
+    ui.selected.clear(); syncLeads(); render();
+    const what = `→ ${statusMeta(status).label}${skipped ? ` (${skipped} ya en Pipeline omitidos)` : ''}`;
+    if (store.get().mock) { toast(`✓ ${leads.length} ${what}`, 'ok'); return; }
+    const res = await Promise.allSettled(leads.map((l) => setLeadStatus(l.id, status, l)));
+    bulkRollback(res, leads, prev); bulkToast(res, leads.length, what);
+  }
+  async function bulkArchive() {
+    const leads = selectedLeads(); if (!leads.length) return;
+    const prev = new Map(leads.map((l) => [l.id, { archived: !!l.archived }]));
+    bulkOptimistic(leads, { archived: true });
+    ui.selected.clear(); syncLeads(); render();
+    if (store.get().mock) { toast(`✓ ${leads.length} archivado${leads.length === 1 ? '' : 's'}`, 'ok'); return; }
+    const res = await Promise.allSettled(leads.map((l) => archiveLead(l.id, true)));
+    bulkRollback(res, leads, prev); bulkToast(res, leads.length, `archivado${leads.length === 1 ? '' : 's'}`);
+  }
+  function renderBulkBar() {
+    const n = ui.selected.size;
+    elBulkBar.hidden = n === 0;
+    clear(elBulkBar);
+    if (!n) return;
+    const assignBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['👤 Asignar a…']);
+    assignBtn.addEventListener('click', () => {
+      const team = store.get().team || [];
+      const items = [{ value: null, label: 'Sin asignar', icon: '⊘' },
+        ...team.map((m) => ({ value: m, label: m.nombre, hint: m.cargo, icon: '👤' }))];
+      openMenu(assignBtn, items, (it) => bulkAssign(it.value), { title: `Asignar ${n} a` });
+    });
+    const contactBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['✓ Marcar contactado']);
+    contactBtn.addEventListener('click', () => bulkSetStatus('contactado'));
+    const archiveBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['🗄 Archivar']);
+    archiveBtn.addEventListener('click', () => bulkArchive());
+    const clearBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['✕ Limpiar']);
+    clearBtn.addEventListener('click', () => clearSelection());
+    elBulkBar.append(
+      el('span', { class: 'inbox__bulkcount', text: `${n} seleccionado${n === 1 ? '' : 's'}` }),
+      el('div', { class: 'u-row u-row--tight', style: { marginLeft: 'auto', flexWrap: 'wrap', gap: '6px' } }, [assignBtn, contactBtn, archiveBtn, clearBtn]),
+    );
+  }
 
   // ── Estados ──
   function stateNode(icon, title, msg) {

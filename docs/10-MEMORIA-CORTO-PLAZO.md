@@ -10,12 +10,11 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ** (26/06). Spec `2026-06-26-F-6-cutover-kickoff` + ADR §253. **Prep ✅**: FCM + banner re-login + **`perfil`** LIVE-validado (§253) + **Hub detalle VALIDADO LIVE E2E** (§254: claim/responder/presencia, yo vía extensión). **§3 CERRADO + FLIP EJECUTADO** (§255: `admin.html`→`_legacy/` + stub redirect, verificado curl+navegador real, sin loop, reversible). MFA-SMS/Telegram diferidos = TODO-43. **F-6 cierra del todo tras**: dueño mergea `dev`→`main` · cache-bump del cron · **validación celular** (PWA vieja → portal nuevo + push FCM). Follow-up dead-code: `manifest-admin.json` + `js/admin/*` huérfanos.
-> ✅ **Cerrado previo**: F-4 Hub (§249) · F-5 fugas LIVE (§250) · Hub SMOKE ✅. Deploys=míos. Bug `onChatTransferred` FCM FIXED (`fcmTokens` son OBJETOS → consumer extrae `.token`).
+> 🚀 **F-6 cutover ✅ COMPLETO** (mergeado a `main`, §253-256): perfil + Hub + **FLIP** (`admin.html`→`_legacy/`+redirect) + 3 bugs Hub A/B/C **validados LIVE** (ciclo completo, `status:'closed'` confirmado en Firestore). **Queda SOLO (dueño)**: validación en celular (push FCM + PWA vieja→portal nuevo); cache-bump cron = auto. MFA-SMS/Telegram = TODO-43. **Follow-up dead-code**: `manifest-admin.json` + `js/admin/*` huérfanos. 2 chats de prueba cerrados en Archivados del Hub (purgables, sin tel→no-lead §252).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` = portal único, apagar `admin.html`. F-2..F-5 ✅ + F-6 prep ✅ → **F-6 flip** (último, irreversible; L-53). Yo manejo lo técnico; dueño decide dinero/legal/go-no-go. **Pend**: purga lead `PRUEBA-CLAUDE`/`3001112233` · bot LLM DORMIENTE (#917)=saldo. (Build/cache/sync → `05`.)
+> 🧭 **PLAN UNIFICADO (§237) = COMPLETO**: portal único `admin-app/`, `admin.html` retirado (F-6 ✅). **Pend**: purga leads/chats de prueba (`PRUEBA-CLAUDE`/`3001112233` + anónimos) · bot LLM DORMIENTE (#917)=saldo. (Build/cache → `05`.)
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >
@@ -63,4 +62,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§253 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2..F-5 (§238-250) · gate leads §252 (**PEND: E2E anónima fresca + purga `crmPurgeLead` = dueño**) · **F-6: perfil §253 · Hub validado §254 · FLIP ejecutado §255 · 3 bugs Hub §256** (A cliente-finaliza-no-cierra [reload→`_chatDocCreated` false] · B cerrado-no-sale-de-Activos · C mensaje-doble; **PEND validar A+C live post-merge**). Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§256 → `99`/`00`/`30`. **26/06**: **F-6 cutover COMPLETO** (§253-256: perfil·Hub·FLIP·3 bugs Hub A/B/C validados live) · **M-21** (caza-bugs happy-path → skill global endurecida) · gate leads §252 (**PEND: E2E anónima fresca + purga `crmPurgeLead` = dueño**). Defectos bot → `altor-hub-rediseno-defectos.md`.

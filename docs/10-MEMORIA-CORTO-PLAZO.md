@@ -62,4 +62,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§256 → `99`/`00`/`30`. **26/06**: **F-6 cutover COMPLETO** (§253-256: perfil·Hub·FLIP·3 bugs Hub A/B/C validados live) · **M-21** (caza-bugs happy-path → skill global endurecida) · gate leads §252 (**PEND: E2E anónima fresca + purga `crmPurgeLead` = dueño**). Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§256 → `99`/`00`/`30`. **26/06**: **F-6 cutover COMPLETO** (§253-256: perfil·Hub·FLIP·3 bugs Hub A/B/C validados live) · **M-21** (caza-bugs happy-path → skill global endurecida) · gate leads §252 (**gate VERIFICADO live ✅ 26/06**: chat anónimo nuevo = 0 lead; **PEND solo: purga del flood viejo** ~12 "Anónimo"/"Concierge" pre-§252 + PRUEBA-QA/QA2/test vía `crmPurgeLead` = dueño autoriza la deleción). Defectos bot → `altor-hub-rediseno-defectos.md`.

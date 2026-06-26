@@ -3,7 +3,7 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
-const { normalizeSolicitud } = require('./normalize');
+const { normalizeSolicitud, isValidContactPhone } = require('./normalize');
 const { ingestLeadTransaction } = require('./ingestLead');
 
 const POLICY_VERSION = 'v1'; // versión vigente de la política de tratamiento
@@ -38,6 +38,20 @@ exports.onSolicitudCreated = onDocumentCreated(
 
     try {
       const canonical = normalizeSolicitud(sol, solId, POLICY_VERSION);
+
+      // GATE de calificación (ADR §252 — amplía §250): un chat SIN teléfono
+      // contactable NO entra a `leads` (no es trabajable — sin canal de salida;
+      // verificado con datos: ~0% de los anónimos consiguen contacto, Consejo
+      // Externo Gemini). Se conserva el doc `solicitudes` + el `conciergeChats`
+      // como LOG → cero fuga de DATA (solo no ensucia la colección transaccional).
+      // NO crea lead, NO asigna, NO Telegram, NO SLA, NO dead-letter. El gate del
+      // bot (`concierge_gate`, §TODO-37) ya escribe un `solicitudes` NUEVO al
+      // capturar el contacto → ESE crea el lead real por onCreate (sin race).
+      if (!isValidContactPhone(canonical.lead.phone)) {
+        await snap.ref.update({ _ingestedAt: new Date().toISOString(), _gateSkipped: 'no_valid_phone' });
+        return;
+      }
+
       // Alta atómica por la ruta COMPARTIDA (ingestLead.js, F36 §178) — misma
       // transacción de siempre, ahora reutilizada por lead_intake.
       const result = await ingestLeadTransaction(db, canonical, snap.ref);

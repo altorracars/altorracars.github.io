@@ -4286,6 +4286,7 @@ exports.onUsuarioBloqueadoSync = require('./src/ops/userBlock').onUsuarioBloquea
 // config/crmIntake: { slaHours, alertUid (CEO), rotation, next }.
 async function runCrmSlaSweep() {
     const { businessHoursBetween } = require('./shared/business-hours');
+    const { isValidContactPhone } = require('./src/ingestion/normalize');
     const notify = require('./src/ops/notify');
     const token = telegramBotToken.value();
 
@@ -4300,6 +4301,11 @@ async function runCrmSlaSweep() {
 
     for (const docSnap of snap.docs) {
         const lead = docSnap.data();
+        // GATE (ADR §252): un lead SIN teléfono contactable jamás dispara la
+        // alerta SLA "sin primer contacto" — era la fuente del flood de Telegram
+        // (anónimos/"Concierge xxxx" sin canal de salida). Neutraliza también el
+        // backlog YA creado, SIN borrar datos de prod.
+        if (!isValidContactPhone(lead.phone)) continue;
         if (lead._slaAlertedAt || !lead.createdAt) continue;
         const hours = businessHoursBetween(lead.createdAt, now);
         if (hours < slaHours) continue;

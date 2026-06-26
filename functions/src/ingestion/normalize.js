@@ -23,6 +23,19 @@ function normalizePhone(phone, prefijoPais) {
 }
 
 /**
+ * ¿Es un teléfono CONTACTABLE de verdad? (gate de calificación, ADR §252).
+ * Un chat de concierge sin canal de salida real (la pestaña se cierra) NO es un
+ * lead — es un session-log (verificado con datos: ~0% de los anónimos consiguen
+ * contacto; Consejo Externo Gemini). Un email/teléfono basura ("123", "a@a") NO
+ * debe asignar+SLA+Telegram. Regla conservadora: ≥11 dígitos (CO normalizado =
+ * +57 + 10 = 12) y ≤15 (E.164). Rechaza "123"→"+57123"(5 díg) y "+123"(3 díg).
+ */
+function isValidContactPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.length >= 11 && digits.length <= 15;
+}
+
+/**
  * Clave canónica para deduplicar una persona: email > teléfono.
  */
 function contactDedupKey(person) {
@@ -234,7 +247,7 @@ function intakeToCanonical(intake, intakeId, policyVersion) {
 }
 
 module.exports = {
-  normalizePhone, contactDedupKey, mapConsent, normalizeSolicitud,
+  normalizePhone, isValidContactPhone, contactDedupKey, mapConsent, normalizeSolicitud,
   sanitizeContactId, clienteToContact, subscriptionToContact,
   intakeToCanonical, INTAKE_SOURCES,
 };

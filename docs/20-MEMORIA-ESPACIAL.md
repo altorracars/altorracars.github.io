@@ -21,7 +21,7 @@
 | Roadmap de migración (dominio, Cloudflare Pages, Vite, email pro) | `docs/PLAN-MIGRACION-ALTORRA.md` |
 | Cómo activar el LLM del bot ALTOR (Windows) | `docs/SETUP-LLM.md` |
 | Plan original de cirugía del ALTOR Hub | `docs/altor-hub-cirugia-execution-plan.md` |
-| **CRM VIEJO** (`admin.html`, `sec-crm`) | **`docs/crm-handoff.md`** = scan verificado 2026-06-05. `sec-crm` 3 tabs (`admin-crm.js`/`admin-crm-tabs.js`/`admin-pipeline.js`) + Customer 360 + `comm-schema.js`; lee `solicitudes`/`clientes`. **En vías de retiro** (cutover cuando la app nueva tenga paridad). RBAC §61. |
+| **CRM VIEJO** (`admin.html`) | **RETIRADO en F-6 (§255)**: clásico cuarentenado en `_legacy/admin.html`; `admin.html` raíz = redirect→`/admin-app/dist/`. Histórico → `docs/crm-handoff.md` (scan 2026-06-05). |
 | **CRM NUEVO** (canónico + app `admin-app/`) — §158/§159 | **Modelo canónico** (Fase 1, LIVE): `contacts`/`leads`/`activities`/`failedIngestions` poblados por `functions/src/ingestion/onSolicitudCreated.js` desde `solicitudes`. **App admin greenfield** `admin-app/` (Fase 2): Vite + Firebase modular, **Bandeja Inteligente** + Customer 360. Detalle ↓ `### 🚗 App CRM nueva`. |
 | Historia/decisión de un subsistema (§NN) | `docs/00-INDICE.md` → `docs/99-HISTORIAL-ADR.md` |
 
@@ -33,7 +33,7 @@
 
 - **Sitio público**: `index.html`, `busqueda.html`, `detalle-vehiculo.html`, `marcas.html`, `contacto.html`, `nosotros.html`, etc.
 - **Páginas generadas** (CI cada 4h desde Firestore vía `scripts/generate-vehicles.mjs`): `vehiculos/*.html`, `marcas/*.html`, `sitemap.xml`.
-- **Panel admin**: `admin.html` (SPA monolítica) + cadena de `js/admin/admin-*.js`.
+- **Panel admin**: portal nuevo `admin-app/dist/` (Vite). El clásico `admin.html` (+`js/admin/*`) está CUARENTENADO en `_legacy/` (F-6 §255); `admin.html` raíz = redirect.
 - **Bot ALTOR Hub**: cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`.
 - **CSS**: ~31 archivos en `/css/` (planos). Hojas cinematic page-specific en `css/home/`: `cinematic.css` (tokens `--cin-*`), `soft-redesign.css`, `comparar-cinematic.css`, **`detalle-cinematic.css` (cuerpo de `detalle-vehiculo`, §140)**.
 - **Backend**: Firebase (Auth, Firestore, RTDB, Storage, FCM, Analytics). Project ID `altorra-cars`. **Cloud Functions V2 = 57** (reconciliado EN VIVO 22/06, TODO-33; antes "27"/"59" stale): **~42 vivas-core** (CRM/ingestión ×25 · RBAC-usuarios ×9 · señales-SSG ×8) + **13 del bot** (concierge/telegram/summarize/`chatLLM` → reestructura TODO-34, NO podar suelto) + 2 migraciones (`backfillNivelesRBAC` parqueada-RBAC④b · `seedSystemRoles` semilla); `migrateLegacyUsers` + `proactiveEngagement` ya BORRADAS 22/06. Regiones mezcladas (5 en `southamerica-east1`).
@@ -98,7 +98,7 @@ Detalle completo y subcolecciones → `docs/dependency-map.md` §Schemas.
 
 ## 🚗 App CRM nueva (`admin-app/`) — §159
 
-App admin **greenfield e independiente** del `admin.html` viejo. **Vite** (build → `admin-app/dist/`, `base:'./'`) + **Firebase modular SDK 11.3.0**, app namespaced `altorra-crm` (aísla auth). Corre en paralelo; cutover cuando tenga paridad. Modo `?mock=1` = demo sin Firebase. Arranque local: `npm run dev --prefix admin-app` (puerto 5174; Auth real NO funciona en localhost — L-08).
+App admin **greenfield**, **PORTAL ÚNICO tras el cutover F-6 (§255)** — el `admin.html` viejo quedó en `_legacy/` + redirect. **Vite** (build → `admin-app/dist/`, `base:'./'`) + **Firebase modular SDK 11.3.0**, app namespaced `altorra-crm` (aísla auth). Módulos: …+`perfil` (§253). Modo `?mock=1` = demo. Arranque local: `npm run dev --prefix admin-app` (puerto 5174; Auth real NO en localhost — L-08).
 
 ```
 admin-app/src/

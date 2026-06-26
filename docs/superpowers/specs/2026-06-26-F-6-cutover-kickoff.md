@@ -126,6 +126,6 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
   contraseña 1→5 · dirty-detection · acceso menú-usuario→`#/perfil` · ciclo de ruta (desmonta/re-monta limpio). NO
   live-ejecutado (barandas: cuenta real): submit password/perfil/avatar (verificados por código). Obs menor: "Último
   acceso: —" (auth nuevo no escribe `ultimoAcceso` en login; cosmético, ajeno al módulo).
-- [ ] Flip `admin.html`→`_legacy/` + redirect (go/no-go dueño) — banner re-login ya BUILT
-- [ ] Cache-bump del cron post-flip + validación live en celular (incl. PWA vieja + push FCM)
-- [ ] ADR §251 cierre + post-cutover live OK
+- [x] **Flip `admin.html`→`_legacy/` + redirect EJECUTADO ✅ (26/06, §255)** — `git mv` a `_legacy/admin.html` + stub raíz (meta-refresh+`location.replace`, sin loop) + robots `/_legacy/` + link obsoleto de agenda retirado. Verif: curl + navegador real (`/admin.html`→`/admin-app/dist/`). Reversible.
+- [ ] Cache-bump del cron post-flip + validación live en celular (incl. PWA vieja + push FCM) — **post-merge, dueño**
+- [x] **ADR §255 escrito** (cutover) — cierre TOTAL de F-6 tras merge + validación celular del dueño

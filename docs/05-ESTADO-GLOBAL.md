@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-25**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev`: F-2..F-5 mergeados (§238-250 — CRM+E6+RBAC+CMS+Hub+fugas LIVE). **F-6 prep (en `dev` sin merge):** FCM + banner re-login + **módulo `perfil`** portados (§253: build+boot-mock 0-err+verificado; dist rebuilt) → **paridad §3 cerrada por código**. MFA-SMS/Telegram diferidos = TODO-43. **Hub detalle VALIDADO LIVE E2E** (§254: claim/responder/presencia). **§3 del cutover CERRADO** → queda SOLO el **FLIP** (`admin.html`→`_legacy/`+redirect) + celular post-flip. |
+| **Build** | 🟢 `main`==`dev`: F-2..F-5 mergeados (§238-250 — CRM+E6+RBAC+CMS+Hub+fugas LIVE). **F-6 prep (en `dev` sin merge):** FCM + banner re-login + **módulo `perfil`** portados (§253: build+boot-mock 0-err+verificado; dist rebuilt) → **paridad §3 cerrada por código**. MFA-SMS/Telegram diferidos = TODO-43. **Hub VALIDADO LIVE** (§254). **§3 CERRADO + FLIP EJECUTADO** (§255: `admin.html`→`_legacy/`+redirect, verificado, reversible). F-6 cierra tras: **merge + cache-bump cron + validación celular**. |
 | **Cache version vigente** | **`v20260625033233`** (cron-CI 25/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): commit+push=Claude; **merge `dev`→`main`=dueño web** (§2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

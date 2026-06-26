@@ -15,6 +15,8 @@ import { initials } from '../../domain/format.js';
 // GLOBAL (antes solo vivía dentro de la Bandeja, inbox.ui.js). Reusa el form
 // rápido (camino primario <30s, ADR §178) — modal auto-contenido, sin acoplar al inbox.
 import { openQuickLeadForm } from '../../modules/capture/quick-lead.js';
+// W-11 F2 (comité pt.8): iconos SVG inline (currentColor) del sidebar.
+import { navIcon } from './nav-icons.js';
 
 const APP_VERSION = '0.4.1';
 
@@ -23,6 +25,15 @@ const APP_VERSION = '0.4.1';
 const ICON_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
 // W-11 F2: chevron de disclosure para los grupos <details> (rota 180° al abrir vía CSS).
 const ICON_CHEVRON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+
+// W-11 F2: span de icono = SVG si existe en el set, si no el emoji (fallback seguro,
+// nunca un hueco). El nombre accesible vive en el .navitem__label hermano (aria-hidden aquí).
+function iconSpan(id, emoji) {
+  const svg = navIcon(id);
+  return svg
+    ? el('span', { class: 'navitem__icon', 'aria-hidden': 'true', html: svg })
+    : el('span', { class: 'navitem__icon', 'aria-hidden': 'true', text: emoji });
+}
 
 const NAV = [
   // PLAN-UNIFICADO F-3 §237: el Inicio del portal (KPIs + NBA + pendientes). Sin perm: lo ve todo el equipo.
@@ -120,7 +131,7 @@ export function mountShell(appRoot) {
   const canSee = (item) => item && (!item.perm || [].concat(item.perm).some(hasPermission));
   function makeNavBtn(item) {
     const btn = el('button', { class: 'navitem', type: 'button', disabled: !item.ready }, [
-      el('span', { class: 'navitem__icon', 'aria-hidden': 'true', text: item.icon }),
+      iconSpan(item.id, item.icon),
       el('span', { class: 'navitem__label', text: item.label }),
       !item.ready ? el('span', { class: 'navitem__soon', text: 'Pronto' }) : null,
     ]);
@@ -140,7 +151,7 @@ export function mountShell(appRoot) {
     try { open = localStorage.getItem(NAV_GROUP_KEY + g.id) !== '0'; } catch (e) { /* private mode */ }
     const details = el('details', { class: 'navgroup', open });
     details.append(el('summary', { class: 'navgroup__summary' }, [
-      el('span', { class: 'navitem__icon', 'aria-hidden': 'true', text: g.icon }),
+      iconSpan(g.id, g.icon),
       el('span', { class: 'navitem__label', text: g.label }),
       el('span', { class: 'navgroup__chevron', 'aria-hidden': 'true', html: ICON_CHEVRON }),
     ]));

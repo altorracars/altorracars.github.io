@@ -11,6 +11,7 @@
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
 
 ## ⚠️ Flags de riesgo activos
+- 🧠🔴 **FIABILIDAD DEL CEREBRO CUESTIONADA** (dueño, 26/06; canary aliados §TODO-33): documentado "✅" ≠ ejecutado/real; `brain-check` valida estructura interna, NO realidad externa. **TOP prioridad = auditoría de reconciliación CON EL FLUJO (W-11), post-próximo-merge** (TODO-44, plan en spec `2026-06-26-auditoria-fiabilidad-cerebro-PLAN.md`). El rediseño F1 espera detrás.
 - 🤖 **Modelo: Opus 4.8** (Fable 5 NO disponible, 2026-06-12). Entregas marcadas **`⟦OPUS-4.8 · rev-Fable⟧`** (rev. cuando Fable vuelva). Detalle → `10` + memoria.
 - 🔒 **Blindaje** (canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor · SEC-01 RBAC-read pend (→E5) · Legal `42` (gate abogado, F14/E3).
 - 🔴 **Billing GCP cayó ~2h el 2026-06-09** (recuperado, L-38). **Causa SIN identificar** (cliente: console.cloud.google.com/billing) o se repetirá.

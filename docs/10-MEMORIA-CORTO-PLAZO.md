@@ -10,13 +10,15 @@
 
 ## 🎯 Foco actual
 
-> ✅ **F-6 cutover + validación live = CERRADO** (§253-256 en `99`; lección M-21 = "validado E2E" es el ciclo completo y ambos lados, no el happy-path → `30`).
-
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧭 **PLAN UNIFICADO (§237) = COMPLETO**. **DUEÑO DECIDIÓ (26/06)**: arrancar **(A) REDISEÑO frontend** ("algo pro, mejor que cualquier CRM" → flujo **W-11 COMPLETO** + todos los poderes: assess→mockup→Gemini→comité→validación live; directiva F4F5 = "avanza solo, solo pará para el prompt de Gemini"). **(B) bot LLM #917 = BLOQUEADO por saldo Anthropic** (dueño avisa). **Pend-dueño menores**: validación celular FCM (PWA vieja→portal + push) · dead-code (~3-jul, TODO-35). (Build/cache → `05`.)
+> 🧠🔴 **TOP PRIORIDAD (post-próximo-merge) = AUDITORÍA DE FIABILIDAD DEL CEREBRO con el FLUJO** (dueño 26/06: "el cerebro no da fiabilidad, documentamos cosas que se perdieron"; canary aliados). Plan → spec `…2026-06-26-auditoria-fiabilidad-cerebro-PLAN.md` = **TODO-44** (absorbe TODO-33). Reconciliar documentado-vs-real subsistema×subsistema + cura estructural. **El build F1 del rediseño ESPERA detrás.**
 >
-> ✅ **CRM clean-slate hecho (26/06)**: 206 docs de prueba purgados (leads·deals·activities·contacts·solicitudes·dedup·failedIngestions) vía Admin-SDK+ADC; backup en `backups/`; **NO** se tocó `clientes`/`conciergeChats`/`mensajes`/`crm_alerts` (fuera de Reportes/Bandeja — ofrecidos al dueño). Lección → `30` L-53.
+> 🎨 **REDISEÑO portal (W-11) — VEREDICTO** (spec `…portal-crm-rediseno-W11.md`): invertir prioridad → **F1 = Bandeja densa (orden SLA/temp + multi-select) + "Nuevo lead" topbar + drawer móvil**; F2 grupos `<details>`+fix `setActive`+iconos SVG; palette Ctrl+K diferido. **En cola tras la auditoría del cerebro.**
+>
+> 🔎 **Canary aliados RESUELTO** (spec `…aliados-flujo-reconciliacion-hallazgo.md`): `usados-de-la-costa`=**ALIADO** → §205 ok; hueco real = comisiones sin data → **TODO-25 comercial URGENTE**.
+>
+> 🧭 **PLAN UNIFICADO (§237) COMPLETO**; bot LLM #917 BLOQUEADO por saldo. Pend-dueño menores: validación celular FCM · dead-code (~3-jul, TODO-35). CRM clean-slate ✅ (26/06, L-53). (Build/cache → `05`.)
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >
@@ -49,13 +51,13 @@
 | **TODO-29** | **Endurecer el lazo ⟦OPUS-4.8⟧** — git-state vía SessionStart hook (abolir git en `05`); kernel/hook ×3. Resta: shard 99a/99b · `ignoreDirs`. | 🔄 | kernel/hook ×3 |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS-4.8⟧** — gate IA (tests/invariantes BLOQUEANTES en CI) + acceptance Kary en STAGING + dueño autoriza prod. Aplica cars (F42/§TODO-25)+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD del cerebro** — paso (a)§228 + (b)§229 ✅ (guardián del índice + replicación SELECTIVA ×brains; detalle→§229/L-52). RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 futuro | YAGNI |
-| **TODO-33** | **Reconciliación CEREBRO ↔ WEB REAL** (brain-check valida estructura interna, no realidad externa). **PARCIAL ✅ §230**: 57 functions + colecciones reconciliadas. Resta: Storage/rules/índices + colecciones vacías. | 🔄 parcial | al final |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS-4.8⟧** Opción A (solo-LLM+Tool Calling+botones+guards); F1.a·F2·F3·TTL·wiring ✅ **DORMIENTE** (#917). FLIP = saldo Anthropic (al final). F4/F5→§236; ahora parte del PLAN UNIFICADO §237. | 🔄 dormiente | dueño: saldo·consent |
 | **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧.** P0 `deadcode:check`✅ (0 huérfanas) + P1 skill✅. **Huérfanos del cutover**: `manifest-admin.json`+`js/admin/*` (solo los cargaba `admin.html`, ya en `_legacy/`). **DIFERIDO ~03/07** (≥1 sem): purgarlos hoy rompe asesores con `admin.html` CACHEADO (skill §4). M-19. | 🔄 diferido | ~03/07 (cache) |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |
 | **TODO-41** | **Motor de automatización → server-side ⟦OPUS-4.8⟧** (§242.5): hoy el engine de reglas (`admin-automation.js`) corre client-side SOLO en sesión super_admin → frágil (sin super_admin abierto, no corre). Migrar a Cloud Function. + gap RBAC: mapear `workflows.edit`→write de `config/automationRules` en rules. | 🔮 | post-cutover / escala |
 | **TODO-43** | **MFA-hardening portal nuevo ⟦OPUS⟧ (§253)** — el portal nuevo es email+password-only; el stack SMS-MFA del admin viejo (2FA/trusted-devices/backup-codes/preguntas) + Telegram NO se portó (no encaja en auth modular). Reimplementar como **TOTP**+recovery si el dueño quiere endurecer. NO bloquea. | 🔮 futuro | dueño |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
+| **TODO-44** | **🔴 AUDITORÍA DE FIABILIDAD DEL CEREBRO con el FLUJO ⟦OPUS-4.8⟧** (dueño 26/06) — documentado "✅" ≠ ejecutado/real (canary aliados). Reconciliación subsistema×subsistema (código/datos/deploy) → matriz de brechas + **cura estructural** (estados explícitos DISEÑADO/…/VERIFICADO-LIVE + marcador `verificado-vivo:fecha` + check stale, mecanizado). Absorbe/eleva TODO-33. Plan → spec `…2026-06-26-auditoria-fiabilidad-cerebro-PLAN.md`. | 🔴 TOP | **post-próximo-merge** (turno limpio) |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

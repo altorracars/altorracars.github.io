@@ -17,6 +17,7 @@
   background: var(--surface-acrylic-hi);
   -webkit-backdrop-filter: var(--blur-base); backdrop-filter: var(--blur-base);
   border-right: 1px solid var(--surface-stroke);
+  overflow: hidden;   /* W-11 fix bug-menús: contiene; el scroll vive en el nav */
 }
 .sidebar__brand { padding: var(--s-2) var(--s-3) var(--s-5); display: flex; flex-direction: column; gap: 2px; }
 .sidebar__logo {
@@ -26,7 +27,15 @@
 :root[data-theme="dark"] .sidebar__logo { color: var(--gold-400); }
 .sidebar__sub { color: var(--ink-text-faint); letter-spacing: 0.08em; }
 
-.sidebar__nav { display: flex; flex-direction: column; gap: 2px; }
+.sidebar__nav {
+  display: flex; flex-direction: column; gap: 2px;
+  /* W-11 fix bug-menús: los grupos expandidos (Ajustes=9 ítems) crecían más que el
+     viewport y se RECORTABAN sin scroll → ahora el nav scrollea; brand arriba, foot abajo. */
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--surface-stroke) transparent;
+}
+.sidebar__nav::-webkit-scrollbar { width: 6px; }
+.sidebar__nav::-webkit-scrollbar-thumb { background: var(--surface-stroke); border-radius: 3px; }
 .navitem {
   display: flex; align-items: center; gap: var(--s-3);
   padding: var(--s-3); border-radius: var(--r-md);

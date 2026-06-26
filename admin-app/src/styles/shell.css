@@ -50,6 +50,24 @@
 }
 .sidebar__foot { margin-top: auto; padding: var(--s-3); }
 
+/* ─────────── Grupos de nav colapsables (W-11 F2 · zona secundaria) ─────────── */
+.navgroup { display: flex; flex-direction: column; }
+.navgroup__summary {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-2) var(--s-3); margin-top: var(--s-2);
+  border-radius: var(--r-md); cursor: pointer; list-style: none; user-select: none;
+  color: var(--ink-text-faint); font-weight: 700;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  transition: background var(--dur-2) var(--ease-fluent), color var(--dur-2) var(--ease-fluent);
+}
+.navgroup__summary::-webkit-details-marker { display: none; }   /* sin triángulo UA */
+.navgroup__summary:hover { background: var(--surface-stroke); color: var(--ink-text-muted); }
+.navgroup__summary .navitem__icon { font-size: 14px; }
+.navgroup__summary .navitem__label { flex: 1; }
+.navgroup__chevron { display: inline-flex; color: var(--ink-text-faint); transition: transform var(--dur-2) var(--ease-fluent); }
+.navgroup[open] > .navgroup__summary .navgroup__chevron { transform: rotate(180deg); }
+.navgroup > .navitem { margin-left: var(--s-3); }              /* indent = jerarquía */
+
 /* ─────────── Topbar ─────────── */
 .topbar {
   display: flex; align-items: center; justify-content: space-between; gap: var(--s-4);
@@ -109,6 +127,10 @@
   .sidebar__logo { font-size: 10px; letter-spacing: 0.1em; }
   .sidebar__sub, .navitem__label, .navitem__soon, .sidebar__foot { display: none; }
   .navitem { justify-content: center; padding: var(--s-3) 0; }
+  /* Rail 72px: el summary del grupo = solo su icono (sin chevron ni indent). */
+  .navgroup__summary { justify-content: center; padding: var(--s-3) 0; }
+  .navgroup__chevron { display: none; }
+  .navgroup > .navitem { margin-left: 0; }
   .usermenu__meta { display: none; }
 }
 @media (max-width: 560px) {
@@ -143,6 +165,10 @@
   .sidebar__sub, .navitem__label, .sidebar__foot { display: block; }
   .navitem__soon { display: inline-block; }
   .navitem { justify-content: flex-start; padding: var(--s-3); }
+  /* Grupos en el drawer: aspecto completo (no rail). */
+  .navgroup__summary { justify-content: flex-start; padding: var(--s-2) var(--s-3); }
+  .navgroup__chevron { display: inline-flex; }
+  .navgroup > .navitem { margin-left: var(--s-3); }
 
   .app-shell.is-drawer-open .sidebar { transform: translateX(0); visibility: visible; box-shadow: var(--shadow-32); }
 

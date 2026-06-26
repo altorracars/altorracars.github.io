@@ -21,6 +21,8 @@ const APP_VERSION = '0.4.1';
 // W-11 F1(c): icono hamburguesa (SVG inline, currentColor) para el drawer móvil.
 // Marca la dirección emoji→SVG de F2 sin meter librería (vanilla sin bundler, §3.1).
 const ICON_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+// W-11 F2: chevron de disclosure para los grupos <details> (rota 180° al abrir vía CSS).
+const ICON_CHEVRON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
 
 const NAV = [
   // PLAN-UNIFICADO F-3 §237: el Inicio del portal (KPIs + NBA + pendientes). Sin perm: lo ve todo el equipo.
@@ -64,6 +66,18 @@ const NAV = [
   { id: 'unmatched', label: 'No entendí', icon: '🤔', ready: true, perm: 'unmatched.read' },
 ];
 
+// W-11 F2 (comité pt.3): layout de nav en 2 ZONAS. PRIMARIA = el día a día, siempre
+// plana y visible. SECUNDARIA = grupos colapsables (<details>) por dominio. Las
+// definiciones de cada ítem siguen en NAV[] (label/icon/perm = SSoT); aquí solo se
+// referencian por id, así router/rutas/módulos quedan INTACTOS (cambio aditivo §3.2).
+const NAV_PRIMARY = ['inicio', 'bandeja', 'pipeline', 'agenda', 'contactos', 'reportes'];
+const NAV_GROUPS = [
+  { id: 'g-sitio', label: 'Sitio web', icon: '🌐', items: ['vehiculos', 'marcas', 'aliados', 'resenas', 'banners', 'contenido'] },
+  { id: 'g-comms', label: 'Comunicaciones', icon: '📣', items: ['hub', 'cerebro', 'unmatched'] },
+  { id: 'g-ajustes', label: 'Ajustes', icon: '🛠️', items: ['usuarios', 'roles', 'departamentos', 'config', 'workflows', 'auditoria', 'respaldos', 'atributos', 'ajustes'] },
+];
+const NAV_GROUP_KEY = 'altorra:navgroup:'; // + group id → '1'(abierto) | '0'(cerrado)
+
 const TITLES = {
   inicio: 'Inicio',
   bandeja: 'Bandeja Inteligente',
@@ -101,8 +115,10 @@ export function mountShell(appRoot) {
     el('span', { class: 'sidebar__sub u-caption', text: 'CRM' }),
   ]);
   const nav = el('nav', { class: 'sidebar__nav', 'aria-label': 'Secciones' });
+  const NAV_BY_ID = Object.fromEntries(NAV.map((i) => [i.id, i]));
   // perm: string o array (any-of) — '*' pasa siempre vía hasPermission.
-  NAV.filter((item) => !item.perm || [].concat(item.perm).some(hasPermission)).forEach((item) => {
+  const canSee = (item) => item && (!item.perm || [].concat(item.perm).some(hasPermission));
+  function makeNavBtn(item) {
     const btn = el('button', { class: 'navitem', type: 'button', disabled: !item.ready }, [
       el('span', { class: 'navitem__icon', 'aria-hidden': 'true', text: item.icon }),
       el('span', { class: 'navitem__label', text: item.label }),
@@ -110,7 +126,29 @@ export function mountShell(appRoot) {
     ]);
     if (item.ready) btn.addEventListener('click', () => { navigate(item.id); closeDrawer(); });
     navButtons[item.id] = btn;
-    nav.append(btn);
+    return btn;
+  }
+  // Zona PRIMARIA: plana, siempre visible.
+  NAV_PRIMARY.map((id) => NAV_BY_ID[id]).filter(canSee).forEach((item) => nav.append(makeNavBtn(item)));
+  // Zona SECUNDARIA: grupos colapsables. Un grupo con <2 ítems visibles tras RBAC
+  // degenera a PLANO (comité pt.4 — sin acordeón de 1); con 0, no se renderiza.
+  NAV_GROUPS.forEach((g) => {
+    const items = g.items.map((id) => NAV_BY_ID[id]).filter(canSee);
+    if (!items.length) return;
+    if (items.length < 2) { items.forEach((item) => nav.append(makeNavBtn(item))); return; }
+    let open = true;
+    try { open = localStorage.getItem(NAV_GROUP_KEY + g.id) !== '0'; } catch (e) { /* private mode */ }
+    const details = el('details', { class: 'navgroup', open });
+    details.append(el('summary', { class: 'navgroup__summary' }, [
+      el('span', { class: 'navitem__icon', 'aria-hidden': 'true', text: g.icon }),
+      el('span', { class: 'navitem__label', text: g.label }),
+      el('span', { class: 'navgroup__chevron', 'aria-hidden': 'true', html: ICON_CHEVRON }),
+    ]));
+    items.forEach((item) => details.append(makeNavBtn(item)));
+    details.addEventListener('toggle', () => {
+      try { localStorage.setItem(NAV_GROUP_KEY + g.id, details.open ? '1' : '0'); } catch (e) { /* private mode */ }
+    });
+    nav.append(details);
   });
   const sidebar = el('aside', { class: 'sidebar', id: 'app-sidebar' }, [
     brand, nav,
@@ -224,6 +262,11 @@ export function mountShell(appRoot) {
       btn.classList.toggle('is-active', on);
       if (on) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
     });
+    // W-11 F2 (comité pt.2 · regresión BLOQUEANTE): si el ítem activo vive en un grupo
+    // colapsado, auto-expándelo — si no, quedaría oculto (un usuario navegando ahí no
+    // vería dónde está parado). Gate de no-regresión del rediseño de nav agrupada.
+    const activeBtn = navButtons[route];
+    if (activeBtn) { const grp = activeBtn.closest('details.navgroup'); if (grp) grp.open = true; }
     titleH.textContent = TITLES[route] || TITLES.inicio;
   }
 

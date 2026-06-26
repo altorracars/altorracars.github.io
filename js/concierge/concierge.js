@@ -4121,6 +4121,18 @@
             return;
         }
 
+        // §256 FIX (F-6): tras un RELOAD, _chatDocCreated arranca en false aunque
+        // el doc de Firestore YA exista (sesión ESCALADA restaurada de localStorage).
+        // Sin esto, el guard de markChatClosedInFirestore — y de typing / read-receipts
+        // / sync de mensajes — no corre → el "Finalizar conversación" del cliente NO
+        // persiste status:'closed' y el Hub del asesor nunca ve el cierre (queda "Activo"
+        // para siempre). Modo != 'bot' (queue/live/wa_handed_over) ⇒ hubo escalación
+        // ⇒ ensureFirestoreChatDoc ya creó el doc.
+        if (!_chatDocCreated && session && session.sessionId && window.db &&
+            session.mode && session.mode !== 'bot') {
+            _chatDocCreated = true;
+        }
+
         renderMessages();
         // Aplicar estado de cierre si la sesión está marcada como closed
         applyClosedState();

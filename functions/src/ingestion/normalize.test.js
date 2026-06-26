@@ -1,5 +1,26 @@
 import { describe, it, expect } from 'vitest';
-import { normalizePhone, contactDedupKey, mapConsent, normalizeSolicitud } from './normalize.js';
+import { normalizePhone, isValidContactPhone, contactDedupKey, mapConsent, normalizeSolicitud } from './normalize.js';
+
+describe('isValidContactPhone (gate de calificación §252)', () => {
+  it('acepta un celular CO normalizado (+57 + 10 díg)', () => {
+    expect(isValidContactPhone('+573001234567')).toBe(true);
+    expect(isValidContactPhone(normalizePhone('300 123 4567', '+57'))).toBe(true);
+  });
+  it('rechaza vacío (anónimo / email-solo)', () => {
+    expect(isValidContactPhone('')).toBe(false);
+    expect(isValidContactPhone(null)).toBe(false);
+    expect(isValidContactPhone(undefined)).toBe(false);
+  });
+  it('rechaza spam corto ("123", "a@a") aun normalizado', () => {
+    expect(isValidContactPhone('123')).toBe(false);
+    expect(isValidContactPhone(normalizePhone('123'))).toBe(false);
+    expect(isValidContactPhone('a@a')).toBe(false);
+    expect(isValidContactPhone('+57300')).toBe(false);
+  });
+  it('rechaza un número demasiado largo (>15 díg, no E.164)', () => {
+    expect(isValidContactPhone('+5730012345678901')).toBe(false);
+  });
+});
 
 describe('contactDedupKey', () => {
   it('prioriza email normalizado (lowercase + trim)', () => {

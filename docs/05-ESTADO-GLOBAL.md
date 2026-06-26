@@ -11,7 +11,7 @@
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
 
 ## ⚠️ Flags de riesgo activos
-- 🧠 **Fiabilidad del cerebro: auditoría RAN ✅ (§257, 26/06)** — veredicto BALANCEADO (mayoría "✅" reales: CRM+sitio+admin live, 59 functions=exacto; brechas: aliados/TODO-25, motor-automatización no corre TODO-41↑, menores TODO-45). Cura=M-22 (estados explícitos); falta mecanizar check `verificado-vivo`/stale (kernel ×3=TODO-44). `brain-check` no valida realidad externa.
+- 🧠 **Fiabilidad del cerebro: auditoría ✅ (§257) + cura M-22 MECANIZADA** — check #16 (`verificado-vivo`/stale) en kernel, **propagado byte-idéntico ×4** (26/06; insema commit pend por issues suyos). Brechas §257: aliados/TODO-25, motor-automatización no corre TODO-41↑, menores TODO-45. Resta: adopción de marcadores + reconciliación exhaustiva (TODO-44).
 - 🤖 **Modelo: Opus 4.8** (Fable 5 NO disponible, 2026-06-12). Entregas marcadas **`⟦OPUS-4.8 · rev-Fable⟧`** (rev. cuando Fable vuelva). Detalle → `10` + memoria.
 - 🔒 **Blindaje** (canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor · SEC-01 RBAC-read pend (→E5) · Legal `42` (gate abogado, F14/E3).
 - 🔴 **Billing GCP cayó ~2h el 2026-06-09** (recuperado, L-38). **Causa SIN identificar** (cliente: console.cloud.google.com/billing) o se repetirá.

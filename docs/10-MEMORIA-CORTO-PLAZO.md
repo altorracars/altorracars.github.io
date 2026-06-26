@@ -14,7 +14,7 @@
 
 > 🧠 **AUDITORÍA DE FIABILIDAD DEL CEREBRO — RAN ✅ esta sesión (§257)**: veredicto BALANCEADO (mayoría de "✅" REALES: CRM+sitio+admin live, 59 functions desplegadas=exacto, bot desplegado). Brechas: aliados sin ejecutar (TODO-25) · motor automatización no corre (TODO-41↑) · functions huérfanas + menores (TODO-45). Cura=**M-22** (estados explícitos); falta mecanizar check (kernel ×3=TODO-44) + reconciliación exhaustiva continúa.
 >
-> 🎨 **AHORA → F1 (Bandeja motor)** — REDISEÑO portal W-11, veredicto en spec `…portal-crm-rediseno-W11.md`: **F1 = Bandeja densa (orden SLA/temp + multi-select) + "Nuevo lead" topbar + drawer móvil**; F2 grupos `<details>`+fix `setActive`+iconos SVG; palette Ctrl+K diferido (dueño). Aliados RESUELTO (=aliado, §205 ok; comercial→TODO-25). Bot LLM bloqueado por saldo. Clean-slate ✅ (L-53). (Build/cache → `05`.)
+> 🎨 **REDISEÑO portal W-11 — F1 EN CURSO** (spec `…portal-crm-rediseno-W11.md`): **F1(a) selección múltiple + acciones masivas en Bandeja = BUILT + verificado preview** (aditivo, build limpio; **falta verif LIVE dueño**). Hallazgo: la Bandeja real ya era fuerte → no hacía falta tabla densa; el gap era multi-select. PEND F1: (b) "Nuevo lead" topbar · (c) drawer móvil. F2: grupos `<details>`+fix `setActive`+iconos SVG. Palette Ctrl+K diferido. Aliados=aliado (§205 ok; comercial→TODO-25). Bot LLM=saldo. (Build/cache → `05`.)
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >

@@ -18,7 +18,9 @@
 >
 > ✅ **CRM clean-slate hecho (26/06)**: 206 docs prueba purgados (L-53; backup en `backups/`). Sin tocar `clientes`/chats/`crm_alerts` (ofrecidos al dueño).
 >
-> 🎨 **REDISEÑO portal CRM (W-11) — EN CURSO, DETENIDO en prompt de Gemini** → spec `docs/superpowers/specs/2026-06-26-portal-crm-rediseno-W11.md` (Fase A+arquitecto+mockup+comité ✅). Comité reencuadró: **motor=Bandeja densa > chasis=nav**; regresión a cuidar = grupo colapsado oculta ítem activo (`setActive` no auto-expande). Sigue: dueño corre Gemini → veredicto → implementar F1.
+> 🎨 **REDISEÑO portal CRM (W-11) — EN CURSO, DETENIDO en prompt de Gemini** → spec `docs/superpowers/specs/2026-06-26-portal-crm-rediseno-W11.md` (Fase A+arquitecto+mockup+comité ✅). Comité reencuadró: **motor=Bandeja densa > chasis=nav**; regresión a cuidar = grupo colapsado oculta ítem activo (`setActive` no auto-expande). **⌘K→Ctrl+K y bajar/quitar command-palette (dueño: "no me beneficia")**. Sigue: dueño corre Gemini → veredicto → implementar F1.
+>
+> 🔎 **PENDIENTE-DUEÑO (canary aliados, 26/06)** → spec `docs/superpowers/specs/2026-06-26-aliados-flujo-reconciliacion-hallazgo.md`: ¿`usados-de-la-costa` (18 carros) es inventario PROPIO o aliado real? Define el fix de §205 (hoy `esPropio` falso para TODO el catálogo → strip VIN+seller del JSON-LD público) + el modelo TODO-25. **Señal: documentado ✅ ≠ ejecutado → auditoría de reconciliación dedicada (TODO-33).**
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >
@@ -51,7 +53,7 @@
 | **TODO-29** | **Endurecer el lazo ⟦OPUS-4.8⟧** — git-state vía SessionStart hook (abolir git en `05`); kernel/hook ×3. Resta: shard 99a/99b · `ignoreDirs`. | 🔄 | kernel/hook ×3 |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS-4.8⟧** — gate IA (tests/invariantes BLOQUEANTES en CI) + acceptance Kary en STAGING + dueño autoriza prod. Aplica cars (F42/§TODO-25)+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD del cerebro** — paso (a)§228 + (b)§229 ✅ (guardián del índice + replicación SELECTIVA ×brains; detalle→§229/L-52). RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 futuro | YAGNI |
-| **TODO-33** | **Reconciliación CEREBRO ↔ WEB REAL** (brain-check valida estructura interna, no realidad externa). **PARCIAL ✅ §230**: 57 functions + colecciones reconciliadas. Resta: Storage/rules/índices + colecciones vacías. | 🔄 parcial | al final |
+| **TODO-33** | **Reconciliación CEREBRO ↔ WEB REAL** (brain-check valida estructura interna, no realidad externa). **PARCIAL ✅ §230**. **26/06 canary aliados** (spec `…aliados-flujo-reconciliacion-hallazgo.md`): §204/§205 "✅" pero modelo comercial NO ejecutado + data viva incoherente → correr auditoría de reconciliación dedicada (no confiar en "hecho" sin verificar datos). | 🔄 prioridad↑ | dueño + audit |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS-4.8⟧** Opción A (solo-LLM+Tool Calling+botones+guards); F1.a·F2·F3·TTL·wiring ✅ **DORMIENTE** (#917). FLIP = saldo Anthropic (al final). F4/F5→§236; ahora parte del PLAN UNIFICADO §237. | 🔄 dormiente | dueño: saldo·consent |
 | **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧.** P0 `deadcode:check`✅ (0 huérfanas) + P1 skill✅. **Huérfanos del cutover**: `manifest-admin.json`+`js/admin/*` (solo los cargaba `admin.html`, ya en `_legacy/`). **DIFERIDO ~03/07** (≥1 sem): purgarlos hoy rompe asesores con `admin.html` CACHEADO (skill §4). M-19. | 🔄 diferido | ~03/07 (cache) |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |

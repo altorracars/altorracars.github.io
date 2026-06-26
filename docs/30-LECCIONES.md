@@ -231,6 +231,8 @@
 
 ### L-54 · Un flex `fixed`/`absolute` SIN `width` anclado a un solo borde COLAPSA a su contenido (`max-width` no otorga ancho); verifica con viewport de ancho REAL (headless da `innerWidth:0`) → detalle en `33-LECCIONES-FRONTEND.md`
 
+### L-55 · UI con `transition` en el preview headless: el valor animado queda congelado en el inicio → neutraliza transiciones (`*{transition:none}`) y lee end-states; y tabulabilidad por-breakpoint va por CSS `visibility`, no `inert` por JS → detalle en `33-LECCIONES-FRONTEND.md`
+
 ### L-24 · Un enlace `?param=` solo filtra si la página destino LEE el param — y el filtro puede YA existir con otro nombre → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-25 · Un `<footer>`/`<header>` de sección hereda chrome GLOBAL por selector de ELEMENTO → detalle en `33-LECCIONES-FRONTEND.md`

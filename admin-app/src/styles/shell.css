@@ -115,3 +115,48 @@
   .topbar { padding: 0 var(--s-3); }
   .topbar__crumb { display: none; }
 }
+
+/* ─────────── Drawer móvil (W-11 F1(c)) — hamburguesa + off-canvas + backdrop ───────────
+   El toggle y el backdrop SOLO existen ≤560px; fuera de ese breakpoint quedan ocultos
+   (display:none) → la clase .is-drawer-open no tiene efecto en desktop/tablet (rail @860
+   intacto). El sidebar pasa a position:fixed y se DESLIZA; el grid baja a 1 columna. */
+.drawer-toggle { display: none; }
+.drawer-backdrop { display: none; }
+
+@media (max-width: 560px) {
+  /* El contenido ocupa todo el ancho; el sidebar sale del flujo del grid. */
+  .app-shell { grid-template-columns: 1fr; }
+  .drawer-toggle { display: inline-flex; margin-left: calc(-1 * var(--s-2)); }
+
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); max-width: 86vw;
+    z-index: 60; transform: translateX(-100%);
+    /* visibility:hidden saca el nav off-canvas del tab-order (a11y) SIN depender de JS;
+       se transiciona junto al transform → sigue visible durante el deslizado de cierre. */
+    visibility: hidden;
+    transition: transform var(--dur-3) var(--ease-fluent-decel), visibility var(--dur-3);
+    will-change: transform; overflow-y: auto;
+  }
+  /* Dentro del drawer queremos el sidebar COMPLETO (labels visibles), no el rail @860px. */
+  .sidebar__brand { align-items: flex-start; padding: var(--s-2) var(--s-3) var(--s-4); }
+  .sidebar__logo { font-size: var(--t-body-lg); letter-spacing: 0.22em; }
+  .sidebar__sub, .navitem__label, .sidebar__foot { display: block; }
+  .navitem__soon { display: inline-block; }
+  .navitem { justify-content: flex-start; padding: var(--s-3); }
+
+  .app-shell.is-drawer-open .sidebar { transform: translateX(0); visibility: visible; box-shadow: var(--shadow-32); }
+
+  .drawer-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 50;
+    background: rgba(8, 10, 14, 0.5);
+    opacity: 0; visibility: hidden;
+    transition: opacity var(--dur-2) var(--ease-fluent), visibility var(--dur-2);
+  }
+  .app-shell.is-drawer-open .drawer-backdrop { opacity: 1; visibility: visible; }
+}
+
+/* Respeta a quien pide menos movimiento: el drawer aparece sin deslizamiento. */
+@media (max-width: 560px) and (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none; }
+  .drawer-backdrop { transition: none; }
+}

@@ -159,5 +159,11 @@
 - **Receta**: `width` explícito en desktop (`width:340px; max-width:calc(100vw - 2*var(--s-5))`); en la media query mobile que usa `left`+`right`, `width:auto` para que los dos bordes manden. **Verifica con un viewport de ancho REAL** (`preview_resize {width:1280,height:800}`) — el "native size" del preview headless da `innerWidth:0` → activa la media query mobile y TODO colapsa (falso bug que te manda a perseguir la CSS equivocada). NO `preview_screenshot` tras `resize` (L-28).
 - **Familia**: L-23 (max-width universal colapsa width) · L-28 (no screenshot tras resize) · L-53 (DS tokens admin-app).
 
+### L-55 · UI con `transition` en preview headless: el valor animado queda CONGELADO en el inicio → verifica end-states neutralizando transiciones; y tabulabilidad por-breakpoint = CSS `visibility`, no `inert` ⟦OPUS-4.8⟧
+- **Síntoma (W-11 F1(c) drawer)**: drawer abierto (clase + foco + `box-shadow` del override SÍ aplicados) pero `getComputedStyle(.sidebar).transform`/`getBoundingClientRect().left` reportan el valor CERRADO indefinidamente — el headless NO avanza la transición CSS (la regla específica gana: el `box-shadow`, sin transición, lo prueba).
+- **Receta verificación**: para UI con `transition`, inyecta `*{transition:none !important; animation:none !important}` y lee los END-STATES del cascade (no el valor animado). Confirma con un `transition:none` inline → si salta al target, la lógica es correcta = artefacto headless. Familia: L-20/L-23/L-28.
+- **Arquitectura (§3.8) `visibility` > `inert`**: para nav off-canvas que NO debe tabularse cerrado-en-móvil, usa CSS `visibility:hidden` (sale del tab-order, lo maneja la media query) en vez de `inert` por JS+`matchMedia change`. `inert` por evento tiene fallo latente GRAVE: si el `change` no dispara al cruzar a desktop, el nav entero queda MUERTO; el CSS lo elimina por construcción. Transiciona `visibility` junto al `transform` (visible durante el deslizado de cierre).
+- **Familia**: L-20/L-23/L-28 (quirks del preview headless) · L-53 (admin-app DS).
+
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

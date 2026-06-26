@@ -341,6 +341,10 @@
 - **Síntoma (evitado)**: dealers (§204) deriva docId del nombre. El portal ya tenía `brands.slugify()` que normaliza tildes (NFD) — reusarlo habría dado un docId DISTINTO para nombres acentuados que el clásico (`replace(/[^a-z0-9]/g,'-')`, sin NFD) → durante el doble-admin, crear el mismo aliado en cada admin produce DOS docs y rompe el join `vehiculos.concesionario`.
 - **Receta**: en todo port con interop (clásico ↔ portal coexistiendo), la clave del doc es un CONTRATO — replicar su generación byte a byte, no "mejorarla". Igual con `_version`: si las rules del módulo NO exigen `validVersion()`, NO escribirlo (rompería al clásico que escribe sin él). El crítico adversarial del workflow lo cazó antes de codear.
 
+### L-53 · Clean-slate de datos CRM = barrer el lead-lifecycle completo (no las colecciones literales de la vista); Admin-SDK+ADC + backup→delete ⟦OPUS-4.8⟧
+- **Causa**: "purgar Bandeja/Reportes" parece `leads`+`deals`, pero borrar solo eso deja huérfanos (`activities`/`contacts` en Dashboard/Contactos) y peor: las `solicitudes` **resucitan** los leads en un reproceso (la ingestión las lee). Conjunto coherente = `leads·deals·activities·contacts·solicitudes·dedup·failedIngestions` (dedup va PAREADO con contacts: si no, un lead real futuro se dedup-ea contra un contacto borrado).
+- **Receta**: data-op server-side con script `firebase-admin`+**ADC** (salta las rules; el client-SDK del repo NO puede leer/borrar `leads`). SIEMPRE **backup→delete** gated tras `--delete` (backup a `backups/`, gitignored) y verificar 0 al final. El **clasificador bloquea el mass-delete de prod = segunda llave** (alinea TODO-30 Doble-Llave) → confirmar ALCANCE con el dueño antes (no inferir scope ancho de una orden general). Patrón portable ×4 cerebros.
+
 ---
 
 > Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve

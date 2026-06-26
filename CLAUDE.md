@@ -1,12 +1,9 @@
 <!-- brain-template-version: 1.1.0 -->
 # CLAUDE.md — Altorra Cars · 🧠 Tronco Encefálico (Router Neuronal)
 
-> **Este archivo se auto-carga en CADA sesión.** Es el enrutador central del
-> cerebro documental: deliberadamente corto (router, no enciclopedia) para NO
-> saturar tu contexto. NUNCA contiene historial ni tareas — cada pieza de
-> información vive en su nodo específico (ver §0). El detalle se lee on-demand.
->
-> Reestructuraciones: ADR §118 (arquitectura neuronal) · ADR §173 (auto-evaluación v6).
+> **Auto-carga en CADA sesión.** Enrutador del cerebro: corto (router, no enciclopedia)
+> para no saturar contexto. NUNCA historial ni tareas — cada hecho vive en su nodo (§0),
+> el detalle on-demand. Reestructura: ADR §118 · §173 (v6).
 > **Estado/cache → `05` · pendientes/WIP → `10`** — nunca aquí.
 
 ---

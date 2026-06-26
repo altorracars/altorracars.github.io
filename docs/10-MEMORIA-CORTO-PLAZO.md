@@ -10,11 +10,13 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **F-6 cutover ✅ COMPLETO + VALIDADO LIVE** (mergeado a `main`, §253-256): perfil + Hub + **FLIP** (`admin.html`→`_legacy/`+redirect) + 3 bugs Hub (A cliente-finaliza-no-cierra [reload→`_chatDocCreated`] · B cerrado-en-Activos · C mensaje-doble) **validados E2E ambos lados** (`status:'closed'` confirmado en Firestore). **§252 gate verificado** (chat anónimo nuevo = 0 lead). **⚠️ Lección clave M-21**: "validado E2E" = recorrer el CICLO COMPLETO (cerrar/reabrir/repetir) y AMBOS lados, NO el happy-path; skill global `caza-bugs` endurecida (un paso que se porta raro = señal de bug, no nuisance).
+> ✅ **F-6 cutover + validación live = CERRADO** (§253-256 en `99`; lección M-21 = "validado E2E" es el ciclo completo y ambos lados, no el happy-path → `30`).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧭 **PLAN UNIFICADO (§237) = COMPLETO** (portal único, `admin.html` retirado). **SIGUIENTE = DECISIÓN DEL DUEÑO** (no arrancar sin su OK): (1) **REDISEÑO frontend** (responsive/UX/menús; secuenciado "al final", el portal YA funciona → flujo W-11 assess→mockup→Gemini→validación; F4F5 directive = "avanza solo, solo pará para el prompt de Gemini") · (2) **bot LLM** #917 = saldo Anthropic. **Pend-dueño menores**: purga 18 leads anónimos + 2 PRUEBA-QA (Bandeja→"🗑 Eliminar definitivo" por-lead, ya wired; neutralizados §252, no-urgente, su click=borrado permanente) · validación celular FCM (PWA vieja→portal + push) · dead-code (~3-jul, TODO-35). (Build/cache → `05`.)
+> 🧭 **PLAN UNIFICADO (§237) = COMPLETO**. **DUEÑO DECIDIÓ (26/06)**: arrancar **(A) REDISEÑO frontend** ("algo pro, mejor que cualquier CRM" → flujo **W-11 COMPLETO** + todos los poderes: assess→mockup→Gemini→comité→validación live; directiva F4F5 = "avanza solo, solo pará para el prompt de Gemini"). **(B) bot LLM #917 = BLOQUEADO por saldo Anthropic** (dueño avisa). **Pend-dueño menores**: validación celular FCM (PWA vieja→portal + push) · dead-code (~3-jul, TODO-35). (Build/cache → `05`.)
+>
+> ✅ **CRM clean-slate hecho (26/06)**: 206 docs de prueba purgados (leads·deals·activities·contacts·solicitudes·dedup·failedIngestions) vía Admin-SDK+ADC; backup en `backups/`; **NO** se tocó `clientes`/`conciergeChats`/`mensajes`/`crm_alerts` (fuera de Reportes/Bandeja — ofrecidos al dueño). Lección → `30` L-53.
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >
@@ -61,4 +63,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§256 → `99`/`00`/`30`. **26/06**: **F-6 cutover COMPLETO + validado live** (§253-256: perfil·Hub·FLIP·3 bugs A/B/C) · **M-21** (caza-bugs happy-path→skill endurecida) · §252 gate verificado (anónimo=0 lead). Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§256 → `99`/`00`/`30`. **26/06**: F-6 cutover COMPLETO+validado live (§253-256) · M-21 (caza-bugs happy-path) · §252 gate · **CRM clean-slate** (206 docs prueba, L-53) · **rediseño frontend ARRANCADO** (W-11). Defectos bot → `altor-hub-rediseno-defectos.md`.

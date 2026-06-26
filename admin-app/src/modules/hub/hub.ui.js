@@ -91,7 +91,8 @@ export function mountHub(root) {
     let active = 0, pinned = 0, archived = 0;
     ui.chats.forEach((c) => {
       if (c.isDeleted) return;
-      if (c.isArchived) archived++; else active++;
+      // §256 FIX: los cerrados cuentan como Archivados, no como Activos (paridad con visibleChats).
+      if (c.isArchived || c.status === 'closed') archived++; else active++;
       if (c.isPinned) pinned++;
     });
     return { active, pinned, archived };
@@ -114,8 +115,11 @@ export function mountHub(root) {
     const list = ui.chats.filter((c) => {
       if (c.isDeleted) return false;
       if (ui.filter === 'pinned') return !!c.isPinned;
-      if (ui.filter === 'archived') return !!c.isArchived;
-      return !c.isArchived;
+      // §256 FIX: un chat CERRADO (status:'closed') sale de "Activos" y aparece en
+      // "Archivados" (antes se quedaba en Activos con solo un badge "✓" → el asesor
+      // creía que seguía vivo). Cubre el cierre del cliente Y del asesor.
+      if (ui.filter === 'archived') return !!c.isArchived || c.status === 'closed';
+      return !c.isArchived && c.status !== 'closed';
     });
     list.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
@@ -249,15 +253,24 @@ export function mountHub(root) {
     ui.forceScroll = true; renderDetail();
     if (isMock) { optimistic._status = 'sent'; renderDetail(); return; }
     sendAsesorMessage(ui.activeId, text, a)
-      .then((id) => { optimistic.firestoreId = id; optimistic._status = 'sent'; renderDetail(); })
+      .then((id) => { optimistic.firestoreId = id; optimistic._status = 'sent'; reconcilePending(); renderDetail(); })
       .catch(() => { optimistic._status = 'failed'; renderDetail(); toast('No se pudo enviar. Tocá "Reintentar".', 'error'); });
+  }
+  // §256 FIX: dedup de la carrera optimista. El onSnapshot de mensajes filtra los
+  // optimistas por `p.firestoreId`, pero ese id se asigna recién en el `.then` del
+  // send — y Firestore (latency compensation) suele entregar el doc real en el
+  // snapshot ANTES de tener el id → el filtro corre sin firestoreId → el optimista
+  // queda + el echo del snapshot = MENSAJE DOBLE. Al resolver el send, re-deduplico
+  // contra ui.messages (si el doc real ya llegó, quito el optimista ahora).
+  function reconcilePending() {
+    ui.pending = ui.pending.filter((p) => !(p.firestoreId && ui.messages.some((m) => m._id === p.firestoreId)));
   }
   function retrySend(p) {
     if (p._status !== 'failed') return;
     p._status = 'pending'; renderDetail();
     if (isMock) { p._status = 'sent'; renderDetail(); return; }
     sendAsesorMessage(ui.activeId, p.text, asesor())
-      .then((id) => { p.firestoreId = id; p._status = 'sent'; renderDetail(); })
+      .then((id) => { p.firestoreId = id; p._status = 'sent'; reconcilePending(); renderDetail(); })
       .catch(() => { p._status = 'failed'; renderDetail(); toast('Sigue fallando el envío.', 'error'); });
   }
 

@@ -63,4 +63,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§253 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2..F-5 (§238-250) · auditoría N2 §239 · HUB Visibilidad §244 · flujo fuerte W-11 §251 · gate leads §252 (**PEND: E2E anónima fresca + purga `crmPurgeLead` = dueño**) · F-6 prep: módulo `perfil` §253. Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§253 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2..F-5 (§238-250) · gate leads §252 (**PEND: E2E anónima fresca + purga `crmPurgeLead` = dueño**) · **F-6: perfil §253 · Hub validado §254 · FLIP ejecutado §255 · 3 bugs Hub §256** (A cliente-finaliza-no-cierra [reload→`_chatDocCreated` false] · B cerrado-no-sale-de-Activos · C mensaje-doble; **PEND validar A+C live post-merge**). Defectos bot → `altor-hub-rediseno-defectos.md`.

@@ -85,7 +85,7 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
     tiene FCM web-push ✅).
   - **DECISIÓN DEL DUEÑO (pilar seguridad, spec §"decidir antes del flip")**: ¿aceptar el subset (email+password-only,
     ya-live) o exigir reimplementar 2FA/recovery en el portal nuevo ANTES del flip (= mini-epic separado, no F-6)?
-- [ ] **Hub detalle/claim/responder/typing/presence/gestión validados LIVE** (necesita chat real) — el gap más importante.
+- [x] **Hub detalle/claim/responder/presence validados LIVE ✅ (26/06, §254)** — yo conduje el E2E con la extensión Chrome (2 pestañas: visitante=bot público + asesor=Hub): escalación "Hablar con asesor" → chat aparece en Hub "Activos 1" en vivo → "✋ Tomar conversación" (claim-gating: el input de respuesta SOLO aparece tras tomar) → el visitante ve "Daniel Romero tomó esta conversación"+"se unió" → respondí como asesor → la respuesta LLEGÓ al visitante en tiempo real (✓✓). Consola 0-err. Ingestión cross-superficie (bot→Hub→bot) confirmada. PEND menor: typing-indicator + push FCM en device (gate celular). Smell rediseño: "Finalizar conversación" usa `confirm()` nativo (bloquea).
 - [ ] Multi-tab + RTDB + offline OK en el nuevo (F-0.5, verificado parcial en el smoke).
 - [ ] El dato que entra por el bot/form aparece en el CRM del portal nuevo (multi-superficie).
 
@@ -110,7 +110,7 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
 - [x] **FCM/Web-Push PORTADO** (2026-06-25, §251): `fcm.js`+`fcm.css`+wiring, build+boot+render verificados; PEND validación live end-to-end (device real)
 - [x] **Premisa §2 SW corregida** (no hay SW de admin separado → script unregister DESCARTADO; zombie cubierto por network-first+redirect+cache-bump)
 - [x] **Banner re-login BUILT** (2026-06-25, login.js): auto-detecta marcadores localStorage del admin viejo (self-contained, no necesita el redirect); dismiss persistente + auto-dismiss tras login. Verificado en preview.
-- [ ] Hub detalle validado live (chat real) — gate principal, necesita tráfico/dueño
+- [x] **Hub detalle validado LIVE ✅ (26/06, §254)** — E2E conducido por mí con la extensión: escala→aparece en Hub→claim→responder→llega al visitante (✓✓), consola 0-err. PEND menor: typing + push FCM en device.
 - [x] **Gap plantillas = NO-GAP (26/06)**: el editor del admin viejo ya estaba oculto (`display:none`) → aceptar, cero regresión.
 - [x] **Gap perfil RESUELTO — módulo `perfil` PORTADO + VERIFICADO (26/06, §253)**: `admin-app/src/modules/perfil/`
   (`perfil.ui.js`+`perfil.data.js`) + `styles/perfil.css`, accesible desde el **menú de usuario** (topbar → `#/perfil`,

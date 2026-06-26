@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ** (26/06). Spec `2026-06-26-F-6-cutover-kickoff` + ADR §253. **Prep ✅**: FCM + banner re-login + **módulo `perfil`** portados → **paridad §3 cerrada por código**. MFA-SMS/Telegram diferidos = TODO-43. **FLIP irreversible = GATED** (dueño/tráfico): Hub-detalle-LIVE (chat real) · FCM en device · `admin.html`→`_legacy/`+redirect · celular. NO re-preguntar go/no-go; la autorización abre el gate, no salta la verificación.
+> 🚀 **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ** (26/06). Spec `2026-06-26-F-6-cutover-kickoff` + ADR §253. **Prep ✅**: FCM + banner re-login + **módulo `perfil`** portado+**LIVE-validado** (§253) → **paridad §3 cerrada por código**. MFA-SMS/Telegram diferidos = TODO-43. **FLIP irreversible = GATED** (dueño/tráfico): Hub-detalle-LIVE (chat real) · FCM en device · `admin.html`→`_legacy/`+redirect · celular. NO re-preguntar go/no-go; la autorización abre el gate, no salta la verificación.
 > ✅ **Cerrado previo**: F-4 Hub (§249) · F-5 fugas LIVE (§250) · Hub SMOKE ✅. Deploys=míos. Bug `onChatTransferred` FCM FIXED (`fcmTokens` son OBJETOS → consumer extrae `.token`).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).

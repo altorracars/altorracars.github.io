@@ -120,6 +120,12 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
   MFA-hardening (TOTP) como fase futura aparte (NO el SMS-MFA viejo). **Diferido** (no encaja / canal aparte): 2FA-SMS,
   trusted-devices, backup-codes, preguntas, Telegram link → TODO-43. Verificado: build 0-err (148 mód) · boot mock 0-err ·
   4 tarjetas render · fuerza de contraseña (1→5) · dirty-detection · cédula-lock · acceso topbar. dist rebuilt.
+  **✅ VALIDADO LIVE (26/06, extensión Chrome, sesión real del dueño post-merge)**: render con datos reales (Daniel
+  Romero/Super Admin) · **avatar real desde Storage (request 200)** · **cédula-lock real (locked+readonly+solicitar)** ·
+  fecha real (`fmtDate` Timestamp→"16 abr 2026") · consola 0-err (sweep onlyErrors) · red 11 req TODAS 200 · fuerza de
+  contraseña 1→5 · dirty-detection · acceso menú-usuario→`#/perfil` · ciclo de ruta (desmonta/re-monta limpio). NO
+  live-ejecutado (barandas: cuenta real): submit password/perfil/avatar (verificados por código). Obs menor: "Último
+  acceso: —" (auth nuevo no escribe `ultimoAcceso` en login; cosmético, ajeno al módulo).
 - [ ] Flip `admin.html`→`_legacy/` + redirect (go/no-go dueño) — banner re-login ya BUILT
 - [ ] Cache-bump del cron post-flip + validación live en celular (incl. PWA vieja + push FCM)
 - [ ] ADR §251 cierre + post-cutover live OK

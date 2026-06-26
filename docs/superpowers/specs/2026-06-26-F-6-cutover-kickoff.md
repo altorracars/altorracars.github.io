@@ -64,9 +64,27 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
   que el viejo → la Cloud Function `onChatEscalated` lo consume SIN cambios server-side (verificado). Re-registra
   `/firebase-messaging-sw.js` (no toca el SW público). Verificado: build OK + boot limpio mock (0 errores) +
   card 340px render OK (dark/light). **PEND validación LIVE**: prompt+grant+token real+push end-to-end (gate, necesita device real). dist rebuilt.
-- ⚠️ **Editor de plantillas de mensaje** (`sec-templates`/`admin-templates.js`): sin módulo en admin-app
-  (el Hub tiene quick-replies hardcodeados, pero no gestión de plantillas guardadas `config/messageTemplates`). Menor.
-- ◽ **Editar perfil propio** (`sec-profile`): verificar si existe en admin-app. Menor.
+- ✅ **Editor de plantillas (`sec-templates`/`admin-templates.js`) — GAP RESUELTO = NO-GAP (verificado 26/06)**:
+  el editor del admin viejo YA está **oculto** (`.msg-templates-add{display:none}` + comentario "Mantenido oculto…
+  Eliminar en commit 6"). El dato `config/messageTemplates` lo consume el modal de citas inline; el Hub usa
+  quick-replies hardcodeadas. **No hay editor visible que portar → aceptar (cero regresión).**
+- 🔎 **Perfil propio (`sec-profile`/`admin-profile.js`, 1118L) — RE-EVALUADO (26/06): NO es "menor", es un CENTRO
+  DE SEGURIDAD.** Contiene: avatar (Storage), datos personales, cédula-lock+solicitud super-admin, info de cuenta,
+  **cambio de contraseña**, **2FA-SMS** (`habilitado2FA`/`telefono2FA`), **dispositivos de confianza**, **backup
+  codes**, **preguntas de seguridad**, Telegram link/webhook. **Verificado `admin-app/src/core/auth.js`: el portal
+  nuevo es email+password modular PURO** (sin `multiFactor`/`RecaptchaVerifier`/trusted-devices/recovery) → el
+  stack SMS-MFA NO encaja (escribiría flags que nada hace cumplir). **Llamada de arquitecto (Lente §3.8, seguridad+
+  mantenibilidad+simplicidad), análoga a §245/L-53 (no portar maquinaria que no fija el modelo nuevo):**
+  - **PORTAR (encaja, requerido por cero-regresión de lo que aplica)**: avatar · nombre/teléfono/prefijo · cédula-lock
+    + solicitud · info de cuenta read-only · **cambio de contraseña** (`updatePassword` modular + reauth).
+  - **DIFERIR a fase MFA-hardening (fuera de F-6; ya es la realidad live del portal nuevo)**: 2FA-SMS · trusted
+    devices · backup codes · preguntas de seguridad. **Razón clave: el portal nuevo YA está live y YA es
+    email+password-only; los asesores ya entran así → retirar `admin.html` NO cambia su auth → soltar el SMS-MFA
+    no es una regresión introducida por F-6** (solo elimina el login viejo paralelo que sí lo tenía).
+  - **DIFERIR (canal aparte, no bloquea cutover)**: Telegram link/unlink/webhook (notificación; el portal nuevo ya
+    tiene FCM web-push ✅).
+  - **DECISIÓN DEL DUEÑO (pilar seguridad, spec §"decidir antes del flip")**: ¿aceptar el subset (email+password-only,
+    ya-live) o exigir reimplementar 2FA/recovery en el portal nuevo ANTES del flip (= mini-epic separado, no F-6)?
 - [ ] **Hub detalle/claim/responder/typing/presence/gestión validados LIVE** (necesita chat real) — el gap más importante.
 - [ ] Multi-tab + RTDB + offline OK en el nuevo (F-0.5, verificado parcial en el smoke).
 - [ ] El dato que entra por el bot/form aparece en el CRM del portal nuevo (multi-superficie).
@@ -93,7 +111,15 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
 - [x] **Premisa §2 SW corregida** (no hay SW de admin separado → script unregister DESCARTADO; zombie cubierto por network-first+redirect+cache-bump)
 - [x] **Banner re-login BUILT** (2026-06-25, login.js): auto-detecta marcadores localStorage del admin viejo (self-contained, no necesita el redirect); dismiss persistente + auto-dismiss tras login. Verificado en preview.
 - [ ] Hub detalle validado live (chat real) — gate principal, necesita tráfico/dueño
-- [x] **Gaps menores verificados (2026-06-25)**: perfil propio (`sec-profile`) y editor de plantillas (`sec-templates`/`config/messageTemplates`) NO existen en admin-app → decidir portar vs aceptar gap (el Hub espera validación live primero)
+- [x] **Gap plantillas = NO-GAP (26/06)**: el editor del admin viejo ya estaba oculto (`display:none`) → aceptar, cero regresión.
+- [x] **Gap perfil RESUELTO — módulo `perfil` PORTADO + VERIFICADO (26/06, §253)**: `admin-app/src/modules/perfil/`
+  (`perfil.ui.js`+`perfil.data.js`) + `styles/perfil.css`, accesible desde el **menú de usuario** (topbar → `#/perfil`,
+  no sidebar). Subset que encaja en el auth nuevo: avatar (Storage `avatars/{uid}.webp`) · nombre/teléfono/prefijo ·
+  cédula one-time-edit + solicitud al super-admin · info de cuenta read-only · **cambio de contraseña con reautenticación
+  + política fuerte** (mejora sobre paridad). **Decisión del dueño (26/06): "la opción más segura"** → subset ahora +
+  MFA-hardening (TOTP) como fase futura aparte (NO el SMS-MFA viejo). **Diferido** (no encaja / canal aparte): 2FA-SMS,
+  trusted-devices, backup-codes, preguntas, Telegram link → TODO-43. Verificado: build 0-err (148 mód) · boot mock 0-err ·
+  4 tarjetas render · fuerza de contraseña (1→5) · dirty-detection · cédula-lock · acceso topbar. dist rebuilt.
 - [ ] Flip `admin.html`→`_legacy/` + redirect (go/no-go dueño) — banner re-login ya BUILT
 - [ ] Cache-bump del cron post-flip + validación live en celular (incl. PWA vieja + push FCM)
 - [ ] ADR §251 cierre + post-cutover live OK

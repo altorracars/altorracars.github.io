@@ -35,6 +35,7 @@ import './styles/cerebro.css';
 import './styles/unmatched.css';
 import './styles/hub.css';
 import './styles/fcm.css';
+import './styles/perfil.css';
 
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
@@ -68,6 +69,7 @@ import { applyInitialAccent } from './modules/ajustes/ajustes.data.js';
 import { mountCerebro } from './modules/cerebro/cerebro.ui.js';
 import { mountUnmatched } from './modules/unmatched/unmatched.ui.js';
 import { mountHub } from './modules/hub/hub.ui.js';
+import { mountPerfil } from './modules/perfil/perfil.ui.js';
 import { initFcm } from './core/fcm.js';
 
 const appRoot = document.getElementById('app');
@@ -75,7 +77,7 @@ applyInitialTheme();
 applyInitialAccent();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes, cerebro: mountCerebro, unmatched: mountUnmatched, hub: mountHub };
+const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes, cerebro: mountCerebro, unmatched: mountUnmatched, hub: mountHub, perfil: mountPerfil };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

@@ -81,6 +81,8 @@ const TITLES = {
   hub: 'ALTOR Hub',
   cerebro: 'Cerebro AI',
   unmatched: 'Lo que no entendí',
+  // F-6 (gap §3 sec-profile): accesible desde el menú de usuario, no del sidebar.
+  perfil: 'Mi perfil',
 };
 
 export function mountShell(appRoot) {
@@ -126,8 +128,14 @@ export function mountShell(appRoot) {
     ]),
   ]);
   userBtn.addEventListener('click', () => {
-    openMenu(userBtn, [{ value: 'logout', label: 'Cerrar sesión', icon: '🚪' }],
-      (it) => { if (it.value === 'logout') signOutUser(); }, { title: displayName() });
+    openMenu(userBtn, [
+      { value: 'perfil', label: 'Mi perfil', icon: '👤' },
+      { divider: true },
+      { value: 'logout', label: 'Cerrar sesión', icon: '🚪' },
+    ], (it) => {
+      if (it.value === 'perfil') navigate('perfil');
+      else if (it.value === 'logout') signOutUser();
+    }, { title: displayName() });
   });
 
   const topbar = el('header', { class: 'topbar' }, [title, el('div', { class: 'topbar__actions u-row' }, [themeBtn, userBtn])]);

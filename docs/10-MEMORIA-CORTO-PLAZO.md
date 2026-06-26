@@ -10,12 +10,12 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ** (26/06). Spec `2026-06-26-F-6-cutover-kickoff`. **Prep autónoma 25/06 ✅** (detalle→spec): FCM portado + premisa §2 SW corregida + banner re-login + gaps perfil/plantillas verificados. **FLIP irreversible = GATED** (dueño/tráfico): Hub-detalle-LIVE (chat real) · FCM en device · `admin.html`→`_legacy/`+redirect · celular. NO re-preguntar go/no-go; la autorización abre el gate, no salta la verificación.
-> ✅ **Cerrado previo**: F-4 Hub (§249) · F-5 fugas LIVE (§250) · Hub SMOKE ✅. Deploys=míos (mem). LLM/bot=saldo (TODO-34). Bug `onChatTransferred` FCM FIXED+deployed (los `fcmTokens` son OBJETOS → todo consumer extrae `.token`, dato durable).
+> 🚀 **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ** (26/06). Spec `2026-06-26-F-6-cutover-kickoff` + ADR §253. **Prep ✅**: FCM + banner re-login + **módulo `perfil`** portados → **paridad §3 cerrada por código**. MFA-SMS/Telegram diferidos = TODO-43. **FLIP irreversible = GATED** (dueño/tráfico): Hub-detalle-LIVE (chat real) · FCM en device · `admin.html`→`_legacy/`+redirect · celular. NO re-preguntar go/no-go; la autorización abre el gate, no salta la verificación.
+> ✅ **Cerrado previo**: F-4 Hub (§249) · F-5 fugas LIVE (§250) · Hub SMOKE ✅. Deploys=míos. Bug `onChatTransferred` FCM FIXED (`fcmTokens` son OBJETOS → consumer extrae `.token`).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` = portal único, apagar `admin.html`. Camino F-2..F-5 ✅ → **F-6 flip** (último, irreversible; receta L-53). Yo manejo el orden técnico; dueño decide dinero/legal/go-no-go (mem `feedback-collaboration-style`). **Pend**: lead `PRUEBA-CLAUDE`/`3001112233`→purga en clean-slate · bot LLM DORMIENTE (#917)=saldo. (Build/cache/sync → `05`.)
+> 🧭 **FOCO MAESTRO: PLAN UNIFICADO** (§237): `admin-app/` = portal único, apagar `admin.html`. F-2..F-5 ✅ + F-6 prep ✅ → **F-6 flip** (último, irreversible; L-53). Yo manejo lo técnico; dueño decide dinero/legal/go-no-go. **Pend**: purga lead `PRUEBA-CLAUDE`/`3001112233` · bot LLM DORMIENTE (#917)=saldo. (Build/cache/sync → `05`.)
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >
@@ -53,8 +53,9 @@
 | **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS-4.8⟧.** **P0 `deadcode:check`✅ + P1 skill `anti-codigo-muerto`✅ + propagada ×4+global ✅ (§232).** 🔜 P2 workflow bounded + limpiar bot viejo (en F4/F5). M-19. | 🔄 P0+P1✅ | resto: P2·bot |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |
 | **TODO-41** | **Motor de automatización → server-side ⟦OPUS-4.8⟧** (§242.5): hoy el engine de reglas (`admin-automation.js`) corre client-side SOLO en sesión super_admin → frágil (sin super_admin abierto, no corre). Migrar a Cloud Function. + gap RBAC: mapear `workflows.edit`→write de `config/automationRules` en rules. | 🔮 | post-cutover / escala |
+| **TODO-43** | **MFA-hardening del portal nuevo ⟦OPUS-4.8⟧ (§253)** — el portal nuevo es email+password-only; el stack SMS-MFA del admin viejo (2FA-SMS, dispositivos de confianza, backup codes, preguntas de seguridad) + Telegram link NO se portó (no encaja en el auth modular; ya era la realidad live). Reimplementar como **TOTP** (app autenticadora, más seguro+robusto que SMS) + recovery, si el dueño quiere endurecer. NO bloquea F-6. | 🔮 futuro | post-cutover (decisión dueño) |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5✅·F-2 6/6✅** (§238-245) **·F-3✅** (§246) **·F-4 COMPLETO✅** (§247-249: unmatched+cerebro+Hub) **·F-5 source✅** (§250: fugas, tested). **F-1 spec'd** (LLM=saldo). Sigue **F-6** cutover PWA-safe. ⚠️ deploy F-5 functions + Hub E2E live + dist batch = go/no-go dueño/staging (§237.6/TODO-30). | 🔄 F-2..F-5 ✅ | dueño: dinero/legal/go-no-go |
+| **TODO-39** | **🧭 PLAN UNIFICADO un-solo-panel-admin ⟦OPUS-4.8⟧ — FOCO MAESTRO** (spec `…PLAN-UNIFICADO…`, §237). Portal único `admin-app/`, apagar `admin.html`. **F-0.5..F-5 ✅** (§238-250) + **F-6 prep ✅** (§253). **F-1** spec'd (LLM=saldo). Sigue **F-6 FLIP** (gated; detalle→foco). | 🔄 F-2..F-5 ✅ | dueño: go-no-go |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
@@ -62,4 +63,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§246 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2 6/6 + F-3 Inicio (§238-246) · auditoría N2 §239 · HUB Visibilidad §244+§244.8. **25/06**: F-6 prep (FCM port + banner re-login + fix `onChatTransferred`) · **flujo fuerte unificado W-11/`60-WORKFLOWS`/§251** (reconciliado con bersaglio) · **gate de calificación de leads §252** (1er caso real del flujo W-11: corta el flood de Telegram — chat sin teléfono no entra a `leads`; deploy OK + 28/28 tests; **PEND: E2E anónima con sesión fresca + purga `crmPurgeLead` de prueba/anónimos = dueño**). Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§253 → `99`/`00`/`30`. **24-26/06**: PLAN UNIFICADO §237 · F-2..F-5 (§238-250) · auditoría N2 §239 · HUB Visibilidad §244 · flujo fuerte W-11 §251 · gate leads §252 (**PEND: E2E anónima fresca + purga `crmPurgeLead` = dueño**) · F-6 prep: módulo `perfil` §253. Defectos bot → `altor-hub-rediseno-defectos.md`.

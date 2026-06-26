@@ -41,7 +41,10 @@
 }
 :root[data-theme="dark"] .navitem.is-active { background: rgba(184,146,74,0.18); color: var(--gold-200); }
 .navitem:disabled { opacity: 0.55; cursor: default; }
-.navitem__icon { font-size: 17px; width: 22px; text-align: center; }
+.navitem__icon { font-size: 17px; width: 22px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+/* W-11 F2: tamaño del SVG inline (el emoji-fallback usa el font-size de arriba). */
+.navitem__icon svg { width: 19px; height: 19px; }
+.navgroup__summary .navitem__icon svg { width: 16px; height: 16px; }
 .navitem__label { flex: 1; }
 .navitem__soon {
   font-size: 10px; font-weight: 700; letter-spacing: 0.04em;

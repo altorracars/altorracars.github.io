@@ -14,9 +14,11 @@
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧭 **PLAN UNIFICADO (§237) = COMPLETO**. **DUEÑO DECIDIÓ (26/06)**: arrancar **(A) REDISEÑO frontend** ("algo pro, mejor que cualquier CRM" → flujo **W-11 COMPLETO** + todos los poderes: assess→mockup→Gemini→comité→validación live; directiva F4F5 = "avanza solo, solo pará para el prompt de Gemini"). **(B) bot LLM #917 = BLOQUEADO por saldo Anthropic** (dueño avisa). **Pend-dueño menores**: validación celular FCM (PWA vieja→portal + push) · dead-code (~3-jul, TODO-35). (Build/cache → `05`.)
+> 🧭 **PLAN UNIFICADO (§237) = COMPLETO**. **DUEÑO DECIDIÓ (26/06)**: (A) rediseño portal (W-11, ver 🎨 abajo) · (B) bot LLM #917 = BLOQUEADO por saldo Anthropic (dueño avisa). **Pend-dueño menores**: validación celular FCM (PWA vieja→portal + push) · dead-code (~3-jul, TODO-35). (Build/cache → `05`.)
 >
-> ✅ **CRM clean-slate hecho (26/06)**: 206 docs de prueba purgados (leads·deals·activities·contacts·solicitudes·dedup·failedIngestions) vía Admin-SDK+ADC; backup en `backups/`; **NO** se tocó `clientes`/`conciergeChats`/`mensajes`/`crm_alerts` (fuera de Reportes/Bandeja — ofrecidos al dueño). Lección → `30` L-53.
+> ✅ **CRM clean-slate hecho (26/06)**: 206 docs prueba purgados (L-53; backup en `backups/`). Sin tocar `clientes`/chats/`crm_alerts` (ofrecidos al dueño).
+>
+> 🎨 **REDISEÑO portal CRM (W-11) — EN CURSO, DETENIDO en prompt de Gemini** → spec `docs/superpowers/specs/2026-06-26-portal-crm-rediseno-W11.md` (Fase A+arquitecto+mockup+comité ✅). Comité reencuadró: **motor=Bandeja densa > chasis=nav**; regresión a cuidar = grupo colapsado oculta ítem activo (`setActive` no auto-expande). Sigue: dueño corre Gemini → veredicto → implementar F1.
 
 > 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
 >

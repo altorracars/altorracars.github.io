@@ -211,6 +211,11 @@
 - **Causa**: confiar en la PRESENCIA del match como si fuera COMPRENSIÓN. Familia M-02/M-11 (verifica-no-asumas); refinamiento: el grep es índice, no entendimiento.
 - **Corrección**: antes de basar una decisión (sobre todo cara/irreversible) en un grep-hit, ABRE el archivo y lee qué HACE el código matcheado. Un claim de arquitectura ("hay un SW del admin") exige leer el callsite, no solo que el término aparezca. [HONOR]
 
+### M-21 · "Validado E2E" del HAPPY-PATH no es validado — un paso que se porta RARO en la validación es señal de bug (no nuisance); entidad con CICLO DE VIDA → frontera obligatoria = cerrar/finalizar/reabrir + REPETIR la acción + ambos lados ⟦OPUS-4.8⟧
+- **Defecto (§254→§256, 2026-06-26)**: declaré "Hub validado LIVE E2E" tras solo escalar→tomar→responder→llega. El dueño USÓ el Hub y cazó 3 bugs en la frontera que NO recorrí: cliente-finaliza→Hub-no-cierra · cerrado-queda-en-Activos · mensaje-doble. Peor: TUVE el "Finalizar" en las manos en §254, se **CONGELÓ** (confirm nativo), lo anoté como "smell de rediseño" y seguí — el congelamiento ERA la punta del bug.
+- **Causa**: caza-bugs aplicado a medias — recorrí el camino feliz y lo llamé "validado"; traté un paso que se portó raro como molestia (no señal); mandé 1 mensaje (no repetí → perdí el doble). La skill marca N→vacío como frontera pero no mapeé "finalizar chat"→esa frontera ni "repetir envío"→idempotencia.
+- **Corrección**: (1) skill global `caza-bugs` endurecida — un paso que se porta raro = **STOP+investiga** (nunca "anotar y seguir"); entidad con ciclo de vida → frontera = crear→…→**CERRAR/finalizar→reabrir** + **repetir la acción** + recorrer **ambos lados**. (2) "validado E2E" exige el ciclo COMPLETO, no el happy-path. Familia M-09 (cobertura de reflejos) + `verification-before-completion`. [HONOR]
+
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md`

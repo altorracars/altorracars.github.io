@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> 🚀 **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ** (26/06). Spec `2026-06-26-F-6-cutover-kickoff` + ADR §253. **Prep ✅**: FCM + banner re-login + **`perfil`** LIVE-validado (§253) + **Hub detalle VALIDADO LIVE E2E** (§254: claim/responder/presencia, yo vía extensión). **Checklist §3 del cutover CERRADO.** MFA-SMS/Telegram diferidos = TODO-43. **Queda SOLO el FLIP irreversible** (`admin.html`→`_legacy/`+redirect, toca SW/manifest/FCM) + **validación celular post-flip** (FCM push). Pre-autorizado; ejecutar con cuidado (puerta 1-sentido del admin de prod) → su propio ADR de cierre.
+> 🚀 **F-6 cutover · ✅ DUEÑO PRE-AUTORIZÓ** (26/06). Spec `2026-06-26-F-6-cutover-kickoff` + ADR §253. **Prep ✅**: FCM + banner re-login + **`perfil`** LIVE-validado (§253) + **Hub detalle VALIDADO LIVE E2E** (§254: claim/responder/presencia, yo vía extensión). **§3 CERRADO + FLIP EJECUTADO** (§255: `admin.html`→`_legacy/` + stub redirect, verificado curl+navegador real, sin loop, reversible). MFA-SMS/Telegram diferidos = TODO-43. **F-6 cierra del todo tras**: dueño mergea `dev`→`main` · cache-bump del cron · **validación celular** (PWA vieja → portal nuevo + push FCM). Follow-up dead-code: `manifest-admin.json` + `js/admin/*` huérfanos.
 > ✅ **Cerrado previo**: F-4 Hub (§249) · F-5 fugas LIVE (§250) · Hub SMOKE ✅. Deploys=míos. Bug `onChatTransferred` FCM FIXED (`fcmTokens` son OBJETOS → consumer extrae `.token`).
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).

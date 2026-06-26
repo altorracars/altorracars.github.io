@@ -19,14 +19,12 @@ export function mountAgenda(root) {
   const ui = { year: today.getFullYear(), month: today.getMonth(), events: [], loading: true, error: null, sub: null };
 
   const head = el('div', { class: 'agenda__head' });
-  // F18/F19 §184: la GESTIÓN de citas ya vive AQUÍ (confirmar con asesor,
-  // WhatsApp con link, reprogramar, cancelar, no-show). El clásico sigue
-  // disponible como respaldo hasta el cutover (strangler F23).
+  // F18/F19 §184: la GESTIÓN de citas vive AQUÍ (confirmar con asesor, WhatsApp
+  // con link, reprogramar, cancelar, no-show). F-6 §255: retirado el link al
+  // "calendario clásico" de respaldo — admin.html se cuarentenó en el cutover.
   const banner = el('p', { class: 'u-muted u-caption', style: { margin: '0', padding: '8px 10px', border: '1px dashed var(--line, #444)', borderRadius: '8px' } }, [
     '✅ Toca una cita para confirmarla (asignando asesor), pedir confirmación por WhatsApp, reprogramarla o cancelarla. ',
-    'Si el cliente no confirma, caduca sola 3h antes y libera el cupo. El ',
-    el('a', { href: '/admin.html#solicitudes', target: '_blank', rel: 'noopener', text: 'calendario clásico' }),
-    ' sigue de respaldo hasta el cambio definitivo.',
+    'Si el cliente no confirma, caduca sola 3h antes y libera el cupo.',
   ]);
   const weekdays = el('div', { class: 'agenda__weekdays' }, WEEKDAYS.map((w) => el('span', { class: 'agenda__wd', text: w })));
   const grid = el('div', { class: 'agenda__grid' });

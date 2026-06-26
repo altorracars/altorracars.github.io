@@ -10,15 +10,13 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
-
-> 🧠 **Fiabilidad cerebro (§257)** RAN ✅ · cura M-22 ×4 ✅ · residual → TODO-44/41/45.
+> 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` (detalle → `05`).
 >
-> 🎨 **W-11 F1+F2 ✅ (en `main`)** + bug-menús scroll ✅ `1556e27`. PEND: F3 diferido + Capa-10 ADR. Detalle→spec. Bot LLM=saldo.
+> ✅ **Cerrado reciente** (en `99`/`main`): Fiabilidad §257 + M-22 ×4 (residual→TODO-44) · W-11 F1+F2 + bug-menús `1556e27` (PEND F3 diferido) · ciclo gobernanza 26/06 (comité×5·Wompi·aliados). **Bot LLM = saldo.**
 >
-> 🔧 **FOCO 26/06: ciclo gobernanza** (dueño paró features) — A1 doctrina comité ×5 ✅ · A3 Wompi ✅ · A4 aliados=TODO-25 ✅ · bug-menús ✅. **SIGUE: TODO-46** (audit LLM/bot, fase B) → TODO-47 (diseño, fase C).
-
-> 🗄️ **Fuera del foco**: CRM E0→E6 ✅·CMS marca ✅·cerebro v6 ✅. **⚖️ Gate P4** (durable): legal público NO sin abogado (§42).
+> 🔵 **FOCO VIVO — TODO-46 → build (F-1)**: audit bot/LLM ✅ (nada perdido; bot v2 `js/concierge/v2/altor-bot.js`, input ternario D1, existe ~tramo1/3 + NO cableado, aparcado por §237; admin-app Hub/Cerebro/Unmatched VIVOS, corregido `20`). Decisión comité 26/06 (crudo→bóveda): terminar+lanzar v2 Free Core (solo botones, $0, sin LLM) por cutover seguro tras flag, **NUNCA big-bang** (→ callejón (g)). **PRÓXIMO: F-1 paso 1** = módulo compartido `shared/` + portar §234/§80 → luego TODO-47 (diseño).
+>
+> 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
 > **🚫 Callejones sin salida (NO reintentar)**:
 > (a) **NO custom claims ahora** — reglas Fase 1 usan lookup `usuarios/{uid}`; claims = Fase 5 (§159.3).
@@ -26,7 +24,8 @@
 > (c) Consejo Externo = Gemini/Antigravity **code-aware solo-lectura** (§224); cuándo + R1-R4 → `§15`; seguridad/dinero/arquitectura ESTRUCTURAL, no rutina.
 > (d) **NO E2E de forms en localhost** (L-08/§175) — E2E solo contra live; UI con stub `window.db`.
 > (e) **NO mutar config de producción vía MCP** (el clasificador lo deniega) — ruta: acción de 1 clic del dueño (patrón F39) o autorización explícita.
-> (f) **Fan-out de agentes: escala LIBRE si el agente = in-cwd read-only + WebFetch + structured-output + auto-relanzar fallos** (doctrina 26/06 `comité-expertos §ACOTADO`, evidencia 63 agentes). Cuelga SOLO con ops gateadas (git/fuera-cwd) en background → worktree/foreground. L-50/§226 = mecanismo, no número.
+> (f) **Fan-out acotado escala LIBRE** si el agente = in-cwd read-only + WebFetch + structured-output + auto-relanzar (doctrina 26/06 `comité-expertos §ACOTADO`, ev. 63 agentes). Cuelga SOLO con ops gateadas (git/fuera-cwd) en background → worktree/foreground. L-50/§226.
+> (g) **Bot v2 (F-1): NO big-bang sobre v1** (comité 26/06). v1 battle-tested (§234 privacidad PC-mostrador · §80 · escalado/captura vivos); v2 verde sin guards = regresión legal + pérdida silenciosa de leads. Camino: v2 tras flag → portar §234/§80 + escalado/captura → validar LIVE → flip. Módulo compartido `js/concierge/shared/` (NO copiar). NO re-portar a Vite (vanilla OK).
 
 ---
 
@@ -49,16 +48,16 @@
 | **TODO-29** | **Endurecer el lazo ⟦OPUS-4.8⟧** — git-state vía SessionStart hook (abolir git en `05`); kernel/hook ×3. Resta: shard 99a/99b · `ignoreDirs`. | 🔄 | kernel/hook ×3 |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS-4.8⟧** — gate IA (tests/invariantes BLOQUEANTES en CI) + acceptance Kary en STAGING + dueño autoriza prod. Aplica cars (F42/§TODO-25)+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD del cerebro** — paso (a)§228 + (b)§229 ✅ (guardián del índice + replicación SELECTIVA ×brains; detalle→§229/L-52). RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 futuro | YAGNI |
-| **TODO-34** | **EPIC bot LLM ⟦OPUS-4.8⟧** Opción A (solo-LLM+Tool Calling+botones+guards); F1.a·F2·F3·TTL·wiring ✅ **DORMIENTE** (#917). FLIP = saldo Anthropic (al final). F4/F5→§236; ahora parte del PLAN UNIFICADO §237. | 🔄 dormiente | dueño: saldo·consent |
+| **TODO-34** | **EPIC bot LLM ⟦OPUS-4.8⟧** Opción A; F1-F3+wiring ✅ **DORMIENTE** (#917). FLIP = saldo Anthropic. F4/F5→§236; el bot v2 vive en TODO-46/F-1. | 🔄 dormiente | dueño: saldo |
 | **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧.** P0 `deadcode:check`✅ (0 huérfanas) + P1 skill✅. **Huérfanos del cutover**: `manifest-admin.json`+`js/admin/*` (solo los cargaba `admin.html`, ya en `_legacy/`). **DIFERIDO ~03/07** (≥1 sem): purgarlos hoy rompe asesores con `admin.html` CACHEADO (skill §4). M-19. | 🔄 diferido | ~03/07 (cache) |
-| **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244/§244.8)** — 7 skills + agente `seo-auditor` (IoC+D′, $0): construidas+catalogadas + **propagadas ×3 siblings ✅** (25/06) + plantilla + install ✅. RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config` por web. | 🔄 propagación ✅ | por-proyecto |
+| **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244)** — 7 skills + agente `seo-auditor` construidas+catalogadas+propagadas ×3 ✅ (25/06). RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config`. | 🔄 | por-proyecto |
 | **TODO-41** | **🔴 Motor de automatización NO corre post-cutover ⟦OPUS-4.8⟧** (§242.5/§257): el engine (`admin-automation.js`) corría client-side SOLO en `admin.html` (RETIRADO en el flip) → reglas configurables muestran "Activas" pero **NO se ejecutan** (las barridas SLA/cita core SÍ por cron). Migrar a Cloud Function + gap RBAC `workflows.edit`→`config/automationRules`. | 🔴 sube | dueño/escala |
 | **TODO-45** | **Cleanups auditoría §257 ⟦OPUS-4.8⟧** — (a) functions huérfanas del clásico retirado (`onNewSolicitud`/`onSolicitudWritten`/`onSolicitudStatusChanged`/`onClienteCreated`) ¿desplegadas sin uso? verificar+limpiar; (b) `brands.saveBrand` descripción=nombre (bug datos); (c) `kb.edit` sin función de edición de `_brain`; (d) comentario stale `wizard.js`; (e) NBA doc "10" vs 9. | 🔮 | bajo |
 | **TODO-43** | **MFA-hardening portal nuevo ⟦OPUS⟧ (§253)** — el portal nuevo es email+password-only; el stack SMS-MFA del admin viejo (2FA/trusted-devices/backup-codes/preguntas) + Telegram NO se portó (no encaja en auth modular). Reimplementar como **TOTP**+recovery si el dueño quiere endurecer. NO bloquea. | 🔮 futuro | dueño |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-44** | **Fiabilidad del cerebro ⟦OPUS-4.8⟧** — auditoría §257 + cura **M-22**: check #16 (`verificado-vivo`/stale) en kernel, PROPAGADO+COMMITEADO byte-idéntico ×4 ✅ (26/06, sha `4905D566`; +brain-index.mjs a bersaglio/insema). **RESTA**: adopción de marcadores `verificado-vivo:` + reconciliación exhaustiva (Storage/índices/289 ADRs). Absorbe TODO-33. | 🔄 propagado ✅ | adopción + reconcil. |
+| **TODO-44** | **Fiabilidad cerebro ⟦OPUS-4.8⟧** — auditoría §257 + cura M-22 (check #16 kernel, propagado ×4 ✅ sha `4905D566`). RESTA: adopción marcadores `verificado-vivo:` + reconciliación exhaustiva. Absorbe TODO-33. | 🔄 propagado ✅ | adopción |
 
-| **TODO-46** | **🔍 Auditoría funcional bot/LLM ⟦OPUS⟧ (dueño 26/06)** — admin nuevo sin config LLM; "Cerebro AI" (FAQs+"sembrar base"/"nueva FAQ") + "No entendí" = propósito poco claro. Auditar qué es funcional / qué se VA / qué falta (no poner por poner). Fan-out read-only. **Scope/handoff → spec `…auditoria-funcional-bot-llm-B1.md`**. DESPUÉS de cerebro+skills ✅. | 🔄 fase B | dueño |
+| **TODO-46→F-1** | **Bot v2 ⟦OPUS⟧** — audit ✅ (detalle→Foco+callejón g). Build: paso 1 = módulo `shared/` + guards §234/§80 → cobertura botones → validar live → flip. Editor `_brain`=gap (TODO-45c). | 🔄 build | — |
 | **TODO-47** | **🎨 Revisión diseño profunda ⟦OPUS⟧ (dueño 26/06)** — bug-menús ✅ `1556e27`; FALTA pasar diseños por skills (`frontend-design`/`ui-ux-pro-max`) ANTES de implementar (el flujo de diseño falló: no probé estado expandido). | 🔮 fase C | tras A+B |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
@@ -67,4 +66,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§256 → `99`/`00`/`30`. **26/06**: F-6 cutover live (§253-256) · CRM clean-slate (L-53) · W-11 F1+F2 · **ciclo gobernanza** (doctrina comité ×5 + Wompi + A4 aliados + bug-menús) → ver Foco. Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.

@@ -12,11 +12,13 @@
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` en entregas (detalle → `05`).
 
-> 🧠 **Fiabilidad del cerebro (§257)**: auditoría RAN ✅ · veredicto BALANCEADO · cura **M-22** mecanizada (check #16) + propagada ×4 ✅. Residual → TODO-44 (adopción marcadores + reconcil.) · TODO-41 (motor no corre) · TODO-45 (menores). Detalle → `05` flags + ADR §257.
+> 🧠 **Fiabilidad cerebro (§257)** RAN ✅ · cura M-22 ×4 ✅ · residual → TODO-44/41/45.
 >
-> 🎨 **REDISEÑO portal W-11 — F1 ✅ + F2 ✅** (spec `…portal-crm-rediseno-W11.md`): **F1 motor** = (a) multi-select+acciones masivas Bandeja ✅LIVE · (b) "Nuevo lead" topbar global `587737b` · (c) drawer móvil off-canvas accesible `da84051` (focus-trap+Escape; CSS `visibility` NO `inert`, L-55). **F2 chasis** `1c0aa07` = nav 2-zonas `<details>` (Primaria plana + grupos Sitio/Comms/Ajustes) + **fix regresión `setActive`** (auto-expand grupo del ítem activo) + persist localStorage + degenera-a-plano RBAC (verif roles reales) + **iconos SVG** `759c08f` (27 vectoriales currentColor, fallback emoji; mockup entregado). **Falta validación LIVE dueño** (F1b·c + F2). PEND: solo **F3** (palette Ctrl+K + estados vacíos, DIFERIDO — el dueño dijo "no me beneficia"). Aliados=aliado (§205; comercial→TODO-25). Bot LLM=saldo. (Build/cache→`05`.)
+> 🎨 **W-11 F1+F2 ✅ (en `main`)** + bug-menús scroll ✅ `1556e27`. PEND: F3 diferido + Capa-10 ADR. Detalle→spec. Bot LLM=saldo.
+>
+> 🔧 **FOCO 26/06: ciclo gobernanza** (dueño paró features) — A1 doctrina comité ×5 ✅ · A3 Wompi ✅ · A4 aliados=TODO-25 ✅ · bug-menús ✅. **SIGUE: TODO-46** (audit LLM/bot, fase B) → TODO-47 (diseño, fase C).
 
-> 🗄️ **Fuera del foco** (status → ledger TODO + `99`): CRM E0→E6 ✅ · CMS marca ✅ · cerebro v6 ✅. **⚖️ Gate P4** (durable): texto legal público (supresión/privacidad/consent F2) NO se publica sin abogado (§42).
+> 🗄️ **Fuera del foco**: CRM E0→E6 ✅·CMS marca ✅·cerebro v6 ✅. **⚖️ Gate P4** (durable): legal público NO sin abogado (§42).
 >
 > **🚫 Callejones sin salida (NO reintentar)**:
 > (a) **NO custom claims ahora** — reglas Fase 1 usan lookup `usuarios/{uid}`; claims = Fase 5 (§159.3).
@@ -24,7 +26,7 @@
 > (c) Consejo Externo = Gemini/Antigravity **code-aware solo-lectura** (§224); cuándo + R1-R4 → `§15`; seguridad/dinero/arquitectura ESTRUCTURAL, no rutina.
 > (d) **NO E2E de forms en localhost** (L-08/§175) — E2E solo contra live; UI con stub `window.db`.
 > (e) **NO mutar config de producción vía MCP** (el clasificador lo deniega) — ruta: acción de 1 clic del dueño (patrón F39) o autorización explícita.
-> (f) **NO fan-out grande/background de agentes aquí** (cuelga en lecturas gateadas + quema tokens, L-50/§226/§239) — ACOTADO: 1 agente in-cwd o comité foreground sin tools (verif §237/§239).
+> (f) **Fan-out de agentes: escala LIBRE si el agente = in-cwd read-only + WebFetch + structured-output + auto-relanzar fallos** (doctrina 26/06 `comité-expertos §ACOTADO`, evidencia 63 agentes). Cuelga SOLO con ops gateadas (git/fuera-cwd) en background → worktree/foreground. L-50/§226 = mecanismo, no número.
 
 ---
 
@@ -56,10 +58,13 @@
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
 | **TODO-44** | **Fiabilidad del cerebro ⟦OPUS-4.8⟧** — auditoría §257 + cura **M-22**: check #16 (`verificado-vivo`/stale) en kernel, PROPAGADO+COMMITEADO byte-idéntico ×4 ✅ (26/06, sha `4905D566`; +brain-index.mjs a bersaglio/insema). **RESTA**: adopción de marcadores `verificado-vivo:` + reconciliación exhaustiva (Storage/índices/289 ADRs). Absorbe TODO-33. | 🔄 propagado ✅ | adopción + reconcil. |
 
+| **TODO-46** | **🔍 Auditoría funcional bot/LLM ⟦OPUS⟧ (dueño 26/06)** — admin nuevo sin config LLM; "Cerebro AI" (FAQs+"sembrar base"/"nueva FAQ") + "No entendí" = propósito poco claro. Auditar qué es funcional / qué se VA / qué falta (no poner por poner). Fan-out read-only. DESPUÉS de cerebro+skills ✅. | 🔄 fase B | dueño |
+| **TODO-47** | **🎨 Revisión diseño profunda ⟦OPUS⟧ (dueño 26/06)** — bug-menús ✅ `1556e27`; FALTA pasar diseños por skills (`frontend-design`/`ui-ux-pro-max`) ANTES de implementar (el flujo de diseño falló: no probé estado expandido). | 🔮 fase C | tras A+B |
+
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 ---
 
 ## 📝 Bitácora (efímera)
 
-> Histórico §184-§256 → `99`/`00`/`30`. **26/06**: F-6 cutover COMPLETO+validado live (§253-256) · M-21 (caza-bugs happy-path) · §252 gate · **CRM clean-slate** (206 docs prueba, L-53) · **rediseño frontend ARRANCADO** (W-11). Defectos bot → `altor-hub-rediseno-defectos.md`.
+> Histórico §184-§256 → `99`/`00`/`30`. **26/06**: F-6 cutover live (§253-256) · CRM clean-slate (L-53) · W-11 F1+F2 · **ciclo gobernanza** (doctrina comité ×5 + Wompi + A4 aliados + bug-menús) → ver Foco. Defectos bot → `altor-hub-rediseno-defectos.md`.

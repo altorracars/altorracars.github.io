@@ -18,6 +18,10 @@ import { openQuickLeadForm } from '../../modules/capture/quick-lead.js';
 
 const APP_VERSION = '0.4.1';
 
+// W-11 F1(c): icono hamburguesa (SVG inline, currentColor) para el drawer móvil.
+// Marca la dirección emoji→SVG de F2 sin meter librería (vanilla sin bundler, §3.1).
+const ICON_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+
 const NAV = [
   // PLAN-UNIFICADO F-3 §237: el Inicio del portal (KPIs + NBA + pendientes). Sin perm: lo ve todo el equipo.
   { id: 'inicio', label: 'Inicio', icon: '🏠', ready: true },
@@ -104,11 +108,11 @@ export function mountShell(appRoot) {
       el('span', { class: 'navitem__label', text: item.label }),
       !item.ready ? el('span', { class: 'navitem__soon', text: 'Pronto' }) : null,
     ]);
-    if (item.ready) btn.addEventListener('click', () => navigate(item.id));
+    if (item.ready) btn.addEventListener('click', () => { navigate(item.id); closeDrawer(); });
     navButtons[item.id] = btn;
     nav.append(btn);
   });
-  const sidebar = el('aside', { class: 'sidebar' }, [
+  const sidebar = el('aside', { class: 'sidebar', id: 'app-sidebar' }, [
     brand, nav,
     el('div', { class: 'sidebar__foot u-caption u-faint' }, [`v${APP_VERSION} · Fase 4`]),
   ]);
@@ -150,7 +154,14 @@ export function mountShell(appRoot) {
     : null;
   if (newLeadBtn) newLeadBtn.addEventListener('click', () => openQuickLeadForm());
 
-  const topbar = el('header', { class: 'topbar' }, [title, el('div', { class: 'topbar__actions u-row' }, [newLeadBtn, themeBtn, userBtn])]);
+  // W-11 F1(c): hamburguesa del drawer móvil (visible SOLO ≤560px vía CSS) + backdrop.
+  const drawerToggle = el('button', {
+    class: 'drawer-toggle icon-btn', type: 'button',
+    'aria-label': 'Abrir menú', 'aria-expanded': 'false', 'aria-controls': 'app-sidebar',
+  }, [el('span', { html: ICON_MENU })]);
+  const backdrop = el('div', { class: 'drawer-backdrop', 'aria-hidden': 'true' });
+
+  const topbar = el('header', { class: 'topbar' }, [drawerToggle, title, el('div', { class: 'topbar__actions u-row' }, [newLeadBtn, themeBtn, userBtn])]);
   const outlet = el('main', { class: 'outlet', id: 'outlet' });
   const detailRoot = el('div', { id: 'detail-root' });
 
@@ -158,11 +169,54 @@ export function mountShell(appRoot) {
     sidebar,
     el('div', { class: 'app-main' }, [topbar, outlet]),
     detailRoot,
+    backdrop,
   ]);
 
   clear(appRoot);
   appRoot.removeAttribute('aria-busy');
   appRoot.append(layout);
+
+  // ── W-11 F1(c): controlador del drawer móvil (off-canvas accesible) ──
+  // Real, no "rail": foco atrapado mientras abierto; Escape/backdrop/navegar cierran.
+  // La TABULABILIDAD del nav off-canvas la maneja el CSS (`visibility:hidden` cerrado en
+  // móvil = fuera del tab-order), NO `inert` por JS — así cruzar a desktop NUNCA puede
+  // dejar el nav muerto (la media query deja de aplicar y el sidebar vuelve interactivo
+  // por construcción, sin depender de que dispare ningún evento de resize).
+  const mqMobile = window.matchMedia('(max-width: 560px)');
+  let drawerOpen = false;
+  let lastFocus = null;
+  function trapKey(e) {
+    if (e.key === 'Escape') return closeDrawer();
+    if (e.key !== 'Tab') return;
+    const f = sidebar.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  function openDrawer() {
+    if (drawerOpen || !mqMobile.matches) return;
+    drawerOpen = true;
+    lastFocus = document.activeElement;
+    layout.classList.add('is-drawer-open');
+    drawerToggle.setAttribute('aria-expanded', 'true');
+    document.addEventListener('keydown', trapKey, true);
+    const firstNav = sidebar.querySelector('.navitem:not(:disabled)');
+    if (firstNav) setTimeout(() => firstNav.focus(), 60);
+  }
+  function closeDrawer() {
+    if (!drawerOpen) return;
+    drawerOpen = false;
+    layout.classList.remove('is-drawer-open');
+    drawerToggle.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('keydown', trapKey, true);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  drawerToggle.addEventListener('click', () => (drawerOpen ? closeDrawer() : openDrawer()));
+  backdrop.addEventListener('click', closeDrawer);
+  // Al pasar a desktop/tablet, cierra un drawer abierto (resetea aria-expanded/clase).
+  // Cosmético: la interactividad del nav en desktop la garantiza el CSS, no este listener.
+  mqMobile.addEventListener('change', (e) => { if (!e.matches) closeDrawer(); });
 
   function setActive(route) {
     Object.entries(navButtons).forEach(([id, btn]) => {

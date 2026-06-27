@@ -122,8 +122,14 @@ surface tarjetas; mientras tanto, enlazar a resultados FILTRADOS (categoría/pre
 - **Wins visuales/a11y baratos** (comités): FAB QUIETO (sin float/glow infinitos) · `@media prefers-reduced-motion`
   (cura violación §3.1) · `:focus-visible` oro en todo control · tap-target header ≥32px · dot/badge presencia oro
   (no verde-semáforo) · fuera nota-motor (disclaimer) + hint redundante · subtítulo corto.
-- **DIFERIDO iter-2**: Por marca · FAQ estática (texto del dueño) · ARIA modal/focus-trap/Escape · profundidad de
-  capas · gate como paso de servicio · Instrument Serif extendido · copy de confianza en el gate.
+- **HÍBRIDO decidido (27/06, consejo Gemini VERIFICADO no acatado)**: A (navegador) + lo de B que gana sin LLM.
+  Añadido nodo **`visitanos`** (FAQ físico): horarios REALES (`contacto.html`) inline + ubicación/garantía → ruteo
+  a humano (NO inventar dirección/garantía). Rangos de presupuesto **recalibrados con la data real** (5/7/10/5;
+  el bucket de Gemini $60–100M agarraba 15/27=55%). REFUTADO de Gemini con código/datos: "cero captura" (WhatsApp
+  captura en cada nodo) · "stock-cero=frustración" (`render.js:196` ya tiene empty-state + "Ver todos").
+- **DIFERIDO iter-2 / LLM-on**: **quiz-perfilador** (requiere motor de inventario + LLM → encaja con TODO-34) ·
+  Por marca · Novedades · FAQ financiación detallada (texto del dueño) · ARIA modal/trap/Escape · profundidad
+  visual · gate como paso de servicio · Instrument Serif extendido.
 
 ### Históricos
 - **F#1 · 🟠 FLUJO · gate de cita · fechas duplicadas** (cazado 2026-06-23, fix `02a79a7`) — el bloque

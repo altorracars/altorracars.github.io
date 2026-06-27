@@ -165,5 +165,12 @@
 - **Arquitectura (§3.8) `visibility` > `inert`**: para nav off-canvas que NO debe tabularse cerrado-en-móvil, usa CSS `visibility:hidden` (sale del tab-order, lo maneja la media query) en vez de `inert` por JS+`matchMedia change`. `inert` por evento tiene fallo latente GRAVE: si el `change` no dispara al cruzar a desktop, el nav entero queda MUERTO; el CSS lo elimina por construcción. Transiciona `visibility` junto al `transform` (visible durante el deslizado de cierre).
 - **Familia**: L-20/L-23/L-28 (quirks del preview headless) · L-53 (admin-app DS).
 
+### L-56 · Sidebar de filtros ALTO: `position:sticky` sin tope RECORTA su mitad inferior; y toggle-breakpoint ≠ colapso-breakpoint = franja muerta sin botón ⟦OPUS-4.8⟧
+- **Síntoma (busqueda)**: el sidebar de filtros "se corta abajo" — Precio→…→**"Aplicar filtros"** caen bajo el viewport e INALCANZABLES (no es visual: no puedes aplicar).
+- **Causa #1 (recorte)**: `.filters-sidebar{position:sticky;top:96px}` SIN `max-height`. El panel mide ~1100px (medido `scrollHeight:1106`); al fijarse, lo que excede `viewport-96` cae fuera y un sticky NO scrollea por dentro. La receta estándar (cap+`overflow-y:auto`) mete barra interna y el dueño pidió EXPLÍCITO "sin barras". **Fix**: `position:static` → fluye en su columna (`align-items:start`), la página scrollea entera: no recorta, sin barra, cualquier pantalla, sin rediseñar el panel (coste: los filtros no "siguen"). MEDIR lo reveló: estimé ~810px, real 1106 (L-20/L-23/L-54: renderiza y MIDE).
+- **Causa #2 (franja muerta 901–1024)**: `style.css` colapsa el sidebar + muestra toggle a ≤1024, pero el cinematic lo hacía a ≤900 y su base `.mobile-filters-toggle{display:none}` (0,2,1) ganaba en 901–1024 → filtros colapsados (`max-height:0`) SIN botón (lo cacé midiendo `filtersReachable:false` a 960, no leyendo). **Fix**: alinear el cinematic a ≤1024. **Regla**: si DOS hojas gobiernan un mismo componente responsive, los breakpoints de "mostrar toggle" y "colapsar" DEBEN coincidir.
+- **Compartido**: `css/home/marca-cinematic.css` viste 24 páginas (busqueda+marca+19 horneadas+4 categorías) → corrige todas; verifica el toggle-JS (`classList.toggle('collapsed')`) antes de ampliar su breakpoint.
+- **Familia**: L-23/L-54 (geometría sticky/max-*) · L-16/L-21 (cascada legacy↔cinematic por-propiedad) · L-55 (mata transiciones para medir end-states).
+
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

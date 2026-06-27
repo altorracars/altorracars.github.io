@@ -14,15 +14,14 @@
 >
 > **Bot LLM = saldo** (#917 dormido). Cerrado reciente → `99`/`main`.
 >
-> 🔵 **FOCO (27/06 CIERRE — relevo a chat fresco, contexto saturado)**: rediseño bot v2 + 3 bugs LIVE del dueño
-> RESUELTOS y **MERGEADOS a main**: B1/B2/B3 (filtro miente/callejón/zombie) · escalado **gatea datos** (no anónimo) ·
-> **chat asesor RECIBE** (`lead-flow.subscribeToChat`) · búsqueda = **sidebar izquierdo** (layout de marca) · **bot
-> categorías → páginas dedicadas `vehiculos-{cat}.html`**. Pipeline: ahora Claude **commit+push+MERGE** (dueño delegó, §2/05).
-> **⚠️ M-24** (30 §Meta): sobre-ingenié — reusar lo que YA existe (Glob/Grep) ANTES de construir maquinaria nueva.
-> **PENDIENTE (chat fresco)**: (1) **validar LIVE tras Ctrl+Shift+R**: bot→páginas dedicadas + **roundtrip chat asesor**
-> (dueño=asesor en el Hub → su msg debe llegar al bot). ⚠️ cache NO bumpeada → returning users ven el bot VIEJO hasta
-> Ctrl+Shift+R/flip. (2) **podar** `busqueda?categoria=` si ya no hace falta (categorías → páginas dedicadas). (3) iter-2:
-> Por marca · FAQ financiación · ARIA · visual profundo. (4) Cierre→ADR §99+00. Detalle→`altor-hub-rediseno-defectos.md`. Drift: TODO-48/41/49.
+> 🔵 **FOCO (rediseño bot v2 — relevo a chat fresco)**: bot v2 + 3 bugs LIVE RESUELTOS y **MERGEADOS a main** (B1/B2/B3 +
+> escalado gatea datos + chat asesor RECIBE `subscribeToChat` + búsqueda sidebar izquierdo + bot categorías →
+> `vehiculos-{cat}.html`). Pipeline: Claude **commit+push+MERGE** (dueño delegó, §2/05). Detalle→`altor-hub-rediseno-defectos.md`.
+> **⚠️ M-24** (30 §Meta): reusar lo que YA existe (Glob/Grep) ANTES de construir maquinaria nueva.
+> **PENDIENTE**: (1) **validar LIVE (Ctrl+Shift+R)**: bot→páginas dedicadas + **roundtrip chat asesor** (dueño=asesor → su
+> msg llega al bot) + **filtros busqueda/marca/categorías: NO se cortan + responsive sin franja muerta** (`7e60b73`→main;
+> sticky→static + breakpoint ≤1024; L-56). ⚠️ cache la bumpea el cron (`05`). (2) **podar** `busqueda?categoria=`. (3)
+> iter-2: por marca · FAQ financiación · ARIA · visual. (4) Cierre→ADR §99+00. Drift: TODO-48/41/49.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

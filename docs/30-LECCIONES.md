@@ -226,6 +226,11 @@
 - **Causa**: leer el DOM verifica **COMPORTAMIENTO, no DISEÑO** (nunca revela boxed/aplastado/scroll-doble/glow-perdido/jerarquía). Incluso cuando empecé a capturar, fue **REACTIVO** (tras el regaño), no una auditoría de diseño PROACTIVA antes de declarar ✅. + parcheo reactivo: cada parche apurado trajo otro bug.
 - **Corrección/cura**: para CUALQUIER trabajo de UI — (a) **auditoría de diseño adversarial con SCREENSHOT de CADA estado ANTES de "✅"** (cerrado/abierto/vacío/con-mensajes/cada rama), juzgada contra un bar de calidad o mockup — NO solo DOM; (b) la skill `validacion-live-chrome` necesita una **dimensión de diseño ENFORCED** (no opcional); (c) UI nueva = **flujo de diseño completo (mockup→review→build)**, no parches. Familia M-10 (cobertura fingida) + callejón (i). [HONOR — mejorar la skill]
 
+### M-24 · Construí maquinaria NUEVA compleja cuando ya existía una solución simple A LA MANO — el dueño: "tienes las cosas visibles a la mano e hiciste algo mas complejo" ⟦OPUS-4.8⟧
+- **Defecto (27/06, bot v2)**: el bug "Ver sedanes no filtra" → construí `busqueda?categoria=` de 2 lados (bot + `applyUrlFilters`) + reestructuré búsqueda a sidebar. PERO ya existían **páginas dedicadas** `vehiculos-{suv,sedan,pickup,hatchback}.html` con el layout correcto — el fix simple era apuntar el bot a ESAS. Las hallé solo al re-reportar el dueño.
+- **Causa**: no inventarié lo que YA EXISTÍA antes de diseñar (W-11 cap.1 verifica el código TOCADO, no barre páginas/componentes hermanos que ya resuelven). Sesgo de constructor: "lo hago" vs "¿ya está hecho?".
+- **Cura**: ante bug de navegación/feature, **primero `Glob`/`Grep` por lo existente** (¿página dedicada? ¿patrón hermano?) y reusar lo simple ANTES de construir. Suma al IAP §3.4: "¿qué ya existe a la mano?". Familia sobre-ingeniería. [HONOR]
+
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md`

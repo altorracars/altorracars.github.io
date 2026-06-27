@@ -89,7 +89,7 @@ Encabezado `## NN. ADR-NNN — <título>` (+ cita del cliente si reportó) y 7 p
 
 ### Reglas git (de §commit del proyecto)
 
-- **Claude commitea, PUSHEA y MERGEA `dev`→`main`** al cerrar trabajo verificado (dueño delegó el merge 27/06; `gh` ausente → merge por git directo, M-12).
+- **Claude commitea, PUSHEA y MERGEA `dev`→`main`** al cerrar trabajo verificado (dueño delegó el merge 27/06, M-12).
 - `git add` archivos específicos (NUNCA `git add -A` / `.`).
 - Footer `Co-Authored-By: Claude <noreply@anthropic.com>` + `Modelo:`. Árbol sucio sin commitear+pushear = **turno incompleto** (M-12). NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
 - NUNCA commitear secrets (.env, credentials.json).

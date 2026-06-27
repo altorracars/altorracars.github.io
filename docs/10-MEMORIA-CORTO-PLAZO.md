@@ -14,14 +14,15 @@
 >
 > **Bot LLM = saldo** (#917 dormido). Cerrado reciente → `99`/`main`.
 >
-> 🔵 **FOCO (27/06 PM — FLUJO DISEÑO bot v2, W-11)**: dueño reportó 3 bugs LIVE del Free Core → **B1** filtro
-> miente · **B2** callejón · **B3** zombie sin reset. Flujo fuerte corrido (2 comités+caza-bugs+Firebase MCP+
-> mockup+Gemini). **IMPLEMENTADO+verificado preview (DOM), commit en `dev`**: árbol de NODOS+navStack, deep-link
-> `goto:busqueda.html?categoria=/?precioMax=` + `busqueda.html applyUrlFilters`, reset header (confirm in-app),
-> fixes caza-bugs (gate-reopen, escalado→WhatsApp honesto), wins a11y (FAB quieto, reduced-motion, focus-visible).
-> Detalle → `altor-hub-rediseno-defectos.md` §F-1. **PEND**: (1) **validación LIVE que YO conduzco** (extensión)
-> tras merge+deploy — flag default=v1 = riesgo cero. (2) DIFERIDO iter-2: Por marca · FAQ (texto del dueño) ·
-> ARIA modal/trap/Escape · visual profundo. Cierre→ADR+00 tras live. Drift CRM: TODO-48/41/49.
+> 🔵 **FOCO (27/06 CIERRE — relevo a chat fresco, contexto saturado)**: rediseño bot v2 + 3 bugs LIVE del dueño
+> RESUELTOS y **MERGEADOS a main**: B1/B2/B3 (filtro miente/callejón/zombie) · escalado **gatea datos** (no anónimo) ·
+> **chat asesor RECIBE** (`lead-flow.subscribeToChat`) · búsqueda = **sidebar izquierdo** (layout de marca) · **bot
+> categorías → páginas dedicadas `vehiculos-{cat}.html`**. Pipeline: ahora Claude **commit+push+MERGE** (dueño delegó, §2/05).
+> **⚠️ M-24** (30 §Meta): sobre-ingenié — reusar lo que YA existe (Glob/Grep) ANTES de construir maquinaria nueva.
+> **PENDIENTE (chat fresco)**: (1) **validar LIVE tras Ctrl+Shift+R**: bot→páginas dedicadas + **roundtrip chat asesor**
+> (dueño=asesor en el Hub → su msg debe llegar al bot). ⚠️ cache NO bumpeada → returning users ven el bot VIEJO hasta
+> Ctrl+Shift+R/flip. (2) **podar** `busqueda?categoria=` si ya no hace falta (categorías → páginas dedicadas). (3) iter-2:
+> Por marca · FAQ financiación · ARIA · visual profundo. (4) Cierre→ADR §99+00. Detalle→`altor-hub-rediseno-defectos.md`. Drift: TODO-48/41/49.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

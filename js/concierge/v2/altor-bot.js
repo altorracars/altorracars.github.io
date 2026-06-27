@@ -42,9 +42,11 @@
         '--bubble:#241D14;--bd:#2C241A;--bd2:#352A1C;--tx:#F4EEE3;--tx2:#9A9081;',
         '--tx3:#736A5C;--ok:#5BBF66;font-family:Manrope,system-ui,sans-serif;}',
         '*{box-sizing:border-box;margin:0;}',
-        '.fab{position:fixed;right:20px;bottom:20px;width:60px;height:60px;border-radius:50%;',
-        'background:var(--g);display:flex;align-items:center;justify-content:center;cursor:pointer;',
-        'box-shadow:0 12px 34px rgba(184,150,88,.4);border:none;z-index:2147483000;}',
+        '.fab{position:fixed;right:20px;bottom:20px;width:66px;height:66px;background:none;border:none;cursor:pointer;padding:0;z-index:2147483000;',
+        'animation:altorFloat 3s ease-in-out infinite,altorGlow 3s ease-in-out infinite;}',
+        '.fab:hover{transform:scale(1.08);}',
+        '@keyframes altorFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}',
+        '@keyframes altorGlow{0%,100%{filter:drop-shadow(0 6px 14px rgba(184,150,88,.55)) drop-shadow(0 2px 6px rgba(0,0,0,.35));}50%{filter:drop-shadow(0 8px 22px rgba(201,166,99,.85)) drop-shadow(0 0 16px rgba(245,223,128,.45)) drop-shadow(0 2px 6px rgba(0,0,0,.35));}}',
         '.fab svg{width:30px;height:30px;color:var(--on-g);}',
         '.fab.hidden{display:none;}',
         '.panel{position:fixed;right:20px;bottom:20px;width:380px;max-width:calc(100vw - 24px);',
@@ -59,7 +61,8 @@
         '.av{position:relative;width:40px;height:40px;border-radius:50%;background:var(--g);',
         'display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
         '.av svg{width:22px;height:22px;color:var(--on-g);}',
-        '.av-img,.fab-img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}',
+        '.av-img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}',
+        '.fab-img{width:100%;height:100%;object-fit:contain;display:block;}',
         '.vbadge{position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;',
         'background:#2E7D32;border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;}',
         '.vbadge svg{width:9px;height:9px;color:#fff;}',
@@ -80,7 +83,7 @@
         'border-radius:10px;padding:8px 11px;margin-top:6px;}',
         '.engine-note svg{width:15px;height:15px;color:var(--g);flex-shrink:0;}',
         '.engine-note span{font-size:11px;color:var(--tx2);line-height:1.4;}',
-        '.input{border-top:1px solid var(--bd);background:#1A150F;padding:13px 15px 15px;flex-shrink:0;max-height:50%;overflow-y:auto;}',
+        '.input{border-top:1px solid var(--bd);background:#1A150F;padding:13px 15px 15px;flex-shrink:0;}',
         '.hint{font-size:11px;color:var(--tx2);margin-bottom:10px;text-align:center;letter-spacing:.2px;}',
         '.btns{display:flex;flex-direction:column;gap:7px;}',
         '.qb{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:12px;font-size:13.5px;',
@@ -138,7 +141,7 @@
             sourcePage: (typeof location !== 'undefined' && location.pathname) || '/',
             sourceVehicleId: (window.PRERENDERED_VEHICLE_ID || null),
             lastActivityAt: Date.now(),
-            _chatDocCreated: false, _leadCreated: false
+            _chatDocCreated: false, _leadCreated: false, _v: 2
         };
     }
 
@@ -273,16 +276,15 @@
                 var raw = localStorage.getItem(V2_STORAGE_KEY);
                 if (raw) {
                     this.state = Object.assign(this.state, JSON.parse(raw));
+                    // invalida sesiones de versión vieja (limpia datos stale ya persistidos)
+                    if (this.state._v !== 2) { this.state = freshState(); return; }
                     // §80 — sesión abandonada (>12h sin actividad) → arranca fresca al abrir
                     var la = this.state.lastActivityAt;
                     if (la && (Date.now() - la) > STALE_MS) { this.state = freshState(); }
                     return;
                 }
-                var v1 = localStorage.getItem(V1_STORAGE_KEY);   // lectura 1-vía, NO escribe v1
-                if (v1) {
-                    var s = JSON.parse(v1);
-                    if (s && s.messages) this.state.messages = s.messages.slice(-20);
-                }
+                // v2 arranca LIMPIO: NO migra la conversación del v1 (arrastraba mensajes
+                // viejos/escalados sin estado → "conversación vieja" persistente, bug live 27/06).
             } catch (e) {}
         }
         _persist() {

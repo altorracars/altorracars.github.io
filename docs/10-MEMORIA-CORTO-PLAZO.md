@@ -12,9 +12,9 @@
 
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`.
 >
-> ✅ **Cerrado reciente** (`99`/`main`): Fiabilidad §257+M-22×4 · W-11 F1+F2 + bug-menús · ciclo gobernanza 26/06. **Bot LLM = saldo.**
+> **Bot LLM = saldo** (#917 dormido). Cerrado reciente → `99`/`main`.
 >
-> 🔵 **FOCO VIVO — remediar drift (barrido 26/06 ✅)**: workflow cerebro↔código (105 cand.→**15 drift reales**/21 refutados; crudo→bóveda `…barrido-drift…SINTESIS`). Principal: **el cutover dejó caer features CRM MF4.x → TODO-48**. #15 RBAC "no desplegado" = FALSO (verif. live). Bot v2 (input ternario D1) confirmado sin cablear (TODO-46/F-1). **ORDEN: (1) bot F-1** [módulo `shared/`+§234/§80, callejón g] → (2) TODO-48 MF4.x → (3) TODO-41 → (4) TODO-47 diseño.
+> 🔵 **FOCO (CIERRE 27/06 → sesión fresca)**: bot v2 F-1 **funcional + bugs FIXED** (validado live+captura, `1c694ab`) PERO el **DISEÑO NO está validado** — el dueño cazó 4 bugs visuales que mis tools no vieron (**M-23**). **PRÓXIMA SESIÓN: relanzar el FLUJO DE DISEÑO (W-11/F4-F5) sobre el bot v2** (mockup→review→build + auditoría de diseño; hay más defectos). Pend: escalado-real→Hub (OK dueño)·re-merge·flip. Drift: MF4.x=TODO-48·TODO-41·TODO-49.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -59,7 +59,7 @@
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
 | **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257 + cura M-22 (check #16 kernel, propagado ×4 ✅). RESTA: adopción `verificado-vivo:` + reconciliación. Absorbe TODO-33. | 🔄 ✅ | adopción |
 
-| **TODO-46→F-1** | **Bot v2 ⟦OPUS⟧ — VALIDADO LIVE ✅** (`?altorbot=v2`): ternario/retoma/gate/WhatsApp OK. **4 bugs FIXED** (asesor dup·markdown·avatar→`ALTOR.png`·chat-aplastado→cap input). **RESTA: escalado-real→Hub (OK dueño)+re-merge+flip**. | 🔄 casi | escalado+merge |
+| **TODO-46→F-1** | **Bot v2 ⟦OPUS⟧ — VALIDADO LIVE+CAPTURA ✅**: ternario/retoma/gate/WhatsApp OK. **Bugs FIXED**: asesor-dup·markdown·avatar-flotante(PNG libre+glow)·doble-ventana·conversación-vieja(`_v:2`). **RESTA: escalado-real→Hub (OK dueño)+flip**. | 🔄 casi | escalado+merge |
 | **TODO-47** | **🎨 Revisión diseño profunda ⟦OPUS⟧ (dueño 26/06)** — bug-menús ✅ `1556e27`; FALTA pasar diseños por skills (`frontend-design`/`ui-ux-pro-max`) ANTES de implementar (el flujo de diseño falló: no probé estado expandido). | 🔮 fase C | tras A+B |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧ (barrido 26/06)** — features MF4.x construidas en admin viejo, NO portadas a admin-app: 360° tab "Actividad"(MF4.2) · Contactos workspace 4-KPIs(MF4.1) · acciones masivas checkbox/CSV/crmTags(MF4.3) · Postventa+NPS scheduler(MF4.8). +doc-fixes (verifySuperAdminV2 nombre · clientes/ subcols 5→2 · proactiveEngagement stale). Detalle→bóveda `…barrido-drift…`. | 🔵 nuevo | tras bot F-1 |
 

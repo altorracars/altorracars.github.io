@@ -116,9 +116,23 @@
 
     /* ── Entrada ENGINE-AWARE ternaria (D1) ────────────────────────────── */
     function getInputMode(state) {
-        if (state.mode === 'live') return 'free';   // humano → siempre chat libre
+        if (state.mode === 'live' || state.mode === 'queue') return 'free';  // humano/cola → chat libre
         if (state.engine === 'llm') return 'free';  // LLM activo → chat libre
         return 'buttons';                            // Free Core → solo botones
+    }
+
+    /* sessionId nuevo (namespace v2, distinto del v1) — sesión anónima fresca */
+    function newSessionId() {
+        return 'cncv2_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    }
+    function freshState() {
+        return {
+            mode: 'bot', engine: 'freecore', messages: [], leadId: null,
+            sessionId: newSessionId(),
+            sourcePage: (typeof location !== 'undefined' && location.pathname) || '/',
+            sourceVehicleId: (window.PRERENDERED_VEHICLE_ID || null),
+            _chatDocCreated: false, _leadCreated: false
+        };
     }
 
     /* Botones por intent (espejo de getContextualQuickReplies de v1) */
@@ -189,7 +203,7 @@
         constructor() {
             super();
             this.attachShadow({ mode: 'open' });
-            this.state = { mode: 'bot', engine: 'freecore', messages: [], leadId: null };
+            this.state = freshState();
             this._open = false;
         }
 
@@ -339,7 +353,7 @@
         send(text) {
             if (!text) return;
             if (text === '__goto_catalogo__') { this._goto('busqueda.html'); return; }  // acción, no mensaje
-            this.state.messages.push({ from: 'user', text: text });
+            this.state.messages.push({ from: 'user', text: text, timestamp: Date.now() });
             this.state.pendingQuickReplies = null;
             this._persist();
             this._renderBody();
@@ -402,13 +416,33 @@
             }, 300);
         }
         _requestAdvisor() {
-            this.state.mode = 'live';   // humano → entrada libre (D1)
+            // F-1 (TODO-46): escalado REAL vía lead-flow compartido → CREA el doc
+            // `conciergeChats` que el ALTOR Hub lee. Antes: CustomEvent al vacío =
+            // el cliente que pedía asesor caía al vacío (hallazgo #1 del comité).
+            this.state.mode = 'queue';            // en cola hasta que un asesor lo tome
             this.state.pendingQuickReplies = null;
+            this._persist();
+            this._renderInput();                  // entrada libre (queue/live, D1)
+
+            var db = window.db || null;
+            var LF = window.AltorraLeadFlow;
+            if (db && LF) {
+                var st = this.state;
+                var leadP = st._leadCreated
+                    ? Promise.resolve()
+                    : LF.createLead(db, st, 'soft')
+                        .then(function (ref) { st._leadCreated = true; st.leadId = ref.id; })
+                        .catch(function () {});   // el lead se reintenta en el gate; no bloquea el escalado
+                leadP
+                    .then(function () { return LF.ensureChatDoc(db, st); })
+                    .then(function () { st._chatDocCreated = true; return LF.pushMessages(db, st.sessionId, st.messages); })
+                    .then(function () { return LF.markEscalated(db, st.sessionId, 'ask_human'); })
+                    .catch(function (err) { console.warn('[AltorBotV2] escalado falló:', err && (err.code || err.message)); });
+            }
+            // Compat: el handler global (modal/notify del tramo 3) sigue escuchando.
             this.dispatchEvent(new CustomEvent('altor:request-advisor', {
                 bubbles: true, composed: true, detail: { session: this.session() }
             }));
-            this._persist();
-            this._renderInput();        // re-render: ahora barra de texto (modo live)
         }
 
         openWithVehicleContext(opts) {   // deep-link desde detalle-vehiculo (contrato v1)
@@ -418,8 +452,11 @@
         }
         applyAuthProfile() { this._renderBody(); }   // re-render en onAuthStateChanged (contrato v1)
         resetSession() {                              // logout/§234 purga (contrato v1, auth.js depende)
-            this.state = { mode: 'bot', engine: 'freecore', messages: [], leadId: null };
-            try { localStorage.removeItem(V2_STORAGE_KEY); } catch (e) {}
+            // §234 (Ley 1581 / PC mostrador): borrar la sesión persistida vía el
+            // wipe compartido + sessionId NUEVO → el siguiente anónimo arranca limpio.
+            if (window.AltorraLeadFlow) window.AltorraLeadFlow.wipeSession(V2_STORAGE_KEY);
+            else { try { localStorage.removeItem(V2_STORAGE_KEY); } catch (e) {} }
+            this.state = freshState();
             if (this.shadowRoot.querySelector('.body')) { this._renderBody(); this._renderInput(); }
         }
         session() { return Object.assign({}, this.state); }

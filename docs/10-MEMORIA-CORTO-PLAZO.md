@@ -12,9 +12,9 @@
 
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`.
 >
-> ✅ **Cerrado reciente** (`99`/`main`): Fiabilidad §257+M-22×4 · W-11 F1+F2 + bug-menús · ciclo gobernanza 26/06. **Bot LLM = saldo.**
+> **Bot LLM = saldo** (#917 dormido). Cerrado reciente → `99`/`main`.
 >
-> 🔵 **FOCO VIVO — remediar drift (barrido 26/06 ✅)**: workflow cerebro↔código (105 cand.→**15 drift reales**/21 refutados; crudo→bóveda `…barrido-drift…SINTESIS`). Principal: **el cutover dejó caer features CRM MF4.x → TODO-48**. #15 RBAC "no desplegado" = FALSO (verif. live). Bot v2 (input ternario D1) confirmado sin cablear (TODO-46/F-1). **ORDEN: (1) bot F-1** [módulo `shared/`+§234/§80, callejón g] → (2) TODO-48 MF4.x → (3) TODO-41 → (4) TODO-47 diseño.
+> 🔵 **FOCO (CIERRE 27/06 → sesión fresca)**: bot v2 F-1 **funcional + bugs FIXED** (validado live+captura, `1c694ab`) PERO el **DISEÑO NO está validado** — el dueño cazó 4 bugs visuales que mis tools no vieron (**M-23**). **PRÓXIMA SESIÓN: relanzar el FLUJO DE DISEÑO (W-11/F4-F5) sobre el bot v2** (mockup→review→build + auditoría de diseño; hay más defectos). Pend: escalado-real→Hub (OK dueño)·re-merge·flip. Drift: MF4.x=TODO-48·TODO-41·TODO-49.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

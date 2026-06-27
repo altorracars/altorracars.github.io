@@ -79,6 +79,7 @@
         '.user{max-width:80%;align-self:flex-end;background:var(--g);color:#1A150E;font-size:13.5px;',
         'line-height:1.5;padding:10px 13px;border-radius:16px 5px 16px 16px;font-weight:500;}',
         '.time{font-size:10.5px;color:var(--tx3);margin:5px 2px 8px;}',
+        '.sysmsg{align-self:center;font-size:11px;color:var(--tx2);background:#1C160F;border:1px solid var(--bd);border-radius:10px;padding:5px 12px;margin:6px 0;text-align:center;max-width:92%;}',
         '.engine-note{display:flex;align-items:center;gap:7px;background:#1C160F;border:1px solid var(--bd);',
         'border-radius:10px;padding:8px 11px;margin-top:6px;}',
         '.engine-note svg{width:15px;height:15px;color:var(--g);flex-shrink:0;}',
@@ -303,6 +304,11 @@
             this._restore();
             this._render();
             this._wireAuth();   // §234 logout-wipe + bind uid (self-contained; NO toca auth.js)
+            // Reanuda el chat en vivo si la sesión quedó con un asesor (reapertura/recarga de página)
+            if (this.state.mode === 'queue' || this.state.mode === 'live') {
+                if (this.state._asesorActivo) this._applyAsesorHeader(this.state._asesorActivo);
+                this._subscribeLive();
+            }
         }
 
         /* §234 (Ley 1581 / PC mostrador): el v2 se auto-suscribe al auth. Si un usuario
@@ -411,8 +417,16 @@
                 box.appendChild(frag('<div class="bot">Hola, soy <b>ALTOR</b> — tu asistente en Altorra Cars. ¿Qué buscas hoy?</div>'));
                 return;
             }
-            // Mensajes: texto del usuario/bot → textContent (anti-XSS, #1 Gemini)
+            // Mensajes: texto del usuario/bot/asesor → textContent (anti-XSS, #1 Gemini).
+            // 'system' = aviso centrado ("✓ Daniel se unió"); 'asesor' = burbuja como el bot.
             this.state.messages.forEach(function (m) {
+                if (m.from === 'system') {
+                    var s = document.createElement('div');
+                    s.className = 'sysmsg';
+                    s.textContent = m.text;
+                    box.appendChild(s);
+                    return;
+                }
                 var d = document.createElement('div');
                 d.className = (m.from === 'user') ? 'user' : 'bot';
                 d.textContent = m.text;
@@ -515,13 +529,21 @@
             if (text.indexOf('goto:') === 0) { return this._goto(text.slice(5)); }         // deep-link con filtro real (fix B1)
             if (text.indexOf('node:') === 0) { return this._goNode(text.slice(5), label); }
             if (text.indexOf('act:gate:') === 0) { return this._navAction(label, this._requestGate.bind(this, text.slice(9))); }
-            if (text === 'act:escalate') { return this._navAction(label, this._requestAdvisor.bind(this)); }
+            // Escalar a asesor → PRIMERO gatea datos (nombre/celular/correo) para que NO sea anónimo
+            // (el dueño: "hablamos con un X que no sabemos cómo contactar"). El submit dispara el escalado.
+            if (text === 'act:escalate') { return this._navAction(label, this._requestGate.bind(this, 'asesor')); }
 
-            // ── Modo libre (LLM / live): el texto del usuario va al motor compartido DualCore. ──
+            // ── Modo libre: el texto del usuario. Con un asesor humano (queue/live) → va al Hub
+            //    (sendUserMessage); si es LLM (engine llm) → al motor DualCore. ──
             this.state.messages.push({ from: 'user', text: text, timestamp: Date.now() });
             this._persist();
             this._renderBody();
             var self = this;
+            if (this.state.mode === 'queue' || this.state.mode === 'live') {
+                var db = window.db || null, LF = window.AltorraLeadFlow;
+                if (db && LF && LF.sendUserMessage) LF.sendUserMessage(db, this.state.sessionId, text).catch(function () {});
+                return;   // la respuesta del asesor llega por subscribeToChat → onAdvisorMessage
+            }
             this._showTyping();
             var done = function (txt) {
                 self._hideTyping();
@@ -639,7 +661,10 @@
            El form vive DENTRO del shadow (no es un modal de auth/legal → #1 Gemini no aplica). */
         _requestGate(gateFor) {
             this.state.gating = gateFor || 'general';
-            this.state.messages.push({ from: 'bot', text: 'Para coordinarlo necesito un par de datos 👇' });
+            var msg = (gateFor === 'asesor')
+                ? 'Con gusto te conecto con un asesor. Déjame tus datos para que pueda atenderte 👇'
+                : 'Para coordinarlo necesito un par de datos 👇';
+            this.state.messages.push({ from: 'bot', text: msg });
             this._persist(); this._renderBody();
             this._renderGateForm();
         }
@@ -647,27 +672,33 @@
             var zone = this.shadowRoot.querySelector('.input');
             if (!zone) return;
             while (zone.firstChild) zone.removeChild(zone.firstChild);
-            zone.appendChild(frag('<div class="hint">Déjanos tu nombre y celular — te contactamos enseguida</div>'));
+            var asesor = (this.state.gating === 'asesor');
+            zone.appendChild(frag('<div class="hint">' + (asesor ? 'Tus datos para que un asesor te contacte' : 'Déjanos tu nombre y celular — te contactamos enseguida') + '</div>'));
             var self = this;
             var wrap = document.createElement('div'); wrap.className = 'btns';
             var nombre = mkField('text', 'Tu nombre', 'given-name');
             var cel = mkField('tel', 'Celular WhatsApp (3001234567)', 'tel-national');
+            var mail = mkField('email', 'Correo (opcional)', 'email');
+            if (this.state.email) mail.value = this.state.email;
             var consent = document.createElement('label'); consent.className = 'gate-consent';
             var chk = document.createElement('input'); chk.type = 'checkbox';
             consent.appendChild(chk);
             consent.appendChild(document.createTextNode(' Autorizo el tratamiento de mis datos (Ley 1581).'));
             var err = document.createElement('div'); err.className = 'gate-err';
-            var submit = document.createElement('button'); submit.className = 'qb qb-p'; submit.textContent = 'Confirmar';
+            var submit = document.createElement('button'); submit.className = 'qb qb-p';
+            submit.textContent = asesor ? 'Conectarme con un asesor' : 'Confirmar';
             submit.addEventListener('click', function () {
-                var n = nombre.value.trim(), t = cel.value.replace(/\D/g, '');
+                var n = nombre.value.trim(), t = cel.value.replace(/\D/g, ''), e = mail.value.trim();
                 if (n.length < 2) { err.textContent = 'Escribe tu nombre.'; return; }
                 if (!/^3\d{9}$/.test(t)) { err.textContent = 'Celular inválido (10 dígitos, empieza en 3).'; return; }
+                if (e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { err.textContent = 'Ese correo no parece válido (o déjalo vacío).'; return; }
                 if (!chk.checked) { err.textContent = 'Necesitamos tu autorización para continuar.'; return; }
-                self._submitGate(n, t);
+                self._submitGate(n, t, e || null);
             });
-            cel.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit.click(); });
-            wrap.appendChild(nombre); wrap.appendChild(cel); wrap.appendChild(consent);
-            wrap.appendChild(err); wrap.appendChild(submit);
+            cel.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') submit.click(); });
+            mail.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') submit.click(); });
+            wrap.appendChild(nombre); wrap.appendChild(cel); wrap.appendChild(mail);
+            wrap.appendChild(consent); wrap.appendChild(err); wrap.appendChild(submit);
             zone.appendChild(wrap);
             function mkField(type, ph, ac) {
                 var i = document.createElement('input');
@@ -675,11 +706,13 @@
                 i.setAttribute('autocomplete', ac); return i;
             }
         }
-        _submitGate(nombre, telefono) {
+        _submitGate(nombre, telefono, email) {
             var st = this.state;
-            st.nombre = nombre; st.telefono = telefono;
+            var wasAsesor = (st.gating === 'asesor');
+            st.nombre = nombre; st.telefono = telefono; if (email) st.email = email;
             st.profile = st.profile || {}; st.profile.consent = true;
             st.level = Math.max(st.level || 0, 3);
+            st.gating = null;
             this._persist();
             var db = window.db || null, LF = window.AltorraLeadFlow;
             if (db && LF) {
@@ -687,46 +720,87 @@
                     .then(function (ref) { st._leadCreated = true; st.leadId = ref.id; })
                     .catch(function () {});
             }
+            if (wasAsesor) {
+                // Escalado CON datos: el Hub recibe un lead con nombre+celular+correo (ya NO anónimo,
+                // fix del dueño) y entramos al chat en vivo (el cliente escribe y recibe al asesor).
+                this._enterLiveChat();
+                return;
+            }
             st.messages.push({ from: 'bot', text: '¡Gracias, ' + nombre.split(' ')[0] + '! Te contactaremos muy pronto. ¿Algo más en lo que te ayude?' });
-            st.gating = null; st.currentNodeId = 'welcome'; st.navStack = [];   // vuelve al menú raíz limpio
-            this._persist();
+            st.currentNodeId = 'welcome'; st.navStack = [];   // vuelve al menú raíz limpio
             this._renderBody();
             this._renderInput();
         }
-        _requestAdvisor() {
-            // F-1 (TODO-46): escalado REAL vía lead-flow compartido → CREA el doc
-            // `conciergeChats` que el ALTOR Hub lee + alerta al equipo (workload CF + Telegram).
-            var self = this, db = window.db || null, LF = window.AltorraLeadFlow, st = this.state;
-            if (db && LF) {
-                var leadP = st._leadCreated
-                    ? Promise.resolve()
-                    : LF.createLead(db, st, 'soft')
-                        .then(function (ref) { st._leadCreated = true; st.leadId = ref.id; })
-                        .catch(function () {});   // el lead se reintenta en el gate; no bloquea el escalado
-                leadP
-                    .then(function () { return LF.ensureChatDoc(db, st); })
-                    .then(function () { st._chatDocCreated = true; return LF.pushMessages(db, st.sessionId, st.messages); })
-                    .then(function () { return LF.markEscalated(db, st.sessionId, 'ask_human'); })
-                    .catch(function (err) { console.warn('[AltorBotV2] escalado falló:', err && (err.code || err.message)); });
-            }
-            // Compat: el handler global (modal/notify del tramo 3) sigue escuchando.
-            this.dispatchEvent(new CustomEvent('altor:request-advisor', {
-                bubbles: true, composed: true, detail: { session: this.session() }
-            }));
 
-            // UI HONESTA (fix caza-bugs): el v2 NO recibe respuestas del asesor en vivo (no hay
-            // onSnapshot del Hub), así que NO abrimos un chat libre al vacío — el cliente escribía
-            // y caía al fallback "IA no disponible". Confirmamos + ofrecemos WhatsApp; el equipo
-            // ya quedó notificado. El nodo 'escalado' auto-inyecta Inicio para no atrapar al cliente.
-            st.currentNodeId = 'escalado';
-            st.gating = null;
-            this._persist();
-            this._showTyping();
-            setTimeout(function () {
-                self._hideTyping();
+        /* ── Chat EN VIVO con asesor (Unidad 2 — lo que faltaba: RECIBIR al asesor) ───────────
+           El v2 antes escalaba al vacío (no escuchaba el Hub). Ahora: entra a modo queue/live,
+           se suscribe (subscribeToChat) y renderiza lo que el asesor escribe + avisa cuando toma. */
+        _enterLiveChat() {
+            var st = this.state, db = window.db || null, LF = window.AltorraLeadFlow;
+            if (!db || !LF) {
+                // Sin backend: fallback honesto a WhatsApp (no chat al vacío).
+                st.mode = 'bot'; st.currentNodeId = 'escalado';
                 st.messages.push({ from: 'bot', text: getNode('escalado').text });
-                self._persist(); self._renderBody(); self._renderInput();
-            }, 360);
+                this._persist(); this._renderBody(); this._renderInput();
+                return;
+            }
+            st.mode = 'queue';   // en cola → entrada libre: el cliente ya puede escribirle al asesor
+            st.messages.push({ from: 'bot', text: 'Listo' + (st.nombre ? ', ' + st.nombre.split(' ')[0] : '') + '. Te estoy conectando con un asesor de Altorra… escríbele aquí en lo que entra.' });
+            this._persist(); this._renderBody(); this._renderInput();
+            var leadP = st._leadCreated
+                ? Promise.resolve()
+                : LF.createLead(db, st, 'gate').then(function (ref) { st._leadCreated = true; st.leadId = ref.id; }).catch(function () {});
+            leadP
+                .then(function () { return LF.ensureChatDoc(db, st); })
+                .then(function () { st._chatDocCreated = true; return LF.pushMessages(db, st.sessionId, st.messages); })
+                .then(function () { return LF.markEscalated(db, st.sessionId, 'ask_human'); })
+                .catch(function (err) { console.warn('[AltorBotV2] escalado falló:', err && (err.code || err.message)); });
+            this.dispatchEvent(new CustomEvent('altor:request-advisor', { bubbles: true, composed: true, detail: { session: this.session() } }));
+            this._subscribeLive();
+        }
+        _subscribeLive() {
+            var self = this, st = this.state, db = window.db || null, LF = window.AltorraLeadFlow;
+            if (!db || !LF || !LF.subscribeToChat || this._liveUnsub) return;
+            this._liveUnsub = LF.subscribeToChat(db, st.sessionId, {
+                onAdvisorMessage: function (m) {
+                    if (!st._asesorActivo) {
+                        st._asesorActivo = m.asesorNombre || 'Asesor';
+                        st.mode = 'live';
+                        st.messages.push({ from: 'system', text: '✓ ' + st._asesorActivo + ' se unió al chat' });
+                        self._applyAsesorHeader(st._asesorActivo);
+                    }
+                    st.messages.push({ from: 'asesor', text: m.text });
+                    self._persist(); self._renderBody(); self._renderInput();
+                },
+                onTakeover: function (nombre) {
+                    st.mode = 'live';
+                    if (nombre && !st._asesorActivo) { st._asesorActivo = nombre; self._applyAsesorHeader(nombre); }
+                    self._persist();
+                },
+                onSystemMessage: function (m) {
+                    st.messages.push({ from: 'system', text: m.text });
+                    self._persist(); self._renderBody();
+                },
+                onClosed: function () {
+                    st.messages.push({ from: 'system', text: 'El asesor cerró la conversación. ¡Gracias por escribirnos! 🙌' });
+                    st.mode = 'bot'; st._asesorActivo = null; st.currentNodeId = 'welcome'; st.navStack = [];
+                    self._teardownLive();
+                    self._applyAsesorHeader(null);
+                    self._persist(); self._renderBody(); self._renderInput();
+                }
+            });
+        }
+        _teardownLive() {
+            if (this._liveUnsub) { try { this._liveUnsub(); } catch (e) {} this._liveUnsub = null; }
+        }
+        _applyAsesorHeader(nombre) {
+            var sr = this.shadowRoot;
+            var nm = sr.querySelector('.nm'), sub = sr.querySelector('.sub');
+            if (!nm || !sub) return;
+            nm.textContent = nombre || 'ALTOR';
+            while (sub.firstChild) sub.removeChild(sub.firstChild);
+            sub.appendChild(frag('<span class="dot"></span>'));
+            sub.appendChild(document.createTextNode(nombre ? ' Asesor de Altorra Cars · en línea' : ' En línea · Altorra Cars'));
         }
 
         openWithVehicleContext(opts) {   // deep-link desde detalle-vehiculo (contrato v1)
@@ -738,10 +812,13 @@
         resetSession() {                              // logout/§234 purga (contrato v1, auth.js depende)
             // §234 (Ley 1581 / PC mostrador): borrar la sesión persistida vía el
             // wipe compartido + sessionId NUEVO → el siguiente anónimo arranca limpio.
+            this._teardownLive();   // corta el listener del Hub si había chat en vivo
             if (window.AltorraLeadFlow) window.AltorraLeadFlow.wipeSession(V2_STORAGE_KEY);
             else { try { localStorage.removeItem(V2_STORAGE_KEY); } catch (e) {} }
             this.state = freshState();
-            if (this.shadowRoot.querySelector('.body')) { this._renderBody(); this._renderInput(); }
+            var wasOpen = this._open;
+            this._render();          // re-render completo → restaura el header ALTOR + body + input
+            if (wasOpen) this.open();
         }
         session() { return Object.assign({}, this.state); }
     }

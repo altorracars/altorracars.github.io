@@ -219,9 +219,10 @@
             parent: 'ver_autos',
             text: '¿Cuál es tu presupuesto?',
             buttons: [
-                { ic: 'cash', label: 'Hasta $40 millones',   payload: 'goto:busqueda.html?precioMax=40000000',                      cls: 'qb-s' },
-                { ic: 'cash', label: '$40 a $70 millones',   payload: 'goto:busqueda.html?precioMin=40000000&precioMax=70000000',   cls: 'qb-s' },
-                { ic: 'cash', label: '$70 a $120 millones',  payload: 'goto:busqueda.html?precioMin=70000000&precioMax=120000000',  cls: 'qb-s' },
+                // Rangos calibrados a la distribución REAL del inventario (27 autos): 5/7/10/5.
+                { ic: 'cash', label: 'Hasta $50 millones',   payload: 'goto:busqueda.html?precioMax=50000000',                      cls: 'qb-s' },
+                { ic: 'cash', label: '$50 a $75 millones',   payload: 'goto:busqueda.html?precioMin=50000000&precioMax=75000000',   cls: 'qb-s' },
+                { ic: 'cash', label: '$75 a $120 millones',  payload: 'goto:busqueda.html?precioMin=75000000&precioMax=120000000',  cls: 'qb-s' },
                 { ic: 'cash', label: 'Más de $120 millones', payload: 'goto:busqueda.html?precioMin=120000000',                     cls: 'qb-s' }
             ]
         },

@@ -235,6 +235,123 @@ function dealLiquidable(deal) {
   return POSTVENTA_CHECKLIST.every((item) => pv[item.id] === true);
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+ * RESTRUCTURA COMERCIAL (TODO-25, diseño FROZEN §9) — primitivas económicas.
+ * ⟦OPUS-4.8 · rev-Fable⟧. Lógica PURA (cero I/O, cero IVA): la consumen
+ * dealWon (congela el snapshot), F42/reportes (altorraRevenue) y la UI de
+ * vehículos. La matriz fiscal (IVA/retención) se computa en tiempo de REPORTE
+ * (gate contador), NO aquí — solo se capturan los hechos crudos.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* ORIGEN (de quién es el carro). String validado en la capa de app, NO enum
+ * cerrado en Rules → extensible a un 4º+ tipo sin redeploy de rules (§9). */
+const TENANCY_TYPES = ['PROPIO', 'ALIADO', 'CONSIGNA', 'EXTERNO'];
+
+/* CÓMO gana Altorra — primitiva ORTOGONAL al origen (§9):
+ *  - SPREAD:     venta − baselineValue (baseline = NETO que recibe la
+ *                contraparte / costo del propio / precio aterrizado de la
+ *                consigna). Caso del dueño: el aliado recibe 54M neto SIEMPRE
+ *                → a 55M gano 1M, a 60M gano 6M = venta − 54M (spread puro).
+ *  - PERCENTAGE: venta × percentageRate (rate = fracción 0..1).
+ *  - FLAT:       flatFee fijo.
+ *  - MANUAL:     monto digitado al cierre (requisito #1 del dueño; default
+ *                de aliados). */
+const MARGIN_METHODS = ['SPREAD', 'PERCENTAGE', 'FLAT', 'MANUAL'];
+
+/* Por dónde fluye la plata del comprador — dato CRUDO (el escrow/IVA se
+ * resuelve en reporte; pregunta abierta #0 del dueño, no se computa aquí). */
+const FUNDS_FLOWS = ['ALTORRA_ESCROW', 'DIRECT_TO_OWNER'];
+
+function isValidTenancyType(t) { return TENANCY_TYPES.includes(t); }
+function isValidMarginMethod(m) { return MARGIN_METHODS.includes(m); }
+function isValidFundsFlow(f) { return FUNDS_FLOWS.includes(f); }
+
+/* COP no maneja centavos: redondea a peso entero (half-away-from-zero, norma
+ * contable). El refinamiento fino es diferible (open item §9). */
+function roundCOP(n) {
+  const x = Number(n);
+  if (!isFinite(x)) return 0;
+  return (x < 0 ? -1 : 1) * Math.round(Math.abs(x));
+}
+
+/**
+ * computeAltorraRevenue — cuánto gana Altorra en la venta, por método.
+ * @param economics    { method, baselineValue, percentageRate, flatFee }
+ * @param salePrice    precio de venta final (deal.amount al cierre)
+ * @param manualAmount monto digitado (solo método MANUAL)
+ * Devuelve pesos (puede ser NEGATIVO: el propio puede vender a pérdida).
+ * Método inválido/ausente → 0 (NUNCA lanza: el snapshot debe poder grabarse).
+ */
+function computeAltorraRevenue(economics, salePrice, manualAmount) {
+  const e = economics || {};
+  const sale = Number(salePrice) || 0;
+  switch (e.method) {
+    case 'SPREAD':     return roundCOP(sale - (Number(e.baselineValue) || 0));
+    case 'PERCENTAGE': return roundCOP(sale * (Number(e.percentageRate) || 0));
+    case 'FLAT':       return roundCOP(Number(e.flatFee) || 0);
+    case 'MANUAL':     return roundCOP(Number(manualAmount) || 0);
+    default:           return 0;
+  }
+}
+
+/**
+ * normalizeTenancy — coerce/valida un tenancy crudo a forma canónica con
+ * defaults seguros (para grabar en el vehículo y congelar en el snapshot).
+ * Tipo desconocido → 'EXTERNO'; método desconocido → 'MANUAL'. NUNCA lanza.
+ */
+function normalizeTenancy(raw) {
+  const t = raw || {};
+  const e = t.economics || {};
+  return {
+    type: isValidTenancyType(t.type) ? t.type : 'EXTERNO',
+    ownerRefId: t.ownerRefId || null,
+    economics: {
+      method: isValidMarginMethod(e.method) ? e.method : 'MANUAL',
+      baselineValue: Number(e.baselineValue) || 0,
+      percentageRate: e.percentageRate == null ? null : (Number(e.percentageRate) || 0),
+      flatFee: e.flatFee == null ? null : (Number(e.flatFee) || 0),
+    },
+  };
+}
+
+/**
+ * buildCommissionSnapshotEntry — arma UNA entrada del array append-only
+ * deals/{id}.commissionSnapshots (§9). Congela el tenancy (frozenTenancy) y
+ * computa altorraRevenue al cierre — inmutable después. F42 lee el ÚLTIMO.
+ */
+function buildCommissionSnapshotEntry({
+  rev, createdAt, createdBy, salePrice, vehicleId, tenancy,
+  manualAmount, advisorCommission, fundsFlow, isManualOverride, auditReason,
+}) {
+  const frozenTenancy = normalizeTenancy(tenancy);
+  return {
+    rev: Number(rev) || 1,
+    createdAt: createdAt || null,
+    createdBy: createdBy || null,
+    salePrice: Number(salePrice) || 0,
+    vehicleId: vehicleId || null,
+    frozenTenancy,
+    altorraRevenue: computeAltorraRevenue(frozenTenancy.economics, salePrice, manualAmount),
+    advisorCommission: Number(advisorCommission) || 0,
+    fundsFlow: isValidFundsFlow(fundsFlow) ? fundsFlow : 'DIRECT_TO_OWNER',
+    isManualOverride: !!isManualOverride,
+    auditReason: auditReason || null,
+  };
+}
+
+/** F42: el snapshot VIGENTE = el de mayor `rev` (último del array append-only). */
+function latestCommissionSnapshot(deal) {
+  const arr = (deal && deal.commissionSnapshots) || [];
+  if (!Array.isArray(arr) || !arr.length) return null;
+  return arr.reduce((a, b) => ((Number(b.rev) || 0) >= (Number(a.rev) || 0) ? b : a));
+}
+
+/** F42: ingreso de Altorra del deal (snapshot vigente). 0 si no hay snapshot. */
+function altorraRevenueOf(deal) {
+  const s = latestCommissionSnapshot(deal);
+  return s ? (Number(s.altorraRevenue) || 0) : 0;
+}
+
 module.exports = {
   LEAD_STATUSES, DISCARD_REASONS, LEAD_TRANSITIONS,
   DEAL_STAGES, DEAL_LOST, LOST_REASONS, STAGE_GATES,
@@ -244,4 +361,9 @@ module.exports = {
   isValidDiscardReason, isValidLostReason,
   isLeadLocked, canLeadTransition, dealTransition,
   computeVehicleState, shouldWriteVehicleState, detectCollisions, dealLiquidable,
+  // Restructura comercial (TODO-25, §9)
+  TENANCY_TYPES, MARGIN_METHODS, FUNDS_FLOWS,
+  isValidTenancyType, isValidMarginMethod, isValidFundsFlow,
+  roundCOP, computeAltorraRevenue, normalizeTenancy,
+  buildCommissionSnapshotEntry, latestCommissionSnapshot, altorraRevenueOf,
 };

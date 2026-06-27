@@ -145,6 +145,87 @@ describe('E4 §186 — F10/F42 checklist y liquidación', () => {
   });
 });
 
+describe('TODO-25 §9 — primitivas económicas (restructura comercial)', () => {
+  it('enums de ORIGEN y MÉTODO exactos al diseño FROZEN', () => {
+    expect(spec.TENANCY_TYPES).toEqual(['PROPIO', 'ALIADO', 'CONSIGNA', 'EXTERNO']);
+    expect(spec.MARGIN_METHODS).toEqual(['SPREAD', 'PERCENTAGE', 'FLAT', 'MANUAL']);
+    expect(spec.FUNDS_FLOWS).toEqual(['ALTORRA_ESCROW', 'DIRECT_TO_OWNER']);
+  });
+
+  it('SPREAD = venta − baselineValue (caso REAL del dueño: aliado neto 54M)', () => {
+    const eco = { method: 'SPREAD', baselineValue: 54_000_000 };
+    // a 55M Altorra gana 1M; a 60M gana 6M (el aliado recibe 54M neto siempre)
+    expect(spec.computeAltorraRevenue(eco, 55_000_000)).toBe(1_000_000);
+    expect(spec.computeAltorraRevenue(eco, 60_000_000)).toBe(6_000_000);
+  });
+  it('SPREAD puede ser NEGATIVO (propio vendido a pérdida)', () => {
+    expect(spec.computeAltorraRevenue({ method: 'SPREAD', baselineValue: 30_000_000 }, 28_000_000)).toBe(-2_000_000);
+  });
+  it('PERCENTAGE = venta × rate (fracción); FLAT = flatFee; MANUAL = monto digitado', () => {
+    expect(spec.computeAltorraRevenue({ method: 'PERCENTAGE', percentageRate: 0.05 }, 40_000_000)).toBe(2_000_000);
+    expect(spec.computeAltorraRevenue({ method: 'FLAT', flatFee: 800_000 }, 99_000_000)).toBe(800_000);
+    expect(spec.computeAltorraRevenue({ method: 'MANUAL' }, 60_000_000, 1_500_000)).toBe(1_500_000);
+  });
+  it('método inválido/ausente → 0 (jamás lanza)', () => {
+    expect(spec.computeAltorraRevenue({ method: 'XXX' }, 60_000_000)).toBe(0);
+    expect(spec.computeAltorraRevenue(null, 60_000_000)).toBe(0);
+    expect(spec.computeAltorraRevenue(undefined, undefined)).toBe(0);
+  });
+  it('roundCOP redondea a peso entero (half-away-from-zero)', () => {
+    expect(spec.roundCOP(2_500_000.5)).toBe(2_500_001);
+    expect(spec.roundCOP(-2.5)).toBe(-3);
+    expect(spec.roundCOP('100')).toBe(100);
+    expect(spec.roundCOP(Infinity)).toBe(0);
+  });
+
+  it('normalizeTenancy: defaults seguros (tipo→EXTERNO, método→MANUAL)', () => {
+    expect(spec.normalizeTenancy(null)).toEqual({
+      type: 'EXTERNO', ownerRefId: null,
+      economics: { method: 'MANUAL', baselineValue: 0, percentageRate: null, flatFee: null },
+    });
+    const norm = spec.normalizeTenancy({ type: 'ALIADO', ownerRefId: 'usados-de-la-costa',
+      economics: { method: 'SPREAD', baselineValue: 54_000_000 } });
+    expect(norm.type).toBe('ALIADO');
+    expect(norm.economics.method).toBe('SPREAD');
+    expect(norm.economics.percentageRate).toBeNull();
+  });
+
+  it('buildCommissionSnapshotEntry: congela tenancy y computa altorraRevenue', () => {
+    const entry = spec.buildCommissionSnapshotEntry({
+      rev: 1, createdBy: 'asesor@x', salePrice: 60_000_000, vehicleId: 'v1',
+      tenancy: { type: 'ALIADO', ownerRefId: 'usados-de-la-costa',
+        economics: { method: 'SPREAD', baselineValue: 54_000_000 } },
+      advisorCommission: 200_000, fundsFlow: 'ALTORRA_ESCROW',
+    });
+    expect(entry.rev).toBe(1);
+    expect(entry.altorraRevenue).toBe(6_000_000);
+    expect(entry.frozenTenancy.type).toBe('ALIADO');
+    expect(entry.fundsFlow).toBe('ALTORRA_ESCROW');
+    expect(entry.isManualOverride).toBe(false);
+  });
+  it('buildCommissionSnapshotEntry: fundsFlow inválido → DIRECT_TO_OWNER; MANUAL usa manualAmount', () => {
+    const entry = spec.buildCommissionSnapshotEntry({
+      salePrice: 60_000_000, tenancy: { type: 'ALIADO', economics: { method: 'MANUAL' } },
+      manualAmount: 1_000_000, fundsFlow: 'XXX', isManualOverride: true, auditReason: 'ajuste',
+    });
+    expect(entry.altorraRevenue).toBe(1_000_000);
+    expect(entry.fundsFlow).toBe('DIRECT_TO_OWNER');
+    expect(entry.isManualOverride).toBe(true);
+  });
+
+  it('latestCommissionSnapshot / altorraRevenueOf leen el de mayor rev (append-only)', () => {
+    const deal = { commissionSnapshots: [
+      { rev: 1, altorraRevenue: 1_000_000 },
+      { rev: 3, altorraRevenue: 6_000_000 },
+      { rev: 2, altorraRevenue: 4_000_000 },
+    ] };
+    expect(spec.latestCommissionSnapshot(deal).rev).toBe(3);
+    expect(spec.altorraRevenueOf(deal)).toBe(6_000_000);
+    expect(spec.altorraRevenueOf({})).toBe(0);
+    expect(spec.altorraRevenueOf(null)).toBe(0);
+  });
+});
+
 describe('migración LEGACY (F35b, E1b)', () => {
   it('todo estado v2 retirado tiene mapeo de migración', () => {
     for (const s of spec.LEGACY.leadStatuses) {

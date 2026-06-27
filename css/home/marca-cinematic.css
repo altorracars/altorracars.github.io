@@ -122,14 +122,19 @@ body[data-cin="on"] .mobile-filters-toggle {
 
 /* ===== Sidebar de filtros (glass) ===== */
 body[data-cin="on"] .filters-sidebar {
-    position: sticky;
-    top: 96px;
+    /* NO sticky: con 9 grupos el panel mide ~1100px; fijarlo recortaba su mitad
+       inferior y "Aplicar filtros" quedaba inalcanzable (bug del dueño). Fluye
+       en su columna y la página scrollea como UNA sola pieza → nunca se corta,
+       SIN barra de scroll propia, y se adapta a cualquier pantalla. La grilla lo
+       mantiene arriba (align-items:start). En ≤968px el legacy ya lo hacía
+       estático; ahora es consistente en todos los anchos. */
+    position: static;
     background: linear-gradient(180deg, rgba(14, 11, 9, 0.55), rgba(9, 7, 5, 0.55));
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid var(--cin-line);
     border-radius: 18px;
-    padding: clamp(16px, 1.6vw, 22px);
+    padding: clamp(14px, 1.4vw, 20px);
     box-shadow: 0 24px 60px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(244, 238, 222, 0.06);
 }
 body[data-cin="on"] .filters-header {
@@ -160,7 +165,7 @@ body[data-cin="on"] .btn-clear:hover { color: var(--cin-gold-hot); }
 body[data-cin="on"] .filters-form {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 13px;   /* compacto: el panel entra completo en más pantallas sin barra */
 }
 body[data-cin="on"] .filter-group {
     display: flex;
@@ -463,11 +468,16 @@ body[data-cin="on"] #pagination a.active {
     color: #1a1208;
 }
 
-/* ===== Responsive: sidebar colapsable en móvil ===== */
-@media (max-width: 900px) {
+/* ===== Responsive: 1 columna + filtros colapsables con toggle ===== */
+/* 1024px = el ancho donde el legacy (style.css) YA colapsa el sidebar y muestra
+   el toggle. Alineamos el MISMO breakpoint aquí para que toggle + colapso + 1-col
+   ocurran juntos. Antes este bloque era ≤900px → franja muerta 901–1024px: el
+   legacy colapsaba los filtros (max-height:0) pero el toggle del cinematic seguía
+   oculto (su base 0,2,1 ganaba) → filtros INALCANZABLES sin botón para abrirlos. */
+@media (max-width: 1024px) {
     body[data-cin="on"] .catalog-layout { grid-template-columns: 1fr; }
     body[data-cin="on"] .mobile-filters-toggle { display: flex; }
-    body[data-cin="on"] .filters-sidebar { position: static; }
+    body[data-cin="on"] .filters-sidebar { position: static; max-height: none; overflow: visible; }
     body[data-cin="on"] .filters-sidebar.collapsed { display: none; }
 }
 @media (max-width: 460px) {

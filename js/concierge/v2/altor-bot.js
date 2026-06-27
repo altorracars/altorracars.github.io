@@ -210,11 +210,13 @@
         por_tipo: {
             parent: 'ver_autos',
             text: 'Elige la carrocería — te abro el catálogo ya filtrado:',
+            // → páginas DEDICADAS por categoría (ya tienen el layout de sidebar izquierdo, sin
+            //   espacio sobrante ni filtro gigante — pedido del dueño). Mejor UX que busqueda?categoria=.
             buttons: [
-                { ic: 'car', label: 'Camioneta y 4x4 (SUV)', payload: 'goto:busqueda.html?categoria=suv',       cls: 'qb-s' },
-                { ic: 'car', label: 'Familiar / sedán',      payload: 'goto:busqueda.html?categoria=sedan',     cls: 'qb-s' },
-                { ic: 'car', label: 'Pickup / platón',       payload: 'goto:busqueda.html?categoria=pickup',    cls: 'qb-s' },
-                { ic: 'car', label: 'Pequeño / económico',   payload: 'goto:busqueda.html?categoria=hatchback', cls: 'qb-s' }
+                { ic: 'car', label: 'Camioneta y 4x4 (SUV)', payload: 'goto:vehiculos-suv.html',       cls: 'qb-s' },
+                { ic: 'car', label: 'Familiar / sedán',      payload: 'goto:vehiculos-sedan.html',     cls: 'qb-s' },
+                { ic: 'car', label: 'Pickup / platón',       payload: 'goto:vehiculos-pickup.html',    cls: 'qb-s' },
+                { ic: 'car', label: 'Pequeño / económico',   payload: 'goto:vehiculos-hatchback.html', cls: 'qb-s' }
             ]
         },
         por_precio: {

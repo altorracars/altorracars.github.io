@@ -69,7 +69,7 @@ por contexto). En su lugar:
 - **Áreas**: sitio público (index, busqueda, detalle-vehiculo, marcas, etc.), panel admin (`admin.html` SPA), bot ALTOR Hub (cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`).
 - **Costo recurrente**: ~$2-5 USD/mes (solo LLM Anthropic Haiku 4.5; resto Firebase free tier).
 - **Secrets YA configurados** (NO re-preguntar ni reconfigurar): `EMAIL_USER`, `EMAIL_PASS`, `GITHUB_PAT`, `LLM_API_KEY`, `TELEGRAM_BOT_TOKEN`.
-- **Deploys** (no CI, no auto): **los ejecuta Claude** vía `firebase deploy --only firestore:rules|database|storage|functions` (CLI auth `altorracarssale@` presente en la máquina del cliente). Un cambio NO se aplica solo → Claude despliega cuando se requiere; **un `firebase deploy` JAMÁS va como paso del dueño** (el dueño solo DECIDE: merge web M-12 · go/no-go · dinero · legal) — M-18.
+- **Deploys** (no CI, no auto): **los ejecuta Claude** vía `firebase deploy --only firestore:rules|database|storage|functions` (CLI auth `altorracarssale@` presente en la máquina del cliente). Un cambio NO se aplica solo → Claude despliega cuando se requiere; **un `firebase deploy` JAMÁS va como paso del dueño** (el dueño solo DECIDE: go/no-go · dinero · legal) — M-18.
 
 Detalle de un subsistema → `docs/00-INDICE.md` + tramo del historial.
 
@@ -89,7 +89,7 @@ Encabezado `## NN. ADR-NNN — <título>` (+ cita del cliente si reportó) y 7 p
 
 ### Reglas git (de §commit del proyecto)
 
-- **Claude commitea Y PUSHEA** la rama al cerrar trabajo verificado; **el cliente SOLO mergea a `main` en GitHub web** (M-12).
+- **Claude commitea, PUSHEA y MERGEA `dev`→`main`** al cerrar trabajo verificado (dueño delegó el merge 27/06; `gh` ausente → merge por git directo, M-12).
 - `git add` archivos específicos (NUNCA `git add -A` / `.`).
 - Footer `Co-Authored-By: Claude <noreply@anthropic.com>` + `Modelo:`. Árbol sucio sin commitear+pushear = **turno incompleto** (M-12). NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
 - NUNCA commitear secrets (.env, credentials.json).

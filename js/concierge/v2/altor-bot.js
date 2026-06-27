@@ -42,11 +42,11 @@
         '--bubble:#241D14;--bd:#2C241A;--bd2:#352A1C;--tx:#F4EEE3;--tx2:#9A9081;',
         '--tx3:#736A5C;--ok:#5BBF66;font-family:Manrope,system-ui,sans-serif;}',
         '*{box-sizing:border-box;margin:0;}',
+        // FAB en reposo = oro QUIETO (glow estático, sin bucles infinitos — comité marca/a11y).
+        // El metal precioso brilla, no parpadea. Animación SOLO en hover.
         '.fab{position:fixed;right:20px;bottom:20px;width:66px;height:66px;background:none;border:none;cursor:pointer;padding:0;z-index:2147483000;',
-        'animation:altorFloat 3s ease-in-out infinite,altorGlow 3s ease-in-out infinite;}',
-        '.fab:hover{transform:scale(1.08);}',
-        '@keyframes altorFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}',
-        '@keyframes altorGlow{0%,100%{filter:drop-shadow(0 6px 14px rgba(184,150,88,.55)) drop-shadow(0 2px 6px rgba(0,0,0,.35));}50%{filter:drop-shadow(0 8px 22px rgba(201,166,99,.85)) drop-shadow(0 0 16px rgba(245,223,128,.45)) drop-shadow(0 2px 6px rgba(0,0,0,.35));}}',
+        'filter:drop-shadow(0 6px 16px rgba(184,150,88,.5)) drop-shadow(0 2px 6px rgba(0,0,0,.4));transition:transform .2s ease,filter .2s ease;}',
+        '.fab:hover{transform:scale(1.06);filter:drop-shadow(0 8px 22px rgba(201,166,99,.75)) drop-shadow(0 2px 8px rgba(0,0,0,.4));}',
         '.fab svg{width:30px;height:30px;color:var(--on-g);}',
         '.fab.hidden{display:none;}',
         '.panel{position:fixed;right:20px;bottom:20px;width:380px;max-width:calc(100vw - 24px);',
@@ -64,11 +64,11 @@
         '.av-img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}',
         '.fab-img{width:100%;height:100%;object-fit:contain;display:block;}',
         '.vbadge{position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;',
-        'background:#2E7D32;border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;}',
-        '.vbadge svg{width:9px;height:9px;color:#fff;}',
+        'background:var(--g);border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;}',
+        '.vbadge svg{width:9px;height:9px;color:var(--on-g);}',
         '.nm{font-family:"Instrument Serif",Georgia,serif;font-size:22px;color:var(--tx);letter-spacing:.6px;line-height:1;}',
         '.sub{font-size:11.5px;color:var(--tx2);margin-top:4px;display:flex;align-items:center;gap:5px;}',
-        '.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;}',
+        '.dot{width:7px;height:7px;border-radius:50%;background:var(--g2);display:inline-block;}',
         '.hd-act{margin-left:auto;display:flex;gap:8px;}',
         '.hd-act button{background:none;border:none;color:var(--tx2);cursor:pointer;padding:2px;display:flex;}',
         '.hd-act svg{width:18px;height:18px;}',
@@ -106,6 +106,31 @@
         '.td{width:6px;height:6px;border-radius:50%;background:var(--tx2);animation:tb 1.2s infinite;}',
         '.td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}',
         '@keyframes tb{0%,60%,100%{opacity:.3;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}',
+        // Control "Empezar de nuevo" (reset) en el header — siempre visible (fix B3)
+        '.hd-act button{min-width:32px;min-height:32px;padding:7px;border-radius:8px;}',   // tap target ≥32px
+        '.hd-act button.rst{display:flex;align-items:center;gap:4px;background:none;border:1px solid var(--bd2);',
+        'color:var(--g2);border-radius:20px;padding:5px 9px;min-width:auto;min-height:auto;font:inherit;font-size:11px;cursor:pointer;}',
+        '.rst svg{width:13px;height:13px;}',
+        // Pie de navegación anti-callejón (fix B2)
+        '.navrow{display:flex;gap:7px;margin-bottom:8px;}',
+        '.navb{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:10px;',
+        'border:1px solid var(--bd2);color:#D9CDB6;font-size:12.5px;background:#1E1710;cursor:pointer;font-family:inherit;}',
+        '.navb svg{width:14px;height:14px;}',
+        '.qb-div{height:1px;background:var(--bd);margin:9px 2px 7px;}',
+        // Fila de escapes humanos (asesor/WhatsApp) como chips discretos, no botones que compiten
+        '.escrow{display:flex;gap:7px;}',
+        '.escb{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:10px;',
+        'border:1px solid var(--bd);color:#B6AC99;font-size:12px;background:transparent;cursor:pointer;font-family:inherit;}',
+        '.escb svg{width:14px;height:14px;}',
+        // Confirmación in-app del reset (no window.confirm — fix B3)
+        '.confirm{padding:2px;}',
+        '.confirm .ct{font-size:13px;color:var(--tx);margin-bottom:11px;line-height:1.45;}',
+        // Foco de teclado visible en TODO control (a11y AA 2.4.7)
+        '.fab:focus-visible,.qb:focus-visible,.navb:focus-visible,.escb:focus-visible,.rst:focus-visible,',
+        '.hd-act button:focus-visible,.field:focus-visible,.send:focus-visible,.gate-consent input:focus-visible{',
+        'outline:2px solid var(--g2);outline-offset:2px;border-radius:8px;}',
+        // Respeto a quien pide menos movimiento (a11y 2.3.3 + doctrina §3.1)
+        '@media(prefers-reduced-motion:reduce){.fab,.td{animation:none!important;transition:none!important;}}',
         '.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}'
     ].join('');
 
@@ -120,7 +145,12 @@
         card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>',
         cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16"/></svg>',
         headset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0116 0v2M4 14a2 2 0 002 2h1v-5H6a2 2 0 00-2 2zM20 14a2 2 0 01-2 2h-1v-5h1a2 2 0 012 2zM18 16v1a3 3 0 01-3 3h-3"/></svg>',
-        send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>'
+        wa: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21 5.46 0 9.91-4.45 9.91-9.91C21.95 6.45 17.5 2 12.04 2zm5.8 14.01c-.24.68-1.4 1.3-1.93 1.38-.49.07-1.13.1-1.82-.11-.42-.13-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.36-.14-.19-1.18-1.57-1.18-3 0-1.43.75-2.13 1.02-2.42.27-.29.58-.36.78-.36.19 0 .39 0 .56.01.18.01.42-.07.66.5.24.59.82 2.02.89 2.17.07.14.12.31.02.5-.09.19-.14.31-.27.48-.14.16-.29.37-.41.49-.14.14-.28.29-.12.57.16.27.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.07.18-.27.36-.22.61-.13.25.09 1.6.75 1.87.89.27.14.46.21.53.32.07.12.07.66-.17 1.34z"/></svg>',
+        send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>',
+        refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M3 21v-5h5"/></svg>',
+        home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7M5 9v11h5v-6h4v6h5V9"/></svg>',
+        back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+        cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>'
     };
 
     /* ── Entrada ENGINE-AWARE ternaria (D1) ────────────────────────────── */
@@ -141,72 +171,87 @@
             sourcePage: (typeof location !== 'undefined' && location.pathname) || '/',
             sourceVehicleId: (window.PRERENDERED_VEHICLE_ID || null),
             lastActivityAt: Date.now(),
+            currentNodeId: 'welcome', navStack: [],
             _chatDocCreated: false, _leadCreated: false, _v: 2
         };
     }
 
-    /* Botones por intent (espejo de getContextualQuickReplies de v1) */
-    var QR_WELCOME = [
-        { ic: 'car', label: 'Ver autos disponibles', payload: 'Muéstrame los autos disponibles', cls: 'qb-p' },
-        { ic: 'card', label: 'Financiación a tu medida', payload: 'Quiero información sobre financiación', cls: 'qb-s' },
-        { ic: 'cal', label: 'Agendar una visita', payload: 'Quiero agendar una visita', cls: 'qb-s' },
-        { ic: 'car', label: 'Vender / parte de pago', payload: 'Quiero vender mi carro o darlo en parte de pago', cls: 'qb-s' }
-    ];
-
-    /* ── Motor FREE CORE determinista (buttons-only, sin NLU — D1) ──────
-       Cada payload de botón → respuesta + sub-botones. NO depende de v1:
-       en Free Core no hay texto libre, solo este árbol finito. El NLU pesado
-       (generateBotResponse de v1) solo se necesita con texto libre = modo LLM. */
-    var FREE_CORE = {
-        'Muéstrame los autos disponibles': {
-            text: 'Con gusto. ¿Qué tipo de carro estás buscando?',
-            quickReplies: [
-                { ic: 'car', label: 'SUV / Camioneta', payload: 'Muéstrame SUVs disponibles', cls: 'qb-s' },
-                { ic: 'car', label: 'Sedán', payload: 'Muéstrame sedanes disponibles', cls: 'qb-s' },
-                { ic: 'car', label: 'Ver todo el catálogo', payload: '__goto_catalogo__', cls: 'qb-p' }
+    /* ── Árbol de botones Free Core como GRAFO DE NODOS (rediseño M-23) ──────
+       Cada nodo: { text, buttons[], parent }. La navegación es por id (state.currentNodeId);
+       el pie [← Volver]/[Inicio] + los escapes humanos se AUTO-INYECTAN en _renderInput
+       → NINGÚN nodo nace sin salida (fix B2, callejón verificado en la captura del dueño).
+       Payloads tipados que send() intercepta ANTES de tratarlos como mensaje:
+         node:<id> · goto:<url> · act:gate:<for> · act:escalate · __whatsapp__ · __home__ · __back__
+       Los deep-link `goto:` llevan el filtro REAL que busqueda.html ahora lee al cargar (fix B1):
+       categoria∈{suv,pickup,sedan,hatchback} (verificado en inventario vivo) · precioMin/Max en
+       dígitos puros. NO se ofrece ?marca= (filtro por igualdad exacta + select por id = trampa, diferido). */
+    var NODES = {
+        welcome: {
+            root: true,
+            text: 'Hola, soy ALTOR — ¿qué buscas hoy?',
+            buttons: [
+                { ic: 'car',  label: 'Ver carros disponibles',                 payload: 'node:ver_autos',    cls: 'qb-p' },
+                { ic: 'card', label: 'Financiación a tu medida',               payload: 'node:financiacion', cls: 'qb-s' },
+                { ic: 'cash', label: '¿Cuánto vale mi carro? (parte de pago)', payload: 'node:vender',       cls: 'qb-s' },
+                { ic: 'cal',  label: 'Agendar una visita',                     payload: 'act:gate:cita',     cls: 'qb-s' }
             ]
         },
-        'Muéstrame SUVs disponibles': {
-            text: 'Tenemos SUVs y camionetas en stock. Te abro el catálogo filtrado para que las veas con fotos y precios.',
-            quickReplies: [
-                { ic: 'car', label: 'Ver camionetas', payload: '__goto_catalogo__', cls: 'qb-p' },
-                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+        ver_autos: {
+            parent: 'welcome',
+            text: '¿Cómo prefieres buscar?',
+            buttons: [
+                { ic: 'car',  label: 'Por tipo de carro',    payload: 'node:por_tipo',      cls: 'qb-p' },
+                { ic: 'cash', label: 'Por presupuesto',      payload: 'node:por_precio',    cls: 'qb-s' },
+                { ic: 'car',  label: 'Ver todo el catálogo', payload: 'goto:busqueda.html', cls: 'qb-s' }
             ]
         },
-        'Muéstrame sedanes disponibles': {
-            text: 'Tenemos sedanes disponibles. Te abro el catálogo filtrado para verlos al detalle.',
-            quickReplies: [
-                { ic: 'car', label: 'Ver sedanes', payload: '__goto_catalogo__', cls: 'qb-p' },
-                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+        por_tipo: {
+            parent: 'ver_autos',
+            text: 'Elige la carrocería — te abro el catálogo ya filtrado:',
+            buttons: [
+                { ic: 'car', label: 'Camioneta y 4x4 (SUV)', payload: 'goto:busqueda.html?categoria=suv',       cls: 'qb-s' },
+                { ic: 'car', label: 'Familiar / sedán',      payload: 'goto:busqueda.html?categoria=sedan',     cls: 'qb-s' },
+                { ic: 'car', label: 'Pickup / platón',       payload: 'goto:busqueda.html?categoria=pickup',    cls: 'qb-s' },
+                { ic: 'car', label: 'Pequeño / económico',   payload: 'goto:busqueda.html?categoria=hatchback', cls: 'qb-s' }
             ]
         },
-        'Quiero información sobre financiación': {
-            text: 'Te financiamos con cuotas a tu medida y aprobación rápida. Para darte un plan exacto, agenda una cita o te paso con un asesor.',
-            quickReplies: [
-                { ic: 'cal', label: 'Agendar para cotizar', payload: 'Quiero agendar una visita', cls: 'qb-p' },
-                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+        por_precio: {
+            parent: 'ver_autos',
+            text: '¿Cuál es tu presupuesto?',
+            buttons: [
+                { ic: 'cash', label: 'Hasta $40 millones',   payload: 'goto:busqueda.html?precioMax=40000000',                      cls: 'qb-s' },
+                { ic: 'cash', label: '$40 a $70 millones',   payload: 'goto:busqueda.html?precioMin=40000000&precioMax=70000000',   cls: 'qb-s' },
+                { ic: 'cash', label: '$70 a $120 millones',  payload: 'goto:busqueda.html?precioMin=70000000&precioMax=120000000',  cls: 'qb-s' },
+                { ic: 'cash', label: 'Más de $120 millones', payload: 'goto:busqueda.html?precioMin=120000000',                     cls: 'qb-s' }
             ]
         },
-        'Quiero agendar una visita': { text: 'Perfecto, agendemos tu visita.', action: 'gate', gateFor: 'cita' },
-        'Quiero hablar con un asesor': { text: 'Te conecto con un asesor de Altorra ahora mismo.', action: 'escalate' },
-        // Retoma / parte de pago — alta frecuencia en el mercado costeño (comité, exp. D)
-        'Quiero vender mi carro o darlo en parte de pago': {
-            text: 'Te hacemos peritaje gratis y te recibimos el carro en parte de pago o consignación. Para el avalúo, agenda una cita o te paso con un asesor.',
-            quickReplies: [
-                { ic: 'cal', label: 'Agendar avalúo', payload: 'Quiero agendar una visita', cls: 'qb-p' },
-                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+        financiacion: {
+            parent: 'welcome',
+            text: 'Te financiamos con cuotas a tu medida y aprobación rápida. El plan exacto lo arma un asesor según tu perfil — ¿cómo seguimos?',
+            buttons: [
+                { ic: 'cal',     label: 'Agendar para cotizar', payload: 'act:gate:cita', cls: 'qb-p' },
+                { ic: 'headset', label: 'Hablar con un asesor', payload: 'act:escalate',  cls: 'qb-s' }
+            ]
+        },
+        vender: {
+            parent: 'welcome',
+            text: 'Te hacemos peritaje gratis y te recibimos el carro en parte de pago o consignación. ¿Coordinamos el avalúo?',
+            buttons: [
+                { ic: 'cal',     label: 'Pedir avalúo',         payload: 'act:gate:cita', cls: 'qb-p' },
+                { ic: 'headset', label: 'Hablar con un asesor', payload: 'act:escalate',  cls: 'qb-s' }
+            ]
+        },
+        // Nodo terminal honesto tras escalar: v2 aún NO recibe respuestas del asesor en vivo
+        // (no hay onSnapshot del Hub), así que NO abrimos un chat libre al vacío (fix caza-bugs).
+        escalado: {
+            parent: 'welcome', noEscape: true,   // ya escaló: no re-ofrecer "asesor" (evita lead duplicado)
+            text: 'Listo — un asesor de Altorra ya fue notificado y te contactará muy pronto. Si prefieres, sigue por WhatsApp ahora mismo.',
+            buttons: [
+                { ic: 'wa', label: 'Continuar por WhatsApp', payload: '__whatsapp__', cls: 'qb-p' }
             ]
         }
     };
-    function freeCoreReply(payload) {
-        return FREE_CORE[payload] || {
-            text: '¿Te muestro el catálogo o prefieres que te pase con un asesor?',
-            quickReplies: [
-                { ic: 'car', label: 'Ver catálogo', payload: '__goto_catalogo__', cls: 'qb-p' },
-                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
-            ]
-        };
-    }
+    function getNode(id) { return NODES[id] || NODES.welcome; }
 
     /* Crea un botón quick-reply de forma segura (icono confiable + label textContent) */
     function makeQB(def, onClick) {
@@ -214,8 +259,18 @@
         btn.className = 'qb ' + (def.cls || 'qb-s');
         btn.appendChild(frag(IC[def.ic] || ''));            // icono propio = confiable
         btn.appendChild(document.createTextNode(def.label)); // label = texto seguro
-        btn.addEventListener('click', function () { onClick(def.payload); });
+        btn.addEventListener('click', function () { onClick(def.payload, def.label); });
         return btn;
+    }
+
+    /* Botón compacto de navegación/escape (icono confiable + label seguro). */
+    function makeMini(cls, iconHtml, label, onClick) {
+        var b = document.createElement('button');
+        b.className = cls;
+        b.appendChild(frag(iconHtml || ''));
+        b.appendChild(document.createTextNode(label));
+        b.addEventListener('click', function () { onClick(); });
+        return b;
     }
 
     class AltorBot extends HTMLElement {
@@ -308,8 +363,9 @@
                     '<header class="hd">' +
                         '<div class="av"><img class="av-img" src="/ALTOR.png" alt="ALTOR" onerror="this.style.display=\'none\'"><span class="vbadge">' + IC.check + '</span></div>' +
                         '<div><div class="nm">ALTOR</div>' +
-                        '<div class="sub"><span class="dot"></span>En línea · Asistente de Altorra Cars</div></div>' +
+                        '<div class="sub"><span class="dot"></span>En línea · Altorra Cars</div></div>' +
                         '<div class="hd-act">' +
+                            '<button class="rst" aria-label="Empezar una conversación nueva">' + IC.refresh + '<span>Nuevo</span></button>' +
                             '<button class="min" aria-label="Minimizar">' + IC.minus + '</button>' +
                             '<button class="cls" aria-label="Cerrar">' + IC.x + '</button>' +
                         '</div>' +
@@ -322,6 +378,7 @@
             sr.querySelector('.fab').addEventListener('click', this.open.bind(this));
             sr.querySelector('.min').addEventListener('click', this.close.bind(this));
             sr.querySelector('.cls').addEventListener('click', this.close.bind(this));
+            sr.querySelector('.rst').addEventListener('click', this._renderResetConfirm.bind(this));  // fix B3
             this._renderBody();
             this._renderInput();
         }
@@ -332,10 +389,9 @@
             while (box.firstChild) box.removeChild(box.firstChild);
 
             if (!this.state.messages.length) {
-                box.appendChild(frag('<div class="bot">Hola, soy <b>ALTOR</b> — tu asistente en Altorra Cars. ¿Qué estás buscando hoy?</div><div class="time">Ahora</div>'));
-                if (this.state.engine === 'freecore') {
-                    box.appendChild(frag('<div class="engine-note">' + IC.shield + '<span>Te respondo con opciones precisas. Para charlar libre, un asesor está a un toque.</span></div>'));
-                }
+                // Saludo cálido sin disclaimer de motor (el comité de marca: una sala premium
+                // no explica sus costuras). Sin timestamp 'Ahora' redundante en sesión fresca.
+                box.appendChild(frag('<div class="bot">Hola, soy <b>ALTOR</b> — tu asistente en Altorra Cars. ¿Qué buscas hoy?</div>'));
                 return;
             }
             // Mensajes: texto del usuario/bot → textContent (anti-XSS, #1 Gemini)
@@ -355,29 +411,45 @@
             while (zone.firstChild) zone.removeChild(zone.firstChild);
             var self = this;
 
+            // Fix caza-bugs: si hay un gate a medias (reapertura), re-pintar el FORM, no los
+            // botones — antes _renderInput decidía solo por getInputMode e ignoraba gating →
+            // el form se perdía dejando "necesito un par de datos 👇" colgado = lead perdido.
+            if (this.state.gating) { this._renderGateForm(); return; }
+
             if (getInputMode(this.state) === 'buttons') {
-                var list = this.state.pendingQuickReplies || QR_WELCOME;
-                var hint = this.state.pendingQuickReplies ? 'Elige una opción' : 'Elige una opción para empezar';
-                zone.appendChild(frag('<div class="hint">' + hint + '</div>'));
+                var node = getNode(this.state.currentNodeId);
+                var payloads = (node.buttons || []).map(function (d) { return d.payload; });
                 var btns = document.createElement('div');
                 btns.className = 'btns';
-                list.forEach(function (def) {
-                    btns.appendChild(makeQB(def, function (p) { self.send(p); }));
+                (node.buttons || []).forEach(function (def) {
+                    btns.appendChild(makeQB(def, function (p, l) { self.send(p, l); }));
                 });
-                // escape hatch (D1): buttons-only nunca es trampa — SIN duplicar si el árbol ya lo trae (bug live)
-                var _payloads = list.map(function (d) { return d.payload; });
-                if (_payloads.indexOf('Quiero hablar con un asesor') === -1) {
-                    btns.appendChild(makeQB(
-                        { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' },
-                        function (p) { self.send(p); }
-                    ));
+
+                // Pie de navegación anti-callejón (fix B2): inyectado por CÓDIGO en todo nodo
+                // != raíz → imposible que un nodo (presente o futuro) nazca sin salida.
+                if (node.root !== true && this.state.currentNodeId !== 'welcome') {
+                    btns.appendChild(frag('<div class="qb-div"></div>'));
+                    var nav = document.createElement('div');
+                    nav.className = 'navrow';
+                    if (this.state.navStack && this.state.navStack.length) {
+                        nav.appendChild(makeMini('navb', IC.back, 'Volver', function () { self.send('__back__'); }));
+                    }
+                    nav.appendChild(makeMini('navb', IC.home, 'Inicio', function () { self.send('__home__'); }));
+                    btns.appendChild(nav);
                 }
-                // WhatsApp con contexto pre-cargado — escape de alta conversión (comité, exp. D)
-                if (_payloads.indexOf('__whatsapp__') === -1) {
-                    btns.appendChild(makeQB(
-                        { ic: 'headset', label: 'Continuar por WhatsApp', payload: '__whatsapp__', cls: 'qb-ghost' },
-                        function (p) { self.send(p); }
-                    ));
+
+                // Escapes humanos como chips discretos (de-dupe si el nodo ya los trae).
+                var esc = document.createElement('div');
+                esc.className = 'escrow';
+                if (!node.noEscape && payloads.indexOf('act:escalate') === -1) {
+                    esc.appendChild(makeMini('escb', IC.headset, 'Hablar con un asesor', function () { self.send('act:escalate', 'Hablar con un asesor'); }));
+                }
+                if (payloads.indexOf('__whatsapp__') === -1) {
+                    esc.appendChild(makeMini('escb', IC.wa, 'WhatsApp', function () { self.send('__whatsapp__'); }));
+                }
+                if (esc.children.length) {
+                    if (node.root === true) btns.appendChild(frag('<div class="qb-div"></div>'));
+                    btns.appendChild(esc);
                 }
                 zone.appendChild(btns);
             } else {
@@ -413,44 +485,101 @@
         }
         toggle() { this._open ? this.close() : this.open(); }
 
-        send(text) {
+        send(text, label) {
             if (!text) return;
-            if (text === '__goto_catalogo__') { this._goto('busqueda.html'); return; }  // acción, no mensaje
-            if (text === '__whatsapp__') { this._toWhatsApp(); return; }                 // escape WhatsApp con contexto
+
+            // ── Acciones de navegación / sistema: interceptadas ANTES del push de mensaje
+            //    (igual que los sentinelas viejos) para que NUNCA caigan al motor como texto
+            //    libre y disparen el fallback genérico = un callejón nuevo (hallazgo caza-bugs). ──
+            if (text === '__home__') { return this._goHome(); }
+            if (text === '__back__') { return this._goBack(); }
+            if (text === '__whatsapp__') { return this._toWhatsApp(); }
+            if (text === '__goto_catalogo__') { return this._goto('busqueda.html'); }     // legacy safety
+            if (text.indexOf('goto:') === 0) { return this._goto(text.slice(5)); }         // deep-link con filtro real (fix B1)
+            if (text.indexOf('node:') === 0) { return this._goNode(text.slice(5), label); }
+            if (text.indexOf('act:gate:') === 0) { return this._navAction(label, this._requestGate.bind(this, text.slice(9))); }
+            if (text === 'act:escalate') { return this._navAction(label, this._requestAdvisor.bind(this)); }
+
+            // ── Modo libre (LLM / live): el texto del usuario va al motor compartido DualCore. ──
             this.state.messages.push({ from: 'user', text: text, timestamp: Date.now() });
-            this.state.pendingQuickReplies = null;
             this._persist();
             this._renderBody();
-            this._renderInput();
             var self = this;
             this._showTyping();
-
-            if (getInputMode(this.state) === 'buttons') {
-                // Free Core determinista (árbol de botones, sin NLU — D1)
-                var r = freeCoreReply(text);
-                setTimeout(function () {
-                    self._hideTyping();
-                    self.state.messages.push({ from: 'bot', text: r.text });
-                    self.state.pendingQuickReplies = r.quickReplies || null;
-                    self._persist(); self._renderBody(); self._renderInput();
-                    if (r.action === 'gate') self._requestGate(r.gateFor || 'general');
-                    if (r.action === 'escalate') self._requestAdvisor();
-                }, 450);
+            var done = function (txt) {
+                self._hideTyping();
+                self.state.messages.push({ from: 'bot', text: txt });
+                self._persist(); self._renderBody();
+            };
+            if (window.AltorraDualCore && window.AltorraDualCore.respond) {
+                window.AltorraDualCore.respond(text, self.state)
+                    .then(function (resp) { done((resp && resp.text) || 'No te entendí bien, ¿lo reformulas?'); })
+                    .catch(function () { done('Tuve un problema. ¿Te paso con un asesor?'); });
             } else {
-                // Modo libre (LLM / live) → motor compartido DualCore (LLM si Premium on)
-                var done = function (txt) {
-                    self._hideTyping();
-                    self.state.messages.push({ from: 'bot', text: txt });
-                    self._persist(); self._renderBody();
-                };
-                if (window.AltorraDualCore && window.AltorraDualCore.respond) {
-                    window.AltorraDualCore.respond(text, self.state)
-                        .then(function (resp) { done((resp && resp.text) || 'No te entendí bien, ¿lo reformulas?'); })
-                        .catch(function () { done('Tuve un problema. ¿Te paso con un asesor?'); });
-                } else {
-                    setTimeout(function () { done('El asistente IA no está disponible ahora. ¿Te conecto con un asesor?'); }, 400);
-                }
+                setTimeout(function () { done('El asistente IA no está disponible ahora. ¿Te conecto con un asesor?'); }, 400);
             }
+        }
+
+        /* ── Navegación del árbol de botones (grafo de nodos, fix B2) ───────────── */
+        // Turno de contenido: burbuja del usuario (label) + apila el nodo actual + navega +
+        // burbuja del bot con el texto del nodo destino.
+        _goNode(id, label) {
+            if (!NODES[id]) { return this._goHome(); }
+            if (label) this.state.messages.push({ from: 'user', text: label, timestamp: Date.now() });
+            if (this.state.currentNodeId && this.state.currentNodeId !== id) {
+                this.state.navStack = this.state.navStack || [];
+                this.state.navStack.push(this.state.currentNodeId);
+            }
+            this.state.currentNodeId = id;
+            this.state.gating = null;
+            this._persist();
+            this._renderBody();
+            var self = this;
+            this._showTyping();
+            setTimeout(function () {
+                self._hideTyping();
+                self.state.messages.push({ from: 'bot', text: getNode(id).text });
+                self._persist(); self._renderBody(); self._renderInput();
+            }, 360);
+        }
+        // Navegación silenciosa (no ensucia el historial con turnos de menú).
+        _goBack() {
+            var stack = this.state.navStack || [];
+            this.state.currentNodeId = stack.length ? stack.pop() : 'welcome';
+            this.state.navStack = stack;
+            this.state.gating = null;
+            this._persist();
+            this._renderInput();
+        }
+        _goHome() {
+            this.state.navStack = [];
+            this.state.currentNodeId = 'welcome';
+            this.state.gating = null;
+            this._persist();
+            this._renderInput();
+        }
+        // Acción terminal (gate/escalate) precedida de la burbuja del usuario (label).
+        _navAction(label, fn) {
+            if (label) {
+                this.state.messages.push({ from: 'user', text: label, timestamp: Date.now() });
+                this._persist(); this._renderBody();
+            }
+            fn();
+        }
+        // Confirmación in-app del reset (fix B3 — NO window.confirm nativo).
+        _renderResetConfirm() {
+            this.open();
+            var zone = this.shadowRoot.querySelector('.input');
+            if (!zone) return;
+            while (zone.firstChild) zone.removeChild(zone.firstChild);
+            var self = this;
+            var wrap = document.createElement('div'); wrap.className = 'confirm';
+            wrap.appendChild(frag('<div class="ct">¿Empezar una conversación nueva? Se borrará lo anterior.</div>'));
+            var row = document.createElement('div'); row.className = 'btns';
+            row.appendChild(makeMini('qb qb-p', IC.refresh, 'Sí, empezar de nuevo', function () { self.resetSession(); }));
+            row.appendChild(makeMini('escb', IC.x, 'Cancelar', function () { self._renderInput(); }));
+            wrap.appendChild(row);
+            zone.appendChild(wrap);
         }
 
         _goto(url) { try { window.location.href = url; } catch (e) {} }
@@ -542,23 +671,16 @@
                     .catch(function () {});
             }
             st.messages.push({ from: 'bot', text: '¡Gracias, ' + nombre.split(' ')[0] + '! Te contactaremos muy pronto. ¿Algo más en lo que te ayude?' });
-            st.pendingQuickReplies = null; st.gating = null;
+            st.gating = null; st.currentNodeId = 'welcome'; st.navStack = [];   // vuelve al menú raíz limpio
+            this._persist();
             this._renderBody();
-            this._renderInput();   // vuelve a los botones (Free Core)
+            this._renderInput();
         }
         _requestAdvisor() {
             // F-1 (TODO-46): escalado REAL vía lead-flow compartido → CREA el doc
-            // `conciergeChats` que el ALTOR Hub lee. Antes: CustomEvent al vacío =
-            // el cliente que pedía asesor caía al vacío (hallazgo #1 del comité).
-            this.state.mode = 'queue';            // en cola hasta que un asesor lo tome
-            this.state.pendingQuickReplies = null;
-            this._persist();
-            this._renderInput();                  // entrada libre (queue/live, D1)
-
-            var db = window.db || null;
-            var LF = window.AltorraLeadFlow;
+            // `conciergeChats` que el ALTOR Hub lee + alerta al equipo (workload CF + Telegram).
+            var self = this, db = window.db || null, LF = window.AltorraLeadFlow, st = this.state;
             if (db && LF) {
-                var st = this.state;
                 var leadP = st._leadCreated
                     ? Promise.resolve()
                     : LF.createLead(db, st, 'soft')
@@ -574,6 +696,20 @@
             this.dispatchEvent(new CustomEvent('altor:request-advisor', {
                 bubbles: true, composed: true, detail: { session: this.session() }
             }));
+
+            // UI HONESTA (fix caza-bugs): el v2 NO recibe respuestas del asesor en vivo (no hay
+            // onSnapshot del Hub), así que NO abrimos un chat libre al vacío — el cliente escribía
+            // y caía al fallback "IA no disponible". Confirmamos + ofrecemos WhatsApp; el equipo
+            // ya quedó notificado. El nodo 'escalado' auto-inyecta Inicio para no atrapar al cliente.
+            st.currentNodeId = 'escalado';
+            st.gating = null;
+            this._persist();
+            this._showTyping();
+            setTimeout(function () {
+                self._hideTyping();
+                st.messages.push({ from: 'bot', text: getNode('escalado').text });
+                self._persist(); self._renderBody(); self._renderInput();
+            }, 360);
         }
 
         openWithVehicleContext(opts) {   // deep-link desde detalle-vehiculo (contrato v1)

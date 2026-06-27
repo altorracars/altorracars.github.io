@@ -101,6 +101,31 @@ surface tarjetas; mientras tanto, enlazar a resultados FILTRADOS (categoría/pre
 **Fix**: el **LLM v2** (Tool Calling + `search_inventory`, TODO-34) maneja lenguaje natural + recomienda por presupuesto. Pend saldo Anthropic. **Implicación clave**: el barrido conversacional completo ("responde como debe ser") solo es SIGNIFICATIVO con el LLM ON. **Estado**: 🆕 documentado → cierra con LLM-on (v2).
 
 ## Resueltos
+
+### 🟢 F-1 REDISEÑO DEL FLUJO Free Core (27/06 PM, W-11 completo) — 3 bugs LIVE del dueño + wins
+> Verificado en preview (DOM): nav end-to-end, deep-links, reset, gate-reopen. Pend validación live (extensión).
+- **B1 · 🔴 botón mentiroso** — "Ver sedanes/camionetas" abría el catálogo SIN filtrar. **Causa doble**: el bot
+  mandaba `__goto_catalogo__`→`busqueda.html` pelado **Y** `busqueda.html` solo leía `?buscar=`. **Fix (2 patas)**:
+  (a) árbol de nodos con `goto:busqueda.html?categoria=<suv|sedan|pickup|hatchback>`/`?precioMax=` (valores
+  canónicos verificados en inventario vivo: suv13/sedan8/hatchback5/pickup1); (b) `busqueda.html applyUrlFilters()`
+  lee los params DESPUÉS de poblar selects (async), `currentFilters`=fuente de verdad, valida categoría, chip visible.
+  ✔ preview: `?categoria=sedan`→8 cards · `?precioMax=40000000`→3 cards ≤$39M.
+- **B2 · 🔴 callejón sin salida** — las hojas dejaban 1 opción, sin volver/menú. **Fix**: `FREE_CORE` → GRAFO de
+  nodos; `_renderInput` AUTO-INYECTA pie `← Volver`(navStack pop) + `Inicio`(`__home__`) en todo nodo != raíz →
+  imposible nacer sin salida. `__home__`/`__back__` = sentinelas-acción interceptados en `send()` (no claves del árbol).
+- **B3 · 🔴 conversación zombie** — persistía en localStorage, sin reset en UI (min/x solo ocultan, 12h auto). **Fix**:
+  botón "Empezar de nuevo" (↻) SIEMPRE visible en header + confirm IN-APP (no `window.confirm`) → `resetSession()`.
+  `Inicio` (vuelve a raíz, conserva sesión) ≠ `Empezar de nuevo` (borra). `freshState` inicializa `currentNodeId`+`navStack`.
+- **Caza-bugs (fronteras estado-cero)**: gate a medias al reabrir → `_renderInput` ahora respeta `state.gating`
+  (re-pinta el form, antes se perdía) · escalar sin chat-en-vivo (v2 no recibe del Hub) → nodo `escalado` honesto
+  con WhatsApp en vez de chat libre al vacío · precios en dígitos puros · `?marca=` DIFERIDO (igualdad exacta + select por id).
+- **Wins visuales/a11y baratos** (comités): FAB QUIETO (sin float/glow infinitos) · `@media prefers-reduced-motion`
+  (cura violación §3.1) · `:focus-visible` oro en todo control · tap-target header ≥32px · dot/badge presencia oro
+  (no verde-semáforo) · fuera nota-motor (disclaimer) + hint redundante · subtítulo corto.
+- **DIFERIDO iter-2**: Por marca · FAQ estática (texto del dueño) · ARIA modal/focus-trap/Escape · profundidad de
+  capas · gate como paso de servicio · Instrument Serif extendido · copy de confianza en el gate.
+
+### Históricos
 - **F#1 · 🟠 FLUJO · gate de cita · fechas duplicadas** (cazado 2026-06-23, fix `02a79a7`) — el bloque
   "Mañana/Esta semana/Próxima semana" salía 2× (pedido del gate + respuesta diferida post-gate). Causa:
   los gate-requests (cita/vender/financiación) sin `quickReplies` → el caller (concierge.js:1085) les ponía

@@ -369,6 +369,53 @@
             await vehicleDB.load();
             await DynamicLists.load();
             DynamicLists.populatePageFilters();
+            applyUrlFilters();   // F-1 (bot ALTOR): deep-link DESPUÉS de poblar los <select>
+            performSearch();     // re-busca ya filtrado (opciones e inventario ya están listos)
+        }
+
+        // F-1 (bot ALTOR v2): aplica filtros que llegan por querystring al cargar.
+        // Corre DESPUÉS de populatePageFilters (los <select> ya tienen <option>), con
+        // currentFilters como FUENTE DE VERDAD del filtrado; el .value del select es solo
+        // reflejo (tolerante si la opción no existe). Sin esto el deep-link del bot es inerte
+        // y "Ver sedanes" seguía mostrando el catálogo completo (bug B1, reporte del dueño).
+        function applyUrlFilters() {
+            var q = new URLSearchParams(window.location.search);
+            var CATS = ['suv', 'pickup', 'sedan', 'hatchback'];   // canónicas (inventory-search)
+            var allowed = ['tipo', 'marca', 'categoria', 'transmision', 'combustible',
+                           'precioMin', 'precioMax', 'yearMin', 'yearMax', 'kmMin', 'kmMax'];
+            var applied = [];
+            allowed.forEach(function (k) {
+                var v = q.get(k);
+                if (!v) return;
+                if (k === 'categoria' && CATS.indexOf(v.toLowerCase()) === -1) return; // descarta basura
+                currentFilters[k] = v;                       // fuente de verdad del filtrado
+                try {                                        // reflejo en el control si existe
+                    var el = document.querySelector('[name="' + k + '"]');
+                    if (el) el.value = v;
+                } catch (e) {}
+                applied.push(k);
+            });
+            if (!applied.length) return;
+            // Chip visible "Filtrando: …" — reusa el banner del término de búsqueda
+            var label = [];
+            if (currentFilters.categoria) label.push(catLabel(currentFilters.categoria));
+            if (currentFilters.marca) label.push(currentFilters.marca);
+            if (currentFilters.precioMin && currentFilters.precioMax) {
+                label.push('$' + Math.round(currentFilters.precioMin / 1e6) + 'M–$' + Math.round(currentFilters.precioMax / 1e6) + 'M');
+            } else if (currentFilters.precioMax) {
+                label.push('hasta $' + Math.round(currentFilters.precioMax / 1e6) + 'M');
+            } else if (currentFilters.precioMin) {
+                label.push('desde $' + Math.round(currentFilters.precioMin / 1e6) + 'M');
+            }
+            var banner = document.getElementById('searchTermBanner');
+            var termText = document.getElementById('searchTermText');
+            if (banner && termText && label.length) {
+                termText.textContent = label.join(' · ');
+                banner.style.display = 'flex';
+            }
+        }
+        function catLabel(c) {
+            return ({ suv: 'Camionetas y 4x4', pickup: 'Pickups', sedan: 'Sedanes', hatchback: 'Hatchback' })[String(c).toLowerCase()] || c;
         }
 
         document.addEventListener('DOMContentLoaded', () => {

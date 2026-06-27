@@ -14,7 +14,14 @@
 >
 > **Bot LLM = saldo** (#917 dormido). Cerrado reciente → `99`/`main`.
 >
-> 🔵 **FOCO (CIERRE 27/06 → sesión fresca)**: bot v2 F-1 **funcional + bugs FIXED** (validado live+captura, `1c694ab`) PERO el **DISEÑO NO está validado** — el dueño cazó 4 bugs visuales que mis tools no vieron (**M-23**). **PRÓXIMA SESIÓN: relanzar el FLUJO DE DISEÑO (W-11/F4-F5) sobre el bot v2** (mockup→review→build + auditoría de diseño; hay más defectos). Pend: escalado-real→Hub (OK dueño)·re-merge·flip. Drift: MF4.x=TODO-48·TODO-41·TODO-49.
+> 🔵 **FOCO (27/06 PM — FLUJO DISEÑO bot v2, W-11)**: dueño reportó 3 bugs LIVE del Free Core → **B1** filtro
+> miente · **B2** callejón · **B3** zombie sin reset. Flujo fuerte corrido (2 comités+caza-bugs+Firebase MCP+
+> mockup+Gemini). **IMPLEMENTADO+verificado preview (DOM), commit en `dev`**: árbol de NODOS+navStack, deep-link
+> `goto:busqueda.html?categoria=/?precioMax=` + `busqueda.html applyUrlFilters`, reset header (confirm in-app),
+> fixes caza-bugs (gate-reopen, escalado→WhatsApp honesto), wins a11y (FAB quieto, reduced-motion, focus-visible).
+> Detalle → `altor-hub-rediseno-defectos.md` §F-1. **PEND**: (1) **validación LIVE que YO conduzco** (extensión)
+> tras merge+deploy — flag default=v1 = riesgo cero. (2) DIFERIDO iter-2: Por marca · FAQ (texto del dueño) ·
+> ARIA modal/trap/Escape · visual profundo. Cierre→ADR+00 tras live. Drift CRM: TODO-48/41/49.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -24,10 +31,10 @@
 > (c) Consejo Externo = Gemini/Antigravity **code-aware solo-lectura** (§224); cuándo + R1-R4 → `§15`; seguridad/dinero/arquitectura ESTRUCTURAL, no rutina.
 > (d) **NO E2E de forms en localhost** (L-08/§175) — E2E solo contra live; UI con stub `window.db`.
 > (e) **NO mutar config de producción vía MCP** (el clasificador lo deniega) — ruta: acción de 1 clic del dueño (patrón F39) o autorización explícita.
-> (f) **Fan-out acotado escala LIBRE** si el agente = in-cwd read-only + WebFetch + structured-output + auto-relanzar (doctrina 26/06 `comité-expertos §ACOTADO`, ev. 63 agentes). Cuelga SOLO con ops gateadas (git/fuera-cwd) en background → worktree/foreground. L-50/§226.
-> (g) **Bot v2 (F-1): NO big-bang sobre v1** (comité 26/06). v1 battle-tested (§234 privacidad PC-mostrador · §80 · escalado/captura vivos); v2 verde sin guards = regresión legal + pérdida silenciosa de leads. Camino: v2 tras flag → portar §234/§80 + escalado/captura → validar LIVE → flip. Módulo compartido `js/concierge/shared/` (NO copiar). NO re-portar a Vite (vanilla OK).
-> (h) **Auditoría: verificadores SIN Bash** (barrido 26/06) — `Explore`+`git` para "deployed" → cuelgue gateado (L-50). Y **el audit verifica CÓDIGO, no DEPLOY**: claim "deployed/LIVE" se chequea live (Firebase MCP), no por inferencia. Panel ≠ journal.
-> (i) **Validación live SIN captura = cobertura fingida (M-10):** el DOM caza bugs de texto/lógica, NO de DISEÑO (avatar/layout) → **SIEMPRE screenshot del render** (extensión `computer`; preview cuelga L-28 → navegador vivo a localhost). Dueño cazó 2 visuales que el solo-DOM no vio (27/06).
+> (f) **Fan-out acotado escala LIBRE** si agente = in-cwd read-only + structured-output + sin tools gateadas (git/fuera-cwd cuelga en bg → worktree/foreground). L-50/§226.
+> (g) **Bot v2 = grafo de nodos tras flag** (default v1, riesgo cero). v1 battle-tested INTACTO; NO big-bang, NO Vite (vanilla). Módulo `js/concierge/shared/` (NO copiar). Detalle → defects-log §F-1.
+> (h) **Auditoría verifica CÓDIGO, no DEPLOY** — claim "LIVE" se chequea live (Firebase MCP), no por inferencia; verificadores SIN Bash (cuelgue gateado L-50). Panel ≠ journal.
+> (i) **Validación live SIN screenshot = cobertura fingida (M-23)** — el DOM caza texto/lógica, NO diseño (avatar/layout) → screenshot del render (extensión `computer`; preview cuelga L-28). Dueño cazó visuales que el solo-DOM no vio.
 
 ---
 
@@ -39,7 +46,7 @@
 |---|---|---|---|
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
-| **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido NO al 100% (timeout: 7 verificadores colgados). Tras implementar, re-lanzar con método corregido (verificadores SIN Bash, callejón h) sobre lo no verificado (journal→bóveda). | 🔵 nuevo | tras implementar |
+| **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto (7 verificadores colgados). Re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
 | **TODO-21** | **Plan CRM E0→E6** — E0→E5 ✅ main · E6 ⏳ (§188) | ⏳ | — |
 | **TODO-22** | **Fábrica de skills web** (rescate webs monolíticas) §193.2 | 🔮 | post-panel |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — secciones editables + bloques tipados. CMS por marca ✅ (§222); resta CMS total. Plan→bóveda · skill `cms-dinamico`. | 🔮 plan ✅ | al final |
@@ -59,8 +66,7 @@
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
 | **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257 + cura M-22 (check #16 kernel, propagado ×4 ✅). RESTA: adopción `verificado-vivo:` + reconciliación. Absorbe TODO-33. | 🔄 ✅ | adopción |
 
-| **TODO-46→F-1** | **Bot v2 ⟦OPUS⟧ — VALIDADO LIVE+CAPTURA ✅**: ternario/retoma/gate/WhatsApp OK. **Bugs FIXED**: asesor-dup·markdown·avatar-flotante(PNG libre+glow)·doble-ventana·conversación-vieja(`_v:2`). **RESTA: escalado-real→Hub (OK dueño)+flip**. | 🔄 casi | escalado+merge |
-| **TODO-47** | **🎨 Revisión diseño profunda ⟦OPUS⟧ (dueño 26/06)** — bug-menús ✅ `1556e27`; FALTA pasar diseños por skills (`frontend-design`/`ui-ux-pro-max`) ANTES de implementar (el flujo de diseño falló: no probé estado expandido). | 🔮 fase C | tras A+B |
+| **TODO-46→F-1** | **Bot v2 rediseño FLUJO ⟦OPUS⟧** — grafo de nodos + deep-link filtrado (B1) + anti-callejón (B2) + reset (B3) + caza-bugs IMPLEMENTADO+verificado preview (defects-log §F-1). RESTA: validación LIVE (extensión) post-merge + iter-2 (marca·FAQ·visual profundo·ARIA). | 🔄 casi | live+merge |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧ (barrido 26/06)** — features MF4.x construidas en admin viejo, NO portadas a admin-app: 360° tab "Actividad"(MF4.2) · Contactos workspace 4-KPIs(MF4.1) · acciones masivas checkbox/CSV/crmTags(MF4.3) · Postventa+NPS scheduler(MF4.8). +doc-fixes (verifySuperAdminV2 nombre · clientes/ subcols 5→2 · proactiveEngagement stale). Detalle→bóveda `…barrido-drift…`. | 🔵 nuevo | tras bot F-1 |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.

@@ -28,6 +28,8 @@
 
     var V2_STORAGE_KEY = 'altorra_concierge_v2_session';
     var V1_STORAGE_KEY = 'altorra_concierge_session';
+    var WHATSAPP_NUMBER = '+573235016747';   // mismo número del v1
+    var STALE_MS = 12 * 60 * 60 * 1000;      // §80: sesión abandonada >12h → reset al abrir
 
     /* Helper: fragmento desde markup ESTÁTICO Y CONFIABLE (nunca datos del usuario) */
     function frag(trustedHtml) {
@@ -90,6 +92,9 @@
         '.field{flex:1;background:#231C13;border:1px solid var(--bd2);border-radius:22px;padding:10px 15px;',
         'color:var(--tx);font-size:13px;font-family:inherit;outline:none;}',
         '.field::placeholder{color:var(--tx3);}',
+        '.gate-consent{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:var(--tx2);line-height:1.4;cursor:pointer;}',
+        '.gate-consent input{margin-top:2px;flex-shrink:0;}',
+        '.gate-err{font-size:11.5px;color:#E5736B;min-height:14px;}',
         '.send{width:40px;height:40px;border-radius:50%;background:var(--g);border:none;cursor:pointer;',
         'display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
         '.send svg{width:19px;height:19px;color:var(--on-g);}',
@@ -131,6 +136,7 @@
             sessionId: newSessionId(),
             sourcePage: (typeof location !== 'undefined' && location.pathname) || '/',
             sourceVehicleId: (window.PRERENDERED_VEHICLE_ID || null),
+            lastActivityAt: Date.now(),
             _chatDocCreated: false, _leadCreated: false
         };
     }
@@ -139,7 +145,8 @@
     var QR_WELCOME = [
         { ic: 'car', label: 'Ver autos disponibles', payload: 'Muéstrame los autos disponibles', cls: 'qb-p' },
         { ic: 'card', label: 'Financiación a tu medida', payload: 'Quiero información sobre financiación', cls: 'qb-s' },
-        { ic: 'cal', label: 'Agendar una visita', payload: 'Quiero agendar una visita', cls: 'qb-s' }
+        { ic: 'cal', label: 'Agendar una visita', payload: 'Quiero agendar una visita', cls: 'qb-s' },
+        { ic: 'car', label: 'Vender / parte de pago', payload: 'Quiero vender mi carro o darlo en parte de pago', cls: 'qb-s' }
     ];
 
     /* ── Motor FREE CORE determinista (buttons-only, sin NLU — D1) ──────
@@ -177,7 +184,15 @@
             ]
         },
         'Quiero agendar una visita': { text: 'Perfecto, agendemos tu visita.', action: 'gate', gateFor: 'cita' },
-        'Quiero hablar con un asesor': { text: 'Te conecto con un asesor de Altorra ahora mismo.', action: 'escalate' }
+        'Quiero hablar con un asesor': { text: 'Te conecto con un asesor de Altorra ahora mismo.', action: 'escalate' },
+        // Retoma / parte de pago — alta frecuencia en el mercado costeño (comité, exp. D)
+        'Quiero vender mi carro o darlo en parte de pago': {
+            text: 'Te hacemos **peritaje gratis** y te recibimos el carro en **parte de pago** o **consignación**. Para el avalúo, agenda una cita o te paso con un asesor.',
+            quickReplies: [
+                { ic: 'cal', label: 'Agendar avalúo', payload: 'Quiero agendar una visita', cls: 'qb-p' },
+                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+            ]
+        }
     };
     function freeCoreReply(payload) {
         return FREE_CORE[payload] || {
@@ -211,6 +226,34 @@
             this._ensureFonts();
             this._restore();
             this._render();
+            this._wireAuth();   // §234 logout-wipe + bind uid (self-contained; NO toca auth.js)
+        }
+
+        /* §234 (Ley 1581 / PC mostrador): el v2 se auto-suscribe al auth. Si un usuario
+           logueado cierra sesión, limpia su chat para el siguiente anónimo. Self-contained
+           → NO modifica auth.js (high-blast-radius y vivo). No-op si no hay Firebase. */
+        _wireAuth() {
+            var self = this;
+            function attach(auth) {
+                try {
+                    self._wasLoggedIn = !!auth.currentUser;
+                    auth.onAuthStateChanged(function (user) {
+                        if (self._wasLoggedIn && !user) {
+                            self.resetSession();                 // logout tras login → wipe §234
+                        } else if (user) {
+                            self.state.uid = user.uid;
+                            if (!self.state.email) self.state.email = user.email || null;
+                            self._persist();
+                            self.applyAuthProfile();
+                        }
+                        self._wasLoggedIn = !!user;
+                    });
+                } catch (e) {}
+            }
+            if (window.auth) attach(window.auth);
+            else if (window.firebaseReady && window.firebaseReady.then) {
+                window.firebaseReady.then(function () { if (window.auth) attach(window.auth); });
+            }
         }
 
         /* font-face del document SÍ aplica dentro del shadow; inyecta si falta */
@@ -227,7 +270,13 @@
         _restore() {
             try {
                 var raw = localStorage.getItem(V2_STORAGE_KEY);
-                if (raw) { this.state = Object.assign(this.state, JSON.parse(raw)); return; }
+                if (raw) {
+                    this.state = Object.assign(this.state, JSON.parse(raw));
+                    // §80 — sesión abandonada (>12h sin actividad) → arranca fresca al abrir
+                    var la = this.state.lastActivityAt;
+                    if (la && (Date.now() - la) > STALE_MS) { this.state = freshState(); }
+                    return;
+                }
                 var v1 = localStorage.getItem(V1_STORAGE_KEY);   // lectura 1-vía, NO escribe v1
                 if (v1) {
                     var s = JSON.parse(v1);
@@ -236,6 +285,7 @@
             } catch (e) {}
         }
         _persist() {
+            this.state.lastActivityAt = Date.now();   // §80: marca actividad (reset por abandono)
             try { localStorage.setItem(V2_STORAGE_KEY, JSON.stringify(this.state)); } catch (e) {}
         }
 
@@ -316,6 +366,11 @@
                     { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' },
                     function (p) { self.send(p); }
                 ));
+                // WhatsApp con contexto pre-cargado — escape de alta conversión (comité, exp. D)
+                btns.appendChild(makeQB(
+                    { ic: 'headset', label: 'Continuar por WhatsApp', payload: '__whatsapp__', cls: 'qb-ghost' },
+                    function (p) { self.send(p); }
+                ));
                 zone.appendChild(btns);
             } else {
                 // modo libre (LLM / live) — barra de texto estilo WhatsApp
@@ -353,6 +408,7 @@
         send(text) {
             if (!text) return;
             if (text === '__goto_catalogo__') { this._goto('busqueda.html'); return; }  // acción, no mensaje
+            if (text === '__whatsapp__') { this._toWhatsApp(); return; }                 // escape WhatsApp con contexto
             this.state.messages.push({ from: 'user', text: text, timestamp: Date.now() });
             this.state.pendingQuickReplies = null;
             this._persist();
@@ -391,6 +447,25 @@
 
         _goto(url) { try { window.location.href = url; } catch (e) {} }
 
+        /* WhatsApp con contexto pre-cargado (comité exp. D): captura el lead ANTES
+           de soltar al cliente → cero pérdida. Resumen+URL vía lead-flow compartido. */
+        _toWhatsApp() {
+            var st = this.state;
+            st.mode = 'wa_handed_over';
+            this._persist();
+            var db = window.db || null, LF = window.AltorraLeadFlow;
+            if (db && LF && !st._leadCreated) {
+                LF.createLead(db, st, 'soft')
+                    .then(function (ref) { st._leadCreated = true; st.leadId = ref.id; })
+                    .catch(function () {});
+            }
+            var summary = (LF && LF.buildWhatsAppSummary) ? LF.buildWhatsAppSummary(st)
+                : 'Hola, vengo de la web de Altorra Cars.';
+            var url = (LF && LF.waUrl) ? LF.waUrl(WHATSAPP_NUMBER, summary)
+                : 'https://wa.me/' + WHATSAPP_NUMBER.replace(/[^0-9]/g, '');
+            try { window.open(url, '_blank'); } catch (e) {}
+        }
+
         _showTyping() {
             var box = this.shadowRoot.querySelector('.body');
             if (!box || box.querySelector('.typing')) return;
@@ -405,15 +480,63 @@
         /* Gate de captura / asesor: modales FUERA del shadow (#1 Gemini) vía
            CustomEvent. El handler global se cablea en tramo 3; aquí dispara +
            fallback visible para no dejar al usuario sin respuesta. */
+        /* Gate de captura (F-1 paso3): formulario inline nombre+celular+consentimiento.
+           Al confirmar → persiste el lead 'gate' (consentGiven, Ley 1581) vía lead-flow.
+           El form vive DENTRO del shadow (no es un modal de auth/legal → #1 Gemini no aplica). */
         _requestGate(gateFor) {
-            this.dispatchEvent(new CustomEvent('altor:request-gate', {
-                bubbles: true, composed: true, detail: { gateFor: gateFor, session: this.session() }
-            }));
+            this.state.gating = gateFor || 'general';
+            this.state.messages.push({ from: 'bot', text: 'Para coordinarlo necesito un par de datos 👇' });
+            this._persist(); this._renderBody();
+            this._renderGateForm();
+        }
+        _renderGateForm() {
+            var zone = this.shadowRoot.querySelector('.input');
+            if (!zone) return;
+            while (zone.firstChild) zone.removeChild(zone.firstChild);
+            zone.appendChild(frag('<div class="hint">Déjanos tu nombre y celular — te contactamos enseguida</div>'));
             var self = this;
-            setTimeout(function () {
-                self.state.messages.push({ from: 'bot', text: 'Para agendar necesito tu nombre y celular (autorizas el tratamiento de datos, Ley 1581). — captura completa en el siguiente tramo.' });
-                self._persist(); self._renderBody();
-            }, 300);
+            var wrap = document.createElement('div'); wrap.className = 'btns';
+            var nombre = mkField('text', 'Tu nombre', 'given-name');
+            var cel = mkField('tel', 'Celular WhatsApp (3001234567)', 'tel-national');
+            var consent = document.createElement('label'); consent.className = 'gate-consent';
+            var chk = document.createElement('input'); chk.type = 'checkbox';
+            consent.appendChild(chk);
+            consent.appendChild(document.createTextNode(' Autorizo el tratamiento de mis datos (Ley 1581).'));
+            var err = document.createElement('div'); err.className = 'gate-err';
+            var submit = document.createElement('button'); submit.className = 'qb qb-p'; submit.textContent = 'Confirmar';
+            submit.addEventListener('click', function () {
+                var n = nombre.value.trim(), t = cel.value.replace(/\D/g, '');
+                if (n.length < 2) { err.textContent = 'Escribe tu nombre.'; return; }
+                if (!/^3\d{9}$/.test(t)) { err.textContent = 'Celular inválido (10 dígitos, empieza en 3).'; return; }
+                if (!chk.checked) { err.textContent = 'Necesitamos tu autorización para continuar.'; return; }
+                self._submitGate(n, t);
+            });
+            cel.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit.click(); });
+            wrap.appendChild(nombre); wrap.appendChild(cel); wrap.appendChild(consent);
+            wrap.appendChild(err); wrap.appendChild(submit);
+            zone.appendChild(wrap);
+            function mkField(type, ph, ac) {
+                var i = document.createElement('input');
+                i.className = 'field'; i.type = type; i.placeholder = ph;
+                i.setAttribute('autocomplete', ac); return i;
+            }
+        }
+        _submitGate(nombre, telefono) {
+            var st = this.state;
+            st.nombre = nombre; st.telefono = telefono;
+            st.profile = st.profile || {}; st.profile.consent = true;
+            st.level = Math.max(st.level || 0, 3);
+            this._persist();
+            var db = window.db || null, LF = window.AltorraLeadFlow;
+            if (db && LF) {
+                LF.createLead(db, st, 'gate')
+                    .then(function (ref) { st._leadCreated = true; st.leadId = ref.id; })
+                    .catch(function () {});
+            }
+            st.messages.push({ from: 'bot', text: '¡Gracias, ' + nombre.split(' ')[0] + '! Te contactaremos muy pronto. ¿Algo más en lo que te ayude?' });
+            st.pendingQuickReplies = null; st.gating = null;
+            this._renderBody();
+            this._renderInput();   // vuelve a los botones (Free Core)
         }
         _requestAdvisor() {
             // F-1 (TODO-46): escalado REAL vía lead-flow compartido → CREA el doc

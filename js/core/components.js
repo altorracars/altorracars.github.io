@@ -392,13 +392,35 @@ function loadAuthSystem() {
                 // REEMPLAZA whatsapp-widget.js + ai-assistant.js con
                 // un único botón inteligente (bot AI + asesor live + WhatsApp gateway).
                 // CSS y JS cargados juntos para inicialización atómica.
-                if (!document.querySelector('link[href*="concierge.css"]')) {
+                // ── F-1 (TODO-46): bot v2 detrás de FLAG (cutover seguro, callejón g). Default = v1.
+                //   Validar en vivo: ?altorbot=v2 (persiste en localStorage) · volver: ?altorbot=v1.
+                //   Los visitantes reales siguen en v1 hasta el flip (cambiar el default).
+                var ALTOR_V2 = false;
+                try {
+                    if (location.search.indexOf('altorbot=v1') !== -1) localStorage.removeItem('altor_bot_v2');
+                    else if (location.search.indexOf('altorbot=v2') !== -1) localStorage.setItem('altor_bot_v2', '1');
+                    ALTOR_V2 = (localStorage.getItem('altor_bot_v2') === '1');
+                } catch (e) { ALTOR_V2 = false; }
+                if (ALTOR_V2) {
+                    if (!document.querySelector('script[src*="shared/lead-flow.js"]')) {
+                        var lfScript = document.createElement('script');
+                        lfScript.src = 'js/concierge/shared/lead-flow.js'; lfScript.defer = true;
+                        document.body.appendChild(lfScript);
+                    }
+                    if (!document.querySelector('script[src*="v2/altor-bot.js"]')) {
+                        var abScript = document.createElement('script');
+                        abScript.src = 'js/concierge/v2/altor-bot.js'; abScript.defer = true;
+                        document.body.appendChild(abScript);
+                    }
+                    if (!document.querySelector('altor-bot')) document.body.appendChild(document.createElement('altor-bot'));
+                }
+                if (!ALTOR_V2 && !document.querySelector('link[href*="concierge.css"]')) {
                     var cncCss = document.createElement('link');
                     cncCss.rel = 'stylesheet';
                     cncCss.href = 'css/concierge.css';
                     document.head.appendChild(cncCss);
                 }
-                if (!document.querySelector('script[src*="concierge.js"]')) {
+                if (!ALTOR_V2 && !document.querySelector('script[src*="concierge.js"]')) {
                     var cncScript = document.createElement('script');
                     cncScript.src = 'js/concierge/concierge.js';
                     cncScript.defer = true;
@@ -505,7 +527,7 @@ function loadAuthSystem() {
                     document.body.appendChild(kb);
                 }
                 // U.19 — Marketing opt-in granular + GDPR
-                if (!document.querySelector('script[src*="concierge-optin.js"]')) {
+                if (!ALTOR_V2 && !document.querySelector('script[src*="concierge-optin.js"]')) {
                     var optin = document.createElement('script');
                     optin.src = 'js/concierge/concierge-optin.js';
                     optin.defer = true;

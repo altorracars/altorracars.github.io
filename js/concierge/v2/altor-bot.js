@@ -59,6 +59,7 @@
         '.av{position:relative;width:40px;height:40px;border-radius:50%;background:var(--g);',
         'display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
         '.av svg{width:22px;height:22px;color:var(--on-g);}',
+        '.av-img,.fab-img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}',
         '.vbadge{position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;',
         'background:#2E7D32;border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;}',
         '.vbadge svg{width:9px;height:9px;color:#fff;}',
@@ -79,10 +80,10 @@
         'border-radius:10px;padding:8px 11px;margin-top:6px;}',
         '.engine-note svg{width:15px;height:15px;color:var(--g);flex-shrink:0;}',
         '.engine-note span{font-size:11px;color:var(--tx2);line-height:1.4;}',
-        '.input{border-top:1px solid var(--bd);background:#1A150F;padding:13px 15px 15px;flex-shrink:0;}',
+        '.input{border-top:1px solid var(--bd);background:#1A150F;padding:13px 15px 15px;flex-shrink:0;max-height:50%;overflow-y:auto;}',
         '.hint{font-size:11px;color:var(--tx2);margin-bottom:10px;text-align:center;letter-spacing:.2px;}',
-        '.btns{display:flex;flex-direction:column;gap:9px;}',
-        '.qb{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;font-size:13.5px;',
+        '.btns{display:flex;flex-direction:column;gap:7px;}',
+        '.qb{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:12px;font-size:13.5px;',
         'font-weight:500;cursor:pointer;border:none;text-align:left;width:100%;font-family:inherit;}',
         '.qb svg{width:18px;height:18px;flex-shrink:0;}',
         '.qb-p{background:var(--g);color:var(--on-g);}',
@@ -300,10 +301,10 @@
             // Shell estático y confiable (sin datos del usuario)
             sr.appendChild(frag(
                 '<h2 class="sr-only">Asistente virtual ALTOR de Altorra Cars</h2>' +
-                '<button class="fab" aria-label="Abrir chat con ALTOR">' + IC.robot + '</button>' +
+                '<button class="fab" aria-label="Abrir chat con ALTOR"><img class="fab-img" src="/ALTOR.png" alt="" onerror="this.style.display=\'none\'"></button>' +
                 '<section class="panel" role="dialog" aria-label="Chat con ALTOR">' +
                     '<header class="hd">' +
-                        '<div class="av">' + IC.robot + '<span class="vbadge">' + IC.check + '</span></div>' +
+                        '<div class="av"><img class="av-img" src="/ALTOR.png" alt="ALTOR" onerror="this.style.display=\'none\'"><span class="vbadge">' + IC.check + '</span></div>' +
                         '<div><div class="nm">ALTOR</div>' +
                         '<div class="sub"><span class="dot"></span>En línea · Asistente de Altorra Cars</div></div>' +
                         '<div class="hd-act">' +

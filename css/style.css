@@ -5811,6 +5811,7 @@ html {
 
 body {
     overflow-x: hidden;
+    overflow-x: clip;   /* clip NO coacciona overflow-y a auto → 1 solo scrollbar (hidden=fallback Safari<16). Dueño: "dos barras impiden bajar" */
     max-width: 100vw;
     position: relative;
 }

@@ -370,7 +370,7 @@
             await DynamicLists.load();
             DynamicLists.populatePageFilters();
             applyUrlFilters();   // F-1 (bot ALTOR): deep-link DESPUÉS de poblar los <select>
-            performSearch();     // re-busca ya filtrado (opciones e inventario ya están listos)
+            await performSearch();   // re-busca ya filtrado (opciones e inventario ya están listos)
         }
 
         // F-1 (bot ALTOR v2): aplica filtros que llegan por querystring al cargar.
@@ -395,41 +395,14 @@
                 } catch (e) {}
                 applied.push(k);
             });
-            if (!applied.length) return;
-            // Chip visible "Filtrando: …" — reusa el banner del término de búsqueda
-            var label = [];
-            if (currentFilters.categoria) label.push(catLabel(currentFilters.categoria));
-            if (currentFilters.marca) label.push(currentFilters.marca);
-            if (currentFilters.precioMin && currentFilters.precioMax) {
-                label.push('$' + Math.round(currentFilters.precioMin / 1e6) + 'M–$' + Math.round(currentFilters.precioMax / 1e6) + 'M');
-            } else if (currentFilters.precioMax) {
-                label.push('hasta $' + Math.round(currentFilters.precioMax / 1e6) + 'M');
-            } else if (currentFilters.precioMin) {
-                label.push('desde $' + Math.round(currentFilters.precioMin / 1e6) + 'M');
-            }
-            var banner = document.getElementById('searchTermBanner');
-            var termText = document.getElementById('searchTermText');
-            if (banner && termText && label.length) {
-                termText.textContent = label.join(' · ');
-                banner.style.display = 'flex';
-            }
-        }
-        function catLabel(c) {
-            return ({ suv: 'Camionetas y 4x4', pickup: 'Pickups', sedan: 'Sedanes', hatchback: 'Hatchback' })[String(c).toLowerCase()] || c;
+            return applied.length > 0;   // el scroll a resultados lo hace loadDynamicFilters tras renderizar
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             // Leer término de búsqueda desde URL (ej. ?buscar=Toyota desde el hero)
             const buscarParam = new URLSearchParams(window.location.search).get('buscar');
             if (buscarParam) {
-                currentFilters.search = buscarParam;
-                // Show search term banner
-                const banner = document.getElementById('searchTermBanner');
-                const termText = document.getElementById('searchTermText');
-                if (banner && termText) {
-                    termText.textContent = buscarParam;
-                    banner.style.display = 'flex';
-                }
+                currentFilters.search = buscarParam;   // sin banner: el dueño lo quitó (tapaba las cards)
             }
 
             // Clear search term button

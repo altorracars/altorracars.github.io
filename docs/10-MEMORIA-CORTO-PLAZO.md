@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` (detalle → `05`).
+> 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`.
 >
 > ✅ **Cerrado reciente** (`99`/`main`): Fiabilidad §257+M-22×4 · W-11 F1+F2 + bug-menús · ciclo gobernanza 26/06. **Bot LLM = saldo.**
 >
@@ -26,7 +26,8 @@
 > (e) **NO mutar config de producción vía MCP** (el clasificador lo deniega) — ruta: acción de 1 clic del dueño (patrón F39) o autorización explícita.
 > (f) **Fan-out acotado escala LIBRE** si el agente = in-cwd read-only + WebFetch + structured-output + auto-relanzar (doctrina 26/06 `comité-expertos §ACOTADO`, ev. 63 agentes). Cuelga SOLO con ops gateadas (git/fuera-cwd) en background → worktree/foreground. L-50/§226.
 > (g) **Bot v2 (F-1): NO big-bang sobre v1** (comité 26/06). v1 battle-tested (§234 privacidad PC-mostrador · §80 · escalado/captura vivos); v2 verde sin guards = regresión legal + pérdida silenciosa de leads. Camino: v2 tras flag → portar §234/§80 + escalado/captura → validar LIVE → flip. Módulo compartido `js/concierge/shared/` (NO copiar). NO re-portar a Vite (vanilla OK).
-> (h) **Workflow de auditoría: verificadores SIN Bash** (barrido 26/06) — agentes `Explore` usan `git` para chequear "deployed" → cuelgue gateado (L-50 confirmado en vivo). Y **el audit verifica CÓDIGO, no DEPLOY**: todo claim "deployed/LIVE" se chequea live (Firebase MCP), no por inferencia (#15 = falso negativo). Panel ≠ journal.
+> (h) **Auditoría: verificadores SIN Bash** (barrido 26/06) — `Explore`+`git` para "deployed" → cuelgue gateado (L-50). Y **el audit verifica CÓDIGO, no DEPLOY**: claim "deployed/LIVE" se chequea live (Firebase MCP), no por inferencia. Panel ≠ journal.
+> (i) **Validación live SIN captura = cobertura fingida (M-10):** el DOM caza bugs de texto/lógica, NO de DISEÑO (avatar/layout) → **SIEMPRE screenshot del render** (extensión `computer`; preview cuelga L-28 → navegador vivo a localhost). Dueño cazó 2 visuales que el solo-DOM no vio (27/06).
 
 ---
 
@@ -53,12 +54,12 @@
 | **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧** — P0 `deadcode:check`✅ + P1 skill✅. Huérfanos del cutover (`manifest-admin.json`+`js/admin/*`, solo `admin.html` los cargaba→`_legacy/`). **DIFERIDO ~03/07** (cache, M-19). | 🔄 diferido | ~03/07 |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS-4.8⟧ (§244)** — 7 skills + agente `seo-auditor` construidas+catalogadas+propagadas ×3 ✅ (25/06). RESTA (por-proyecto): Core JS `visibility-core/` + `tenant_config`. | 🔄 | por-proyecto |
 | **TODO-41** | **🔴 Motor automatización NO corre post-cutover ⟦OPUS⟧** (§242.5/§257/barrido) — `admin-automation.js` era client-side SOLO en `admin.html` (retirado) → reglas "Activas" pero NO ejecutan (SLA/cita core SÍ por cron). Migrar a Cloud Function + gap RBAC `workflows.edit`. | 🔴 sube | dueño/escala |
-| **TODO-45** | **Cleanups auditoría §257 ⟦OPUS⟧** — (a) functions residuales del clásico (barrido: desplegadas, sin uso) limpiar; (b) `brands.saveBrand` desc=nombre; (c) `kb.edit` sin editor `_brain`; (d) coment. stale `wizard.js`; (e) NBA "10"vs9. | 🔮 | bajo |
-| **TODO-43** | **MFA-hardening portal nuevo ⟦OPUS⟧ (§253)** — el portal nuevo es email+password-only; el stack SMS-MFA del admin viejo (2FA/trusted-devices/backup-codes/preguntas) + Telegram NO se portó (no encaja en auth modular). Reimplementar como **TOTP**+recovery si el dueño quiere endurecer. NO bloquea. | 🔮 futuro | dueño |
+| **TODO-45** | **Cleanups §257 ⟦OPUS⟧** — (a) functions residuales del clásico (desplegadas, sin uso) limpiar; (b) `brands.saveBrand` desc=nombre; (c) `kb.edit` sin editor `_brain`; (d/e) coment stale + NBA. | 🔮 | bajo |
+| **TODO-43** | **MFA-hardening portal nuevo ⟦OPUS⟧ (§253)** — portal nuevo = email+password-only; el SMS-MFA del admin viejo (2FA/trusted/backup/Telegram) NO se portó. Reimplementar TOTP+recovery si el dueño quiere. NO bloquea. | 🔮 futuro | dueño |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-44** | **Fiabilidad cerebro ⟦OPUS-4.8⟧** — auditoría §257 + cura M-22 (check #16 kernel, propagado ×4 ✅ sha `4905D566`). RESTA: adopción marcadores `verificado-vivo:` + reconciliación exhaustiva. Absorbe TODO-33. | 🔄 propagado ✅ | adopción |
+| **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257 + cura M-22 (check #16 kernel, propagado ×4 ✅). RESTA: adopción `verificado-vivo:` + reconciliación. Absorbe TODO-33. | 🔄 ✅ | adopción |
 
-| **TODO-46→F-1** | **Bot v2 ⟦OPUS⟧ — VALIDADO LIVE ✅** (`?altorbot=v2`): ternario/retoma/gate/WhatsApp OK, sin doble bot. 2 bugs FIXED (asesor dup + markdown). **RESTA: escalado-real→Hub (OK dueño)+re-merge+flip**. Backlog: migración v1→v2 stale. | 🔄 casi | escalado+merge |
+| **TODO-46→F-1** | **Bot v2 ⟦OPUS⟧ — VALIDADO LIVE ✅** (`?altorbot=v2`): ternario/retoma/gate/WhatsApp OK. **4 bugs FIXED** (asesor dup·markdown·avatar→`ALTOR.png`·chat-aplastado→cap input). **RESTA: escalado-real→Hub (OK dueño)+re-merge+flip**. | 🔄 casi | escalado+merge |
 | **TODO-47** | **🎨 Revisión diseño profunda ⟦OPUS⟧ (dueño 26/06)** — bug-menús ✅ `1556e27`; FALTA pasar diseños por skills (`frontend-design`/`ui-ux-pro-max`) ANTES de implementar (el flujo de diseño falló: no probé estado expandido). | 🔮 fase C | tras A+B |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧ (barrido 26/06)** — features MF4.x construidas en admin viejo, NO portadas a admin-app: 360° tab "Actividad"(MF4.2) · Contactos workspace 4-KPIs(MF4.1) · acciones masivas checkbox/CSV/crmTags(MF4.3) · Postventa+NPS scheduler(MF4.8). +doc-fixes (verifySuperAdminV2 nombre · clientes/ subcols 5→2 · proactiveEngagement stale). Detalle→bóveda `…barrido-drift…`. | 🔵 nuevo | tras bot F-1 |
 

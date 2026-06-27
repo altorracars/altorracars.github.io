@@ -150,7 +150,8 @@
         refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M3 21v-5h5"/></svg>',
         home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7M5 9v11h5v-6h4v6h5V9"/></svg>',
         back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
-        cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>'
+        cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>',
+        pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>'
     };
 
     /* ── Entrada ENGINE-AWARE ternaria (D1) ────────────────────────────── */
@@ -193,7 +194,7 @@
                 { ic: 'car',  label: 'Ver carros disponibles',                 payload: 'node:ver_autos',    cls: 'qb-p' },
                 { ic: 'card', label: 'Financiación a tu medida',               payload: 'node:financiacion', cls: 'qb-s' },
                 { ic: 'cash', label: '¿Cuánto vale mi carro? (parte de pago)', payload: 'node:vender',       cls: 'qb-s' },
-                { ic: 'cal',  label: 'Agendar una visita',                     payload: 'act:gate:cita',     cls: 'qb-s' }
+                { ic: 'pin',  label: 'Visítanos · horarios y cómo llegar',     payload: 'node:visitanos',    cls: 'qb-s' }
             ]
         },
         ver_autos: {
@@ -241,6 +242,21 @@
                 { ic: 'cal',     label: 'Pedir avalúo',         payload: 'act:gate:cita', cls: 'qb-p' },
                 { ic: 'headset', label: 'Hablar con un asesor', payload: 'act:escalate',  cls: 'qb-s' }
             ]
+        },
+        // FAQ físico (datos REALES: horarios de contacto.html; ubicación/garantía → ruteo a humano,
+        // NO inventar dirección/garantía). Cubre lo que un comprador costeño pregunta sin LLM (consejo Gemini).
+        visitanos: {
+            parent: 'welcome',
+            text: 'Estamos en Cartagena y te atendemos de frente — Lun a Vie 8am–6pm y Sábados 9am–2pm. Agenda tu visita y te paso la ubicación exacta por WhatsApp.',
+            buttons: [
+                { ic: 'cal',    label: 'Agendar mi visita',  payload: 'act:gate:cita', cls: 'qb-p' },
+                { ic: 'shield', label: 'Garantía y papeles', payload: 'node:garantia', cls: 'qb-s' }
+            ]
+        },
+        garantia: {
+            parent: 'visitanos',
+            text: 'Todos nuestros carros pasan revisión técnica y entregamos el traspaso al día. Tu asesor te confirma la garantía y los papeles del carro que te interese.',
+            buttons: []   // sin CTA propio → solo navegación + escapes (rutea los detalles a un humano)
         },
         // Nodo terminal honesto tras escalar: v2 aún NO recibe respuestas del asesor en vivo
         // (no hay onSnapshot del Hub), así que NO abrimos un chat libre al vacío (fix caza-bugs).

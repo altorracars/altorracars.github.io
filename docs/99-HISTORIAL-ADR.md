@@ -44247,3 +44247,15 @@ Cierra dos de las fugas §4 ("cero fugas" del dueño): el chat concierge abandon
 - **257.5 Anti-patterns evitados**: catastrofizar ("el cerebro no sirve" — falso, la mayoría es fiable); fingir cobertura exhaustiva; dejar la auditoría sin cerrar (teatro) → ADR + deepAudit + brechas→TODOs + cura M-22. Honestidad balanceada (no minimizar las brechas reales ni exagerarlas).
 - **257.6 Archivos/captura**: M-22 en `30`; `10` TODO-41 prioridad↑ + TODO-44 (audit RAN + cura) + brechas menores; `deepAudit` en `.brain-manifest.json` (last=2026-06-26, covered=289). SIN cache bump (docs).
 - **257.7 Doctrina**: **documentar = declarar el ESTADO REAL verificado, no la intención**. La palomita "✅" sin estado ni fecha-de-verificación es deuda que miente (M-22). La fiabilidad del cerebro se mecaniza con el check de TODO-44 (cross-repo); el INTERIM es disciplina de estados. brain:check SANO.
+
+## 258. ADR-258 — Kernel del cerebro shard-aware: el índice de ADRs se lee como SET (00 + 00[a-z]-INDICE*), habilitando el range-shard ⟦OPUS-4.8 · rev-Fable⟧ (2026-06-27)
+
+> Operación cars-operador (escritor único del kernel, L-31): Bersaglio necesitaba range-shardar su `00-INDICE.md` (sobre tope crónico). El shard requería que el kernel entendiera el índice repartido → cambio de kernel propagado ×4 byte-idéntico.
+
+- **258.1 Causa raíz**: `scripts/brain-check.mjs` leía el índice por path único `docs/00-INDICE.md` en #3 (desync § → línea), #5a (todo ADR de 99 tiene fila en el índice) y #9 (consolidado-aún-en-10). Mover filas viejas a una hija `00a` rompería #5a (falsos "ADR sin fila") y degradaría #3.
+- **258.2 Solución estructural (kernel)**: descubrir el índice por PATRÓN `^00[a-z]?-INDICE.*\.md$` (sorted) → `indexPaths` + `readIndex()` (concatena). #3/#5a/#5b/#9 lo consumen como UNO. Repos SIN shard ⇒ `[00-INDICE.md]` = comportamiento idéntico (backward-compatible). #10 reachability: la hija es alcanzable vía el puntero de `00`/CLAUDE.md (no requirió tocar #10).
+- **258.3 No-regresión**: cars NO está shardeado → `indexPaths=[00-INDICE.md]`; brain:check cars SANO idéntico (#5a 255 ADRs · #3 · #10 25 docs). Verificado SANO en los 4 repos.
+- **258.4 Byte-identidad ×4 (L-31 / check #11)**: `brain-check.mjs` propagado byte-idéntico a los 4 peers presentes (cp + md5sum distinct=1). `brain-diff.mjs`/`brain-index.mjs` INTACTOS.
+- **258.5 Aplicación (Bersaglio §140)**: el shard REAL (§1–§115 → `00a-INDICE-HIST`, 00 a 9.6k) vive en el ADR §140 de Bersaglio. Aquí SOLO el cambio de kernel/doctrina (cars = canon del kernel).
+- **258.6 Archivos**: `scripts/brain-check.mjs` (5 ediciones: resolver `indexPaths/readIndex` + #3/#5a/#5b/#9). INTACTOS: resto del kernel, manifest, docs cars (salvo este ADR + fila + nota en 10).
+- **258.7 Doctrina + cache**: el índice del cerebro ES range-shardeable; el kernel lo trata como SET descubierto por patrón → habilita `00b/00c` futuros sin más cambio de kernel. Cualquier cambio de kernel = cars-operador, ×4 byte-idéntico. SIN cache bump (solo cerebro/scripts). brain:check SANO ×4. [OPUS-4.8] [HONOR]

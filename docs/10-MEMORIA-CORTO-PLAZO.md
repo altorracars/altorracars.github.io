@@ -14,14 +14,14 @@
 >
 > **Bot LLM = saldo** (#917 dormido). Cerrado reciente → `99`/`main`.
 >
-> 🔵 **FOCO (rediseño bot v2 — relevo a chat fresco)**: bot v2 + 3 bugs LIVE RESUELTOS y **MERGEADOS a main** (B1/B2/B3 +
-> escalado gatea datos + chat asesor RECIBE `subscribeToChat` + búsqueda sidebar izquierdo + bot categorías →
-> `vehiculos-{cat}.html`). Pipeline: Claude **commit+push+MERGE** (dueño delegó, §2/05). Detalle→`altor-hub-rediseno-defectos.md`.
+> 🟢 **FOCO (27/06, orden del dueño)**: dejar bugs/validación-live para el FINAL e **IMPLEMENTAR el roadmap pendiente**,
+> empezando por **ALIADOS** (TODO-25 restructura comercial). Chunk **1/7 ✅** (primitivas económicas, `be996e8`). Plan +
+> chunks 2-7 → `docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. Deploy functions/rules = **gate dinero** (M-18).
 > **⚠️ M-24** (30 §Meta): reusar lo que YA existe (Glob/Grep) ANTES de construir maquinaria nueva.
-> **PENDIENTE**: (1) **validar LIVE (Ctrl+Shift+R)**: bot→páginas dedicadas + **roundtrip chat asesor** (dueño=asesor → su
-> msg llega al bot) + **filtros busqueda/marca/categorías: NO se cortan + responsive sin franja muerta** (`7e60b73`→main;
-> sticky→static + breakpoint ≤1024; L-56). ⚠️ cache la bumpea el cron (`05`). (2) **podar** `busqueda?categoria=`. (3)
-> iter-2: por marca · FAQ financiación · ARIA · visual. (4) Cierre→ADR §99+00. Drift: TODO-48/41/49.
+>
+> **DIFERIDO al FINAL (bugs/validación)**: validar LIVE (Ctrl+Shift+R) bot→páginas dedicadas + roundtrip chat asesor +
+> filtros sidebar (L-56, `7e60b73`→main); podar `busqueda?categoria=`; iter-2 bot (marca·FAQ·ARIA·visual). Detalle bot →
+> `altor-hub-rediseno-defectos.md`. Drift: TODO-48/41/49.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -51,7 +51,7 @@
 | **TODO-22** | **Fábrica de skills web** (rescate webs monolíticas) §193.2 | 🔮 | post-panel |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — secciones editables + bloques tipados. CMS por marca ✅ (§222); resta CMS total. Plan→bóveda · skill `cms-dinamico`. | 🔮 plan ✅ | al final |
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
-| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda sec.9). Pend: aliado-neto + fórmula fiscal (contador). | 🔄 impl pend | al FINAL |
+| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda sec.9). **IMPL EN CURSO** (orden dueño 27/06 "implementar todo, bugs al final"): chunk **1/7 ✅** primitivas económicas (`be996e8`, 36/36). Plan 7-chunks→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. Resta 2-7 (rules·dealWon·trigger·UI·F42·dry-run); deploy functions=gate dinero. | 🔄 1/7 | dueño: deploy |
 | **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable en panel admin) — consultar Bersaglio al implementar. Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA fase | después de todo lo demás |
 | **TODO-27** | **Alta de usuarios = invite flow seguro ⟦OPUS-4.8⟧** (token+transacción, anti-enumeración; reemplaza el alta vieja) — diseño Gemini en bóveda `2026-06-14-web-dinamismo-cms-plan.md §6.4`. Sugerir skill portable | 🔮 | DESPUÉS del dinamismo (orden dueño) |
 | **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state vía SessionStart hook; kernel/hook ×3. Resta: shard 99a/99b · `ignoreDirs`. | 🔄 | — |

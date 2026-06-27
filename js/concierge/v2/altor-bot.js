@@ -187,7 +187,7 @@
         'Quiero hablar con un asesor': { text: 'Te conecto con un asesor de Altorra ahora mismo.', action: 'escalate' },
         // Retoma / parte de pago — alta frecuencia en el mercado costeño (comité, exp. D)
         'Quiero vender mi carro o darlo en parte de pago': {
-            text: 'Te hacemos **peritaje gratis** y te recibimos el carro en **parte de pago** o **consignación**. Para el avalúo, agenda una cita o te paso con un asesor.',
+            text: 'Te hacemos peritaje gratis y te recibimos el carro en parte de pago o consignación. Para el avalúo, agenda una cita o te paso con un asesor.',
             quickReplies: [
                 { ic: 'cal', label: 'Agendar avalúo', payload: 'Quiero agendar una visita', cls: 'qb-p' },
                 { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
@@ -361,16 +361,21 @@
                 list.forEach(function (def) {
                     btns.appendChild(makeQB(def, function (p) { self.send(p); }));
                 });
-                // escape hatch SIEMPRE (D1): buttons-only nunca es trampa
-                btns.appendChild(makeQB(
-                    { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' },
-                    function (p) { self.send(p); }
-                ));
+                // escape hatch (D1): buttons-only nunca es trampa — SIN duplicar si el árbol ya lo trae (bug live)
+                var _payloads = list.map(function (d) { return d.payload; });
+                if (_payloads.indexOf('Quiero hablar con un asesor') === -1) {
+                    btns.appendChild(makeQB(
+                        { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' },
+                        function (p) { self.send(p); }
+                    ));
+                }
                 // WhatsApp con contexto pre-cargado — escape de alta conversión (comité, exp. D)
-                btns.appendChild(makeQB(
-                    { ic: 'headset', label: 'Continuar por WhatsApp', payload: '__whatsapp__', cls: 'qb-ghost' },
-                    function (p) { self.send(p); }
-                ));
+                if (_payloads.indexOf('__whatsapp__') === -1) {
+                    btns.appendChild(makeQB(
+                        { ic: 'headset', label: 'Continuar por WhatsApp', payload: '__whatsapp__', cls: 'qb-ghost' },
+                        function (p) { self.send(p); }
+                    ));
+                }
                 zone.appendChild(btns);
             } else {
                 // modo libre (LLM / live) — barra de texto estilo WhatsApp

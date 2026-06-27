@@ -131,6 +131,22 @@ surface tarjetas; mientras tanto, enlazar a resultados FILTRADOS (categoría/pre
   Por marca · Novedades · FAQ financiación detallada (texto del dueño) · ARIA modal/trap/Escape · profundidad
   visual · gate como paso de servicio · Instrument Serif extendido.
 
+### 🟢 POST-VALIDACIÓN LIVE 27/06 — 3 bugs que el dueño cazó en su 1ª pasada (Unidades 1+2)
+- **#1 Escalado anónimo** (`72e75a8`): pedir asesor NO capturaba datos → el Hub mostraba "Cliente 8mfe2q" sin
+  contacto ("hablamos con un X que no sabemos cómo contactar"). Fix: `act:escalate` → gate (nombre+celular+**correo**
+  +consent) → escalado CON datos. Ya no anónimo.
+- **#2 Chat del asesor NO llegaba al cliente** (`72e75a8`): el v2 escalaba pero NO escuchaba el Hub (lo marqué
+  callejón; el dueño lo quiere funcional). Fix: porté el receptor de v1 → `lead-flow.subscribeToChat` (onSnapshot
+  de `messages` + doc padre = toma del asesor) + `sendUserMessage`. El bot RECIBE los mensajes del asesor, avisa
+  "✓ {nombre} se unió", cambia el header al asesor, y el cliente responde (free input → Hub). Contrato de reglas
+  verificado (`firestore.rules:939`: guest anónimo-auth con `userId==null` lee su chat; `auth.js` hace signInAnonymously).
+  Pend: validación LIVE del roundtrip (dueño como asesor en el Hub).
+- **#3 Búsqueda — banner/scroll/filtro/gap** (`b14432b`): banner quitado (tapaba las cards); **doble-scroll** muerto
+  (`overflow-x:clip` en `body`, era un 2º scrollbar espurio de 1px por la coerción de `overflow-x:hidden`→`overflow-y:auto`;
+  clip no coacciona; `hidden`=fallback Safari<16); hero 300→220; filtro compacto (padding/grid/field); menos gap
+  filtro→cards. Verificado preview (banner fuera, 0 inner-scrollers, viewport scrolleable, cards visibles). Aplica a
+  todas las vistas filtradas (categorías/marcas caen en busqueda con params). Doble-scroll global = en todas las páginas.
+
 ### Históricos
 - **F#1 · 🟠 FLUJO · gate de cita · fechas duplicadas** (cazado 2026-06-23, fix `02a79a7`) — el bloque
   "Mañana/Esta semana/Próxima semana" salía 2× (pedido del gate + respuesta diferida post-gate). Causa:

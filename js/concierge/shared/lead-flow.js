@@ -170,6 +170,67 @@
         try { localStorage.removeItem(storageKey); } catch (e) {}
     }
 
+    /**
+     * subscribeToChat — RECIBE en vivo lo que el asesor escribe en el ALTOR Hub (lo que faltaba
+     * en v2: el asesor tomaba el chat y escribía, pero al cliente NO le llegaba). Espejo de los 2
+     * listeners de v1 (concierge.js:1969/2080): (1) subcolección `messages` → mensajes del asesor
+     * y de system; (2) doc padre → toma del asesor (mode queue→live) + cierre. Idempotente por id.
+     * cb = { onAdvisorMessage({text,asesorNombre}), onTakeover(asesorNombre), onSystemMessage({text,systemType}), onClosed() }.
+     * Devuelve una función de des-suscripción.
+     */
+    function subscribeToChat(db, sessionId, cb) {
+        if (!db || !sessionId) return function () {};
+        cb = cb || {};
+        var seen = {};
+        var ref = db.collection('conciergeChats').doc(sessionId);
+        var unsub1 = ref.collection('messages').orderBy('timestamp', 'asc')
+            .onSnapshot(function (snap) {
+                snap.docChanges().forEach(function (chg) {
+                    if (chg.type !== 'added') return;
+                    if (seen[chg.doc.id]) return;
+                    seen[chg.doc.id] = true;
+                    var d = chg.doc.data();
+                    if (d.from === 'asesor') {
+                        if (cb.onAdvisorMessage) cb.onAdvisorMessage({ text: d.text, asesorNombre: d.asesorNombre || 'Asesor', timestamp: d.timestamp });
+                    } else if (d.from === 'system') {
+                        if (cb.onSystemMessage) cb.onSystemMessage({ text: d.text, systemType: d.systemType || null });
+                    }
+                });
+            }, function () { /* permission errors silenciados (esperado para guests) */ });
+        var prevMode = null;
+        var unsub2 = ref.onSnapshot(function (doc) {
+            if (!doc.exists) return;
+            var d = doc.data();
+            if (d.mode && d.mode !== prevMode) {
+                if (prevMode === 'queue' && d.mode === 'live' && cb.onTakeover) cb.onTakeover(d.asesorNombre || null);
+                prevMode = d.mode;
+            }
+            if (d.status === 'closed' && cb.onClosed) cb.onClosed();
+        }, function () {});
+        return function () { try { unsub1(); } catch (e) {} try { unsub2(); } catch (e) {} };
+    }
+
+    /**
+     * sendUserMessage — el cliente RESPONDE al asesor en vivo: agrega su mensaje a la subcolección
+     * `messages` (el asesor lo ve en el Hub) + actualiza el preview del doc padre. Espejo del push
+     * de usuario de v1. NO toca DualCore (no es el bot, es chat humano).
+     */
+    function sendUserMessage(db, sessionId, text) {
+        if (!db || !sessionId || !text) return Promise.resolve();
+        var nowIso = new Date().toISOString();
+        var ref = db.collection('conciergeChats').doc(sessionId);
+        return ref.collection('messages').add({ from: 'user', text: clip(text, 3000), timestamp: nowIso })
+            .then(function () {
+                var upd = { lastMessageAt: nowIso, lastMessage: clip(text, 200) };
+                try {
+                    if (window.firebase && firebase.firestore && firebase.firestore.FieldValue) {
+                        upd.unreadByAdmin = firebase.firestore.FieldValue.increment(1);
+                    }
+                } catch (e) {}
+                return ref.set(upd, { merge: true });
+            });
+    }
+
     window.AltorraLeadFlow = {
         buildLeadDoc: buildLeadDoc,
         createLead: createLead,
@@ -178,6 +239,8 @@
         pushMessages: pushMessages,
         buildWhatsAppSummary: buildWhatsAppSummary,
         waUrl: waUrl,
-        wipeSession: wipeSession
+        wipeSession: wipeSession,
+        subscribeToChat: subscribeToChat,
+        sendUserMessage: sendUserMessage
     };
 })();

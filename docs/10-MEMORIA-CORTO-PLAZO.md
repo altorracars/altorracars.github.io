@@ -66,7 +66,7 @@
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
 | **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257 + cura M-22 (check #16 kernel, propagado ×4 ✅). RESTA: adopción `verificado-vivo:` + reconciliación. Absorbe TODO-33. | 🔄 ✅ | adopción |
 
-| **TODO-46→F-1** | **Bot v2 rediseño FLUJO ⟦OPUS⟧** — grafo de nodos + deep-link filtrado (B1) + anti-callejón (B2) + reset (B3) + caza-bugs IMPLEMENTADO+verificado preview (defects-log §F-1). RESTA: validación LIVE (extensión) post-merge + iter-2 (marca·FAQ·visual profundo·ARIA). | 🔄 casi | live+merge |
+| **TODO-46→F-1** | **Bot v2 FLUJO + chat vivo ⟦OPUS⟧** — rediseño (B1/B2/B3) VALIDADO LIVE ✅; +3 bugs post-validación FIXED: escalado **gatea datos** (no anónimo) · **chat asesor RECIBE** (subscribeToChat, contrato reglas ok) · búsqueda banner/doble-scroll/filtro/gap. Detalle→defects-log. RESTA: validar roundtrip chat live (dueño=asesor) + iter-2 (marca·FAQ·visual·ARIA). | 🔄 | roundtrip+iter2 |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧ (barrido 26/06)** — features MF4.x construidas en admin viejo, NO portadas a admin-app: 360° tab "Actividad"(MF4.2) · Contactos workspace 4-KPIs(MF4.1) · acciones masivas checkbox/CSV/crmTags(MF4.3) · Postventa+NPS scheduler(MF4.8). +doc-fixes (verifySuperAdminV2 nombre · clientes/ subcols 5→2 · proactiveEngagement stale). Detalle→bóveda `…barrido-drift…`. | 🔵 nuevo | tras bot F-1 |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.

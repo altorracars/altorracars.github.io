@@ -12,7 +12,7 @@
 
 > 🤖 **Opus 4.8** (Fable 5 caído): tag `⟦OPUS-4.8 · rev-Fable⟧` (detalle → `05`).
 >
-> ✅ **Cerrado reciente** (`99`/`main`): Fiabilidad §257+M-22×4 (→TODO-44) · W-11 F1+F2 + bug-menús `1556e27` (PEND F3) · ciclo gobernanza 26/06. **Bot LLM = saldo.**
+> ✅ **Cerrado reciente** (`99`/`main`): Fiabilidad §257+M-22×4 · W-11 F1+F2 + bug-menús · ciclo gobernanza 26/06. **Bot LLM = saldo.**
 >
 > 🔵 **FOCO VIVO — remediar drift (barrido 26/06 ✅)**: workflow cerebro↔código (105 cand.→**15 drift reales**/21 refutados; crudo→bóveda `…barrido-drift…SINTESIS`). Principal: **el cutover dejó caer features CRM MF4.x → TODO-48**. #15 RBAC "no desplegado" = FALSO (verif. live). Bot v2 (input ternario D1) confirmado sin cablear (TODO-46/F-1). **ORDEN: (1) bot F-1** [módulo `shared/`+§234/§80, callejón g] → (2) TODO-48 MF4.x → (3) TODO-41 → (4) TODO-47 diseño.
 >
@@ -37,13 +37,13 @@
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
-| **TODO-19** | CRM Fase 5 cutover → **E6 EN CURSO**: E6.6 ✅ §188 → paso 0 pre-fase | ⏳ | — |
-| **TODO-20** | **Comité v6 21/21** (A-U) — detalle §173/§207.11; follow-up cross-repo → TODO-28/29/30 | 🔄 | — |
-| **TODO-21** | **Plan CRM E0→E6** — ledger en VEREDICTO (bóveda). **E0→E5 ✅ en main** · E6 ⏳ (plan 29 pasos §188) | ⏳ | — |
+| **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
+| **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido NO al 100% (timeout: 7 verificadores colgados). Tras implementar, re-lanzar con método corregido (verificadores SIN Bash, callejón h) sobre lo no verificado (journal→bóveda). | 🔵 nuevo | tras implementar |
+| **TODO-21** | **Plan CRM E0→E6** — E0→E5 ✅ main · E6 ⏳ (§188) | ⏳ | — |
 | **TODO-22** | **Fábrica de skills web** (rescate webs monolíticas) §193.2 | 🔮 | post-panel |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — secciones editables + bloques tipados. CMS por marca ✅ (§222); resta CMS total. Plan→bóveda · skill `cms-dinamico`. | 🔮 plan ✅ | al final |
-| **TODO-24** | **Comité BORRADORES** §202.5 — f1+2 ✅·f3 ✅(§230). Resta: barrido recurrente + expiración → futuro. | 🔄 | futuro |
-| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS-4.8⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda `…restructura-comercial…` sec.9). Pend menor: aliado-neto-constante + fórmula fiscal (contador). | 🔄 decidido·impl pend | al FINAL |
+| **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
+| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda sec.9). Pend: aliado-neto + fórmula fiscal (contador). | 🔄 impl pend | al FINAL |
 | **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable en panel admin) — consultar Bersaglio al implementar. Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA fase | después de todo lo demás |
 | **TODO-27** | **Alta de usuarios = invite flow seguro ⟦OPUS-4.8⟧** (token+transacción, anti-enumeración; reemplaza el alta vieja) — diseño Gemini en bóveda `2026-06-14-web-dinamismo-cms-plan.md §6.4`. Sugerir skill portable | 🔮 | DESPUÉS del dinamismo (orden dueño) |
 | **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state vía SessionStart hook; kernel/hook ×3. Resta: shard 99a/99b · `ignoreDirs`. | 🔄 | — |
@@ -58,7 +58,7 @@
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
 | **TODO-44** | **Fiabilidad cerebro ⟦OPUS-4.8⟧** — auditoría §257 + cura M-22 (check #16 kernel, propagado ×4 ✅ sha `4905D566`). RESTA: adopción marcadores `verificado-vivo:` + reconciliación exhaustiva. Absorbe TODO-33. | 🔄 propagado ✅ | adopción |
 
-| **TODO-46→F-1** | **Bot v2 build ⟦OPUS⟧** — **paso1 ✅** `shared/lead-flow.js` + v2 escalado REAL al Hub + ternario verif.preview (v1 intacto). RESTA: §80 · §234 logout-wiring(auth→v2) · botones retoma/precio/WA · gate · validar LIVE → flip. | 🔄 build | — |
+| **TODO-46→F-1** | **Bot v2 build ⟦OPUS⟧** — **paso1+2 ✅**: `shared/lead-flow.js` + escalado v2→Hub + botones retoma/WhatsApp-contexto (verif. fuente+node-c; v1 intacto). RESTA: §80 · §234 logout-wiring(auth→v2) · gate form · precio-puntual · cablear+validar LIVE → flip. | 🔄 build | — |
 | **TODO-47** | **🎨 Revisión diseño profunda ⟦OPUS⟧ (dueño 26/06)** — bug-menús ✅ `1556e27`; FALTA pasar diseños por skills (`frontend-design`/`ui-ux-pro-max`) ANTES de implementar (el flujo de diseño falló: no probé estado expandido). | 🔮 fase C | tras A+B |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧ (barrido 26/06)** — features MF4.x construidas en admin viejo, NO portadas a admin-app: 360° tab "Actividad"(MF4.2) · Contactos workspace 4-KPIs(MF4.1) · acciones masivas checkbox/CSV/crmTags(MF4.3) · Postventa+NPS scheduler(MF4.8). +doc-fixes (verifySuperAdminV2 nombre · clientes/ subcols 5→2 · proactiveEngagement stale). Detalle→bóveda `…barrido-drift…`. | 🔵 nuevo | tras bot F-1 |
 

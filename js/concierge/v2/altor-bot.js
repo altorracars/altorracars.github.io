@@ -28,6 +28,7 @@
 
     var V2_STORAGE_KEY = 'altorra_concierge_v2_session';
     var V1_STORAGE_KEY = 'altorra_concierge_session';
+    var WHATSAPP_NUMBER = '+573235016747';   // mismo número del v1
 
     /* Helper: fragmento desde markup ESTÁTICO Y CONFIABLE (nunca datos del usuario) */
     function frag(trustedHtml) {
@@ -139,7 +140,8 @@
     var QR_WELCOME = [
         { ic: 'car', label: 'Ver autos disponibles', payload: 'Muéstrame los autos disponibles', cls: 'qb-p' },
         { ic: 'card', label: 'Financiación a tu medida', payload: 'Quiero información sobre financiación', cls: 'qb-s' },
-        { ic: 'cal', label: 'Agendar una visita', payload: 'Quiero agendar una visita', cls: 'qb-s' }
+        { ic: 'cal', label: 'Agendar una visita', payload: 'Quiero agendar una visita', cls: 'qb-s' },
+        { ic: 'car', label: 'Vender / parte de pago', payload: 'Quiero vender mi carro o darlo en parte de pago', cls: 'qb-s' }
     ];
 
     /* ── Motor FREE CORE determinista (buttons-only, sin NLU — D1) ──────
@@ -177,7 +179,15 @@
             ]
         },
         'Quiero agendar una visita': { text: 'Perfecto, agendemos tu visita.', action: 'gate', gateFor: 'cita' },
-        'Quiero hablar con un asesor': { text: 'Te conecto con un asesor de Altorra ahora mismo.', action: 'escalate' }
+        'Quiero hablar con un asesor': { text: 'Te conecto con un asesor de Altorra ahora mismo.', action: 'escalate' },
+        // Retoma / parte de pago — alta frecuencia en el mercado costeño (comité, exp. D)
+        'Quiero vender mi carro o darlo en parte de pago': {
+            text: 'Te hacemos **peritaje gratis** y te recibimos el carro en **parte de pago** o **consignación**. Para el avalúo, agenda una cita o te paso con un asesor.',
+            quickReplies: [
+                { ic: 'cal', label: 'Agendar avalúo', payload: 'Quiero agendar una visita', cls: 'qb-p' },
+                { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' }
+            ]
+        }
     };
     function freeCoreReply(payload) {
         return FREE_CORE[payload] || {
@@ -316,6 +326,11 @@
                     { ic: 'headset', label: 'Hablar con un asesor', payload: 'Quiero hablar con un asesor', cls: 'qb-ghost' },
                     function (p) { self.send(p); }
                 ));
+                // WhatsApp con contexto pre-cargado — escape de alta conversión (comité, exp. D)
+                btns.appendChild(makeQB(
+                    { ic: 'headset', label: 'Continuar por WhatsApp', payload: '__whatsapp__', cls: 'qb-ghost' },
+                    function (p) { self.send(p); }
+                ));
                 zone.appendChild(btns);
             } else {
                 // modo libre (LLM / live) — barra de texto estilo WhatsApp
@@ -353,6 +368,7 @@
         send(text) {
             if (!text) return;
             if (text === '__goto_catalogo__') { this._goto('busqueda.html'); return; }  // acción, no mensaje
+            if (text === '__whatsapp__') { this._toWhatsApp(); return; }                 // escape WhatsApp con contexto
             this.state.messages.push({ from: 'user', text: text, timestamp: Date.now() });
             this.state.pendingQuickReplies = null;
             this._persist();
@@ -390,6 +406,25 @@
         }
 
         _goto(url) { try { window.location.href = url; } catch (e) {} }
+
+        /* WhatsApp con contexto pre-cargado (comité exp. D): captura el lead ANTES
+           de soltar al cliente → cero pérdida. Resumen+URL vía lead-flow compartido. */
+        _toWhatsApp() {
+            var st = this.state;
+            st.mode = 'wa_handed_over';
+            this._persist();
+            var db = window.db || null, LF = window.AltorraLeadFlow;
+            if (db && LF && !st._leadCreated) {
+                LF.createLead(db, st, 'soft')
+                    .then(function (ref) { st._leadCreated = true; st.leadId = ref.id; })
+                    .catch(function () {});
+            }
+            var summary = (LF && LF.buildWhatsAppSummary) ? LF.buildWhatsAppSummary(st)
+                : 'Hola, vengo de la web de Altorra Cars.';
+            var url = (LF && LF.waUrl) ? LF.waUrl(WHATSAPP_NUMBER, summary)
+                : 'https://wa.me/' + WHATSAPP_NUMBER.replace(/[^0-9]/g, '');
+            try { window.open(url, '_blank'); } catch (e) {}
+        }
 
         _showTyping() {
             var box = this.shadowRoot.querySelector('.body');

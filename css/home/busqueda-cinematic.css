@@ -30,7 +30,7 @@ body[data-cin="on"] .search-results-section { padding-bottom: clamp(48px, 7vh, 9
 /* ===== Hero ===== */
 body[data-cin="on"] .brand-hero {
     position: relative;
-    min-height: clamp(300px, 44vh, 460px);
+    min-height: clamp(220px, 30vh, 320px);   /* hero más bajo: el cliente ve las cards antes (dueño) */
     overflow: hidden;
 }
 body[data-cin="on"] .brand-hero-bg {
@@ -85,7 +85,7 @@ body[data-cin="on"] .bsq-hero-sub {
 
 /* ===== Sección filtros ===== */
 body[data-cin="on"] .search-advanced-section {
-    padding: clamp(20px, 3vw, 36px) 0;
+    padding: clamp(12px, 1.8vw, 20px) 0;   /* menos espacio filtro→cards (dueño) */
 }
 body[data-cin="on"] .search-advanced-section .container,
 body[data-cin="on"] .search-results-section .container {
@@ -120,13 +120,13 @@ body[data-cin="on"] .advanced-search-form {
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid var(--cin-line);
     border-radius: 18px;
-    padding: clamp(18px, 2.4vw, 28px);
+    padding: clamp(14px, 1.8vw, 20px);   /* filtro más compacto (dueño: "el filtro está enorme") */
     box-shadow: 0 24px 60px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(244, 238, 222, 0.06);
 }
 body[data-cin="on"] .search-form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: clamp(14px, 1.8vw, 20px);
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));   /* más columnas = menos alto */
+    gap: clamp(10px, 1.2vw, 14px);
 }
 body[data-cin="on"] .search-form-grid .form-group {
     display: flex;
@@ -148,7 +148,7 @@ body[data-cin="on"] .advanced-search-form input[type="text"] {
     background: rgba(244, 238, 222, 0.04);
     border: 1px solid var(--cin-line);
     border-radius: 10px;
-    padding: 11px 13px;
+    padding: 9px 12px;
     color: var(--cin-ink);
     font-family: var(--cin-sans);
     font-size: 14px;
@@ -244,8 +244,8 @@ body[data-cin="on"] .results-header {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 14px;
-    margin: clamp(20px, 3vw, 32px) 0 clamp(16px, 2vw, 24px);
-    padding-bottom: 16px;
+    margin: clamp(10px, 1.5vw, 16px) 0 clamp(12px, 1.5vw, 18px);   /* menos hueco antes de las cards */
+    padding-bottom: 14px;
     border-bottom: 1px solid var(--cin-line);
 }
 body[data-cin="on"] .results-info h2 {

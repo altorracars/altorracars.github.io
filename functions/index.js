@@ -4371,6 +4371,8 @@ exports.crmMergeContacts = require('./src/crm/contactAdmin').crmMergeContacts;
 exports.crmSuppressContact = require('./src/crm/contactAdmin').crmSuppressContact;
 exports.crmCancelSuppression = require('./src/crm/contactAdmin').crmCancelSuppression;
 exports.onContactWritten = require('./src/crm/onContactWritten').onContactWritten;
+// TODO-50 — consigna = entidad formal: alta/upsert de consignante (contact + rol), id por cédula.
+exports.crmUpsertConsignante = require('./src/crm/consignanteAdmin').crmUpsertConsignante;
 
 // E4 §186 — F10 retoma: borrador del vehículo recibido en parte de pago.
 exports.crmCrearBorradorRetoma = require('./src/crm/retoma').crmCrearBorradorRetoma;

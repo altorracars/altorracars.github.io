@@ -67,9 +67,10 @@ con cubo "Sin identificar" · 4 viejas se reconcilian por **tabla de alias en le
 3. ✅ `domain/pipeline.js`: espejo ESM `tenancyRefTypeOf`/`tenancyGroupKey` + **paridad afirmada** (crm-spec-parity).
 4. ✅ `dealWon.js` = **NO-OP** (ya pasa `tenancy` entero → `normalizeTenancy` lo enriquece; el snapshot congela los 3 campos solo).
 **Sub-chunk B — captura + presentación ⏳ (toca UI/server/prod → su propio deploy + val.live):**
-5. ⏳ `fetchDealerStats` (dealers.data.js): agrupar por `tenancyGroupKey` (incluye consignas + cubo) + tabla de alias de las 4 viejas + dealers.ui muestra consignantes.
-6. ⏳ callable `crmUpsertConsignante` (Admin SDK, dedup por cédula, auto-id opaco, arrayUnion rol) + UI wizard (selector, ver mockup) + `firestore.rules` (rol consignante) + emulator tests.
-7. ⏳ deploy + validación LIVE (yo conduzco Chrome: caminos estado-cero del veredicto) + auditar fuga PII en `generate-vehicles.mjs`.
+5. ✅ callable `crmUpsertConsignante` (`src/crm/consignanteAdmin.js` + index.js): Admin SDK, **id por CÉDULA** (no phone), **docId opaco** (auto-id, no PII), idempotente (arrayUnion rol sin pisar consent/lifecycle del lead/retoma previo). Sintaxis OK + test `normalizeCedula`. Additivo, **NO desplegado**.
+6. ⏳ UI wizard (selector de consignante → llama el callable, ver mockup) + `vehicles.data.js` `fetchConsignantes` + `firestore.rules` (rol consignante; probable no-op: contacts ya permite crm.edit/read).
+7. ⏳ `fetchDealerStats` por `tenancyGroupKey` (consignas + cubo) + dealers.ui muestra consignantes + tabla de alias de las 4 viejas.
+8. ⏳ deploy (functions + admin-app) + validación LIVE (yo conduzco Chrome: caminos estado-cero) + auditar fuga PII en `generate-vehicles.mjs`.
 **Fase 2 (legal, gated — yo = abogado de research vía skill `legal-colombia`+lóbulo 42):** consent por FINALIDAD + cláusula Habeas Data del contrato de consignación + supresión rol-aware + soft-redact de snapshots.
 
 ## Auditar antes de cerrar (fuga señalada por el SRE)

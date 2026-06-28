@@ -15,10 +15,11 @@
 // ============================================================
 
 import {
-  collection, query, orderBy, onSnapshot, getDocs, setDoc, updateDoc, doc,
+  collection, query, where, orderBy, onSnapshot, getDocs, setDoc, updateDoc, doc,
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { writeAudit } from '../../core/audit.js';
+import { latestCommissionSnapshot, altorraRevenueOf } from '../../domain/pipeline.js';
 
 /** Slug VERBATIM del clásico (admin-dealers.js:189). NO usar brands.slugify(). */
 export function slugifyDealer(nombre) {
@@ -33,27 +34,42 @@ export function subscribeDealers(onData, onError) {
   }, (err) => onError && onError(err));
 }
 
-/** Métricas por aliado derivadas de `vehiculos` (una lectura por mount,
- *  patrón fetchVehicleCounts de brands). Réplica de admin-dealers.js:91-123.
- *  Excluye '_particular' (no es un aliado formal). */
+/** Métricas por aliado. Los counts (activos/vendidos/ventasAltorra) salen de
+ *  `vehiculos` por `concesionario` (patrón legacy, sin cambio). **§9 (TODO-25)**:
+ *  las COMISIONES reales = Σ `altorraRevenue` de los deals GANADOS, agrupado por
+ *  el aliado CONGELADO en el snapshot (`frozenTenancy.ownerRefId`) — reemplaza el
+ *  `comisionAltorra||utilidadAltorra||utilidadTotal` legacy (undefined en TODOS
+ *  los vehículos → $0 engañoso, hallazgo de la reconciliación 26/06). */
 export async function fetchDealerStats() {
-  const snap = await getDocs(collection(db, 'vehiculos'));
   const stats = {};
-  snap.forEach((docSnap) => {
+  const ensure = (id) => (stats[id] || (stats[id] = { activos: 0, vendidos: 0, ventasAltorra: 0, comisiones: 0 }));
+  // counts por aliado (legacy `concesionario`); '_particular' no es aliado formal
+  const vSnap = await getDocs(collection(db, 'vehiculos'));
+  vSnap.forEach((docSnap) => {
     const v = docSnap.data();
     const did = v.concesionario;
     if (!did || did === '_particular') return;
-    if (!stats[did]) stats[did] = { activos: 0, vendidos: 0, ventasAltorra: 0, comisiones: 0 };
+    const s = ensure(did);
     if (v.estado === 'vendido') {
-      stats[did].vendidos += 1;
-      if (v.canalVenta === 'altorra') {
-        stats[did].ventasAltorra += 1;
-        stats[did].comisiones += (v.comisionAltorra || v.utilidadAltorra || v.utilidadTotal || 0);
-      }
+      s.vendidos += 1;
+      if (v.canalVenta === 'altorra') s.ventasAltorra += 1;
     } else if (v.estado === 'disponible' || !v.estado) {
-      stats[did].activos += 1;
+      s.activos += 1;
     }
   });
+  // §9: comisiones REALES desde los deals ganados (snapshot enriquecido). Live-only;
+  // si el rol no lee `deals` o no hay ninguno → comisiones quedan 0 (el grid no rompe).
+  // A escala se materializaría en concesionarios/{slug}; a 0-5 ventas/mes la query basta.
+  try {
+    const dSnap = await getDocs(query(collection(db, 'deals'), where('status', '==', 'won')));
+    dSnap.forEach((docSnap) => {
+      const deal = docSnap.data();
+      const snap = latestCommissionSnapshot(deal);
+      const aliado = snap && snap.frozenTenancy && snap.frozenTenancy.ownerRefId;
+      if (!aliado) return; // propio/externo/deal viejo → sin comisión de aliado
+      ensure(aliado).comisiones += altorraRevenueOf(deal);
+    });
+  } catch (e) { /* sin permiso de deals o vacío → comisiones 0 */ }
   return stats;
 }
 

@@ -10,18 +10,12 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`.
+> 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
-> **Bot LLM = saldo** (#917 dormido). Cerrado reciente → `99`/`main`.
->
-> 🟢 **FOCO (27/06, orden del dueño)**: dejar bugs/validación-live para el FINAL e **IMPLEMENTAR el roadmap pendiente**,
-> empezando por **ALIADOS** (TODO-25). **MVP DESPLEGADO §259** (rules+functions+UI+dist; render verificado live; falta validación live del flujo de venta = dueño). Plan +
-> chunks 2-7 → `docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. Deploy functions/rules = **gate dinero** (M-18).
-> **⚠️ M-24** (30 §Meta): reusar lo que YA existe (Glob/Grep) ANTES de construir maquinaria nueva.
->
-> **DIFERIDO al FINAL (bugs/validación)**: validar LIVE (Ctrl+Shift+R) bot→páginas dedicadas + roundtrip chat asesor +
-> filtros sidebar (L-56, `7e60b73`→main); podar `busqueda?categoria=`; iter-2 bot (marca·FAQ·ARIA·visual). Detalle bot →
-> `altor-hub-rediseno-defectos.md`. Drift: TODO-48/41/49.
+> 🟢 **FOCO (RELEVO a sesión FRESCA — contexto reventado 27/06)**:
+> **1. ALIADOS — validar LIVE el flujo de venta** (TODO-25, MVP DESPLEGADO §259; rules+functions+UI en prod): registrar carro aliado/consigna → vender (captura ganancia) → ver comisión REAL en módulo Aliados/reportes. Tras Ctrl+Shift+R (cache en `05`). Wizard YA verificado en mock. Plan→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`.
+> **2. CONSIGNA = ENTIDAD FORMAL** (TODO-50, orden dueño): hoy consigna = nombre libre (`_particular`); revisarla con el **FLUJO FUERTE COMPLETO** (proceso-decisión-fuerte + comité ACOTADO + Gemini/consejo + skills + agentes) → consigna a `contacts` + autorizaciones Habeas Data (lóbulo 42), para agrupar ganancia por consignante. ⚠️ comité/agentes **ACOTADOS** (L-50/§226: fan-out grande se cuelga).
+> **DIFERIDO**: bot v2 iter-2 + val.live bot; filtros L-56 (en main); facturación TODO-26.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -34,7 +28,7 @@
 > (f) **Fan-out acotado escala LIBRE** si agente = in-cwd read-only + structured-output + sin tools gateadas (git/fuera-cwd cuelga en bg → worktree/foreground). L-50/§226.
 > (g) **Bot v2 = grafo de nodos tras flag** (default v1, riesgo cero). v1 battle-tested INTACTO; NO big-bang, NO Vite (vanilla). Módulo `js/concierge/shared/` (NO copiar). Detalle → defects-log §F-1.
 > (h) **Auditoría verifica CÓDIGO, no DEPLOY** — claim "LIVE" se chequea live (Firebase MCP), no por inferencia; verificadores SIN Bash (cuelgue gateado L-50). Panel ≠ journal.
-> (i) **Validación live SIN screenshot = cobertura fingida (M-23)** — el DOM caza texto/lógica, NO diseño (avatar/layout) → screenshot del render (extensión `computer`; preview cuelga L-28). Dueño cazó visuales que el solo-DOM no vio.
+> (i) **Validación live SIN screenshot = cobertura fingida (M-23)** — el DOM caza texto/lógica, NO diseño → screenshot del render (extensión `computer`; preview cuelga L-28).
 
 ---
 
@@ -51,7 +45,7 @@
 | **TODO-22** | **Fábrica de skills web** (rescate webs monolíticas) §193.2 | 🔮 | post-panel |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — secciones editables + bloques tipados. CMS por marca ✅ (§222); resta CMS total. Plan→bóveda · skill `cms-dinamico`. | 🔮 plan ✅ | al final |
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
-| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda sec.9). **MVP DESPLEGADO** (ADR-259): vehículo→venta→reporte (comisión real por aliado). Rules+functions+UI en main; render verif live. Detalle→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. **Falta: validación live (dueño)**. FUTURO: consigna=entidad·fiscal·facturación TODO-26. | 🔄 desplegado | val.live |
+| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda sec.9). **MVP DESPLEGADO** (ADR-259, rules+functions+UI en prod): comisión real por aliado. **Falta validación live (dueño)**. FUTURO→TODO-50/26. Plan→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. | 🔄 desplegado | val.live |
 | **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable en panel admin) — consultar Bersaglio al implementar. Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA fase | después de todo lo demás |
 | **TODO-27** | **Alta de usuarios = invite flow seguro ⟦OPUS-4.8⟧** (token+transacción, anti-enumeración; reemplaza el alta vieja) — diseño Gemini en bóveda `2026-06-14-web-dinamismo-cms-plan.md §6.4`. Sugerir skill portable | 🔮 | DESPUÉS del dinamismo (orden dueño) |
 | **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; kernel/hook ×3. **Índice range-shardeable ✅** (§258; aplicado bersaglio §140). Resta: 99a/99b · `ignoreDirs` · **shardear `00-INDICE` cars** (crónico 52.7k/48k; capacidad lista). | 🔄 | — |
@@ -64,10 +58,12 @@
 | **TODO-45** | **Cleanups §257 ⟦OPUS⟧** — (a) functions residuales del clásico (desplegadas, sin uso) limpiar; (b) `brands.saveBrand` desc=nombre; (c) `kb.edit` sin editor `_brain`; (d/e) coment stale + NBA. | 🔮 | bajo |
 | **TODO-43** | **MFA-hardening portal nuevo ⟦OPUS⟧ (§253)** — portal nuevo = email+password-only; el SMS-MFA del admin viejo (2FA/trusted/backup/Telegram) NO se portó. Reimplementar TOTP+recovery si el dueño quiere. NO bloquea. | 🔮 futuro | dueño |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
-| **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257 + cura M-22 (check #16 kernel, propagado ×4 ✅). RESTA: adopción `verificado-vivo:` + reconciliación. Absorbe TODO-33. | 🔄 ✅ | adopción |
+| **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257 + M-22 (check #16 ×4 ✅). RESTA: adopción `verificado-vivo:`. Absorbe TODO-33. | 🔄 | adopción |
 
 | **TODO-46→F-1** | **Bot v2 FLUJO + chat vivo ⟦OPUS⟧** — rediseño (B1/B2/B3) VALIDADO LIVE ✅; +3 bugs post-validación FIXED: escalado **gatea datos** (no anónimo) · **chat asesor RECIBE** (subscribeToChat, contrato reglas ok) · búsqueda banner/doble-scroll/filtro/gap. Detalle→defects-log. RESTA: validar roundtrip chat live (dueño=asesor) + iter-2 (marca·FAQ·visual·ARIA). | 🔄 | roundtrip+iter2 |
-| **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧ (barrido 26/06)** — features MF4.x construidas en admin viejo, NO portadas a admin-app: 360° tab "Actividad"(MF4.2) · Contactos workspace 4-KPIs(MF4.1) · acciones masivas checkbox/CSV/crmTags(MF4.3) · Postventa+NPS scheduler(MF4.8). +doc-fixes (verifySuperAdminV2 nombre · clientes/ subcols 5→2 · proactiveEngagement stale). Detalle→bóveda `…barrido-drift…`. | 🔵 nuevo | tras bot F-1 |
+| **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧** — MF4.x del admin viejo NO portadas (360°/Contactos-KPIs/masivas/Postventa-NPS) + doc-fixes. Detalle→bóveda `…barrido-drift…`. | 🔵 | tras bot |
+
+| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** (orden dueño, vía **FLUJO FUERTE**: decisión-fuerte+comité ACOTADO+Gemini+skills+agentes) — hoy = nombre libre (`_particular`); elevar a `contacts` + `autorizaciones` Habeas Data (lóbulo `42`) → agrupar ganancia por consignante. Insumo: ADR §259 + §9 bóveda. | 🔵 próx. | flujo fuerte |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

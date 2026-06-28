@@ -62,6 +62,38 @@
 | **LEGAL-04** | Cláusula de garantía de usados (aceptación por escrito) + info mínima art. 23-24 en fichas | abogado |
 | **LEGAL-05** | Confirmar con contador: RNBD (100.000 UVT) y SAGRILAFT (40.000 SMMLV) — ¿Altorra obligada? | contador |
 | **LEGAL-06** | Due diligence RUNT/Certificado de Tradición + estado SOAT/RTM por vehículo antes de publicar | proceso interno |
+| **LEGAL-07** | **Cláusula Habeas Data del CONTRATO DE CONSIGNACIÓN (TODO-50)** — autorización del consignante por FINALIDADES + política de tratamiento → **abogado ratifica** antes de uso con clientes (borrador ↓) | revisión abogado |
+
+## Consignación (TODO-50) — autorización Habeas Data del consignante ⟦OPUS-4.8⟧
+> **Insumo del flujo fuerte (comité legal + Gemini, 28/06).** El consignante es persona natural cuyos
+> datos (nombre, **cédula**, contacto) + datos del vehículo (**placa/RUNT** = dato personal asociado, art.13
+> Dec.1377) Altorra trata. **Gate duro §0: BORRADOR — un abogado colegiado RATIFICA antes de que un cliente lo firme.**
+
+**Marco (verificado §área 1):** Ley 1581/2012 art. 9 (autorización **previa, expresa, informada** — el silencio
+NO autoriza, Dec. 1377 art. 7) + art. 12 (la empresa debe **PROBAR** la autorización) + Dec. 1377 art. 13 (la
+política/aviso enumera **categorías de datos + finalidades**). Autorización **GENÉRICA = nula** (la SIC sanciona
+violar el principio de finalidad, art. 4 lit. b) → debe ser **por FINALIDAD discreta**.
+
+**Finalidades discretas (cada una autorizada por separado):** (a) `gestionConsigna` — gestionar la consignación
+y venta; (b) `publicacionAnuncio` — publicar el vehículo en el catálogo; (c) `contactoComprador` — usar/transferir
+datos para el cierre + **traspaso RUNT** + factura (el comprador es **titular SEPARADO** — su autorización se capta
+en el cierre del deal, **FUERA del alcance de TODO-50**); (d) `marketing` — contacto futuro con ofertas (**opt-in
+aparte**, minimización: si no se usa, no se pide).
+
+**Quién autoriza (clave del comité):** el **CONTRATO DE CONSIGNACIÓN FIRMADO** por el consignante ES la autorización
+(el admin NO marca un checkbox "por" el titular — eso no es manifestación del titular, sería falso cumplimiento). El
+sistema solo **REGISTRA que el soporte firmado existe**. Modelo de datos del registro probatorio (art. 12):
+`consent.habeasData = { granted, grantedAt, method:'paper-contract', contractRef, policyVersion, purposes:{…}, capturedBy }`.
+
+**Supresión rol-aware (colisión derecho-de-supresión vs conservación):** el derecho de supresión (Ley 1581 art. 8
+lit. e) NO es absoluto — Dec. 1377 art. 9 + **Cód. Comercio art. 60 (soportes 10 años)** + deber DIAN lo limitan cuando
+hay operación ejecutada. Regla: un consignante con **deal CERRADO** → la supresión **conserva** el soporte mínimo
+(anonimiza dejando el `consignanteId` OPACO + economics; **soft-redacta** `ownerDisplayName` del snapshot) en vez de
+borrar todo. Implementación = fase 2b (extender `executeSuppression` rol-aware).
+
+**[a verificar con abogado]:** el TEXTO LITERAL de la cláusula + la política de tratamiento (art. 13) + si la cesión al
+comprador es "transmisión" o "transferencia" (Dec. 1377). **RNBD:** micro/pequeña probablemente EXENTA de inscribir la
+base (100.000 UVT) pero NO del resto (confirmar tamaño con contador, §área 1).
 
 ## Excepciones / decisiones específicas de Altorra
 - La captura de leads vía web **ya incluye** nota Habeas Data + link a privacidad en el newsletter (§164); falta extenderlo a TODOS los forms (LEGAL-02) y la **autorización expresa** (checkbox), no solo el aviso.

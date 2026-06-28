@@ -21,7 +21,7 @@ import {
 } from './dealers.data.js';
 
 export function mountDealers(root) {
-  const ui = { dealers: [], stats: {}, sub: null, loaded: false, search: '' };
+  const ui = { dealers: [], stats: {}, consignantes: [], sub: null, loaded: false, search: '' };
   const canCreate = hasPermission('dealers.create');
   const canEdit = hasPermission('dealers.edit');
 
@@ -185,6 +185,27 @@ export function mountDealers(root) {
       : ui.dealers.length + ' aliados — proveedores de inventario (consignación / concesionarios).';
   }
 
+  /* ── §TODO-50: card de CONSIGNANTE particular (persona; sin edición ni dirección) ── */
+  function consignanteCard(c) {
+    const com = c.comisiones > 0 ? '$' + (c.comisiones / 1000000).toFixed(1) + 'M' : '$0';
+    const anon = c.key === 'consigna:_unidentified';
+    const stat = (val, label, mod) => el('div', { class: 'dlr-stat' + (mod ? ' dlr-stat--' + mod : '') }, [
+      el('div', { class: 'dlr-stat__val', text: String(val) }),
+      el('div', { class: 'dlr-stat__lbl', text: label }),
+    ]);
+    return el('article', { class: 'dlr-card' }, [
+      el('div', { class: 'dlr-card__head' }, [el('div', {}, [
+        el('strong', { class: 'dlr-card__name', text: anon ? 'Sin identificar' : (c.nombre || 'Consignante') }),
+        el('div', { class: 'u-caption u-muted', text: anon ? 'Consignas sin consignante asignado' : 'Consignante particular' }),
+      ])]),
+      el('div', { class: 'dlr-stats' }, [
+        stat(c.activos, 'Activos', 'ok'),
+        stat(c.vendidos, 'Vendidos', 'gold'),
+        stat(com, 'Comisiones', 'ok'),
+      ]),
+    ]);
+  }
+
   function renderGrid() {
     updateCount();
     clear(gridHost);
@@ -193,14 +214,25 @@ export function mountDealers(root) {
       return;
     }
     const list = filtered();
-    if (!list.length) {
+    const term = ui.search.trim().toLowerCase();
+    const cons = term
+      ? ui.consignantes.filter((c) => String(c.nombre || 'sin identificar').toLowerCase().indexOf(term) !== -1)
+      : ui.consignantes;
+    if (!list.length && !cons.length) {
       gridHost.append(el('div', { class: 'state' }, [
         el('div', { class: 'state__icon', text: '🤝' }),
         el('div', { class: 'state__title', text: ui.search.trim() ? 'Sin resultados' : 'Sin aliados' }),
       ]));
       return;
     }
-    gridHost.append(el('div', { class: 'dlr-grid' }, list.map(card)));
+    if (list.length) gridHost.append(el('div', { class: 'dlr-grid' }, list.map(card)));
+    // §TODO-50: consignantes particulares (personas) — separados de los aliados-negocio
+    if (cons.length) {
+      gridHost.append(
+        el('div', { class: 'u-caption u-muted', style: { margin: '18px 0 8px', fontWeight: '600' }, text: 'Consignantes particulares' }),
+        el('div', { class: 'dlr-grid' }, cons.map(consignanteCard)),
+      );
+    }
   }
 
   if (store.get().mock) {
@@ -213,7 +245,10 @@ export function mountDealers(root) {
       (list) => { ui.dealers = list; ui.loaded = true; renderGrid(); },
       () => toast('No se pudieron cargar los aliados.', 'error'),
     );
-    fetchDealerStats().then((s) => { ui.stats = s; if (ui.loaded) renderGrid(); }).catch(() => {});
+    fetchDealerStats().then((s) => {
+      ui.stats = s.byDealer || {}; ui.consignantes = s.consignantes || [];
+      if (ui.loaded) renderGrid();
+    }).catch(() => {});
   }
 
   return function cleanup() {

@@ -68,9 +68,10 @@ con cubo "Sin identificar" · 4 viejas se reconcilian por **tabla de alias en le
 4. ✅ `dealWon.js` = **NO-OP** (ya pasa `tenancy` entero → `normalizeTenancy` lo enriquece; el snapshot congela los 3 campos solo).
 **Sub-chunk B — captura + presentación ⏳ (toca UI/server/prod → su propio deploy + val.live):**
 5. ✅ callable `crmUpsertConsignante` (`src/crm/consignanteAdmin.js` + index.js): Admin SDK, **id por CÉDULA** (no phone), **docId opaco** (auto-id, no PII), idempotente (arrayUnion rol sin pisar consent/lifecycle del lead/retoma previo). Sintaxis OK + test `normalizeCedula`. Additivo, **NO desplegado**.
-6. ⏳ UI wizard (selector de consignante → llama el callable, ver mockup) + `vehicles.data.js` `fetchConsignantes` + `firestore.rules` (rol consignante; probable no-op: contacts ya permite crm.edit/read).
-7. ⏳ `fetchDealerStats` por `tenancyGroupKey` (consignas + cubo) + dealers.ui muestra consignantes + tabla de alias de las 4 viejas.
-8. ⏳ deploy (functions + admin-app) + validación LIVE (yo conduzco Chrome: caminos estado-cero) + auditar fuga PII en `generate-vehicles.mjs`.
+6. ✅ UI wizard (`wizard.js`): selector de consignante + alta inline (mini-form → callable); drafts persisten `vConsignanteId/Nombre`; formState pasa `consignante`+`concesionarioNombre` a buildTenancy. `vehicles.data.js`: `fetchConsignantes` (roles array-contains) + `createConsignante`. **rules = no-op** (callable=Admin SDK bypasea; selector lee con crm.read). Build verde.
+7. ✅ `fetchDealerStats` → `{byDealer, consignantes}` por `tenancyGroupKey` (consignas + cubo, nombre desnormalizado) + `dealers.ui` sección "Consignantes particulares". Build verde. (Tabla de alias de las 4 viejas = sub-paso futuro, no bloquea.)
+8. ✅ **Auditoría PII `generate-vehicles.mjs`: PASA** — `esPropio` usa solo `concesionario`; NUNCA publica `consignaParticular`/`ownerDisplayName`; consigna → omite placa+seller. Sin fuga.
+9. 🔄 **deploy**: functions ✅ DESPLEGADAS 28/06 (`crmUpsertConsignante` create + `onDealUpdated`/`crmDailyJob` update — snapshots nuevos ya congelan los 3 campos). Falta: **merge `ce60bd2` dev→main** (dueño, en web) → Pages sirve la UI selector+reporte; luego **validación LIVE** (Claude conduce Chrome, dueño logueado: los 6 caminos estado-cero del veredicto).
 **Fase 2 (legal, gated — yo = abogado de research vía skill `legal-colombia`+lóbulo 42):** consent por FINALIDAD + cláusula Habeas Data del contrato de consignación + supresión rol-aware + soft-redact de snapshots.
 
 ## Auditar antes de cerrar (fuga señalada por el SRE)

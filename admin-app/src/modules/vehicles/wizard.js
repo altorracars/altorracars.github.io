@@ -23,6 +23,7 @@ import { fetchLists, MOCK_LISTS } from '../lists/lists.data.js';
 import {
   generateUniqueCode, getNextId, createVehicle, updateVehicle, fetchConcesionarios,
   uploadVehicleImages, newDraftId, saveDraftDoc, deleteDraftDoc, mockDrafts,
+  fetchConsignantes, createConsignante,
 } from './vehicles.data.js';
 
 // 1px dorado — galería de demo sin red.
@@ -55,14 +56,17 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
     return { email: u.email || 'unknown', nombre: p.nombre || u.email || 'unknown' };
   })();
 
-  // ── datos de soporte (listas + concesionarios) ──
-  let lists, dealers;
+  // ── datos de soporte (listas + concesionarios + consignantes §TODO-50) ──
+  let lists, dealers, consignantes;
   try {
     if (store.get().mock) {
       lists = MOCK_LISTS;
       dealers = [{ id: 'autonorte', nombre: 'AutoNorte SAS' }];
+      consignantes = [{ id: 'demo-c1', nombre: 'Juan Pérez (demo)' }];
     } else {
-      [lists, dealers] = await Promise.all([fetchLists(), fetchConcesionarios().catch(() => [])]);
+      [lists, dealers, consignantes] = await Promise.all([
+        fetchLists(), fetchConcesionarios().catch(() => []), fetchConsignantes().catch(() => []),
+      ]);
     }
   } catch (e) { toast('No se pudieron cargar las listas del formulario.', 'error'); return; }
 
@@ -151,10 +155,83 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
     { value: '_particular', label: 'Consigna de particular' }, // §9: SIEMPRE elegible (antes solo al editar uno ya consigna)
   ];
   inp.concesionario = selectFrom(dealerOpts, { value: vehicle?.concesionario || '', empty: false });
-  inp.consignaParticular = txt(vehicle?.consignaParticular, { placeholder: 'Nombre del particular' });
-  const consignaField = field('Consigna particular', inp.consignaParticular);
+
+  // ── §TODO-50: el consignante = ENTIDAD (contact). Selector + alta inline; vacío = consigna
+  // ANÓNIMA (cubo "Sin identificar"). Prellena en edición desde el tenancy guardado
+  // (ownerRefId/ownerDisplayName), cae al consignaParticular legacy si es pre-TODO-50. ──
+  f.consignante = (vehicle && vehicle.tenancy && vehicle.tenancy.type === 'CONSIGNA' && vehicle.tenancy.ownerRefId)
+    ? { id: vehicle.tenancy.ownerRefId, nombre: vehicle.tenancy.ownerDisplayName || vehicle.consignaParticular || 'Consignante' }
+    : null;
+  const consignanteSel = el('select', { class: 'select' });
+  function renderConsignanteOpts() {
+    clear(consignanteSel);
+    consignanteSel.append(el('option', { value: '', text: '— Sin identificar (consigna anónima) —' }));
+    consignantes.forEach((c) => consignanteSel.append(el('option', { value: c.id, text: c.nombre })));
+    // recién creado o prellenado (aún no en la lista cargada) → inyectar para que se vea seleccionado
+    if (f.consignante && !consignantes.some((c) => c.id === f.consignante.id)) {
+      consignanteSel.append(el('option', { value: f.consignante.id, text: f.consignante.nombre }));
+    }
+    consignanteSel.value = f.consignante ? f.consignante.id : '';
+  }
+  renderConsignanteOpts();
+  consignanteSel.addEventListener('change', () => {
+    const id = consignanteSel.value;
+    f.consignante = id ? { id, nombre: (consignantes.find((c) => c.id === id) || f.consignante || {}).nombre || 'Consignante' } : null;
+    scheduleRecovery();
+  });
+  const nuevoConsignanteBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '＋ Nuevo' });
+  nuevoConsignanteBtn.addEventListener('click', openConsignanteForm);
+  const consignaField = field('Consignante',
+    el('div', { class: 'u-row u-row--tight' }, [consignanteSel, nuevoConsignanteBtn]),
+    'Persona que entrega el carro. Vacío = consigna anónima. La autorización de datos (Ley 1581) se firma en el contrato de consignación.');
   const refreshConsigna = () => { consignaField.hidden = inp.concesionario.value !== '_particular'; };
   inp.concesionario.addEventListener('change', refreshConsigna); refreshConsigna();
+
+  // Mini-form de alta de consignante (callable crmUpsertConsignante). Solo identidad —
+  // el consentimiento Habeas Data NO se captura aquí (lo respalda el contrato firmado, fase 2).
+  function openConsignanteForm() {
+    const nombreI = txt('', { placeholder: 'Nombre completo', maxlength: '80' });
+    const cedulaI = txt('', { placeholder: 'Cédula', maxlength: '15' });
+    const telI = txt('', { placeholder: 'Teléfono', maxlength: '20' });
+    const emailI = txt('', { placeholder: 'Email (opcional)', maxlength: '80' });
+    const saveB = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: 'Guardar consignante' });
+    const cancelB = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: 'Cancelar' });
+    const ov = el('div', { class: 'rev-modal__overlay' }, [
+      el('div', { class: 'rev-modal rev-modal--sm', role: 'dialog', 'aria-modal': 'true' }, [
+        el('h3', { class: 'rev-modal__title', text: 'Nuevo consignante' }),
+        field('Nombre *', nombreI), field('Cédula', cedulaI, 'Identifica a la persona — no se publica.'),
+        field('Teléfono', telI), field('Email', emailI),
+        el('p', { class: 'u-caption u-faint', text: 'La autorización de tratamiento de datos (Ley 1581) se firma en el contrato de consignación, no aquí.' }),
+        el('div', { class: 'rev-modal__actions' }, [cancelB, saveB]),
+      ]),
+    ]);
+    const closeOv = () => ov.remove();
+    cancelB.addEventListener('click', closeOv);
+    ov.addEventListener('mousedown', (e) => { if (e.target === ov) closeOv(); });
+    saveB.addEventListener('click', async () => {
+      const nombre = nombreI.value.trim();
+      if (!nombre) { toast('El nombre del consignante es obligatorio.', 'error'); return; }
+      if (!cedulaI.value.trim() && !telI.value.trim()) { toast('Pon al menos la cédula o el teléfono.', 'error'); return; }
+      saveB.disabled = true; saveB.textContent = 'Guardando…';
+      try {
+        const res = store.get().mock
+          ? { id: 'demo-' + Date.now().toString(36), nombre }
+          : await createConsignante({ nombre, cedula: cedulaI.value.trim(), telefono: telI.value.trim(), email: emailI.value.trim() });
+        const item = { id: res.id, nombre: res.nombre || nombre };
+        if (!consignantes.some((c) => c.id === item.id)) consignantes.push(item);
+        consignantes.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        f.consignante = item;
+        renderConsignanteOpts();
+        closeOv();
+        toast('✓ Consignante guardado' + (store.get().mock ? ' (demo)' : ''), 'ok');
+      } catch (e) {
+        saveB.disabled = false; saveB.textContent = 'Guardar consignante';
+        toast('No se pudo guardar: ' + (e.message || e.code || ''), 'error');
+      }
+    });
+    document.body.append(ov);
+    nombreI.focus();
+  }
   inp.revisionTecnica = el('input', { type: 'checkbox' }); inp.revisionTecnica.checked = vehicle ? vehicle.revisionTecnica !== false : true;
   inp.peritaje = el('input', { type: 'checkbox' }); inp.peritaje.checked = vehicle ? vehicle.peritaje !== false : true;
 
@@ -413,7 +490,8 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       vPlaca: inp.placa.value, vFasecolda: inp.codigoFasecolda.value, vEstado: inp.estado.value,
       vPrioridad: String(vehicle ? (vehicle.prioridad || 0) : 0),
       vFeaturedOrder: inp.featuredOrder.value, vFeaturedTag: inp.featuredTag.value,
-      vConcesionario: inp.concesionario.value, vConsignaParticular: inp.consignaParticular.value,
+      vConcesionario: inp.concesionario.value,
+      vConsignanteId: f.consignante ? f.consignante.id : '', vConsignanteNombre: f.consignante ? f.consignante.nombre : '',
       vTenancyMethod: inp.tenancyMethod.value, vTenancyBaseline: inp.tenancyBaseline.value,
       vTenancyRate: inp.tenancyRate.value, vTenancyFlat: inp.tenancyFlat.value,
       vDestacado: f.destacado, vOferta: !!inp.precioOferta.value, vFeaturedWeek: f.destacado,
@@ -437,7 +515,9 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
     inp.precio.value = s.vPrecio || ''; inp.precioOferta.value = s.vPrecioOferta || '';
     if (s.vEstado && !inp.estado.disabled) inp.estado.value = s.vEstado;
     inp.ubicacion.value = s.vUbicacion || 'Cartagena';
-    inp.concesionario.value = s.vConcesionario || ''; inp.consignaParticular.value = s.vConsignaParticular || '';
+    inp.concesionario.value = s.vConcesionario || '';
+    f.consignante = s.vConsignanteId ? { id: s.vConsignanteId, nombre: s.vConsignanteNombre || 'Consignante' } : null;
+    renderConsignanteOpts();
     if (s.vTenancyMethod) inp.tenancyMethod.value = s.vTenancyMethod;
     inp.tenancyBaseline.value = s.vTenancyBaseline || ''; inp.tenancyRate.value = s.vTenancyRate || ''; inp.tenancyFlat.value = s.vTenancyFlat || '';
     refreshEcon();
@@ -586,7 +666,8 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       precio: inp.precio.value, precioOferta: inp.precioOferta.value,
       estado: inp.estado.disabled ? vehicle.estado : inp.estado.value,
       ubicacion: inp.ubicacion.value.trim(), concesionario: inp.concesionario.value,
-      consignaParticular: inp.consignaParticular.value.trim(),
+      consignante: f.consignante, // §TODO-50: {id, nombre} del contact, o null = anónima
+      concesionarioNombre: (dealers.find((d) => d.id === inp.concesionario.value) || {}).nombre || null,
       tenancyMethod: inp.tenancyMethod.value, tenancyBaseline: inp.tenancyBaseline.value,
       tenancyRate: inp.tenancyRate.value, tenancyFlat: inp.tenancyFlat.value,
       revisionTecnica: inp.revisionTecnica.checked, peritaje: inp.peritaje.checked,

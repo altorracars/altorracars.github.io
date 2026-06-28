@@ -63,7 +63,7 @@
 | **TODO-46→F-1** | **Bot v2 FLUJO + chat vivo ⟦OPUS⟧** — rediseño (B1/B2/B3) VALIDADO LIVE ✅; +3 bugs post-validación FIXED: escalado **gatea datos** (no anónimo) · **chat asesor RECIBE** (subscribeToChat, contrato reglas ok) · búsqueda banner/doble-scroll/filtro/gap. Detalle→defects-log. RESTA: validar roundtrip chat live (dueño=asesor) + iter-2 (marca·FAQ·visual·ARIA). | 🔄 | roundtrip+iter2 |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧** — MF4.x del admin viejo NO portadas (360°/Contactos-KPIs/masivas/Postventa-NPS) + doc-fixes. Detalle→bóveda `…barrido-drift…`. | 🔵 | tras bot |
 
-| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — flujo fuerte EJECUTADO 28/06; decisión + plan + chunk-1 status → **`docs/superpowers/specs/2026-06-28-todo50-consigna-entidad-deliberacion.md`** (SSoT). Chunk 1 primitivas `crm-spec.js` ✅ (38 tests); resta cablear (`buildTenancy`→`dealWon`→`fetchDealerStats`→callable→rules→UI→deploy→val.live). Fase 2 legal = gate abogado. | 🔄 chunk1 | cablear+deploy |
+| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — flujo fuerte + chunk 1 COMPLETO en código → **`docs/superpowers/specs/2026-06-28-todo50-consigna-entidad-deliberacion.md`** (SSoT). Camino del dato + callable + UI selector + reporte por consignante ✅ (build + 164 tests + PII auditada). **Functions DESPLEGADAS 28/06.** FALTA: **merge `ce60bd2` dev→main (dueño)** → Pages sirve UI; luego **val.live** (Claude conduce Chrome, dueño logueado). Fase 2 legal = gate abogado (yo vía `legal-colombia`). | 🔄 val.live | merge+Pages |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

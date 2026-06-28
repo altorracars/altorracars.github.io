@@ -145,8 +145,11 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   const vendidoLocked = isEdit && vehicle.estado === 'vendido' && !isSuper();
   if (vendidoLocked) inp.estado.disabled = true;
   inp.ubicacion = txt(vehicle?.ubicacion || 'Cartagena');
-  const dealerOpts = [{ value: '', label: 'Propio (ALTORRA)' }, ...dealers.map((d) => ({ value: d.id, label: d.nombre }))];
-  if (vehicle?.concesionario === '_particular') dealerOpts.push({ value: '_particular', label: 'Consigna de particular (legacy)' });
+  const dealerOpts = [
+    { value: '', label: 'Propio (ALTORRA)' },
+    ...dealers.map((d) => ({ value: d.id, label: d.nombre })),
+    { value: '_particular', label: 'Consigna de particular' }, // §9: SIEMPRE elegible (antes solo al editar uno ya consigna)
+  ];
   inp.concesionario = selectFrom(dealerOpts, { value: vehicle?.concesionario || '', empty: false });
   inp.consignaParticular = txt(vehicle?.consignaParticular, { placeholder: 'Nombre del particular' });
   const consignaField = field('Consigna particular', inp.consignaParticular);

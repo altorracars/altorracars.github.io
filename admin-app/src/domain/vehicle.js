@@ -274,9 +274,31 @@ export function buildTenancy(f, concesionario) {
     : (concesionario === '_particular' ? 'CONSIGNA' : 'ALIADO');
   const method = ['SPREAD', 'PERCENTAGE', 'FLAT', 'MANUAL'].includes(f.tenancyMethod)
     ? f.tenancyMethod : 'MANUAL';
+  // §TODO-50: identidad TIPADA del owner (puntero {refType,refId} + nombre desnormalizado).
+  //  ALIADO    → `concesionarios/{slug}` (el slug ya viene en `concesionario`).
+  //  CONSIGNA  → el CONSIGNANTE como `contacts/{id}` desde `f.consignante = {id, nombre}`
+  //              (lo pone el selector del wizard). SIN consignante = consigna ANÓNIMA →
+  //              ownerRefId null = cubo "Sin identificar" (NO regresión del comportamiento hoy).
+  //  El nombre se DESNORMALIZA aquí → el snapshot del deal lo congela y el reporte lo
+  //  muestra sin re-leer `contacts` (sobrevive a la supresión Ley 1581). JAMÁS cédula/teléfono.
+  let ownerRefId = null;
+  let ownerRefType = null;
+  let ownerDisplayName = null;
+  if (type === 'ALIADO') {
+    ownerRefId = concesionario;
+    ownerRefType = 'concesionario';
+    ownerDisplayName = f.concesionarioNombre || null;
+  } else if (type === 'CONSIGNA') {
+    const c = f.consignante || null;
+    ownerRefId = (c && c.id) || null;
+    ownerRefType = ownerRefId ? 'contact' : null;
+    ownerDisplayName = (c && c.nombre) || f.consignaParticular || null;
+  }
   return {
     type,
-    ownerRefId: type === 'ALIADO' ? concesionario : null,
+    ownerRefId,
+    ownerRefType,
+    ownerDisplayName,
     economics: {
       method,
       baselineValue: method === 'SPREAD' ? (parseInt(f.tenancyBaseline, 10) || 0) : 0,

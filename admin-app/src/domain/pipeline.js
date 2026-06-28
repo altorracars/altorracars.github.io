@@ -166,6 +166,31 @@ export function altorraRevenueOf(deal) {
   return s ? (Number(s.altorraRevenue) || 0) : 0;
 }
 
+/* §TODO-50 (consigna = entidad formal) — ESPEJO EXACTO de crm-spec.js (paridad).
+ * El ownerRefId es POLIMÓRFICO; el reporte DEBE agruparlo TIPADO o mezcla namespaces
+ * (slug de `concesionarios` vs id de `contacts`, ambos strings). */
+
+/** Tipo de colección del owner según el origen (ALIADO→concesionario · CONSIGNA→contact). */
+export function tenancyRefTypeOf(type) {
+  if (type === 'ALIADO') return 'concesionario';
+  if (type === 'CONSIGNA') return 'contact';
+  return null;
+}
+
+/** Clave de agrupación TIPADA del reporte de comisiones (tupla, nunca id desnudo).
+ *  ALIADO/CONSIGNA con id → 'concesionario:slug' | 'contact:id'
+ *  CONSIGNA sin id        → 'consigna:_unidentified' (cubo "Sin identificar")
+ *  PROPIO/EXTERNO/sin owner → null. */
+export function tenancyGroupKey(frozenTenancy) {
+  const t = frozenTenancy || {};
+  const type = t.type;
+  if (type === 'ALIADO' || type === 'CONSIGNA') {
+    if (t.ownerRefId) return (t.ownerRefType || tenancyRefTypeOf(type)) + ':' + t.ownerRefId;
+    if (type === 'CONSIGNA') return 'consigna:_unidentified';
+  }
+  return null;
+}
+
 /**
  * Construye los campos de negocio de un deal a partir de un lead.
  * F7 §181: `extras` viene del diálogo canónico de conversión —

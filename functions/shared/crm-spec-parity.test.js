@@ -9,8 +9,10 @@ import spec from './crm-spec.js';
 import {
   PIPELINE_STAGES, LOST_STAGE, STAGE_GATES, LOST_REASONS, dealTransition,
   POSTVENTA_CHECKLIST, detectCollisions, dealLiquidable,
+  tenancyGroupKey, tenancyRefTypeOf,
 } from '../../admin-app/src/domain/pipeline.js';
 import { LEAD_STATUSES, DISCARD_REASONS } from '../../admin-app/src/domain/classify.js';
+import { buildTenancy } from '../../admin-app/src/domain/vehicle.js';
 
 describe('PARIDAD spec ↔ portal — estados del lead', () => {
   it('mismos ids en el mismo orden', () => {
@@ -74,5 +76,43 @@ describe('PARIDAD spec ↔ portal — matriz de transiciones (muestreo exhaustiv
         expect({ from, to, r: b }).toEqual({ from, to, r: a });
       }
     }
+  });
+});
+
+describe('PARIDAD spec ↔ portal — §TODO-50 agrupación de comisiones', () => {
+  it('tenancyRefTypeOf / tenancyGroupKey devuelven LO MISMO en ambos lados', () => {
+    for (const type of ['PROPIO', 'ALIADO', 'CONSIGNA', 'EXTERNO', 'XXX']) {
+      expect(tenancyRefTypeOf(type)).toBe(spec.tenancyRefTypeOf(type));
+    }
+    const cases = [
+      { type: 'ALIADO', ownerRefId: 'usados-de-la-costa' },
+      { type: 'CONSIGNA', ownerRefId: 'k9x', ownerRefType: 'contact' },
+      { type: 'CONSIGNA', ownerRefId: null },
+      { type: 'CONSIGNA', ownerRefId: 'old' }, // sin ownerRefType → derivado
+      { type: 'PROPIO' }, { type: 'EXTERNO' }, null,
+    ];
+    for (const ft of cases) {
+      expect({ ft, k: tenancyGroupKey(ft) }).toEqual({ ft, k: spec.tenancyGroupKey(ft) });
+    }
+  });
+
+  it('camino del dato: buildTenancy → normalizeTenancy → tenancyGroupKey (consigna identificada/anónima/aliado)', () => {
+    // CONSIGNA identificada: el consignante = contact → 'contact:id', nombre desnormalizado
+    const ident = buildTenancy({ tenancyMethod: 'MANUAL', consignante: { id: 'k9x', nombre: 'María Restrepo' } }, '_particular');
+    expect(ident.type).toBe('CONSIGNA');
+    expect(ident.ownerRefType).toBe('contact');
+    expect(ident.ownerDisplayName).toBe('María Restrepo');
+    expect(spec.tenancyGroupKey(spec.normalizeTenancy(ident))).toBe('contact:k9x');
+
+    // CONSIGNA anónima (sin consignante) → cubo "Sin identificar", NO fosiliza PII
+    const anon = buildTenancy({ tenancyMethod: 'MANUAL' }, '_particular');
+    expect(anon.ownerRefId).toBeNull();
+    expect(spec.tenancyGroupKey(spec.normalizeTenancy(anon))).toBe('consigna:_unidentified');
+
+    // ALIADO → 'concesionario:slug'
+    const aliado = buildTenancy({ tenancyMethod: 'SPREAD', tenancyBaseline: '54000000', concesionarioNombre: 'Usados de la Costa' }, 'usados-de-la-costa');
+    expect(aliado.ownerRefType).toBe('concesionario');
+    expect(spec.tenancyGroupKey(spec.normalizeTenancy(aliado))).toBe('concesionario:usados-de-la-costa');
+    expect(spec.normalizeTenancy(aliado).economics.baselineValue).toBe(54000000);
   });
 });

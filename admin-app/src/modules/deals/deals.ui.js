@@ -12,7 +12,7 @@ import { hasPermission } from '../../core/auth.js';
 import { initials, copShort, timeAgo } from '../../domain/format.js';
 import {
   OPEN_STAGES, stageById, probFor, weighted, forecast, totalValue, groupByStage, isRotting,
-  dealTransition, LOST_REASONS, POSTVENTA_CHECKLIST, dealLiquidable, detectCollisions,
+  dealTransition, LOST_REASONS, POSTVENTA_CHECKLIST, dealLiquidable, detectCollisions, latestCommissionSnapshot,
 } from '../../domain/pipeline.js';
 import {
   subscribeDeals, updateDealStage, setDealAmount, markWon, markLost,
@@ -583,7 +583,8 @@ export function mountPipeline(root) {
 
   function renderPostventaCard(deal) {
     const liquidable = dealLiquidable(deal);
-    const base = (deal.commissionSnapshot && deal.commissionSnapshot.amount) || deal.amount || 0;
+    const snap = latestCommissionSnapshot(deal) || deal.commissionSnapshot || {};
+    const base = Number(snap.salePrice != null ? snap.salePrice : (snap.amount != null ? snap.amount : deal.amount)) || 0;
     const wonDate = (deal.wonAt || deal.lastActivityAt || '').slice(0, 10);
 
     const checks = POSTVENTA_CHECKLIST.map((item) => {

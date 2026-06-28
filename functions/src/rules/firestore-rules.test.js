@@ -238,11 +238,14 @@ describe.skipIf(!EMU)('Rules — E4 §186 deals: vendido cerrado + server-only +
     await rut.assertFails(dbA().doc('deals/d_won').update({ ownerId: 'otro', _version: 6 }));
   });
 
-  it('server-only: wonAt y commissionSnapshot intocables (open Y vendido, hasta para super)', async () => {
+  it('server-only: wonAt + commissionSnapshot(s) intocables (open Y vendido, hasta para super)', async () => {
     await rut.assertFails(dbA().doc('deals/d_open').update({ wonAt: '2026-01-01' }));
     await rut.assertFails(dbA().doc('deals/d_open').update({ commissionSnapshot: { amount: 1 } }));
     await rut.assertFails(dbA().doc('deals/d_won').update({ wonAt: 'otro', _version: 6 }));
     await rut.assertFails(dbS().doc('deals/d_won').update({ commissionSnapshot: { amount: 1 } }));
+    // §9 restructura: el array ENRIQUECIDO también es server-only (anti-forja de altorraRevenue)
+    await rut.assertFails(dbA().doc('deals/d_open').update({ commissionSnapshots: [{ rev: 1, altorraRevenue: 1 }] }));
+    await rut.assertFails(dbS().doc('deals/d_won').update({ commissionSnapshots: [{ rev: 9, altorraRevenue: 999 }] }));
     await rut.assertFails(dbA().doc('deals/d_open').update({ retomaVehicleId: '99' }));
   });
 
@@ -266,6 +269,10 @@ describe.skipIf(!EMU)('Rules — E4 §186 deals: vendido cerrado + server-only +
     await rut.assertFails(dbA().collection('deals').add({
       stageId: 'cuadrando_cita', amount: 1, ownerId: ADMIN, status: 'open',
       commissionSnapshot: { amount: 999999999 },
+    }));
+    await rut.assertFails(dbA().collection('deals').add({
+      stageId: 'cuadrando_cita', amount: 1, ownerId: ADMIN, status: 'open',
+      commissionSnapshots: [{ rev: 1, altorraRevenue: 999999999 }],
     }));
     await rut.assertFails(dbA().collection('deals').add({
       stageId: 'cuadrando_cita', amount: 1, ownerId: ADMIN, status: 'open',

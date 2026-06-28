@@ -94,7 +94,7 @@ describe.skipIf(!EMU)('E4 — F25 recalcVehicleState + F10 applyWonSideEffects',
     expect(v._version).toBe(2);
   });
 
-  it('F10: ganar crea wonAt + postventa + commissionSnapshot + 3 tareas deterministas', async () => {
+  it('F10: ganar crea wonAt + postventa + commissionSnapshots[] enriquecido + 3 tareas deterministas', async () => {
     await seedDeal('d5', null, 'won', 'vendido', {
       amount: 72000000, tipoPago: 'contado', leadId: 'l5', name: 'Ana · Civic',
     });
@@ -103,7 +103,14 @@ describe.skipIf(!EMU)('E4 — F25 recalcVehicleState + F10 applyWonSideEffects',
     const deal = (await db.collection('deals').doc('d5').get()).data();
     expect(deal.wonAt).toBe(wonAt);
     expect(deal.postventa).toEqual({ entrega: false, traspaso_runt: false, tramites: false });
-    expect(deal.commissionSnapshot).toMatchObject({ amount: 72000000, tipoPago: 'contado', ownerId: 'asesor_test', wonAt });
+    // snapshot ENRIQUECIDO append-only (§9): sin vehículo/tenencia → defaults
+    // seguros (EXTERNO/MANUAL/baseline 0) → altorraRevenue 0; salePrice = amount.
+    expect(deal.commissionSnapshots).toHaveLength(1);
+    expect(deal.commissionSnapshots[0]).toMatchObject({
+      rev: 1, salePrice: 72000000, createdBy: 'asesor_test', createdAt: wonAt, altorraRevenue: 0,
+    });
+    expect(deal.commissionSnapshots[0].frozenTenancy.type).toBe('EXTERNO');
+    expect(deal.commissionSnapshots[0].frozenTenancy.economics.method).toBe('MANUAL');
     for (const item of ['entrega', 'traspaso_runt', 'tramites']) {
       const a = await db.collection('activities').doc('postventa_d5_' + item).get();
       expect(a.exists).toBe(true);
@@ -118,7 +125,8 @@ describe.skipIf(!EMU)('E4 — F25 recalcVehicleState + F10 applyWonSideEffects',
     await db.collection('deals').doc('d5').update({ amount: 99000000 });
     await applyWonSideEffects(db, 'd5', { name: 'Ana · Civic', leadId: 'l5', ownerId: 'asesor_test' }, '2030-02-01T15:05:00.000Z');
     const deal = (await db.collection('deals').doc('d5').get()).data();
-    expect(deal.commissionSnapshot.amount).toBe(72000000); // la base NO se movió
+    expect(deal.commissionSnapshots).toHaveLength(1); // el retry no agregó otra rev
+    expect(deal.commissionSnapshots[0].salePrice).toBe(72000000); // la base NO se movió
     const a = await db.collection('activities').doc('postventa_d5_entrega').get();
     expect(a.data().status).toBe('closed'); // el retry no la reabrió
   });

@@ -148,6 +148,24 @@ export function dealLiquidable(deal) {
   return POSTVENTA_CHECKLIST.every((item) => pv[item.id] === true);
 }
 
+/* ── §9 restructura comercial (TODO-25): lectura del snapshot de comisión ──
+ * ESPEJO de functions/shared/crm-spec.js (parity). El array enriquecido es
+ * append-only; el VIGENTE es el de mayor rev. La caída al singular legacy
+ * (deals pre-§9) la hacen los readers inline, no estas primitivas. */
+
+/** §9: snapshot de comisión VIGENTE del deal = el de mayor rev. null si no hay array. */
+export function latestCommissionSnapshot(deal) {
+  const arr = (deal && deal.commissionSnapshots) || [];
+  if (!Array.isArray(arr) || !arr.length) return null;
+  return arr.reduce((a, b) => ((Number(b.rev) || 0) >= (Number(a.rev) || 0) ? b : a));
+}
+
+/** §9: ingreso de Altorra del deal (snapshot vigente). 0 si no hay snapshot. */
+export function altorraRevenueOf(deal) {
+  const s = latestCommissionSnapshot(deal);
+  return s ? (Number(s.altorraRevenue) || 0) : 0;
+}
+
 /**
  * Construye los campos de negocio de un deal a partir de un lead.
  * F7 §181: `extras` viene del diálogo canónico de conversión —

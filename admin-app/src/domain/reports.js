@@ -6,7 +6,7 @@
 // ============================================================
 
 import { channelOf, isClosedStatus, slaState } from './classify.js';
-import { forecast, weighted, OPEN_STAGES, dealLiquidable } from './pipeline.js';
+import { forecast, weighted, OPEN_STAGES, dealLiquidable, latestCommissionSnapshot, altorraRevenueOf } from './pipeline.js';
 import { dayKey } from './agenda.js';
 
 const ms = (iso) => {
@@ -204,22 +204,29 @@ export function comisionesPorAsesor(deals, monthKey, team = []) {
   );
   const map = {};
   won.forEach((d) => {
-    const snap = d.commissionSnapshot || {};
-    const id = snap.ownerId || d.ownerId || '_none';
+    // §9: snapshot VIGENTE del array; fallback al singular legacy (deals pre-§9).
+    const snap = latestCommissionSnapshot(d) || d.commissionSnapshot || {};
+    const id = snap.createdBy || snap.ownerId || d.ownerId || '_none';
     const teamName = (team.find((t) => t.uid === id) || {}).nombre;
     const row = map[id] || (map[id] = {
       ownerId: id,
       ownerName: teamName || d.ownerName || (id === '_none' ? 'Sin asignar' : id),
       vendidos: 0, liquidables: 0, pendientes: 0,
-      baseLiquidable: 0, basePendiente: 0, deals: [],
+      baseLiquidable: 0, basePendiente: 0,
+      altorraRevenue: 0, deals: [], // §9: lo que GANA Altorra (altorraRevenueOf)
     });
-    const base = Number(snap.amount != null ? snap.amount : d.amount) || 0;
+    // base = precio de VENTA (salePrice del array | amount legacy | deal.amount)
+    const base = Number(
+      snap.salePrice != null ? snap.salePrice
+        : (snap.amount != null ? snap.amount : d.amount)
+    ) || 0;
+    const altorraRev = altorraRevenueOf(d); // 0 hasta que el vehículo tenga tenencia + monto
     const liq = dealLiquidable(d);
     row.vendidos++;
-    if (liq) { row.liquidables++; row.baseLiquidable += base; }
+    if (liq) { row.liquidables++; row.baseLiquidable += base; row.altorraRevenue += altorraRev; }
     else { row.pendientes++; row.basePendiente += base; }
     row.deals.push({
-      id: d.id, name: d.name || '', base, liquidable: liq,
+      id: d.id, name: d.name || '', base, altorraRevenue: altorraRev, liquidable: liq,
       tipoPago: snap.tipoPago || d.tipoPago || '',
     });
   });

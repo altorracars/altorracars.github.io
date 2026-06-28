@@ -19,12 +19,14 @@ deals/{id}.commissionSnapshots: [ { rev, createdAt, createdBy, salePrice, vehicl
 | # | Chunk | Archivos | Estado |
 |---|---|---|---|
 | **1** | Primitivas económicas (spine): enums + `computeAltorraRevenue` + `roundCOP` + `normalizeTenancy` + `buildCommissionSnapshotEntry` + `latest/altorraRevenueOf` + tests | `functions/shared/crm-spec.js` (+test) | ✅ **DONE** (be996e8, 36/36 verde, INERTE) |
-| 2 | Rules: `tenancy` válido en `vehiculos` (tipoTenencia is string) + `commissionSnapshots` server-only + test de paridad | `firestore.rules` (+`firestore-rules*.test.js`) | ⏳ |
-| 3 | `dealWon` → snapshot **enriquecido append-only**: lee `vehiculos/{vehicleId}.tenancy`, computa `altorraRevenue` por método, graba `commissionSnapshots[rev:1]`. ⚠️ ANTES: grep consumidores de `commissionSnapshot` (singular) y migrarlos. Manual/advisorCommission/fundsFlow vienen de campos del deal que setea el chunk 5 (defensivo: defaults si ausentes) | `functions/src/crm/dealWon.js`, `onDealUpdated.js` | ⏳ |
+| 2 | Rules: `commissionSnapshots` server-only (create+update) + tests ✅; validación de `tenancy` en `vehiculos` → va con chunk 5 | `firestore.rules` (+`firestore-rules.test.js`) | ✅ parcial (**6f371ab**); tenancy-rule → ch.5 |
+| 3 | `dealWon` → snapshot **enriquecido append-only**: lee `vehiculos/{id}.tenancy` en la tx, computa `altorraRevenue` por método, graba `commissionSnapshots[rev:1]`; idempotencia array+singular; `crmDailyJob` backfill | `functions/src/crm/dealWon.js`, `ops/crmDailyJob.js` (+emu test) | ✅ (**6f371ab**, 160/160) |
 | 4 | Trigger espejo `tenancy`→legacy `concesionario`/`origenTipo` con **guard anti-loop** + sacar `concesionario` de `AUDIT_FIELDS` (vehicle.js:234-236) | `functions/src/crm/*` (onWrite vehiculo) | ⏳ |
-| 5 | UI tenancy/economics en el CRM de vehículos (PROPIO/ALIADO/CONSIGNA/EXTERNO + método + baseline/rate/flat) + captura de monto MANUAL + fundsFlow en el gate "Vender" | `admin-app/src/modules/vehicles/{vehicles.data,vehicles.ui,wizard}.js` (+ `deals` gate vender) | ⏳ |
-| 6 | F42: `fetchDealerStats`/reportes leen `altorraRevenueOf(deal)` desde snapshots (mata el $0; hoy lee `comisionAltorra||utilidadAltorra||utilidadTotal` undefined) | `admin-app/src/modules/dealers/dealers.data.js`, `admin-app/src/domain/reports.js` | ⏳ |
+| 5 | UI tenancy/economics en el CRM de vehículos (PROPIO/ALIADO/CONSIGNA/EXTERNO + método + baseline/rate/flat) + captura de monto MANUAL + fundsFlow en el gate "Vender" | `admin-app/src/modules/vehicles/{vehicles.data,vehicles.ui,wizard}.js` (+ `deals` gate vender) | ⏳ **KEYSTONE — SIGUIENTE** |
+| 6 | F42: `fetchDealerStats`/reportes leen `altorraRevenueOf(deal)` desde snapshots (mata el $0) + `pipeline.js` mirror + legacy-fallback en readers | `dealers.data.js`, `reports.js`, `deals.ui.js`, `domain/pipeline.js` | ✅ (**fc591a5**, source-only; dist→batch) |
 | 7 | Pre-req dry-run (read-only, Firebase MCP): contar `vehiculos` donde legacy `concesionario` ⊕ `tenancy.type` DISIENTEN antes de cualquier backfill | script / MCP | ⏳ |
+
+> **Estado (2026-06-27):** chunks **1·2·3·6 ✅** en `dev` (be996e8·6f371ab·fc591a5), tests+build verdes, **NO desplegado** (dist source-only; functions/rules sin deploy). Falta **5 (UI keystone)** · 4 (trigger) · 7 (dry-run) → luego **rebuild dist + `firebase deploy` functions+rules + merge dev→main** (dueño autorizó "todo"). Sin UI, `altorraRevenue=0` (sin datos) = cero regresión.
 
 ## Decisiones ya tomadas (no re-preguntar)
 - **Default aliados = `MANUAL`** (requisito #1 del dueño; el monto se digita al cierre → no necesita fórmula).

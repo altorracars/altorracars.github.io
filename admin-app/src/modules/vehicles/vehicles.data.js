@@ -10,9 +10,11 @@
 
 import {
   collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, setDoc, runTransaction, writeBatch,
+  query, where,
 } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../core/firebase.js';
+import { db, storage, fns } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 import { writeAudit } from '../../core/audit.js';
 import { compressImage } from '../../core/image.js';
@@ -193,6 +195,27 @@ export async function uploadVehicleImages(files, onStatus) {
 export async function fetchConcesionarios() {
   const snap = await getDocs(collection(db, 'concesionarios'));
   return snap.docs.map((d) => ({ id: d.id, nombre: d.data().nombre || d.id }));
+}
+
+/** §TODO-50: consignantes (contacts con rol 'consignante') para el selector del
+ *  wizard. `array-contains` de UN solo campo → índice nativo, sin índice compuesto.
+ *  Excluye fusionados/suprimidos (no son directorio). Volumen bajo → query directa. */
+export async function fetchConsignantes() {
+  const q = query(collection(db, 'contacts'), where('roles', 'array-contains', 'consignante'));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id, nombre: d.data().fullName || d.id, _mergedInto: d.data()._mergedInto, _suppressed: d.data()._suppressed }))
+    .filter((c) => !c._mergedInto && !c._suppressed)
+    .map((c) => ({ id: c.id, nombre: c.nombre }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
+/** §TODO-50: alta/upsert de consignante vía callable (Admin SDK: dedup por cédula,
+ *  docId opaco, rol con arrayUnion). Devuelve {id, nombre} para fijar tenancy.ownerRefId. */
+export async function createConsignante({ nombre, cedula, telefono, email }) {
+  const call = httpsCallable(fns, 'crmUpsertConsignante');
+  const res = await call({ nombre, cedula, telefono, email });
+  return res.data; // { id, nombre, created }
 }
 
 /* ── V5: reorder global · CSV · auditoría/revert ── */

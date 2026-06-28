@@ -19,7 +19,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { writeAudit } from '../../core/audit.js';
-import { latestCommissionSnapshot, altorraRevenueOf } from '../../domain/pipeline.js';
+import { latestCommissionSnapshot, altorraRevenueOf, tenancyGroupKey } from '../../domain/pipeline.js';
+
+/** §TODO-50: ¿la groupKey es de un consignante particular (contact) o el cubo anónimo? */
+const isConsignaKey = (k) => !!k && (k.indexOf('contact:') === 0 || k === 'consigna:_unidentified');
 
 /** Slug VERBATIM del clásico (admin-dealers.js:189). NO usar brands.slugify(). */
 export function slugifyDealer(nombre) {
@@ -41,36 +44,51 @@ export function subscribeDealers(onData, onError) {
  *  `comisionAltorra||utilidadAltorra||utilidadTotal` legacy (undefined en TODOS
  *  los vehículos → $0 engañoso, hallazgo de la reconciliación 26/06). */
 export async function fetchDealerStats() {
-  const stats = {};
-  const ensure = (id) => (stats[id] || (stats[id] = { activos: 0, vendidos: 0, ventasAltorra: 0, comisiones: 0 }));
-  // counts por aliado (legacy `concesionario`); '_particular' no es aliado formal
+  const byDealer = {}; // por slug de concesionario (ALIADO-negocio) — compat con las cards de aliados
+  const byKey = {};    // §TODO-50: por groupKey tipado — consignantes (contact:*) + cubo anónimo
+  const ensureDealer = (id) => (byDealer[id] || (byDealer[id] = { activos: 0, vendidos: 0, ventasAltorra: 0, comisiones: 0 }));
+  const ensureKey = (key, nombre) => {
+    const e = byKey[key] || (byKey[key] = { key, nombre: nombre || null, activos: 0, vendidos: 0, ventasAltorra: 0, comisiones: 0 });
+    if (nombre && !e.nombre) e.nombre = nombre; // nombre DESNORMALIZADO (no re-lee contacts)
+    return e;
+  };
+  // counts por origen. ALIADO → byDealer (legacy slug). CONSIGNA → byKey (tipado).
   const vSnap = await getDocs(collection(db, 'vehiculos'));
   vSnap.forEach((docSnap) => {
     const v = docSnap.data();
-    const did = v.concesionario;
-    if (!did || did === '_particular') return;
-    const s = ensure(did);
-    if (v.estado === 'vendido') {
-      s.vendidos += 1;
-      if (v.canalVenta === 'altorra') s.ventasAltorra += 1;
-    } else if (v.estado === 'disponible' || !v.estado) {
-      s.activos += 1;
+    if (v.concesionario && v.concesionario !== '_particular') {
+      const s = ensureDealer(v.concesionario);
+      if (v.estado === 'vendido') { s.vendidos += 1; if (v.canalVenta === 'altorra') s.ventasAltorra += 1; }
+      else if (v.estado === 'disponible' || !v.estado) s.activos += 1;
+    }
+    const gk = tenancyGroupKey(v.tenancy);
+    if (isConsignaKey(gk)) {
+      const s = ensureKey(gk, v.tenancy && v.tenancy.ownerDisplayName);
+      if (v.estado === 'vendido') s.vendidos += 1;
+      else if (v.estado === 'disponible' || !v.estado) s.activos += 1;
     }
   });
-  // §9: comisiones REALES desde los deals ganados (snapshot enriquecido). Live-only;
-  // si el rol no lee `deals` o no hay ninguno → comisiones quedan 0 (el grid no rompe).
-  // A escala se materializaría en concesionarios/{slug}; a 0-5 ventas/mes la query basta.
+  // §TODO-50: comisiones REALES de los deals ganados, agrupadas por la TUPLA congelada
+  // (type+ownerRefId) — slug de aliado y contactId NUNCA colisionan. Live-only; si el rol
+  // no lee `deals` o no hay ninguno → comisiones 0 (el grid no rompe).
   try {
     const dSnap = await getDocs(query(collection(db, 'deals'), where('status', '==', 'won')));
     dSnap.forEach((docSnap) => {
       const deal = docSnap.data();
       const snap = latestCommissionSnapshot(deal);
-      const aliado = snap && snap.frozenTenancy && snap.frozenTenancy.ownerRefId;
-      if (!aliado) return; // propio/externo/deal viejo → sin comisión de aliado
-      ensure(aliado).comisiones += altorraRevenueOf(deal);
+      if (!snap || !snap.frozenTenancy) return; // propio/externo/deal viejo → sin comisión de tercero
+      const ft = snap.frozenTenancy;
+      const rev = altorraRevenueOf(deal);
+      if (ft.type === 'ALIADO' && ft.ownerRefId) {
+        ensureDealer(ft.ownerRefId).comisiones += rev;
+      } else if (isConsignaKey(tenancyGroupKey(ft))) {
+        ensureKey(tenancyGroupKey(ft), ft.ownerDisplayName).comisiones += rev;
+      }
     });
   } catch (e) { /* sin permiso de deals o vacío → comisiones 0 */ }
-  return stats;
+  const consignantes = Object.values(byKey)
+    .sort((a, b) => (b.comisiones - a.comisiones) || String(a.nombre || '').localeCompare(String(b.nombre || '')));
+  return { byDealer, consignantes };
 }
 
 /** Crea (docId = slug) o actualiza. Escribe los 8 campos verbatim del clásico. */

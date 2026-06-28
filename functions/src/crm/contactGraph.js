@@ -22,6 +22,12 @@ function dedupKeysFor(contact) {
   if (email) out.push(sanitizeContactId('email:' + email));
   const phone = normalizePhone(contact && contact.phone, contact && contact.prefijoPais);
   if (phone) out.push(sanitizeContactId('phone:' + phone));
+  // §TODO-50: la CÉDULA es la identidad de negocio del consignante (clave dedup propia).
+  // Sin esto, onContactWritten reconciliaba el índice SOLO por email/phone y BORRABA la
+  // clave de cédula que crmUpsertConsignante escribía (desacople de contrato cross-trigger,
+  // cazado en validación live). Aditivo: un contacto sin `cedula` no cambia.
+  const cedula = String((contact && contact.cedula) || '').replace(/\D/g, '');
+  if (cedula) out.push(sanitizeContactId('cedula:' + cedula));
   return out;
 }
 

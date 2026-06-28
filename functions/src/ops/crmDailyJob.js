@@ -445,7 +445,9 @@ async function runDailyMaintenance(db, deps) {
       let wonsBackfilled = 0;
       for (const d of cerrados) {
         const deal = d.data();
-        if (deal.status !== 'won' || deal.commissionSnapshot) continue;
+        if (deal.status !== 'won'
+            || (Array.isArray(deal.commissionSnapshots) && deal.commissionSnapshots.length)
+            || deal.commissionSnapshot) continue;
         const wonAt = deal.wonAt || deal.lastActivityAt || deal.updatedAt || nowIso;
         await applyWonSideEffects(db, d.id, deal, wonAt);
         wonsBackfilled++;

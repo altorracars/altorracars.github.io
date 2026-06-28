@@ -538,13 +538,14 @@ service cloud.firestore {
             && (oldS != 'perdido' || (request.resource.data.regressReason is string && request.resource.data.regressReason.size() > 0))
           );
       }
-      // E4 §186 — campos SERVER-ONLY: wonAt + commissionSnapshot (base de
-      // liquidación F42, congelada por el trigger al ganar) + retomaVehicleId
+      // E4 §186 + §9 — campos SERVER-ONLY: wonAt + commissionSnapshot(s) (base de
+      // liquidación F42 congelada por el trigger al ganar; el array ENRIQUECIDO
+      // de la restructura comercial es server-only igual) + retomaVehicleId
       // (callable crmCrearBorradorRetoma) + flags de idempotencia de alertas
       // del daily job (pre-setearlos atenuaría alertas F26/F28). Cliente jamás.
       function dealServerFieldsUntouched() {
         return !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['wonAt', 'commissionSnapshot', 'retomaVehicleId',
+          .hasAny(['wonAt', 'commissionSnapshot', 'commissionSnapshots', 'retomaVehicleId',
                    '_colisionAlertedAt', '_apartadoVencidoAlertedAt'].toSet());
       }
       // E4 §186 — coherencia status↔stageId: sin esto un cliente podría
@@ -576,7 +577,7 @@ service cloud.firestore {
         // E5 review #9: también los flags de idempotencia de alertas — un
         // create podía sembrarlos y silenciar F26/F28 (el update ya los negaba).
         && !request.resource.data.keys()
-          .hasAny(['wonAt', 'commissionSnapshot', 'retomaVehicleId',
+          .hasAny(['wonAt', 'commissionSnapshot', 'commissionSnapshots', 'retomaVehicleId',
                    '_colisionAlertedAt', '_apartadoVencidoAlertedAt']);
       allow update: if (isSuperAdmin() || hasPermission('crm.edit'))
         && dealStageChangeOk()

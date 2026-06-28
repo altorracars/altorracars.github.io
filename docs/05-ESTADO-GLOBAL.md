@@ -5,8 +5,8 @@
 
 | Señal | Valor (última actualización: **2026-06-27**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev`: **PLAN UNIFICADO COMPLETO** (§238-256) — portal único `admin-app/` LIVE, `admin.html` retirado→`_legacy/`+redirect (FLIP §255). **F-6 cutover ✅ + VALIDADO LIVE** (§253-256): perfil + Hub + 3 bugs Hub (ciclo-de-vida) validados E2E live. §252 gate verificado. MFA diferido=TODO-43. **CRM clean-slate ✅ 26/06** (206 docs prueba purgados, L-53). **Queda (dueño)**: validación celular FCM · dead-code (~3-jul). **EN CURSO**: (A) rediseño frontend (W-11). (B) bot LLM = bloqueado por saldo. |
-| **Cache version vigente** | **`v20260627171008`** (cron-CI 27/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Build** | 🟢 `main`==`dev`: PLAN UNIFICADO COMPLETO (§238-256) — portal único `admin-app/` LIVE, `admin.html`→`_legacy/`+redirect (§255). F-6 cutover ✅ VALIDADO LIVE (§253-256). MFA diferido=TODO-43. CRM clean-slate ✅ (L-53). **Aliados (TODO-25) MVP comisiones DESPLEGADO §259** (rules+functions+UI; validación live del flujo de venta = dueño). **Queda (dueño)**: validación FCM · dead-code (~3-jul). **EN CURSO**: frontend (W-11); bot LLM=saldo. |
+| **Cache version vigente** | **`v20260628034921`** (cron-CI 28/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
 

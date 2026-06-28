@@ -15,7 +15,7 @@
 > **Bot LLM = saldo** (#917 dormido). Cerrado reciente → `99`/`main`.
 >
 > 🟢 **FOCO (27/06, orden del dueño)**: dejar bugs/validación-live para el FINAL e **IMPLEMENTAR el roadmap pendiente**,
-> empezando por **ALIADOS** (TODO-25). **MVP completo en código** (chunks 1·2·3·5·6 ✅; falta verificar render + deploy). Plan +
+> empezando por **ALIADOS** (TODO-25). **MVP DESPLEGADO §259** (rules+functions+UI+dist; render verificado live; falta validación live del flujo de venta = dueño). Plan +
 > chunks 2-7 → `docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. Deploy functions/rules = **gate dinero** (M-18).
 > **⚠️ M-24** (30 §Meta): reusar lo que YA existe (Glob/Grep) ANTES de construir maquinaria nueva.
 >
@@ -51,7 +51,7 @@
 | **TODO-22** | **Fábrica de skills web** (rescate webs monolíticas) §193.2 | 🔮 | post-panel |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — secciones editables + bloques tipados. CMS por marca ✅ (§222); resta CMS total. Plan→bóveda · skill `cms-dinamico`. | 🔮 plan ✅ | al final |
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
-| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda sec.9). **MVP COMPLETO EN CÓDIGO** (orden dueño 27/06): chunks 1·2·3·5·6 ✅ (be996e8·6f371ab·fc591a5·7d51413; 4·7 N/A forward-only). 160 tests+build verdes. Detalle→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. Falta: **verificar render (mock) + rebuild dist + deploy functions/rules + merge** (dinero, M-18). | 🔄 code-complete | deploy=dueño |
+| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda sec.9). **MVP DESPLEGADO** (ADR-259): vehículo→venta→reporte (comisión real por aliado). Rules+functions+UI en main; render verif live. Detalle→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. **Falta: validación live (dueño)**. FUTURO: consigna=entidad·fiscal·facturación TODO-26. | 🔄 desplegado | val.live |
 | **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable en panel admin) — consultar Bersaglio al implementar. Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA fase | después de todo lo demás |
 | **TODO-27** | **Alta de usuarios = invite flow seguro ⟦OPUS-4.8⟧** (token+transacción, anti-enumeración; reemplaza el alta vieja) — diseño Gemini en bóveda `2026-06-14-web-dinamismo-cms-plan.md §6.4`. Sugerir skill portable | 🔮 | DESPUÉS del dinamismo (orden dueño) |
 | **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; kernel/hook ×3. **Índice range-shardeable ✅** (§258; aplicado bersaglio §140). Resta: 99a/99b · `ignoreDirs` · **shardear `00-INDICE` cars** (crónico 52.7k/48k; capacidad lista). | 🔄 | — |

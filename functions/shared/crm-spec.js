@@ -266,6 +266,19 @@ function isValidTenancyType(t) { return TENANCY_TYPES.includes(t); }
 function isValidMarginMethod(m) { return MARGIN_METHODS.includes(m); }
 function isValidFundsFlow(f) { return FUNDS_FLOWS.includes(f); }
 
+/* §TODO-50 (consigna = entidad formal): el ownerRefId es POLIMÓRFICO (apunta a
+ * colecciones distintas según el origen) → DEBE viajar TIPADO o el reporte mezcla
+ * namespaces (un slug de `concesionarios` y un id de `contacts` son ambos strings,
+ * podrían colisionar). Deriva el tipo de colección desde el `type`:
+ *  ALIADO   → `concesionarios/{slug}`
+ *  CONSIGNA → `contacts/{id}` (el consignante = persona unificada del CRM)
+ *  PROPIO/EXTERNO → sin owner externo. */
+function tenancyRefTypeOf(type) {
+  if (type === 'ALIADO') return 'concesionario';
+  if (type === 'CONSIGNA') return 'contact';
+  return null;
+}
+
 /* COP no maneja centavos: redondea a peso entero (half-away-from-zero, norma
  * contable). El refinamiento fino es diferible (open item §9). */
 function roundCOP(n) {
@@ -302,9 +315,17 @@ function computeAltorraRevenue(economics, salePrice, manualAmount) {
 function normalizeTenancy(raw) {
   const t = raw || {};
   const e = t.economics || {};
+  const type = isValidTenancyType(t.type) ? t.type : 'EXTERNO';
   return {
-    type: isValidTenancyType(t.type) ? t.type : 'EXTERNO',
+    type,
     ownerRefId: t.ownerRefId || null,
+    // §TODO-50: puntero TIPADO (deriva del type si falta — snapshots viejos sin el campo).
+    ownerRefType: t.ownerRefType || tenancyRefTypeOf(type),
+    // §TODO-50: nombre DESNORMALIZADO — el reporte histórico muestra el nombre-de-ENTONCES
+    // sin re-leer `contacts`; SOBREVIVE a la supresión Ley 1581 del contact (que purga
+    // este campo vía soft-redact server-side, dejando ownerRefId opaco + economics = cifra
+    // comercial anónima cuadrada). NUNCA congelar cédula/teléfono aquí (PII fosilizada).
+    ownerDisplayName: t.ownerDisplayName || null,
     economics: {
       method: isValidMarginMethod(e.method) ? e.method : 'MANUAL',
       baselineValue: Number(e.baselineValue) || 0,
@@ -312,6 +333,24 @@ function normalizeTenancy(raw) {
       flatFee: e.flatFee == null ? null : (Number(e.flatFee) || 0),
     },
   };
+}
+
+/**
+ * §TODO-50: clave de agrupación TIPADA del reporte de comisiones (fetchDealerStats).
+ * Agrupa por la TUPLA (refType, ownerRefId) — NUNCA por ownerRefId desnudo (mataría la
+ * colisión slug↔contactId). Robusto contra snapshots viejos (deriva refType del type).
+ *  ALIADO/CONSIGNA con id → 'concesionario:slug' | 'contact:id'
+ *  CONSIGNA sin id        → 'consigna:_unidentified' (cubo "Sin identificar" — NO se descarta)
+ *  PROPIO/EXTERNO/sin owner → null (no es ganancia atribuible a un tercero)
+ */
+function tenancyGroupKey(frozenTenancy) {
+  const t = frozenTenancy || {};
+  const type = t.type;
+  if (type === 'ALIADO' || type === 'CONSIGNA') {
+    if (t.ownerRefId) return (t.ownerRefType || tenancyRefTypeOf(type)) + ':' + t.ownerRefId;
+    if (type === 'CONSIGNA') return 'consigna:_unidentified';
+  }
+  return null;
 }
 
 /**
@@ -366,4 +405,6 @@ module.exports = {
   isValidTenancyType, isValidMarginMethod, isValidFundsFlow,
   roundCOP, computeAltorraRevenue, normalizeTenancy,
   buildCommissionSnapshotEntry, latestCommissionSnapshot, altorraRevenueOf,
+  // Consigna = entidad formal (TODO-50): puntero tipado + agrupación del reporte
+  tenancyRefTypeOf, tenancyGroupKey,
 };

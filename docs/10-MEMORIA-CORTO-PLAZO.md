@@ -14,7 +14,7 @@
 >
 > 🟢 **FOCO (RELEVO a sesión FRESCA — contexto reventado 27/06)**:
 > **1. ALIADOS — validar LIVE el flujo de venta** (TODO-25, MVP DESPLEGADO §259; rules+functions+UI en prod): registrar carro aliado/consigna → vender (captura ganancia) → ver comisión REAL en módulo Aliados/reportes. Tras Ctrl+Shift+R (cache en `05`). Wizard YA verificado en mock. Plan→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`.
-> **2. CONSIGNA = ENTIDAD FORMAL** (TODO-50, orden dueño): hoy consigna = nombre libre (`_particular`); revisarla con el **FLUJO FUERTE COMPLETO** (proceso-decisión-fuerte + comité ACOTADO + Gemini/consejo + skills + agentes) → consigna a `contacts` + autorizaciones Habeas Data (lóbulo 42), para agrupar ganancia por consignante. ⚠️ comité/agentes **ACOTADOS** (L-50/§226: fan-out grande se cuelga).
+> **2. CONSIGNA = ENTIDAD FORMAL** (TODO-50): flujo fuerte ejecutado 28/06 ✅ — decisión + chunk-1 (primitivas ✅) → spec `2026-06-28-todo50-...` (ver tabla). Sigue: cablear+deploy.
 > **DIFERIDO**: bot v2 iter-2 + val.live bot; filtros L-56 (en main); facturación TODO-26.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
@@ -63,7 +63,7 @@
 | **TODO-46→F-1** | **Bot v2 FLUJO + chat vivo ⟦OPUS⟧** — rediseño (B1/B2/B3) VALIDADO LIVE ✅; +3 bugs post-validación FIXED: escalado **gatea datos** (no anónimo) · **chat asesor RECIBE** (subscribeToChat, contrato reglas ok) · búsqueda banner/doble-scroll/filtro/gap. Detalle→defects-log. RESTA: validar roundtrip chat live (dueño=asesor) + iter-2 (marca·FAQ·visual·ARIA). | 🔄 | roundtrip+iter2 |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧** — MF4.x del admin viejo NO portadas (360°/Contactos-KPIs/masivas/Postventa-NPS) + doc-fixes. Detalle→bóveda `…barrido-drift…`. | 🔵 | tras bot |
 
-| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** (orden dueño, vía **FLUJO FUERTE**: decisión-fuerte+comité ACOTADO+Gemini+skills+agentes) — hoy = nombre libre (`_particular`); elevar a `contacts` + `autorizaciones` Habeas Data (lóbulo `42`) → agrupar ganancia por consignante. Insumo: ADR §259 + §9 bóveda. | 🔵 próx. | flujo fuerte |
+| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — flujo fuerte EJECUTADO 28/06; decisión + plan + chunk-1 status → **`docs/superpowers/specs/2026-06-28-todo50-consigna-entidad-deliberacion.md`** (SSoT). Chunk 1 primitivas `crm-spec.js` ✅ (38 tests); resta cablear (`buildTenancy`→`dealWon`→`fetchDealerStats`→callable→rules→UI→deploy→val.live). Fase 2 legal = gate abogado. | 🔄 chunk1 | cablear+deploy |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

@@ -180,7 +180,7 @@ describe('TODO-25 §9 — primitivas económicas (restructura comercial)', () =>
 
   it('normalizeTenancy: defaults seguros (tipo→EXTERNO, método→MANUAL)', () => {
     expect(spec.normalizeTenancy(null)).toEqual({
-      type: 'EXTERNO', ownerRefId: null,
+      type: 'EXTERNO', ownerRefId: null, ownerRefType: null, ownerDisplayName: null,
       economics: { method: 'MANUAL', baselineValue: 0, percentageRate: null, flatFee: null },
     });
     const norm = spec.normalizeTenancy({ type: 'ALIADO', ownerRefId: 'usados-de-la-costa',
@@ -188,6 +188,36 @@ describe('TODO-25 §9 — primitivas económicas (restructura comercial)', () =>
     expect(norm.type).toBe('ALIADO');
     expect(norm.economics.method).toBe('SPREAD');
     expect(norm.economics.percentageRate).toBeNull();
+  });
+
+  it('§TODO-50 normalizeTenancy: deriva ownerRefType del type y conserva ownerDisplayName', () => {
+    const aliado = spec.normalizeTenancy({ type: 'ALIADO', ownerRefId: 'usados-de-la-costa', ownerDisplayName: 'Usados de la Costa' });
+    expect(aliado.ownerRefType).toBe('concesionario');
+    expect(aliado.ownerDisplayName).toBe('Usados de la Costa');
+    const consigna = spec.normalizeTenancy({ type: 'CONSIGNA', ownerRefId: 'k9x', ownerDisplayName: 'María Restrepo' });
+    expect(consigna.ownerRefType).toBe('contact');     // contacto = persona unificada
+    expect(consigna.ownerDisplayName).toBe('María Restrepo');
+    // consigna ANÓNIMA: sin id, sin nombre → no fosiliza PII
+    const anon = spec.normalizeTenancy({ type: 'CONSIGNA' });
+    expect(anon.ownerRefId).toBeNull();
+    expect(anon.ownerDisplayName).toBeNull();
+    expect(spec.normalizeTenancy({ type: 'PROPIO' }).ownerRefType).toBeNull();
+  });
+
+  it('§TODO-50 tenancyGroupKey: tupla TIPADA — slug y contactId nunca colisionan', () => {
+    expect(spec.tenancyGroupKey({ type: 'ALIADO', ownerRefId: 'usados-de-la-costa' })).toBe('concesionario:usados-de-la-costa');
+    expect(spec.tenancyGroupKey({ type: 'CONSIGNA', ownerRefId: 'k9x' })).toBe('contact:k9x');
+    // mismo string en dos namespaces → claves DISTINTAS (no se mezclan en el reporte)
+    expect(spec.tenancyGroupKey({ type: 'ALIADO', ownerRefId: 'pepe' }))
+      .not.toBe(spec.tenancyGroupKey({ type: 'CONSIGNA', ownerRefId: 'pepe' }));
+    // consigna anónima → cubo "Sin identificar" (NO se descarta como hoy)
+    expect(spec.tenancyGroupKey({ type: 'CONSIGNA', ownerRefId: null })).toBe('consigna:_unidentified');
+    // propio/externo/sin owner → null (no es ganancia de un tercero)
+    expect(spec.tenancyGroupKey({ type: 'PROPIO' })).toBeNull();
+    expect(spec.tenancyGroupKey({ type: 'EXTERNO' })).toBeNull();
+    expect(spec.tenancyGroupKey(null)).toBeNull();
+    // robusto contra snapshot viejo SIN ownerRefType (lo deriva del type)
+    expect(spec.tenancyGroupKey({ type: 'CONSIGNA', ownerRefId: 'old' })).toBe('contact:old');
   });
 
   it('buildCommissionSnapshotEntry: congela tenancy y computa altorraRevenue', () => {

@@ -160,6 +160,14 @@ export function mountPipeline(root) {
     // F10 (E4): retoma/permuta — solo al GANAR, opcional, plegada (presupuesto
     // de fricción: el checkbox no añade un prompt, expande el mismo modal).
     if (stageId === 'vendido') {
+      // §9 (TODO-25): ganancia de Altorra digitada al cerrar (método MANUAL). Para
+      // SPREAD/%/FIJO el trigger la computa del vehículo e IGNORA este valor.
+      f.altorraRevenueManual = el('input', { class: 'input', type: 'number', min: '0', step: '50000', placeholder: 'Vacío = se calcula sola' });
+      fields.push(el('label', { class: 'field' }, [
+        el('span', { class: 'field__label', text: '💰 Ganancia de Altorra (COP) — solo si es MANUAL' }),
+        f.altorraRevenueManual,
+        el('span', { class: 'u-caption u-faint', text: 'Déjalo vacío si la comisión se calcula sola (spread/%/fijo).' }),
+      ]));
       f.retomaCheck = el('input', { type: 'checkbox', class: 'checkbox' });
       f.retomaMarca = el('input', { class: 'input', type: 'text', placeholder: 'Marca *' });
       f.retomaModelo = el('input', { class: 'input', type: 'text', placeholder: 'Modelo' });
@@ -206,6 +214,10 @@ export function mountPipeline(root) {
       if (f.tipoPago) {
         out.tipoPago = f.tipoPago.value;
         if (f.estadoCredito && f.estadoCredito.value) out.estadoCredito = f.estadoCredito.value;
+      }
+      if (f.altorraRevenueManual) {
+        const ar = Math.round(Number(f.altorraRevenueManual.value) || 0);
+        if (ar > 0) out.altorraRevenueManual = ar; // §9: el trigger lo usa si el método es MANUAL
       }
       if (f.lostReason) out.lostReason = f.lostReason.value;
       if (f.regressReason) {

@@ -154,12 +154,46 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   inp.concesionario.addEventListener('change', refreshConsigna); refreshConsigna();
   inp.revisionTecnica = el('input', { type: 'checkbox' }); inp.revisionTecnica.checked = vehicle ? vehicle.revisionTecnica !== false : true;
   inp.peritaje = el('input', { type: 'checkbox' }); inp.peritaje.checked = vehicle ? vehicle.peritaje !== false : true;
+
+  // ── §9 (TODO-25) Comisión de Altorra: ¿cómo gana en este vehículo? ──
+  // El ORIGEN (Propio/Aliado/Consigna) ya lo da "Concesionario"; aquí solo el
+  // MÉTODO + su parámetro. Se oculta para Propio. MANUAL (default) → el monto se
+  // digita al CERRAR la venta en el pipeline (gate "Vender"), no aquí.
+  const econ0 = vehicle?.tenancy?.economics || {};
+  inp.tenancyMethod = selectFrom([
+    { value: 'MANUAL', label: 'Manual — digito el monto al vender' },
+    { value: 'SPREAD', label: 'Spread — venta menos el neto de la contraparte' },
+    { value: 'PERCENTAGE', label: 'Porcentaje del precio de venta' },
+    { value: 'FLAT', label: 'Comisión fija' },
+  ], { value: econ0.method || 'MANUAL', empty: false });
+  inp.tenancyBaseline = num(econ0.baselineValue, { min: '0' });
+  inp.tenancyRate = num(econ0.percentageRate != null ? (econ0.percentageRate * 100) : '', { min: '0', step: '0.1' });
+  inp.tenancyFlat = num(econ0.flatFee, { min: '0' });
+  const fEconBaseline = field('Neto de la contraparte (COP)', inp.tenancyBaseline, 'Lo que recibe el aliado/consignante. Altorra gana: venta − este valor.');
+  const fEconRate = field('Porcentaje (%)', inp.tenancyRate, 'Altorra gana ese % del precio de venta.');
+  const fEconFlat = field('Comisión fija (COP)', inp.tenancyFlat);
+  const econSec = el('div', { class: 'veh-wiz__sec' }, [
+    field('¿Cómo gana Altorra?', inp.tenancyMethod, 'Manual = digitas el monto ganado al cerrar la venta.'),
+    el('div', { class: 'veh-wiz__grid' }, [fEconBaseline, fEconRate, fEconFlat]),
+  ]);
+  const refreshEcon = () => {
+    econSec.hidden = inp.concesionario.value === ''; // Propio: sin comisión de aliado
+    const m = inp.tenancyMethod.value;
+    fEconBaseline.hidden = m !== 'SPREAD';
+    fEconRate.hidden = m !== 'PERCENTAGE';
+    fEconFlat.hidden = m !== 'FLAT';
+  };
+  inp.concesionario.addEventListener('change', refreshEcon);
+  inp.tenancyMethod.addEventListener('change', refreshEcon);
+  refreshEcon();
+
   const sec3 = el('div', { class: 'veh-wiz__sec' }, [
     el('div', { class: 'veh-wiz__grid' }, [
       field('Precio (COP) *', inp.precio), field('Precio de oferta', inp.precioOferta, 'Si lo pones, activa el badge Oferta'),
       field('Estado', inp.estado, vendidoLocked ? '🔒 Vendido — solo Super Admin lo cambia' : (isEdit && vehicle.estado === 'vendido' ? '⚠️ Cambiar el estado revierte la venta' : 'Vender = pipeline del CRM, no este campo')),
       field('Ubicación', inp.ubicacion), field('Concesionario', inp.concesionario), consignaField,
     ]),
+    econSec,
     el('div', { class: 'u-row', style: { gap: '16px' } }, [
       el('label', { class: 'veh-wiz__check' }, [inp.revisionTecnica, el('span', { text: ' Revisión técnica al día' })]),
       el('label', { class: 'veh-wiz__check' }, [inp.peritaje, el('span', { text: ' Peritaje disponible' })]),
@@ -377,6 +411,8 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       vPrioridad: String(vehicle ? (vehicle.prioridad || 0) : 0),
       vFeaturedOrder: inp.featuredOrder.value, vFeaturedTag: inp.featuredTag.value,
       vConcesionario: inp.concesionario.value, vConsignaParticular: inp.consignaParticular.value,
+      vTenancyMethod: inp.tenancyMethod.value, vTenancyBaseline: inp.tenancyBaseline.value,
+      vTenancyRate: inp.tenancyRate.value, vTenancyFlat: inp.tenancyFlat.value,
       vDestacado: f.destacado, vOferta: !!inp.precioOferta.value, vFeaturedWeek: f.destacado,
       vRevision: inp.revisionTecnica.checked, vPeritaje: inp.peritaje.checked,
       vCaracteristicas: feats.join('\n'),
@@ -399,6 +435,9 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
     if (s.vEstado && !inp.estado.disabled) inp.estado.value = s.vEstado;
     inp.ubicacion.value = s.vUbicacion || 'Cartagena';
     inp.concesionario.value = s.vConcesionario || ''; inp.consignaParticular.value = s.vConsignaParticular || '';
+    if (s.vTenancyMethod) inp.tenancyMethod.value = s.vTenancyMethod;
+    inp.tenancyBaseline.value = s.vTenancyBaseline || ''; inp.tenancyRate.value = s.vTenancyRate || ''; inp.tenancyFlat.value = s.vTenancyFlat || '';
+    refreshEcon();
     inp.revisionTecnica.checked = s.vRevision !== false; inp.peritaje.checked = s.vPeritaje !== false;
     inp.featuredOrder.value = s.vFeaturedOrder || ''; inp.featuredTag.value = s.vFeaturedTag || '';
     f.destacado = !!s.vDestacado;
@@ -545,6 +584,8 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       estado: inp.estado.disabled ? vehicle.estado : inp.estado.value,
       ubicacion: inp.ubicacion.value.trim(), concesionario: inp.concesionario.value,
       consignaParticular: inp.consignaParticular.value.trim(),
+      tenancyMethod: inp.tenancyMethod.value, tenancyBaseline: inp.tenancyBaseline.value,
+      tenancyRate: inp.tenancyRate.value, tenancyFlat: inp.tenancyFlat.value,
       revisionTecnica: inp.revisionTecnica.checked, peritaje: inp.peritaje.checked,
       destacado: f.destacado, featuredOrder: inp.featuredOrder.value, featuredTag: inp.featuredTag.value,
       imagenes: f.imagenes.slice(),

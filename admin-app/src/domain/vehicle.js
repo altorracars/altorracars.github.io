@@ -264,6 +264,28 @@ export const PLACEHOLDER_IMG = 'multimedia/vehicles/placeholder-car.jpg'; // rut
  * Cierra con el hook Smart Fields: ''→null SOLO tipo/estado → derive() →
  * _smartDerived persistido si derivó (paridad de shape con el clásico).
  */
+/** §9 (TODO-25): deriva la TENENCIA del vehículo desde el origen (campo
+ *  `concesionario`: ''=PROPIO · '_particular'=CONSIGNA · slug=ALIADO) + la
+ *  economía elegida en el form. La UI escribe `concesionario` (legacy) y
+ *  `tenancy` (nuevo) COHERENTES; el trigger server-side es la red de seguridad
+ *  del espejo inverso. Default MANUAL = requisito #1 del dueño (monto al cerrar). */
+export function buildTenancy(f, concesionario) {
+  const type = concesionario === '' ? 'PROPIO'
+    : (concesionario === '_particular' ? 'CONSIGNA' : 'ALIADO');
+  const method = ['SPREAD', 'PERCENTAGE', 'FLAT', 'MANUAL'].includes(f.tenancyMethod)
+    ? f.tenancyMethod : 'MANUAL';
+  return {
+    type,
+    ownerRefId: type === 'ALIADO' ? concesionario : null,
+    economics: {
+      method,
+      baselineValue: method === 'SPREAD' ? (parseInt(f.tenancyBaseline, 10) || 0) : 0,
+      percentageRate: method === 'PERCENTAGE' ? ((parseFloat(f.tenancyRate) || 0) / 100) : null,
+      flatFee: method === 'FLAT' ? (parseInt(f.tenancyFlat, 10) || 0) : null,
+    },
+  };
+}
+
 export function buildVehicleDoc(f, { id, codigoUnico, existing, who }) {
   const now = new Date().toISOString();
   const imagenes = (f.imagenes || []).filter((u) => typeof u === 'string' && u);
@@ -313,6 +335,7 @@ export function buildVehicleDoc(f, { id, codigoUnico, existing, who }) {
     caracteristicas: (f.caracteristicas || []).filter(Boolean),
     concesionario,
     consignaParticular: concesionario === '_particular' ? (f.consignaParticular || '') : '',
+    tenancy: buildTenancy(f, concesionario), // §9 restructura comercial (TODO-25)
     updatedAt: now,
     updatedBy: who.email,
     lastModifiedBy: who.email,

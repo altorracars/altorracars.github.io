@@ -32,6 +32,29 @@ function normalizeCedula(c) {
   return d.length >= 5 && d.length <= 12 ? d : '';
 }
 
+/* §TODO-50 fase 2 (Habeas Data, lóbulo 42 · LEGAL-07): FINALIDADES discretas — la Ley 1581
+ * art. 9 exige autorización POR FINALIDAD (la genérica es nula). El soporte legal es el
+ * CONTRATO firmado (method='paper-contract'); el admin REGISTRA que existe, NO consiente por
+ * el titular. policyVersion ancla el texto que el abogado aprobó. */
+const HD_PURPOSES = ['gestionConsigna', 'publicacionAnuncio', 'contactoComprador', 'marketing'];
+
+/** Construye el registro probatorio consent.habeasData (art. 12). null si no hay contrato
+ *  registrado aún (se completa después) → mantiene el comportamiento additivo (hoy = null). */
+function buildHabeasData(hd, capturedBy) {
+  if (!hd || !String(hd.contractRef || '').trim()) return null;
+  const purposes = {};
+  for (const p of HD_PURPOSES) purposes[p] = !!(hd.purposes && hd.purposes[p]);
+  return {
+    granted: true,
+    grantedAt: nowISO(),
+    method: 'paper-contract',
+    contractRef: String(hd.contractRef).trim(),
+    policyVersion: String(hd.policyVersion || 'v1-borrador'),
+    purposes,
+    capturedBy: capturedBy || null,
+  };
+}
+
 async function assertPerm(db, auth, perm) {
   if (!auth || !auth.uid) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
   const snap = await db.collection('usuarios').doc(auth.uid).get();
@@ -50,7 +73,8 @@ const crmUpsertConsignante = onCall(
   async (request) => {
     const db = admin.firestore();
     const staff = await assertPerm(db, request.auth, 'crm.edit');
-    const { nombre, cedula, telefono, email } = request.data || {};
+    const { nombre, cedula, telefono, email, habeasData } = request.data || {};
+    const hd = buildHabeasData(habeasData, staff.uid); // §fase 2: registro probatorio (null si sin contrato)
 
     const nombreT = String(nombre || '').trim();
     if (!nombreT) throw new HttpsError('invalid-argument', 'El nombre del consignante es obligatorio.');
@@ -113,7 +137,7 @@ const crmUpsertConsignante = onCall(
           ownerId: null, ownerName: null, score: 0, rating: 'cold',
           lifecycleStage: 'consignante',
           tags: ['consignante'],
-          consent: { habeasData: null }, // fase 2 (gate abogado): soporte = contrato firmado
+          consent: { habeasData: hd }, // §fase 2: registro del soporte (contrato firmado) o null
           doNotContact: false, clienteUid: null,
           dedupKeys: indexKeys,
           createdAt: nowISO(), lastActivityAt: nowISO(), updatedAt: nowISO(), _version: 1,
@@ -131,6 +155,9 @@ const crmUpsertConsignante = onCall(
         if ((!cData.fullName || cData.fullName === 'Sin nombre') && nombreT) upd.fullName = nombreT;
         if (!cData.phone && phoneNorm) upd.phone = phoneNorm;
         if (!cData.email && emailNorm) upd.email = emailNorm;
+        // §fase 2: registra el Habeas Data si llega y el contacto aún no lo tiene (dot-path:
+        // NO pisa consent.{email,whatsapp,...} que pudiera traer de cuando fue lead).
+        if (hd && !(cData.consent && cData.consent.habeasData)) upd['consent.habeasData'] = hd;
         tx.update(contactRef, upd);
       }
 
@@ -150,4 +177,4 @@ const crmUpsertConsignante = onCall(
   }
 );
 
-module.exports = { crmUpsertConsignante, normalizeCedula };
+module.exports = { crmUpsertConsignante, normalizeCedula, buildHabeasData, HD_PURPOSES };

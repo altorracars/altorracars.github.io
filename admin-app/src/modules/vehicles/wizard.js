@@ -194,6 +194,28 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
     const cedulaI = txt('', { placeholder: 'Cédula', maxlength: '15' });
     const telI = txt('', { placeholder: 'Teléfono', maxlength: '20' });
     const emailI = txt('', { placeholder: 'Email (opcional)', maxlength: '80' });
+    // §fase 2 (Ley 1581 art.9, LEGAL-07): registro OPCIONAL del Habeas Data — el soporte legal
+    // es el CONTRATO firmado; el admin transcribe lo que ese contrato autoriza (NO consiente por
+    // el titular). Sin contrato → consent.habeasData=null (additivo, el alta funciona igual).
+    const contractI = txt('', { placeholder: 'Nº o referencia del contrato firmado', maxlength: '40' });
+    const purposeDefs = [
+      ['gestionConsigna', 'Gestionar la consignación y la venta', true],
+      ['publicacionAnuncio', 'Publicar el vehículo en el catálogo', true],
+      ['contactoComprador', 'Cierre, traspaso RUNT y factura', true],
+      ['marketing', 'Ofertas futuras (marketing) — opt-in', false],
+    ];
+    const purposeBoxes = {};
+    const purposeRows = purposeDefs.map(([key, label, def]) => {
+      const cb = el('input', { type: 'checkbox' }); cb.checked = def;
+      purposeBoxes[key] = cb;
+      return el('label', { class: 'veh-wiz__check' }, [cb, el('span', { text: ' ' + label })]);
+    });
+    const hdBlock = el('details', { class: 'cfg-card' }, [
+      el('summary', { class: 'u-caption', text: '⚖️ Autorización de datos (Ley 1581) — registra el contrato firmado (opcional)' }),
+      field('Nº de contrato de consignación', contractI, 'El TEXTO del contrato lo provee tu abogado; aquí solo lo referencias.'),
+      el('div', { class: 'u-caption u-faint', text: 'Finalidades autorizadas en ese contrato:' }),
+      ...purposeRows,
+    ]);
     const saveB = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: 'Guardar consignante' });
     const cancelB = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: 'Cancelar' });
     const ov = el('div', { class: 'rev-modal__overlay' }, [
@@ -201,7 +223,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
         el('h3', { class: 'rev-modal__title', text: 'Nuevo consignante' }),
         field('Nombre *', nombreI), field('Cédula', cedulaI, 'Identifica a la persona — no se publica.'),
         field('Teléfono', telI), field('Email', emailI),
-        el('p', { class: 'u-caption u-faint', text: 'La autorización de tratamiento de datos (Ley 1581) se firma en el contrato de consignación, no aquí.' }),
+        hdBlock,
         el('div', { class: 'rev-modal__actions' }, [cancelB, saveB]),
       ]),
     ]);
@@ -212,11 +234,15 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       const nombre = nombreI.value.trim();
       if (!nombre) { toast('El nombre del consignante es obligatorio.', 'error'); return; }
       if (!cedulaI.value.trim() && !telI.value.trim()) { toast('Pon al menos la cédula o el teléfono.', 'error'); return; }
+      const contractRef = contractI.value.trim();
+      const habeasData = contractRef
+        ? { contractRef, purposes: Object.fromEntries(purposeDefs.map(([k]) => [k, purposeBoxes[k].checked])) }
+        : null;
       saveB.disabled = true; saveB.textContent = 'Guardando…';
       try {
         const res = store.get().mock
           ? { id: 'demo-' + Date.now().toString(36), nombre }
-          : await createConsignante({ nombre, cedula: cedulaI.value.trim(), telefono: telI.value.trim(), email: emailI.value.trim() });
+          : await createConsignante({ nombre, cedula: cedulaI.value.trim(), telefono: telI.value.trim(), email: emailI.value.trim(), habeasData });
         const item = { id: res.id, nombre: res.nombre || nombre };
         if (!consignantes.some((c) => c.id === item.id)) consignantes.push(item);
         consignantes.sort((a, b) => a.nombre.localeCompare(b.nombre));

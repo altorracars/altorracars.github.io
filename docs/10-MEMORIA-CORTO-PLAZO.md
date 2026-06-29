@@ -13,8 +13,9 @@
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **RELEVO (sesión 29/06 g CERRADA context-full → arranca en SIGUE↓) ⟦OPUS-4.8⟧** — **🟣 EPIC #1: TODO-52 CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). 🌟 **VISIÓN #1 = nivel TOP MUNDIAL** — ya escrita ahí, NO re-preguntar; **YO decido+ejecuto+mergeo, el dueño NO opera git ni delibera código** (M-12/M-25). Multi-tenancy DESCARTADA. Pend. hygiene: consolidar la sesión a ADRs §NN en `99` (todo el detalle ya en el brief).
-> **HECHO 29/06 d-g (DEPLOYED; detalle→brief, consolidar a ADR §NN):** pre-29d PASE-1/confirm.js/errors.js/gold✅ · **§219 RBAC** (owner-only+subset; UI "solo dueño") · drift R8 · **accent picker ELIMINADO** (oro fijo `#D4A85A`) · **dataScope P0-SEC-1 opción A** (`scopeAllowsOwn` leads/lead_intake/deals: asesor→own, dueño/all→todo; contactos compartidos; cliente `isAllScope()`+filtro; 2 índices; tests 220 9/9, suite 326; 'department'→'own' latente) · **Perfil Telegram** (status live onSnapshot) · **emoji→SVG botones de acción** (`core/icons.js` Lucide + 14 módulos). [2FA/recovery/trusted = login-MFA TODO-43, NO portar UI sola = inútil.]
-> **SIGUE P1:** emoji→SVG pestañas-colas Bandeja (🔥👤🆕📥) + toggles vehículos + headers de tarjetas (otra superficie) · voseo→tú-Colombia · **Fase C** (mockups+design-system). **Owner-delete NO bloquea.** vestigial: perm `settings.theme` sin uso.
+> **HECHO 29/06 d-g (DEPLOYED; detalle→brief §PASE-1/§FASE-B, consolidar a ADR §NN):** PASE-1 · §219 RBAC · accent-picker ELIMINADO (oro `#D4A85A`) · dataScope P0-SEC-1 · Perfil Telegram · emoji→SVG botones (14 módulos). [suite 326✅; `'department'`→`'own'` latente; MFA→TODO-43.]
+> **HECHO 29/06 h (`479b34cc`, dev→main):** emoji→SVG **colas Bandeja** (🔥👤🆕📥→flame/user/userPlus/inbox; QUEUES `icon`→`iconId`) + **vehículos** (acciones dup/hist/★/reorder, toolbar CSV/reordenar/guardar, thumb, empty-state, stock→alertTriangle, modal-hist) + **voseo→tú** (login + seed FAQs). FIX **L-60** (svg hijo-flex→`flex:0 0 auto`, cazado live). Build✅ + live `?mock=1`✅.
+> **SIGUE P1:** emoji→SVG **headers de tarjetas** (deals/contacts/inbox cards) + resto de superficies con emoji (deals.ui·hub.ui·config·perfil·roles·dashboard·dealers·departamentos·banners·etc. — barrido amplio, conteo §grep) · **Fase C** (mockups+design-system). ⚠️ **Re-sync FAQ Firestore (M-25 anti-drift)**: el seed quedó en "tú" pero las FAQs YA sembradas en `knowledgeBase/` siguen en voseo (bootstrap solo crea faltantes, NO re-escribe) → re-sync al trabajar el bot (TODO-34/46). **Owner-delete NO bloquea.** vestigial: perm `settings.theme` sin uso.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
@@ -29,7 +30,7 @@
 > (g) **Bot v2 = grafo de nodos tras flag** (default v1, riesgo cero). v1 battle-tested INTACTO; NO big-bang, NO Vite (vanilla). Módulo `js/concierge/shared/` (NO copiar). Detalle → defects-log §F-1.
 > (h) **Auditoría verifica CÓDIGO, no DEPLOY** — claim "LIVE" se chequea live (Firebase MCP), no por inferencia; verificadores SIN Bash (cuelgue gateado L-50). Panel ≠ journal.
 > (i) **Validación live SIN screenshot = cobertura fingida (M-23)** — el DOM caza texto/lógica, NO diseño → screenshot del render (extensión `computer`; preview cuelga L-28).
-> (j) **`confirm()` nativo BLOQUEA la extensión Chrome** (val.live Aliados 29/06): con el diálogo gris abierto la página no llega a `document_idle` → screenshots/clicks expiran 45s (parece colgado, NO lo está). Reparto: yo lleno/navego/verifico-Firestore, el DUEÑO da Aceptar. Tab atascado → `tabs_create_mcp` (el write server-side persiste → verificar por Firestore, no inferir). Recetas: publicar usa foto placeholder (fotos no bloquea); wizard "Borrador" ≠ doc en `vehiculos`; deal prueba = Nuevo lead→`Convertir`; gate Vender = comisión MANUAL step 50k.
+> (j) **`confirm()` nativo BLOQUEA la extensión Chrome** (val.live 29/06): con el diálogo abierto la página no llega a `document_idle` → screenshots/clicks expiran 45s (parece colgado, NO lo está). Reparto: yo lleno/navego/verifico-Firestore, el DUEÑO da Aceptar; tab atascado → `tabs_create_mcp` (write server-side persiste → verificar por Firestore, no inferir).
 
 ---
 
@@ -49,7 +50,7 @@
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
 | **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
 | **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; índice range-shard ✅ (§258). Resta: 99a/99b · `ignoreDirs` · shardear `00-INDICE` + `30-LECCIONES` (ambos exceden). | 🔄 | — |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; índice range-shard ✅ (§258). Resta: 99a/99b · `ignoreDirs` · shardear `00-INDICE` + `30-LECCIONES` + `33-FRONTEND` (exceden). | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |

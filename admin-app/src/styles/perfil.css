@@ -52,9 +52,10 @@
 .perfil-avatar__initials { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; }
 .perfil-avatar__overlay {
   position: absolute; inset: 0; display: grid; place-content: center;
-  background: rgba(0,0,0,0.45); color: #fff; font-size: 1.3rem;
+  background: rgba(0,0,0,0.45); color: #fff;
   opacity: 0; transition: opacity var(--dur-2, 160ms) ease;
 }
+.perfil-avatar__overlay svg { width: 24px; height: 24px; }
 .perfil-avatar:hover .perfil-avatar__overlay,
 .perfil-avatar:focus-visible .perfil-avatar__overlay { opacity: 1; }
 .perfil-avatar__file { display: none; }

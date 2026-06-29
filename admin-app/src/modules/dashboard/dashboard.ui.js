@@ -14,6 +14,8 @@
 // ============================================================
 
 import { el, clear, appendAll } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
+import { navIcon } from '../../core/layout/nav-icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { navigate } from '../../core/router.js';
@@ -74,7 +76,7 @@ export function mountDashboard(root) {
 
   function render() {
     if (ui.loading) return renderSkeleton();
-    if (ui.error) return renderState('⚠️', 'No se pudo cargar el inicio', ui.error);
+    if (ui.error) return renderState(icon('alertTriangle'), 'No se pudo cargar el inicio', ui.error);
 
     const m = compute();
     // El panel 360 lee de store.leads → publicar los enriquecidos para el deep-open.
@@ -84,8 +86,10 @@ export function mountDashboard(root) {
     appendAll(body, [
       renderHero(m),
       renderKpis(m),
-      ui.capped ? el('div', { class: 'dash__notice u-caption' },
-        ['ℹ️ Mostrando los registros más recientes (tope por carga). Los totales históricos completos llegarán con los reportes acumulados.']) : null,
+      ui.capped ? el('div', { class: 'dash__notice u-caption' }, [
+        el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('info') }),
+        el('span', { text: 'Mostrando los registros más recientes (tope por carga). Los totales históricos completos llegarán con los reportes acumulados.' }),
+      ]) : null,
       el('div', { class: 'dash__cols' }, [
         renderActions(m),
         el('div', { class: 'dash__side' }, [renderPendientes(), renderAccesos()]),
@@ -147,7 +151,7 @@ export function mountDashboard(root) {
     const list = el('div', { class: 'dash__actions', role: 'list' });
     if (!m.actions.length) {
       list.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', 'aria-hidden': 'true', text: '✅' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('checkCircle') }),
         el('div', { class: 'state__title', text: ui.scope === 'mios' ? '¡Estás al día!' : 'Sin acciones urgentes' }),
         el('div', { class: 'state__msg', text: ui.scope === 'mios' ? 'No tienes leads que requieran acción inmediata.' : 'Ningún lead requiere acción inmediata ahora mismo.' }),
       ]));
@@ -198,7 +202,7 @@ export function mountDashboard(root) {
   // ── Pendientes hoy (mismo origen que la Bandeja) ──
   function renderPendientes() {
     const box = el('div', { class: 'dash__sec' }, [
-      el('div', { class: 'dash__sec-head' }, [el('h2', { class: 'dash__sec-title', text: '📋 Pendientes hoy' })]),
+      el('div', { class: 'dash__sec-head' }, [el('h2', { class: 'dash__sec-title u-ico-text', html: icon('clipboardList') + ' Pendientes hoy' })]),
     ]);
     if (store.get().mock) {
       box.append(el('div', { class: 'dash__empty u-caption u-faint', text: 'Pendientes no disponible en modo demo.' }));
@@ -216,7 +220,9 @@ export function mountDashboard(root) {
       box.append(el('div', { class: 'dash__pend' }, [
         el('span', { class: `badge badge--${late ? 'danger' : 'gold'}`, text: late ? 'VENCIDO' : 'HOY' }),
         el('div', { class: 'u-grow' }, [
-          el('div', { class: 'dash__pend-name u-truncate', text: (t.type === 'cita' ? '📅 ' : '') + t.subject }),
+          t.type === 'cita'
+            ? el('div', { class: 'dash__pend-name u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('calendar') }), el('span', { class: 'u-truncate', text: t.subject })])
+            : el('div', { class: 'dash__pend-name u-truncate', text: t.subject }),
           el('div', { class: 'u-caption u-faint u-truncate', text: `${t.relatedTo && t.relatedTo.name ? t.relatedTo.name + ' · ' : ''}${timeAgo(t.dueAt)}` }),
         ]),
         openBtn,
@@ -231,14 +237,14 @@ export function mountDashboard(root) {
   // ── Accesos rápidos ──
   function renderAccesos() {
     const links = [
-      { to: 'bandeja', icon: '📥', label: 'Bandeja' },
-      { to: 'pipeline', icon: '🎯', label: 'Pipeline' },
-      { to: 'agenda', icon: '📅', label: 'Agenda' },
-      { to: 'reportes', icon: '📊', label: 'Reportes' },
+      { to: 'bandeja', label: 'Bandeja' },
+      { to: 'pipeline', label: 'Pipeline' },
+      { to: 'agenda', label: 'Agenda' },
+      { to: 'reportes', label: 'Reportes' },
     ];
     const grid = el('div', { class: 'dash__accesos' }, links.map((l) => {
       const b = el('button', { class: 'dash__acceso', type: 'button' }, [
-        el('span', { class: 'dash__acceso-icon', 'aria-hidden': 'true', text: l.icon }),
+        el('span', { class: 'dash__acceso-icon', 'aria-hidden': 'true', html: navIcon(l.to) || '' }),
         el('span', { text: l.label }),
       ]);
       b.addEventListener('click', () => navigate(l.to));
@@ -253,10 +259,10 @@ export function mountDashboard(root) {
   function openDetail(id) { store.set({ detailLeadId: id }); }
 
   // ── Estados ──
-  function renderState(icon, title, msg) {
+  function renderState(glyph, title, msg) {
     clear(body);
     body.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', 'aria-hidden': 'true', text: icon }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: glyph }),
       el('div', { class: 'state__title', text: title }),
       el('div', { class: 'state__msg', text: msg }),
     ]));

@@ -37,9 +37,11 @@
 .dash__kpi-sub { margin-top: 2px; }
 
 .dash__notice {
+  display: flex; align-items: flex-start; gap: var(--s-2);
   padding: var(--s-2) var(--s-3); border-radius: var(--r-md);
   background: var(--surface-card-2); border: 1px solid var(--surface-stroke); color: var(--ink-text-muted);
 }
+.dash__notice .u-ico { margin-top: 1px; color: var(--gold-500); }
 
 /* Dos columnas: acciones (ancha) + lateral (pendientes + accesos) */
 .dash__cols { display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--s-6); align-items: start; }
@@ -94,7 +96,8 @@
 }
 .dash__acceso:hover { transform: translateY(-2px); border-color: var(--gold-200); }
 .dash__acceso:focus-visible { outline: 2px solid var(--gold-500); outline-offset: 2px; }
-.dash__acceso-icon { font-size: 18px; }
+.dash__acceso-icon { display: inline-flex; flex: 0 0 auto; color: var(--gold-500); }
+.dash__acceso-icon svg { width: 20px; height: 20px; }
 
 /* Avatar extra-pequeño (la lista de acciones es compacta) */
 .avatar--xs { width: 22px; height: 22px; font-size: 11px; }

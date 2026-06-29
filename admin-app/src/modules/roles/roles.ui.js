@@ -40,7 +40,7 @@ export function mountRoles(root) {
 
   if (!canRead) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Necesitas el permiso roles.read para ver los roles.' }),
     ]));
@@ -149,7 +149,7 @@ export function mountRoles(root) {
     const cancelBtn = el('button', { class: 'btn btn--soft', type: 'button', text: readOnly ? 'Cerrar' : 'Cancelar' });
 
     const wildcardNote = isWildcard(role || {})
-      ? el('div', { class: 'rol-wildcard', text: '👑 Acceso total (*) — rol del sistema, no editable.' }) : null;
+      ? el('div', { class: 'rol-wildcard u-ico-text', html: icon('crown') + ' Acceso total (*) — rol del sistema, no editable.' }) : null;
 
     const overlay = el('div', { class: 'rev-modal__overlay' }, [
       el('div', { class: 'rev-modal rol-modal', role: 'dialog', 'aria-modal': 'true' }, [
@@ -254,8 +254,8 @@ export function mountRoles(root) {
     const wild = isWildcard(r);
     const permsLabel = wild ? 'Acceso total' : `${(r.permissions || []).length} permiso${(r.permissions || []).length === 1 ? '' : 's'}`;
     const badges = el('div', { class: 'rol-card__badges' }, [
-      r.isSystem ? el('span', { class: 'badge badge--gold', text: '🔒 Sistema' }) : null,
-      r.isDefault ? el('span', { class: 'badge badge--info', text: '★ Default' }) : null,
+      r.isSystem ? el('span', { class: 'badge badge--gold u-ico-text', html: icon('lock') + ' Sistema' }) : null,
+      r.isDefault ? el('span', { class: 'badge badge--info u-ico-text', html: icon('star') + ' Default' }) : null,
     ]);
     const dot = el('span', { class: 'rol-card__dot', style: { background: color }, 'aria-hidden': 'true', text: (r.name || '?').slice(0, 1).toUpperCase() });
 
@@ -275,8 +275,8 @@ export function mountRoles(root) {
       ])]),
       el('p', { class: 'rol-card__desc u-caption u-muted', text: r.description || 'Sin descripción.' }),
       el('div', { class: 'rol-card__stats u-caption u-faint' }, [
-        el('span', { text: '🔑 ' + permsLabel }),
-        el('span', { text: `👤 ${r.userCount || 0} usuario${(r.userCount || 0) === 1 ? '' : 's'}` }),
+        el('span', { class: 'u-ico-text', html: icon('key') + ' ' + permsLabel }),
+        el('span', { class: 'u-ico-text', html: icon('user') + ' ' + (r.userCount || 0) + ' usuario' + ((r.userCount || 0) === 1 ? '' : 's') }),
       ]),
       actions,
     ]);
@@ -287,7 +287,7 @@ export function mountRoles(root) {
   const searchInput = el('input', { type: 'search', placeholder: 'Buscar rol…', 'aria-label': 'Buscar roles' });
   let searchTimer = null;
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { ui.search = searchInput.value; renderGrid(); }, 180); });
-  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
+  const search = el('div', { class: 'search' }, [el('span', { class: 'search__ico', 'aria-hidden': 'true', html: icon('search') }), searchInput]);
   const newBtn = canCreate ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo rol' }) : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
 
@@ -308,14 +308,14 @@ export function mountRoles(root) {
     clear(gridHost);
     if (!ui.roles.length) {
       gridHost.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🛡️' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('shield') }),
         el('div', { class: 'state__title', text: 'Sin roles' }),
         el('div', { class: 'state__msg', text: canCreate ? 'Crea el primer rol personalizado con “Nuevo rol”.' : 'Aún no hay roles configurados.' }),
       ]));
       return;
     }
     if (!list.length) {
-      gridHost.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', text: '🔍' }), el('div', { class: 'state__title', text: 'Sin resultados' })]));
+      gridHost.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('search') }), el('div', { class: 'state__title', text: 'Sin resultados' })]));
       return;
     }
     gridHost.append(el('div', { class: 'rol-grid' }, list.map(card)));

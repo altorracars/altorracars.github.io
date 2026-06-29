@@ -7,6 +7,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -32,7 +33,7 @@ export function mountConfig(root) {
 
   if (!canEdit) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Solo quien administra la disponibilidad (permiso calendar.config) puede editar esto.' }),
     ]));
@@ -94,7 +95,7 @@ export function mountConfig(root) {
     });
 
     return el('div', { class: 'cfg-card' }, [
-      el('h3', { class: 'cfg-card__title', text: '🕘 Horario de atención' }),
+      el('h3', { class: 'cfg-card__title u-ico-text', html: icon('clock') + ' Horario de atención' }),
       el('p', { class: 'u-caption u-muted', text: 'Esto es lo que el cliente ve en la web al pedir cita — los cambios aplican al instante.' }),
       el('div', { class: 'cfg-days' }, dayBoxes),
       el('div', { class: 'cfg-grid' }, [
@@ -118,7 +119,7 @@ export function mountConfig(root) {
     if (!dates.length) list.append(el('span', { class: 'u-caption u-muted', text: 'Sin fechas bloqueadas — la web ofrece todos los días laborales.' }));
     dates.forEach((d) => {
       const past = d < hoy;
-      const x = el('button', { class: 'cfg-chip__x', type: 'button', 'aria-label': 'Quitar', text: '✕' });
+      const x = el('button', { class: 'cfg-chip__x', type: 'button', 'aria-label': 'Quitar', html: icon('x') });
       x.addEventListener('click', () => {
         const next = dates.filter((v) => v !== d);
         // setDoc merge NO borra claves omitidas → tombstone explícito.
@@ -154,7 +155,7 @@ export function mountConfig(root) {
     });
 
     return el('div', { class: 'cfg-card' }, [
-      el('h3', { class: 'cfg-card__title', text: '📅 Fechas bloqueadas (festivos y cierres)' }),
+      el('h3', { class: 'cfg-card__title u-ico-text', html: icon('calendar') + ' Fechas bloqueadas (festivos y cierres)' }),
       el('p', { class: 'u-caption u-muted', text: 'En estas fechas la web NO ofrece citas. Las fechas pasadas se limpian solas cada madrugada.' }),
       list,
       el('div', { class: 'cfg-row' }, [dateIn, labelIn, addBtn]),
@@ -179,7 +180,7 @@ export function mountConfig(root) {
     if (!entries.length) list.append(el('span', { class: 'u-caption u-muted', text: 'Sin horas bloqueadas.' }));
     entries.forEach(([d, hours]) => {
       const chips = (hours || []).slice().sort().map((h) => {
-        const x = el('button', { class: 'cfg-chip__x', type: 'button', text: '✕' });
+        const x = el('button', { class: 'cfg-chip__x', type: 'button', 'aria-label': 'Quitar', html: icon('x') });
         x.addEventListener('click', () => {
           const rest = (bh[d] || []).filter((v) => v !== h);
           // Última hora del día → tombstone (merge no borra claves omitidas).
@@ -202,7 +203,7 @@ export function mountConfig(root) {
     });
 
     return el('div', { class: 'cfg-card' }, [
-      el('h3', { class: 'cfg-card__title', text: '⏰ Horas bloqueadas (un horario puntual)' }),
+      el('h3', { class: 'cfg-card__title u-ico-text', html: icon('clock') + ' Horas bloqueadas (un horario puntual)' }),
       list,
       el('div', { class: 'cfg-row' }, [dateIn, hourSel, addBtn]),
     ]);
@@ -231,7 +232,7 @@ export function mountConfig(root) {
         el('strong', { text: a.nombre }),
         cur
           ? el('span', { class: 'cfg-advisor__badge is-off', text: `🏖 ${cur.reason || 'ausente'} · ${cur.from} → ${cur.to}` })
-          : el('span', { class: 'cfg-advisor__badge', text: '✅ disponible' }),
+          : el('span', { class: 'cfg-advisor__badge u-ico-text', html: icon('checkCircle') + ' disponible' }),
       ]));
       if (cur) {
         const quitar = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: 'Quitar ausencia' });
@@ -262,7 +263,7 @@ export function mountConfig(root) {
     });
 
     return el('div', { class: 'cfg-card' }, [
-      el('h3', { class: 'cfg-card__title', text: '👤 Excepciones por asesor' }),
+      el('h3', { class: 'cfg-card__title u-ico-text', html: icon('user') + ' Excepciones por asesor' }),
       el('p', { class: 'u-caption u-muted', text: 'Un asesor ausente no recibe leads de la rotación ni citas confirmadas a su nombre en esas fechas.' }),
       body,
     ]);

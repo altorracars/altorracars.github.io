@@ -59,7 +59,7 @@ export function mountPerfil(root) {
     } else {
       avatarBox.append(el('span', { class: 'perfil-avatar__initials', text: initials(initial.nombre || email) }));
     }
-    avatarBox.append(el('span', { class: 'perfil-avatar__overlay', 'aria-hidden': 'true', text: '📷' }));
+    avatarBox.append(el('span', { class: 'perfil-avatar__overlay', 'aria-hidden': 'true', html: icon('camera') }));
   }
   paintAvatar(p.photoURL || p.avatarURL || '');
 
@@ -96,10 +96,10 @@ export function mountPerfil(root) {
   fPrefijo.addEventListener('change', refreshSaveBar);
 
   const cardPersonal = el('div', { class: 'perfil-card' }, [
-    el('h3', { class: 'perfil-card__title', text: '👤 Información personal' }),
+    el('h3', { class: 'perfil-card__title u-ico-text', html: icon('user') + ' Información personal' }),
     field('Nombre completo', fNombre),
     field('Correo electrónico', el('input', { class: 'input', type: 'email', value: email, readonly: true }),
-      '🔒 El correo no se puede cambiar desde aquí.'),
+      'El correo no se puede cambiar desde aquí.'),
     el('div', { class: 'field' }, [
       el('label', { class: 'field__label', text: 'Teléfono' }),
       el('div', { class: 'perfil-phone-row' }, [fPrefijo, fTelefono]),
@@ -119,8 +119,8 @@ export function mountPerfil(root) {
   fTipoDoc.addEventListener('change', refreshSaveBar);
 
   const cedulaHint = el('span', { class: 'field__hint u-caption u-muted', text: cedulaLocked
-    ? '🛡️ Documento verificado y bloqueado. Para modificarlo, solicitá autorización al Super Admin.'
-    : 'Ingresá tu número y guardá. Una vez guardado quedará bloqueado.' });
+    ? 'Documento verificado y bloqueado. Para modificarlo, solicita autorización al Super Admin.'
+    : 'Ingresa tu número y guárdalo. Una vez guardado quedará bloqueado.' });
 
   const requestBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('mail') + ' Solicitar cambio al Super Admin' });
   requestBtn.addEventListener('click', async () => {
@@ -138,7 +138,7 @@ export function mountPerfil(root) {
   });
 
   const cardDoc = el('div', { class: 'perfil-card' }, [
-    el('h3', { class: 'perfil-card__title', text: '🪪 Documento de identidad' }),
+    el('h3', { class: 'perfil-card__title u-ico-text', html: icon('idCard') + ' Documento de identidad' }),
     field('Tipo de documento', fTipoDoc),
     el('div', { class: 'field' }, [
       el('label', { class: 'field__label', text: 'Número de documento' }),
@@ -149,11 +149,11 @@ export function mountPerfil(root) {
 
   /* ─── Tarjeta: Información de cuenta (read-only) ─── */
   const cardCuenta = el('div', { class: 'perfil-card' }, [
-    el('h3', { class: 'perfil-card__title', text: '🔑 Información de cuenta' }),
-    infoRow('🏷️ Rol asignado', roleDisplay),
-    infoRow('🆔 ID de usuario', uid || '—', true),
-    infoRow('📅 Cuenta creada', fmtDate(p.creadoEn || p.createdAt)),
-    infoRow('⏱️ Último acceso', fmtDate(p.ultimoAcceso || p.lastLoginAt)),
+    el('h3', { class: 'perfil-card__title u-ico-text', html: icon('key') + ' Información de cuenta' }),
+    infoRow('Rol asignado', roleDisplay, false, 'tag'),
+    infoRow('ID de usuario', uid || '—', true, 'idCard'),
+    infoRow('Cuenta creada', fmtDate(p.creadoEn || p.createdAt), false, 'calendar'),
+    infoRow('Último acceso', fmtDate(p.ultimoAcceso || p.lastLoginAt), false, 'clock'),
   ]);
 
   /* ─── Tarjeta: Notificaciones por Telegram (§26.5/§39) ─── */
@@ -334,9 +334,11 @@ function field(label, control, hint) {
   ]);
 }
 
-function infoRow(label, value, mono) {
+function infoRow(label, value, mono, iconId) {
   return el('div', { class: 'perfil-inforow' }, [
-    el('span', { class: 'perfil-inforow__label u-caption u-muted', text: label }),
+    iconId
+      ? el('span', { class: 'perfil-inforow__label u-caption u-muted u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon(iconId) }), label])
+      : el('span', { class: 'perfil-inforow__label u-caption u-muted', text: label }),
     el('span', { class: 'perfil-inforow__value' + (mono ? ' u-mono' : ''), text: value }),
   ]);
 }
@@ -353,7 +355,7 @@ function buildSecurityCard(mock) {
       el('span', { text: r.label }),
     ])));
 
-  const submit = el('button', { class: 'btn btn--gold btn--sm', type: 'submit', text: '🔑 Actualizar contraseña' });
+  const submit = el('button', { class: 'btn btn--gold btn--sm', type: 'submit', html: icon('key') + ' Actualizar contraseña' });
 
   function refreshStrength() {
     const v = next.value;
@@ -371,7 +373,7 @@ function buildSecurityCard(mock) {
   next.addEventListener('input', refreshStrength);
 
   const form = el('form', { class: 'perfil-card perfil-pwform' }, [
-    el('h3', { class: 'perfil-card__title', text: '🛡️ Seguridad · Cambiar contraseña' }),
+    el('h3', { class: 'perfil-card__title u-ico-text', html: icon('shield') + ' Seguridad · Cambiar contraseña' }),
     el('p', { class: 'u-caption u-muted', text: 'Por seguridad pedimos tu contraseña actual antes de cambiarla.' }),
     field('Contraseña actual', current),
     field('Nueva contraseña', next),

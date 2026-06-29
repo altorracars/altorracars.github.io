@@ -76,8 +76,21 @@ con cubo "Sin identificar" · 4 viejas se reconcilian por **tabla de alias en le
 **Fase 2 (legal) — estado 28/06:**
 - ✅ **Research/diseño legal** (lóbulo 42 LEGAL-07): marco Ley 1581/Dec.1377/Cód.Comercio + finalidades discretas + modelo `consent.habeasData` + supresión rol-aware + **borrador de la cláusula** del contrato.
 - ✅ **Mecanismo `consent.habeasData` por finalidad DESPLEGADO** (callable + mini-form `<details>` con nº contrato + 4 finalidades; additivo, `null` sin contrato; +3 tests; policyVersion=`v1-borrador`).
-- ⏳ **Fase 2c — supresión rol-aware** (extender `executeSuppression`: consignante con deal cerrado conserva soporte + soft-redact del snapshot) — toca el flujo 1581 sensible, RELEVO.
-- ⏳ **Ratificación del TEXTO** del contrato por abogado colegiado (gate duro) → fija `policyVersion: v1` (dueño).
+- ✅ **Fase 2c — supresión rol-aware IMPLEMENTADA + VERIFICADA (28/06 ⟦OPUS-4.8⟧).** `executeSuppression` +
+  `redactConsignanteReferences` (contactGraph.js): el nombre del consignante se purga por soft-redact en los DOS lugares
+  donde sobrevive a la supresión-por-grafo (que busca por `contactId`, pero el consignante se referencia por `ownerRefId` —
+  el `deal.contactId` es el COMPRADOR): (a) `vehiculos.tenancy.ownerDisplayName` (tenencia viva, query por `tenancy.ownerRefId`
+  auto-indexado) y (b) `deals.commissionSnapshots[].frozenTenancy.ownerDisplayName` (barrido paginado completo: array de mapas
+  no consultable + cubre won-luego-anulado). Conserva `ownerRefId` opaco + economics; idempotente/resumible. auditLog registra
+  `{vehiclesRedacted, dealsRedacted, snapshotEntriesRedacted}` (art. 12). **Tests:** 13 puros (`contactGraph.redact.test.js`)
+  + emulador E2E rol-aware + **multi-rol/retoma** (`contactGraph.emulator.test.js`) — 300 verdes. **Revisión adversarial 4 lentes
+  (PII/legal/regresión/conformidad) = 4×SOLIDO_CON_CAMBIOS**; accionados: `snapshotEntriesRedacted` al auditLog + test multi-rol;
+  rechazado (alucinación): "índice no registrado" (no existe `firestore.indexes.json`). Lección → `30` L-57. **DEPLOYED ✅ 28/06**
+  (`crmDailyJob`+`crmRunDailyMaintenance`, commit `224758d`). **PENDIENTE: validación live (suprimir un consignante de prueba + ver
+  `auditLog.counts.snapshotEntriesRedacted`).**
+- ⏳ **Ratificación del TEXTO** del contrato por abogado colegiado (gate duro) → fija `policyVersion: v1` (dueño). **+ pregunta
+  nueva para el abogado** (revisión legal 28/06): ¿destruir la cédula en la BD viva satisface Cód.Comercio art.60/DIAN dado que el
+  soporte mercantil es el contrato firmado físico? Detalle → `42-LEGAL` LEGAL-07.
 
 ## Auditar antes de cerrar (fuga señalada por el SRE)
 `generate-vehicles.mjs` (SEO): verificar `esPropio === (concesionario==='')` y que el **nombre/cédula del

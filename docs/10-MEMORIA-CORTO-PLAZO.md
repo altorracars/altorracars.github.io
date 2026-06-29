@@ -12,8 +12,8 @@
 
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
-> 🟢 **FOCO (RELEVO a sesión FRESCA — 28/06; turno monumental cerrado limpio)**:
-> **1. TODO-50 fase 2c — supresión rol-aware** (`executeSuppression`: consignante con deal cerrado conserva soporte + soft-redact snapshot; flujo 1581 **SENSIBLE**). Chunk 1 + fase 2 mecanismo YA en prod + validado live. Todo (estado/lección/borrador/pendientes) → **spec `2026-06-28-todo50-...`** + `42` LEGAL-07 (ver tabla TODO-50).
+> 🟢 **FOCO (28/06 ⟦OPUS-4.8⟧)**:
+> **1. TODO-50 fase 2c — supresión rol-aware del consignante: IMPLEMENTADA + VERIFICADA.** `redactConsignanteReferences` (contactGraph.js): soft-redact de `ownerDisplayName` en los 2 lugares donde sobrevive a la supresión-por-grafo (tenencia viva del vehículo + snapshot del deal del COMPRADOR — el consignante se referencia por `ownerRefId`, no `contactId`); conserva `ownerRefId` opaco + economics. **300 tests verdes** (13 puros + emulador rol-aware/multi-rol) + **revisión adversarial 4 lentes**. SSoT → **spec `2026-06-28-todo50-...`** + `42` LEGAL-07 + lección `30` L-57. **DEPLOYED ✅** (28/06: `crmDailyJob`+`crmRunDailyMaintenance`, commit `224758d`). **RESTA**: validación live (suprimir un consignante de prueba + ver counts en auditLog) · ratificación TEXTO abogado (+ pregunta: cédula vs Cód.Comercio art.60).
 > **2. ALIADOS — validar LIVE** (TODO-25 §259, dueño).
 > **DIFERIDO**: bot v2 iter-2 + val.live bot; filtros L-56 (en main); facturación TODO-26.
 >
@@ -45,10 +45,10 @@
 | **TODO-22** | **Fábrica de skills web** (rescate webs monolíticas) §193.2 | 🔮 | post-panel |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — secciones editables + bloques tipados. CMS por marca ✅ (§222); resta CMS total. Plan→bóveda · skill `cms-dinamico`. | 🔮 plan ✅ | al final |
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
-| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN (bóveda sec.9). **MVP DESPLEGADO** (ADR-259, rules+functions+UI en prod): comisión real por aliado. **Falta validación live (dueño)**. FUTURO→TODO-50/26. Plan→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`. | 🔄 desplegado | val.live |
-| **TODO-26** | **Sistema FACTURACIÓN + super-CRM ⟦OPUS-4.8⟧** (facturación/financiero/contable en panel admin) — consultar Bersaglio al implementar. Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA fase | después de todo lo demás |
-| **TODO-27** | **Alta de usuarios = invite flow seguro ⟦OPUS-4.8⟧** (token+transacción, anti-enumeración; reemplaza el alta vieja) — diseño Gemini en bóveda `2026-06-14-web-dinamismo-cms-plan.md §6.4`. Sugerir skill portable | 🔮 | DESPUÉS del dinamismo (orden dueño) |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; kernel/hook ×3. **Índice range-shardeable ✅** (§258; aplicado bersaglio §140). Resta: 99a/99b · `ignoreDirs` · **shardear `00-INDICE` cars** (crónico 52.7k/48k; capacidad lista). | 🔄 | — |
+| **TODO-25** | **RESTRUCTURA COMERCIAL ⟦OPUS⟧** (aliado/consigna/propio + comisiones) — DISEÑO FROZEN; **MVP DESPLEGADO** (ADR-259). Plan→`…2026-06-27-aliados-mvp-impl-plan.md`. | 🔄 | val.live (dueño) |
+| **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
+| **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; kernel/hook ×3. **Índice range-shardeable ✅** (§258; aplicado bersaglio §140). Resta: 99a/99b · `ignoreDirs` · **shardear `00-INDICE`** (52.7k/48k) **+ `30-LECCIONES`** (386L/350, ⚠️ excede — extraer categoría a hija). | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS-4.8⟧** — gate IA (tests/invariantes BLOQUEANTES en CI) + acceptance Kary en STAGING + dueño autoriza prod. Aplica cars (F42/§TODO-25)+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — (a)§228+(b)§229 ✅ (guardián índice + replicación selectiva). RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 futuro | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ **DORMIENTE** (#917). FLIP=saldo. Bot v2→TODO-46/F-1. | 🔄 dormiente | dueño: saldo |
@@ -57,13 +57,13 @@
 | **TODO-41** | **🔴 Motor automatización NO corre post-cutover ⟦OPUS⟧** (§242.5/§257/barrido) — `admin-automation.js` era client-side SOLO en `admin.html` (retirado) → reglas "Activas" pero NO ejecutan (SLA/cita core SÍ por cron). Migrar a Cloud Function + gap RBAC `workflows.edit`. | 🔴 sube | dueño/escala |
 | **TODO-45** | **Cleanups §257 ⟦OPUS⟧** — (a) functions residuales del clásico (desplegadas, sin uso) limpiar; (b) `brands.saveBrand` desc=nombre; (c) `kb.edit` sin editor `_brain`; (d/e) coment stale + NBA. | 🔮 | bajo |
 | **TODO-43** | **MFA-hardening portal nuevo ⟦OPUS⟧ (§253)** — portal nuevo = email+password-only; el SMS-MFA del admin viejo (2FA/trusted/backup/Telegram) NO se portó. Reimplementar TOTP+recovery si el dueño quiere. NO bloquea. | 🔮 futuro | dueño |
-| **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS-4.8⟧** — (a) **freno duro del boot-budget** en el linter (hoy info-only 3 auditorías = M-10; boot +14%); (b) **gate/marker de drift source↔dist** admin-app (hoy la intención staging vive solo en prosa, AUD-04). Decidir mecanización vs aceptar-como-conocido. | 🔮 | bajo (no bloquea) |
+| **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS⟧** — (a) freno duro del boot-budget en el linter (M-10); (b) gate de drift source↔dist admin-app (AUD-04). Mecanizar vs aceptar. | 🔮 | bajo |
 | **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257 + M-22 (check #16 ×4 ✅). RESTA: adopción `verificado-vivo:`. Absorbe TODO-33. | 🔄 | adopción |
 
-| **TODO-46→F-1** | **Bot v2 FLUJO + chat vivo ⟦OPUS⟧** — rediseño (B1/B2/B3) VALIDADO LIVE ✅; +3 bugs post-validación FIXED: escalado **gatea datos** (no anónimo) · **chat asesor RECIBE** (subscribeToChat, contrato reglas ok) · búsqueda banner/doble-scroll/filtro/gap. Detalle→defects-log. RESTA: validar roundtrip chat live (dueño=asesor) + iter-2 (marca·FAQ·visual·ARIA). | 🔄 | roundtrip+iter2 |
+| **TODO-46→F-1** | **Bot v2 FLUJO + chat vivo ⟦OPUS⟧** — rediseño B1/B2/B3 VALIDADO LIVE + 3 bugs post-val FIXED. Detalle→defects-log. RESTA: roundtrip chat live (dueño=asesor) + iter-2 (marca·FAQ·visual·ARIA). | 🔄 | roundtrip+iter2 |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧** — MF4.x del admin viejo NO portadas (360°/Contactos-KPIs/masivas/Postventa-NPS) + doc-fixes. Detalle→bóveda `…barrido-drift…`. | 🔵 | tras bot |
 
-| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — chunk 1 (entidad+reporte) **VALIDADO LIVE** + **fase 2 mecanismo Habeas Data por finalidad DESPLEGADO** 28/06 ✅. Detalle+lección(bug cross-trigger)+borrador legal → **spec `2026-06-28-todo50-...`** + lóbulo `42` LEGAL-07 (SSoT). **RESTA (relevo):** fase 2c **supresión rol-aware** (flujo 1581 sensible) · ratificación TEXTO contrato (abogado→`policyVersion v1`) · suprimir 3 `ZZZ PRUEBA` (dueño) · reconciliar 4 viejas + redeploy coherencia (deuda menor). | 🔄 relevo | fase2c+texto |
+| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — chunk 1 + fase 2 mecanismo + **fase 2c supresión rol-aware IMPLEMENTADA+VERIFICADA** 28/06 ✅ (L-57; 300 tests + emulador + revisión adversarial 4 lentes). SSoT → spec `2026-06-28-todo50-…` + `42` LEGAL-07. **DEPLOYED ✅** (`224758d`). **RESTA:** val.live (suprimir consignante prueba) · TEXTO + pregunta cédula art.60 (abogado) · 3 `ZZZ PRUEBA` (dueño) · 4 viejas (deuda menor). | 🔄 | val.live+texto |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

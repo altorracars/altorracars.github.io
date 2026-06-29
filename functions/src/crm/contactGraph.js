@@ -246,6 +246,115 @@ async function snapshotContactGraph(db, contactId, label) {
   return { path, leads: out.leads.length, deals: out.deals.length, notes: out.notes.length };
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+ * §TODO-50 fase 2c — SUPRESIÓN ROL-AWARE DEL CONSIGNANTE (lóbulo 42 · LEGAL-07)
+ * ────────────────────────────────────────────────────────────────────────
+ * El consignante NO es el `deal.contactId` (ese es el COMPRADOR): su nombre se
+ * DESNORMALIZA en `frozenTenancy.ownerDisplayName` y SOBREVIVE en dos lugares que
+ * la supresión por grafo (repointContact busca por contactId) JAMÁS alcanza:
+ *   (a) la tenencia VIVA de sus vehículos consignados (`vehiculos.tenancy`), y
+ *   (b) el snapshot de comisión congelado en los deals GANADOS del comprador.
+ * Colisión de derechos: Ley 1581 art.8e (supresión) vs Cód.Comercio art.60 + DIAN
+ * (conservación 10 años cuando hubo operación). Regla del comité+abogado (spec
+ * 2026-06-28): se CONSERVA el ownerRefId OPACO + economics (cifra comercial anónima
+ * cuadrada) y solo se PURGA el NOMBRE por soft-redact server-side — el Admin SDK
+ * bypasea la inmutabilidad LÓGICA del snapshot (refuta el crypto-shredding). NUNCA
+ * se congeló cédula/teléfono ahí (buildTenancy solo desnormaliza el nombre). El CONTRATO
+ * de que se redactan AMBOS lugares está en shared/crm-spec.js `normalizeTenancy`
+ * (ownerDisplayName "SOBREVIVE a la supresión... vía soft-redact... ownerRefId opaco +
+ * economics") → arquitectura obligatoria, no opción.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/** Sentinel de soft-redact del nombre del consignante (el campo sobrevive; su valor cae). */
+const SUPPRESSED_OWNER_NAME = '(Suprimido — Ley 1581)';
+
+/** PURO: ¿esta tenencia congelada referencia a `contactId` como CONSIGNANTE?
+ *  TIPADO obligatorio: un slug de ALIADO y un contactId son ambos strings (no colapsar). */
+function tenancyRefsContact(ft, contactId) {
+  return !!ft && ft.ownerRefType === 'contact' && ft.ownerRefId === contactId;
+}
+
+/**
+ * PURO (idempotente): redacta `ownerDisplayName` de las entradas de
+ * `commissionSnapshots` cuyo consignante = contactId. Conserva ownerRefId OPACO,
+ * ownerRefType y economics. Devuelve { snapshots, changed:<nº de entradas purgadas> }
+ * — changed=0 si no hay nada que purgar (sin PII, ya redactado, o no es este consignante).
+ */
+function redactConsignanteInSnapshots(snapshots, contactId, sentinel) {
+  const name = sentinel || SUPPRESSED_OWNER_NAME;
+  if (!Array.isArray(snapshots)) return { snapshots, changed: 0 };
+  let changed = 0;
+  const out = snapshots.map((entry) => {
+    const ft = entry && entry.frozenTenancy;
+    if (!tenancyRefsContact(ft, contactId)) return entry;
+    if (!ft.ownerDisplayName || ft.ownerDisplayName === name) return entry; // sin PII / ya redactado
+    changed++;
+    return { ...entry, frozenTenancy: { ...ft, ownerDisplayName: name } };
+  });
+  return { snapshots: out, changed };
+}
+
+/**
+ * I/O: purga el nombre del consignante de los dos registros que sobreviven a la
+ * supresión por grafo. Idempotente y RESUMIBLE (busca por el ownerRefId OPACO,
+ * que NO cambia → re-ejecutar es no-op; cada doc se procesa de forma independiente).
+ * Escribe SOLO el campo del nombre → los triggers de deal/vehículo hacen no-op
+ * (onDealUpdated mira stage/status/vehicleId; onVehicleChange mira SEO_FIELDS;
+ * onVehiclePriceAlert mira el precio) = cero side-effects (re-freeze, alertas, SEO).
+ */
+async function redactConsignanteReferences(db, contactId) {
+  const out = { vehiclesRedacted: 0, dealsRedacted: 0, snapshotEntriesRedacted: 0 };
+
+  // (a) Tenencia VIVA de los vehículos consignados (el reporte fetchDealerStats lee
+  // v.tenancy.ownerDisplayName). Query por el ownerRefId OPACO (nested-field equality,
+  // auto-indexado). Dot-path → conserva ownerRefId/ownerRefType/economics.
+  {
+    let last = null;
+    for (;;) {
+      let q = db.collection('vehiculos').where('tenancy.ownerRefId', '==', contactId)
+        .orderBy(admin.firestore.FieldPath.documentId()).limit(200);
+      if (last) q = q.startAfter(last);
+      const snap = await q.get();
+      for (const d of snap.docs) {
+        const t = d.data().tenancy || {};
+        if (t.ownerRefType !== 'contact') continue;                       // defensa: no es consignante
+        if (!t.ownerDisplayName || t.ownerDisplayName === SUPPRESSED_OWNER_NAME) continue; // nada que purgar
+        await d.ref.update({ 'tenancy.ownerDisplayName': SUPPRESSED_OWNER_NAME, updatedAt: nowISO() });
+        out.vehiclesRedacted++;
+      }
+      if (snap.size < 200) break;
+      last = snap.docs[snap.docs.length - 1];
+    }
+  }
+
+  // (b) Snapshots de comisión congelados en los deals del COMPRADOR. Firestore NO
+  // consulta dentro de un array de mapas → barrido PAGINADO COMPLETO por documentId
+  // (incluye won-luego-anulado: el array append-only persiste aunque cambie el status).
+  {
+    let last = null;
+    for (;;) {
+      let q = db.collection('deals')
+        .orderBy(admin.firestore.FieldPath.documentId()).limit(200);
+      if (last) q = q.startAfter(last);
+      const snap = await q.get();
+      for (const d of snap.docs) {
+        const { snapshots, changed } = redactConsignanteInSnapshots(d.data().commissionSnapshots, contactId);
+        if (!changed) continue;
+        await d.ref.update({
+          commissionSnapshots: snapshots, updatedAt: nowISO(),
+          _version: FV().increment(1),
+        });
+        out.dealsRedacted++;
+        out.snapshotEntriesRedacted += changed;
+      }
+      if (snap.size < 200) break;
+      last = snap.docs[snap.docs.length - 1];
+    }
+  }
+
+  return out;
+}
+
 /**
  * F14 — EJECUTA la supresión (la llama el finalizador del daily job tras la
  * gracia de 72h). El doc original del contacto se BORRA (su ID deriva del
@@ -279,6 +388,12 @@ async function executeSuppression(db, contactId, { by } = {}) {
 
   const counts = await repointContact(db, contactId, stubRef.id, { anonymize: true });
   const notes = await moveNotes(db, contactId, stubRef.id, { drop: true });
+
+  // §TODO-50 fase 2c: rol-aware — purga el nombre del consignante que SOBREVIVE en
+  // la tenencia de sus vehículos + los snapshots de comisión de los deals del comprador
+  // (repointContact no los alcanza: busca por contactId, no por ownerRefId). Conserva
+  // ownerRefId opaco + economics (conservación mercantil). Idempotente/resumible.
+  const consignante = await redactConsignanteReferences(db, contactId);
 
   // TOMBSTONES de fusión (review §185 — CRÍTICO): los duplicados marcados
   // _mergedInto → este contacto conservan fullName/email/phone de la MISMA
@@ -318,13 +433,23 @@ async function executeSuppression(db, contactId, { by } = {}) {
   // Auditoría SIN PII: hash opaco, jamás el ID derivado del email (F14 g).
   await db.collection('auditLog').add({
     action: 'crm_suppress_1581', contactHash: contactHashOf(contactId), stubId: stubRef.id,
-    counts: { ...counts, notesDeleted: notes, tombstones },
+    counts: {
+      ...counts, notesDeleted: notes, tombstones,
+      // §TODO-50 fase 2c — la auditoría legal (Ley 1581 art.12: la empresa debe PROBAR el
+      // cumplimiento de la supresión) registra QUÉ se purgó del consignante: vehículos +
+      // deals + entradas de snapshot soft-redactadas.
+      vehiclesRedacted: consignante.vehiclesRedacted,
+      dealsRedacted: consignante.dealsRedacted,
+      snapshotEntriesRedacted: consignante.snapshotEntriesRedacted,
+    },
     by: by || 'crmDailyJob', at: nowISO(),
   });
-  return { stubId: stubRef.id, counts, notesDeleted: notes, tombstones };
+  return { stubId: stubRef.id, counts, notesDeleted: notes, tombstones, consignante };
 }
 
 module.exports = {
   dedupKeysFor, ensureDedupEntries, removeDedupEntries, removeAllDedupEntriesFor,
   repointContact, moveNotes, snapshotContactGraph, executeSuppression, contactHashOf,
+  // §TODO-50 fase 2c — supresión rol-aware del consignante
+  SUPPRESSED_OWNER_NAME, tenancyRefsContact, redactConsignanteInSnapshots, redactConsignanteReferences,
 };

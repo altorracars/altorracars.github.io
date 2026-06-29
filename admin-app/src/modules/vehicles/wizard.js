@@ -13,6 +13,7 @@
 import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { hasPermission } from '../../core/auth.js';
 import {
   deriveTipoFromKm, TIPO_LABELS, buildVehicleDoc, smartPreview, smartValidate,
@@ -677,9 +678,16 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
     const placa = inp.placa.value.trim().toUpperCase();
     if (placa) {
       const dup = vehicles.find((v) => v.id !== vehicle?.id && String(v.placa || '').trim().toUpperCase() === placa);
-      if (dup && !window.confirm('La placa ' + placa + ' ya existe en: ' + (dup.modelo || dup.id) + '. ¿Continuar de todos modos?')) return;
+      if (dup && !(await confirmDialog({
+        title: 'Placa duplicada',
+        message: 'La placa ' + placa + ' ya existe en "' + (dup.modelo || dup.id) + '". ¿Continuar de todos modos?',
+        confirmText: 'Continuar', danger: true,
+      }))) return;
     }
-    if (!window.confirm(isEdit ? '¿Confirmas guardar los cambios?' : '¿Confirmas publicar el vehículo?')) return;
+    if (!await confirmDialog({
+      title: isEdit ? '¿Guardar los cambios?' : '¿Publicar el vehículo?',
+      confirmText: isEdit ? 'Guardar' : 'Publicar',
+    })) return;
 
     const formState = {
       marca: inp.marca.value, modelo: inp.modelo.value, year: inp.year.value,

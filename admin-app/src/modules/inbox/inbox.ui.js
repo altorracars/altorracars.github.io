@@ -5,6 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -504,8 +505,11 @@ export function mountInbox(root) {
         }
         if (it.value === 'purge') {
           if (!navigator.onLine) { toast('Eliminar definitivo necesita señal.', 'error'); return; }
-          if (!window.confirm('🗑 ¿Eliminar DEFINITIVAMENTE a "' + lead.fullName + '"?\n\nBorra el lead, sus actividades, negocios y su contacto si queda huérfano. Esto es SOLO para pruebas/spam — un cliente real se ARCHIVA.')) return;
-          if (!window.confirm('Última confirmación: esta acción NO se puede deshacer. ¿Eliminar?')) return;
+          if (!await confirmDialog({
+            title: '¿Eliminar DEFINITIVAMENTE a "' + lead.fullName + '"?',
+            message: 'Borra el lead, sus actividades, negocios y su contacto si queda huérfano. SOLO para pruebas/spam — un cliente real se ARCHIVA. No se puede deshacer.',
+            confirmText: 'Eliminar', danger: true, typedConfirm: 'ELIMINAR',
+          })) return;
           if (store.get().mock) { toast('Eliminado (mock)', 'ok'); return; }
           try {
             const r = await purgeLead(lead.id);

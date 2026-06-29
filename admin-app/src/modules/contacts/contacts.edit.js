@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -108,7 +109,11 @@ export function openContactEdit(contact, { onChanged } = {}) {
     const mkBtn = (label, survivorId, mergedId) => {
       const b = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: label });
       b.addEventListener('click', async () => {
-        if (!confirm('¿Fusionar definitivamente? Re-apunta leads, negocios y notas. No se puede deshacer.')) return;
+        if (!await confirmDialog({
+          title: '¿Fusionar definitivamente?',
+          message: 'Re-apunta leads, negocios y notas al contacto que sobrevive. No se puede deshacer.',
+          confirmText: 'Fusionar', danger: true,
+        })) return;
         b.disabled = true;
         try {
           const r = await mergeContacts(survivorId, mergedId);
@@ -153,9 +158,12 @@ export function openContactEdit(contact, { onChanged } = {}) {
       zone.append(el('p', { class: 'u-caption u-muted', text: 'Derecho de supresión: borra los datos personales (nombre, contacto, notas) de forma DEFINITIVA tras 72h de gracia. El historial comercial (montos, fechas, carro) se conserva anónimo. Las copias ya enviadas por Telegram/email quedan fuera del alcance técnico.' }));
       const supBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑 Solicitar supresión definitiva…' });
       supBtn.addEventListener('click', async () => {
-        const typed = prompt('DOBLE CONFIRMACIÓN: escribe SUPRIMIR para programar el borrado de datos personales de '
-          + (contact.fullName || 'este contacto') + ' (72h de gracia, reversible hasta entonces).');
-        if (typed !== 'SUPRIMIR') { if (typed !== null) toast('Texto incorrecto — no se hizo nada.', 'info'); return; }
+        const ok = await confirmDialog({
+          title: 'Suprimir datos personales de ' + (contact.fullName || 'este contacto'),
+          message: 'Programa el borrado DEFINITIVO de los datos personales (72h de gracia, reversible hasta entonces). El historial comercial se conserva anónimo. (Ley 1581)',
+          confirmText: 'Programar supresión', danger: true, typedConfirm: 'SUPRIMIR',
+        });
+        if (!ok) return;
         supBtn.disabled = true;
         try {
           const r = await suppressContact(contact.id);

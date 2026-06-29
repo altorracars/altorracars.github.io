@@ -7,6 +7,7 @@
 // ============================================================
 
 import { el, clear, appendAll } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -106,7 +107,7 @@ export function mountVehicles(root) {
       if (entry.action === 'edited' && isSuper()) {
         const rv = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '↩ Revertir' });
         rv.addEventListener('click', async () => {
-          if (!window.confirm('¿Revertir estos cambios? Se restauran los valores anteriores.')) return;
+          if (!await confirmDialog({ title: '¿Revertir estos cambios?', message: 'Se restauran los valores anteriores del vehículo.', confirmText: 'Revertir', danger: true })) return;
           rv.disabled = true;
           try { await revertAuditEntry(v, entry); close(); toast('↩ Cambios revertidos', 'ok'); }
           catch (e) { rv.disabled = false; toast('No se pudo revertir: ' + (e.message || e.code), 'error'); }

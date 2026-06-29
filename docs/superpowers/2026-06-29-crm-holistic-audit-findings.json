@@ -1,0 +1,1115 @@
+{
+  "summary": "Auditoría holística adversarial READ-ONLY del admin-app CRM de Altorra (8 lentes) → findings priorizados para el mega-plan de overhaul + productización",
+  "agentCount": 10,
+  "logs": [
+    "Mapa: 25 rutas detectadas",
+    "Auditoría: 8/8 lentes · 81 findings crudos"
+  ],
+  "result": {
+    "map": {
+      "routes": [
+        "inicio (Dashboard/Home — KPIs+NBA+pendientes; dashboard.ui.js)",
+        "bandeja (Bandeja Inteligente — inbox.ui.js)",
+        "pipeline (Pipeline de ventas — deals.ui.js)",
+        "agenda (Agenda — agenda.ui.js)",
+        "reportes (Reportes y KPIs — reportes.ui.js)",
+        "contactos (Customer 360 — contacts.list.js + contacts.ui.js detail panel)",
+        "config (Disponibilidad de citas — perm calendar.config)",
+        "resenas (Reseñas — perm reviews.read)",
+        "banners (Banners — perm banners.read)",
+        "contenido (CMS dinámico — perm content.edit)",
+        "vehiculos (Inventario — perm vehicles.read) ← módulo de las quejas",
+        "marcas (Marcas — perm brands.read)",
+        "aliados (Aliados/Concesionarios — perm dealers.read)",
+        "atributos (Atributos/listas — perm settings.*)",
+        "respaldos (Respaldos export/restore — perm settings.backup)",
+        "usuarios (Usuarios+RBAC — perm users.read)",
+        "roles (Roles+matriz permisos — perm roles.read)",
+        "departamentos (perm departments.read/manage)",
+        "workflows (Automatización — perm workflows.read)",
+        "auditoria (Visor auditLog — perm audit.read)",
+        "ajustes (Apariencia+SEO — perm settings.theme/seo)",
+        "hub (ALTOR Hub chat — perm concierge.read)",
+        "cerebro (Cerebro AI/FAQs bot — perm kb.read)",
+        "unmatched (Lo que no entendí — perm unmatched.read)",
+        "perfil (Mi perfil — solo vía menú usuario, no sidebar)"
+      ],
+      "dataLayer": "ROUTER: hash mínimo core/router.js (#/{name}); 24 rutas en array ROUTES; default 'inicio'; Customer 360 NO es ruta (overlay store-driven, deep-link ?lead=). main.js: tabla MODULES{route→mountFn}, monta shell una vez, cada ruta = mount(outlet) que retorna cleanup(); onRouteChange desmonta+remonta.\n\nSTORE: core/store.js — pub/sub minimalista (~27 líneas), un store global único {ready,user,profile,permissions,nivel,departmentId,dataScope,theme,mock,detailLeadId,kbPrefill}. set(patch|updater) hace shallow-merge + notifica subs. NO hay estado por-módulo en el store: cada módulo mantiene su propio `ui={}` local + sus propias suscripciones Firestore.\n\nFIREBASE: core/firebase.js — SDK MODULAR v11.3.0 (tree-shake, NO compat pese a lo que dice el CLAUDE.md global), app namespaced 'altorra-crm' (aislada de 'altorra-admin' compat y 'altorra-public'); mismo projectId altorra-cars → Firestore compartido. initializeFirestore con persistentLocalCache + persistentMultipleTabManager (offline + multi-tab). App Check reCAPTCHA v3 (modo monitor). Exporta auth, db, rtdb (Hub presence/typing), fns (callables us-central1), storage. apiKey/config públicas hardcodeadas (normal para Firebase web).\n\nFLUJO DE DATOS: patrón consistente por módulo = `*.data.js` (capa datos) + `*.ui.js` (render). Listeners: onSnapshot tiempo-real (inbox, pipeline, hub, vehicles, brands, drafts) vs getDocs snapshot puntual (dashboard, reportes, contactos — \"un tablero no necesita realtime\"). withId=(d)=>({id:d.id,...d.data()}). Optimistic UI con rollback (drafts §110). Mock-first universal: ?mock=1 setea user demo + cada data.js retorna MOCK_* sin tocar Firebase. Cleanup por ruta desuscribe onSnapshot. RBAC en cliente vía hasPermission() (cosmético) + frontera real en firestore.rules/CFs.\n\nBACKEND: functions/src organizado por dominio — crm/ (onSolicitudWritten, onContactWritten, onDealUpdated, dealWon, contactGraph, citaActions, consignanteAdmin, anularConversion, retoma), ingestion/ (normalize, ingestLead, onLeadIntakeCreated, onClienteCreated, onSubscriptionCreated), ops/ (crmPurge, crmBackup, citaSweep, crmDailyJob, userBlock, cacheSignal, notify), shared/ (crm-spec SSoT, rbac-foundation, business-hours, cita-blocks, phone-parity). Tests emulator + reglas (firestore-rules-*.test.js).",
+      "designSystem": "4 CSS base importadas en main.js: tokens.css + crm-tokens.css + base.css + components.css, luego ~30 styles/*.css por módulo.\n\nTOKENS (tokens.css): sistema MADURO — fusión HarmonyOS14 + Windows11, copia verbatim del design-system del sitio público. Paleta gold completa (--gold-50..900, primary #D4A85A — OJO: CLAUDE.md dice brand #b89658, hay deriva), ink scale 0-950, semantic (success/warning/danger/info), surfaces Mica/Acrylic light+dark, type ramp W11, radii, spacing 4px, elevation Fluent (shadow-2..64 + shadow-gold), motion curves (ease-fluent/harmony/spring), blur acrylic, gradients mesh. crm-tokens.css aditivo: temperatura lead, semáforo SLA, acentos canal, layout (--sidebar-w 256px, --topbar-h 60px, --detail-w 440px). components.css: .btn (variantes gold/ghost/soft/danger/wa), .card, .temp, .sla-dot, chips — usa shadow/radius tokens correctamente.\n\nPROBLEMA THEME (queja toggle): NO es dark-only pese al mandato. index.html línea 2 data-theme=\"light\" (default CLARO) + línea 6 color-scheme:\"light dark\". core/theme.js = toggle claro/oscuro completo persistido en localStorage 'altorra-crm-theme', respeta prefers-color-scheme. shell.js:173-178 renderiza themeBtn (☀️/🌙) en topbar. store.theme default 'light'. → para dark-only: borrar theme.js toggle + themeBtn, fijar data-theme=\"dark\", quitar bloque :root light de tokens.css.\n\nVEREDICTO \"no premium\": la BASE de tokens es de clase mundial; el problema es ejecución: (a) iconos sidebar = EMOJI (shell.js NAV[] icon:'🏠'/'📥'…) con fallback a SVG nav-icons.js — mezcla emoji/SVG se ve amateur; (b) botones de fila = emoji texto (✏️📋🕘🗑★) no SVG; (c) sin container de contenido (ver notas).",
+      "notes": "QUEJAS VERIFICADAS file:línea —\n\n1. INVENTARIO SE CORTA / NO SCROLL / SOBRA A LA DERECHA → RAÍZ ESTRUCTURAL en shell.css:108 `.outlet { flex:1 1 auto; min-height:0; overflow:hidden; display:flex; }`. El outlet es flex de altura fija con overflow:hidden y SIN padding ni max-width. vehicles.css:6 `.veh { display:flex; flex-direction:column; }` NO declara overflow-y:auto ni height → la lista desborda el outlet de altura fija y se RECORTA sin scroll. \"Pegado al sidebar\" + \"sobra a la derecha\" = no hay container con padding lateral ni max-width a nivel outlet; cada módulo auto-padea inconsistente y en pantallas anchas el contenido queda flush-izquierda con espacio muerto a la derecha. FIX sistémico: dar al .outlet `overflow-y:auto` + padding + un wrapper interno max-width centrado, y quitar overflow:hidden. Afecta a TODOS los módulos, no solo vehículos.\n\n2. MENSAJE \"MODO DESARROLLADOR\" → vehicles.ui.js:439 verbatim: \"X vehículos — alimentan el catálogo público y sus páginas (el generador corre cada 4h).\" Pegado al borde por el problema #1 de padding. Único en su tipo (grep), pero el patrón de copy técnico/dev se repite en avisos (ej. confirmDelete vehicles.ui.js:128 menciona \"generador\").\n\n3. confirm()/prompt()/alert() NATIVOS → 16 sitios: cerebro.ui.js:139,154 · inbox.ui.js:507,508 · contacts.edit.js:111(confirm),156(prompt) · hub.ui.js:279,290,323 · vehicles/wizard.js:680,682 · departamentos.ui.js:128 · vehicles.ui.js:109 · roles.ui.js:219 · usuarios.ui.js:191 · unmatched.ui.js:84. Ya existe modal custom .rev-modal (vehicles.ui.js:340 confirmDelete) → falta extraerlo a core/ y reemplazar los 16 confirm() nativos.\n\n4. THEME TOGGLE sin sentido → ver designSystem (theme.js + shell.js:173 + index.html:2).\n\n5. \"null\" BAJO HEADERS → no encontré literal text:'null' hardcoded. RIESGO real: dom.js el() línea 12 hace `node.textContent = v` para text: SIN coercer — un `text: someVar` undefined se salta (línea 9 v==null continue), PERO interpolaciones en template strings `${x}` SÍ renderizan \"null\"/\"undefined\" si x es null (no atrapado por el() guard). dashboard.ui.js usa muchos `${...}` (líneas 101,104,112-117,172,178,217,220,226). Hay que auditar runtime con datos reales qué campo llega null bajo Inicio/Vehículos (probable un subtítulo/contador derivado de campo Firestore ausente). NO reproducible solo por lectura estática — requiere validación live.\n\n6. DATA SUCIA (\"dfsfdfdfs\", concesionario) → es dato en Firestore, no código. Refuerza la necesidad del GAP P0.\n\n7. GAP P0 BORRADO OWNER POR SECCIÓN → firestore.rules YA PERMITE delete por colección gateado en isSuperAdmin() o crm.delete/settings.* (líneas 104,114,128,326,424,482,490,587,634,811,888,915,977,1057,1106...). El backend NO es el bloqueo. El GAP es de UI: el borrado existe item-por-item (vehicles confirmDelete, usuarios, roles, departamentos, etc.) pero NO hay borrado masivo/purga por-sección owner-only. functions/src/ops/crmPurge.js existe (purga diferida CRM) → hay infraestructura de purga server pero sin botón \"purgar sección\" en cada módulo. Recomendación: panel owner-only (isSuperAdmin) por sección con bulk-delete/purge usando reglas existentes + callable crmPurge.\n\nARQUITECTURA GENERAL (para multi-tenant futuro): vanilla JS sin framework, modular limpio (core/domain/modules/styles), Vite SPA, hash router, store pub/sub. Para producto multi-tenant vendible faltará: tenantId scoping en todas las queries/rules (hoy hardcode altorra-cars), theming por-tenant (los tokens son brand-Altorra fijos), y el config público de firebase está hardcodeado en firebase.js. La base es sólida y portable pero acoplada a un solo tenant."
+    },
+    "audits": [
+      {
+        "dimension": "Arquitectura & Multi-tenant / Productización",
+        "summary": "La BASE es sólida y de buena ingeniería: vanilla modular limpio (core/domain/modules/styles), store pub/sub minimalista, router hash, patrón consistente *.data.js + *.ui.js, optimistic-lock real (_version) y RBAC denormalizado. PERO como PRODUCTO multi-tenant vendible está estructuralmente bloqueado: CERO concepto de tenantId en todo el código fuente, ~50 colecciones-raíz globales con nombres literales hardcodeados y dispersos en ~30 archivos, config Firebase de un solo proyecto incrustada, branding/tema Altorra fijo en los tokens, y — lo más grave — el aislamiento de datos no existe: ninguna query filtra por dueño/depto/tenant; el campo dataScope del store es puramente cosmético y jamás se aplica. Vender esto a una 2ª empresa hoy = compartir la MISMA base de datos sin partición. Además hay deuda que erosiona el \"se siente top global\": data sucia por falta de validación de entrada, naming Spanglish inconsistente, y un strangler doble-admin (RBAC catalog duplicado clásico↔portal) aún sin cerrar.",
+        "findings": [
+          {
+            "severity": "P0",
+            "area": "Multi-tenant / Aislamiento de datos",
+            "file": "admin-app/src/core/firebase.js:20-31; varios (~30 *.data.js)",
+            "problem": "No existe NINGUN concepto de tenant en el código fuente (grep tenantId|orgId|workspaceId|companyId = 0 ocurrencias en src). FIREBASE_CONFIG está hardcodeado a un único proyecto (projectId 'altorra-cars', apiKey, authDomain, etc.) y APP_NAME='altorra-crm'. Todas las colecciones son raíz globales sin prefijo/partición por cliente (vehiculos, leads, contacts, deals, usuarios, roles, conciergeChats, knowledgeBase...).",
+            "impact": "Imposible vender a una 2ª empresa sin clonar todo el proyecto Firebase por cliente (operativamente inviable a escala) o reescribir el modelo de datos. Es el bloqueo #1 de la tesis de negocio 'CRM multi-tenant para grandes empresas'.",
+            "recommendation": "Decidir estrategia de tenancy ANTES de seguir construyendo features (Decisión Fuerte). Opciones: (a) tenant por sub-árbol: tenants/{tenantId}/{coleccion} + collectionGroup para CFs; (b) tenantId como campo en cada doc + reglas que lo fuercen. Externalizar FIREBASE_CONFIG a runtime (config por dominio/tenant) y parametrizar APP_NAME. Esto toca cada *.data.js, las rules y las CFs — por eso debe definirse ya."
+          },
+          {
+            "severity": "P0",
+            "area": "Seguridad / Aislamiento por rol (dataScope)",
+            "file": "admin-app/src/core/store.js:42; admin-app/src/core/auth.js:31-37; admin-app/src/modules/inbox/inbox.data.js:23-36",
+            "problem": "El store declara dataScope ('all'|'dept'|'own') y departmentId, y auth.js los hidrata, PERO ninguna query del cliente los aplica: grep de where('ownerId'|'departmentId'|'dataScope') y collectionGroup = 0 matches. subscribeLeads/loadMoreLeads leen TODA la colección 'leads' ordenada por createdAt sin filtro por dueño/depto. El propio código admite que es 'cosmética' (store.js:37, auth.js:28).",
+            "impact": "Un asesor con dataScope='own' o 'dept' ve TODOS los leads/deals de la empresa en la UI (solo limitado por paginación), no solo los suyos. Si las firestore.rules tampoco particionan por scope (las leídas usan rol/permiso global, no ownerId), es una fuga de datos entre vendedores HOY, y entre tenants mañana. Mata la promesa de un CRM por roles/territorios.",
+            "recommendation": "Hacer dataScope una frontera real: las queries deben añadir where('ownerId','==',uid) / where('departmentId','==',dept) según scope, respaldado por firestore.rules que lo exijan (cliente nunca es frontera). Verificar en vivo qué ve un usuario 'own' vs 'all' antes de cerrar."
+          },
+          {
+            "severity": "P1",
+            "area": "Acoplamiento de marca / theming",
+            "file": "admin-app/src/core/design-system/tokens.css:16,132; admin-app/index.html:2,9; admin-app/src/core/theme.js:8",
+            "problem": "El sistema de diseño está cableado a Altorra: paleta gold (#D4A85A) fija en tokens, título 'Altorra CRM', clave de localStorage 'altorra-crm-theme', logo 'ALTORRA' hardcodeado en shell.js:125. No hay capa de theming por-tenant. (Bonus: deriva de color — tokens dice #D4A85A pero CLAUDE.md/marca dice #b89658).",
+            "impact": "Cada cliente nuevo exigiría editar CSS/HTML a mano = no es un producto configurable, es un fork. Contradice 'vender CRMs multi-tenant'.",
+            "recommendation": "Extraer brand a variables CSS sobre-escribibles por tenant (color primario, logo, nombre de producto) cargadas desde config de tenant en runtime. Resolver primero la deriva #D4A85A vs #b89658 (un solo dueño del color)."
+          },
+          {
+            "severity": "P1",
+            "area": "Validación de entrada / Data sucia",
+            "file": "admin-app/src/modules/dealers/dealers.data.js:95-117; firestore.rules (concesionarios sin validVersion ni validación de nombre)",
+            "problem": "saveDealer escribe fields.nombre/direccion/telefono SIN validar ni sanear (no trim, no longitud, no formato). Así entra la data sucia tipo 'dfsfdfdfs' que reportó el dueño. El patrón se repite: domain/ solo tiene validación en format/phone/vehicle; el resto de módulos confía en input crudo. Las rules de concesionarios ni siquiera fuerzan _version.",
+            "impact": "Catálogos y CRM se llenan de basura → 'se siente hecho por IA / amateur', y en multi-tenant la data sucia de un cliente degrada percepción de calidad. Sin guardas server-side, un cliente malicioso o torpe corrompe sus colecciones.",
+            "recommendation": "Capa de validación reutilizable en domain/ (required/trim/maxLen/regex) aplicada en cada *.data.js antes de escribir, espejada en firestore.rules (la frontera real). Auditar y limpiar data existente como parte del GAP P0 de purga por sección."
+          },
+          {
+            "severity": "P1",
+            "area": "Modelo de datos / Naming inconsistente",
+            "file": "admin-app/src/modules/*/*.data.js (collection literals); firestore.rules",
+            "problem": "Nombres de colección Spanglish y dispersos como strings mágicos: usuarios/marcas/concesionarios/resenas/solicitudes/auditLog (ES) conviven con leads/contacts/deals/activities/knowledgeBase/departments/banners (EN). ~50 literales 'collection(db,\"x\")' repartidos en ~30 archivos sin constantes centralizadas.",
+            "impact": "Refactor a multi-tenant (prefijar/anidar colecciones) obliga a tocar ~30 archivos a mano = alto riesgo de regresión y de dejar una query sin migrar (fuga). El Spanglish delata origen 'por partes' y complica vender en mercados no hispanos.",
+            "recommendation": "Centralizar nombres de colección en un único módulo (p.ej. core/collections.js con helpers que ya incorporen el tenant path). Convención de naming única (preferible EN para producto internacional, con i18n en UI). Esto es prerrequisito habilitador del P0 de tenancy."
+          },
+          {
+            "severity": "P1",
+            "area": "GAP P0 — Borrado/purga owner-only por sección (UI)",
+            "file": "admin-app/src/modules/* (sin panel bulk-purge); functions/src/ops/crmPurge.js (infra existe)",
+            "problem": "El backend YA permite borrado por colección (rules gateadas en isSuperAdmin/crm.delete) y existe crmPurge server-side, pero NO hay UI de purga/borrado masivo owner-only por sección. El borrado es item-por-item con confirm() nativo. El dueño no puede limpiar una sección por sí mismo (queja verbatim).",
+            "impact": "El dueño depende de Claude/dev para limpiar data sucia → no es autoservicio, no escala a N tenants donde cada owner debe administrar su propio espacio.",
+            "recommendation": "Panel owner-only (gate isSuperAdmin/rol) por sección con bulk-delete/purge reutilizando reglas + callable crmPurge existentes, con modal de confirmación custom (no confirm() nativo) y doble confirmación para acciones críticas."
+          },
+          {
+            "severity": "P2",
+            "area": "Deuda strangler / Doble fuente de verdad RBAC",
+            "file": "admin-app/src/domain/rbac-catalog.js:1-11 (copia) ↔ js/admin/rbac-catalog.js (SSoT backend)",
+            "problem": "El catálogo de 71+ permisos está DUPLICADO: copia ESM en el portal nuevo y SSoT en el admin clásico que la CF seedSystemRoles fetchea. El comentario admite que todo permiso nuevo debe ir a AMBOS hasta el cutover F-6.",
+            "impact": "Divergencia garantizada bajo evolución (un permiso añadido en un lado y no en el otro = RBAC roto/silencioso). En producto vendible, el RBAC desincronizado es un riesgo de seguridad y soporte.",
+            "recommendation": "Cerrar el cutover F-6 (cuarentenar admin.html) para que la copia ESM quede única, o generar ambos desde un único artefacto compartido. Hasta entonces, un test que verifique paridad de IDs entre las dos listas."
+          },
+          {
+            "severity": "P2",
+            "area": "Escalabilidad de estado / cargas globales",
+            "file": "admin-app/src/modules/dealers/dealers.data.js:46-92; admin-app/src/modules/inbox/inbox.data.js:51-61; vehicles.data.js:36-40",
+            "problem": "Varias lecturas hacen full-scan de colección sin paginar: fetchDealerStats hace getDocs(collection 'vehiculos') + getDocs(deals won) completos en cliente; subscribeVehicles trae TODA 'vehiculos' por onSnapshot; fetchTeam trae todos los 'usuarios'. La regla de oro de inbox.data.js (siempre limit/paginar) NO se aplica de forma consistente en otros módulos.",
+            "impact": "Con 28 vehículos hoy va bien; con un tenant de gran empresa (miles de docs) estas lecturas full-scan disparan costo Firestore y latencia, y rompen la sensación 'top global'. Inconsistencia entre módulos = deuda de diseño.",
+            "recommendation": "Estandarizar paginación/agregación (limit + cursores, o contadores agregados/CFs para stats) en TODOS los *.data.js, no solo en inbox. Para stats de aliados, precomputar agregados server-side en vez de escanear vehiculos+deals en cliente."
+          },
+          {
+            "severity": "P2",
+            "area": "Theme dark-only (mandato de negocio)",
+            "file": "admin-app/src/core/theme.js; admin-app/index.html:2,6; admin-app/src/core/layout/shell.js:173-178; admin-app/src/core/store.js:44",
+            "problem": "Pese al mandato dark-only de Altorra, el default es light (index.html data-theme=\"light\", store.theme='light', color-scheme 'light dark') y existe un toggle ☀️/🌙 completo en el topbar. Esto choca con la identidad del producto y confunde.",
+            "impact": "Queja directa del dueño (toggle sin sentido). En multi-tenant, sin embargo, light/dark podría ser una preferencia POR TENANT — la decisión debe tomarse a nivel producto, no borrarse a ciegas.",
+            "recommendation": "Para Altorra: fijar data-theme='dark', store.theme='dark', remover themeBtn y el bloque :root light. Para producto: hacer 'tema permitido' una capability de tenant (dark-only / light-only / ambos), de modo que el toggle aparezca solo si el tenant lo habilita."
+          },
+          {
+            "severity": "P3",
+            "area": "Robustez de render / 'null' bajo headers",
+            "file": "admin-app/src/core/dom.js:6-23; admin-app/src/modules/dashboard/dashboard.ui.js (interpolaciones ${})",
+            "problem": "el() protege text/children null (líneas 9,19) pero NO las interpolaciones en template strings ${x}: un campo Firestore ausente renderiza literalmente 'null'/'undefined'. Es el candidato más probable del 'null' bajo Inicio/Vehículos reportado por el dueño (no reproducible solo por lectura estática).",
+            "impact": "Texto 'null' visible = se ve roto/amateur, opuesto a calidad Linear/Stripe. En multi-tenant con datos heterogéneos por cliente, el riesgo crece (más campos opcionales vacíos).",
+            "recommendation": "Helper de coerción segura para subtítulos/contadores derivados (fmt(x) que devuelva '' o un placeholder en null/undefined) y usarlo en todas las interpolaciones de dashboard/headers. Verificar en vivo con datos reales qué campo concreto llega null."
+          }
+        ]
+      },
+      {
+        "dimension": "Seguridad / RBAC / Owner-Delete",
+        "summary": "La frontera de seguridad REAL (firestore.rules + callables Admin SDK) está sorprendentemente madura para un producto en construcción: el dueño es inamovible (§212/§213 con triple anti-takeover en usuarios/roles), hay whitelists de claves anti-exfiltración, optimistic locking y bloqueo fiscal. PERO hay UN hueco P0 explotable: escalada de privilegios vía `roles.create`/`roles.edit` — la matriz de creación de roles expone los 71 permisos atómicos (incluidos users.create/users.edit/users.delete/roles.edit) sin ningún gate server-side que impida que un admin no-dueño se autoconceda permisos que él mismo no tiene, y el trigger onUserRoleAssigned los copia ciegamente al doc del usuario. Segundo P0: el scoping de datos (dataScope/nivel/departmentId) es 100% cosmético en cliente — NO existe en las rules, así que cualquier asesor con crm.read lee TODO el CRM (fuga de PII de toda la cartera, Ley 1581). Tercero, la queja del dueño es correcta y es un GAP de producto: NO existe borrado/purga masiva owner-only por sección (solo borrado item-por-item y un purge de 1 lead); el backend (reglas delete + crmPurge) ya lo permite, falta la UI. Además: acciones críticas usan confirm() nativo (no bloqueante de seguridad pero rompe la sensación premium y es fácil de mis-clickear en borrados).",
+        "findings": [
+          {
+            "severity": "P0",
+            "area": "RBAC — creación/edición de roles (escalada de privilegios)",
+            "file": "firestore.rules:1188-1197 + admin-app/src/modules/roles/roles.ui.js:46-111,191-201 + functions/index.js:3794-3876 (onUserRoleAssigned)",
+            "problem": "Un admin NO-dueño con el permiso `roles.create` (o `roles.edit`) puede fabricar un rol custom que incluya CUALQUIERA de los 71 permisos atómicos del catálogo — entre ellos `users.create`, `users.edit`, `users.delete`, `roles.edit`, `crm.delete`, `settings.backup`. La rule de roles SOLO exige `hasPermission('roles.create')` y `!isSystem`; NO valida que los permisos otorgados sean un subconjunto de los que el creador ya posee. buildMatrix() en roles.ui.js muestra el catálogo COMPLETO sin filtrar por lo que el usuario tiene. Luego basta asignarse ese rol (o asignárselo a un cómplice) y el trigger onUserRoleAssigned copia `role.permissions` al doc usuarios/{uid} sin verificación. Resultado: privilege escalation horizontal+vertical. El único techo es '*' (wildcard) que la UI no ofrece y §217 impide mintar — pero `users.edit`+`users.create` ya equivale a control casi total del panel.",
+            "impact": "Cualquier empleado con gestión de roles toma control efectivo del sistema: crea usuarios, edita/bloquea a otros, exporta el CRM, borra datos. Rompe el modelo de menor privilegio. En un producto multi-tenant vendible esto es catastrófico (un admin de un cliente escala dentro de su tenant).",
+            "recommendation": "Mover la creación/edición de roles a un callable Admin SDK que valide subset: el caller solo puede otorgar permisos que él mismo tiene (o exigir isOwner para tocar permisos `critical:true`/de Configuración). Como defensa-en-profundidad, en rules de `roles` rechazar en create/update si el request.resource.data.permissions contiene perms de la categoría users.*/roles.* salvo isSuperAdmin(). En la UI, filtrar buildMatrix() a los permisos del store.permissions del creador y deshabilitar (no solo ocultar) los críticos."
+          },
+          {
+            "severity": "P0",
+            "area": "Confidencialidad de datos — dataScope/nivel/departamento no enforced",
+            "file": "firestore.rules (ausente: grep dataScope/nivel/departmentId = 0 matches salvo comentario :1202) vs admin-app/src/core/auth.js:31-38 + usuarios.data.js:101-125",
+            "problem": "El modelo de alcance de datos (dataScope: all/department/own, nivel jerárquico, departmentId) se materializa en el cliente (rbacFromProfile) y se guarda en el doc del usuario, pero NO se aplica en NINGUNA regla de Firestore. Las reglas de leads/contacts/activities/deals/solicitudes solo exigen `hasPermission('crm.read')` (líneas 421,467,488,568,666). Un asesor con dataScope:'own' que debería ver solo sus leads, vía un getDocs directo (o la consola, o un cliente modificado) lee TODA la colección: nombres, teléfonos, emails, comentarios de toda la cartera.",
+            "impact": "Fuga de PII de todos los clientes a cualquier asesor — viola Habeas Data (Ley 1581 CO, ya citada como concern en las propias reglas). En multi-tenant sería fuga cross-departamento. El dueño cree que el scoping protege; es teatro.",
+            "recommendation": "O (a) enforcar el scope en rules (campo ownerId/departmentId en cada doc + comparación con el doc del caller vía get()), aceptando el costo de lecturas en reglas; o (b) servir el CRM filtrado SOLO por callables/queries server-side y cerrar la lectura directa de las colecciones a quienes no son 'all'. Mínimo: documentar explícitamente que el scope es cosmético hasta ④b y no venderlo como control de seguridad."
+          },
+          {
+            "severity": "P0",
+            "area": "Owner-delete / purga por sección (GAP de producto — queja del dueño)",
+            "file": "admin-app/src/modules/* (ausente) · backend disponible: firestore.rules:104,128,163,326,342,424,587 (delete por sección) + functions/src/ops/crmPurge.js:44 (crmPurgeLead, 1 lead) + inbox.data.js:172",
+            "problem": "No existe ninguna UI de borrado/purga MASIVA por sección reservada al dueño. Hay borrado item-por-item (vehiculos, marcas, usuarios, roles, reseñas, banners, FAQs) y un único purge en cascada de UN lead (crmPurgeLead, super-admin-gated). El backend YA habilita delete por colección bajo isSuperAdmin()/`*.delete`, pero el dueño no tiene un botón 'vaciar/purgar esta sección'. La data sucia que el dueño reporta ('dfsfdfdfs', concesionario basura) solo se limpia a mano uno por uno.",
+            "impact": "El dueño no puede higienizar el sistema por sí mismo (su queja literal). Para un producto base vendible, 'el owner gestiona y purga sus secciones' es funcionalidad esperada.",
+            "recommendation": "Añadir un panel owner-only (gate isOwner/isSuperAdmin server-side, NO solo UI) por sección con bulk-delete/purge: callable Admin SDK que recorra la colección en batches (patrón ya escrito en crmPurge.js deleteRefs), con confirmación de doble paso + audit log. Reusar la infra de crmPurge.js. NUNCA gatear solo en cliente."
+          },
+          {
+            "severity": "P1",
+            "area": "Owner-detection drift entre capas (riesgo de bypass/denial futuro)",
+            "file": "functions/src/ops/crmBackup.js:51 + functions/src/ops/crmPurge.js:29 (rol==='super_admin' SOLO) vs functions/index.js:800-806 isOwnerData (3 formas) vs firestore.rules:64-67 isOwnerDoc",
+            "problem": "Hay TRES definiciones distintas de 'dueño/super-admin'. index.js isOwnerData() y rules isOwnerDoc() reconocen 3 formas (rol legacy, roleId='system_super_admin', permissions incluye '*'). Pero los gates de crmBackup (export/restore) y crmPurge (borrado físico) verifican ÚNICAMENTE `callerData.rol === 'super_admin'` (campo legacy). El propio código planea limpiar ese campo legacy en 'R8 cleanup'. El día que se limpie, el dueño real (con roleId/'*' pero sin `rol`) perderá backup/restore/purga; y un usuario al que se le setee `rol:'super_admin'` por otra vía (que las rules ya no consideran único dueño) podría operar export/restore del CRM completo.",
+            "impact": "Inconsistencia que es a la vez riesgo de denial (dueño bloqueado tras R8) y de bypass (gate más débil que el canónico). Export = exfiltración de TODO el CRM a Storage; restore = sobrescritura masiva.",
+            "recommendation": "Unificar: que crmBackup.js y crmPurge.js usen el mismo isOwnerData() canónico (3 formas) en vez de `rol==='super_admin'`. Extraer isOwnerData a functions/shared y consumirlo en los 3 callables. Añadir un test de paridad de owner-detection (ya hay firestore-rules-212-owner.test.js para rules)."
+          },
+          {
+            "severity": "P1",
+            "area": "Validación de versión inconsistente en delete/create de varias colecciones",
+            "file": "firestore.rules:104-105 (vehiculos delete), 124-129 (concesionarios create/update SIN validVersion), 322-327 (resenas create/update SIN validVersion)",
+            "problem": "El optimistic locking (validVersion/validCreateVersion) se aplica en vehiculos/marcas/banners/contacts/deals update, pero NO en concesionarios (create/update) ni reseñas (create/update) ni en ningún delete. Inconsistencia de invariante: un cliente que escribe concesionarios o reseñas puede pisar cambios concurrentes sin detección, y la coherencia de _version que otras capas asumen no está garantizada en estas colecciones.",
+            "impact": "Lost-update / corrupción silenciosa en aliados y reseñas bajo edición concurrente (escenario real con varios asesores). Menor que P0 pero es deuda de consistencia que se hereda al producto multi-tenant.",
+            "recommendation": "Decidir una política uniforme de _version y aplicarla (o documentar por qué algunas colecciones quedan exentas). Como mínimo añadir validVersion a concesionarios.update y resenas.update."
+          },
+          {
+            "severity": "P1",
+            "area": "UX de acciones críticas — confirm()/prompt() nativos del navegador",
+            "file": "vehicles.ui.js:109, roles.ui.js:219, usuarios.ui.js:191, departamentos.ui.js:128, contacts.edit.js:111,156, hub.ui.js:279,290,323, cerebro.ui.js:139,154, inbox.ui.js:507,508, unmatched.ui.js:84, vehicles/wizard.js:680,682 (16 sitios; ya existe modal custom .rev-modal en vehicles.ui.js:340)",
+            "problem": "16 acciones destructivas/críticas (borrar usuario, borrar rol, borrar departamento, purgar lead, etc.) confirman con window.confirm() nativo. Además de verse 'no premium' (queja del dueño), el confirm() nativo es fácil de mis-clickear y no transmite la gravedad (sin diferenciación visual de acción peligrosa). Ya existe un modal custom (.rev-modal en confirmDelete de vehicles) que NO se reutiliza.",
+            "impact": "Riesgo de borrado accidental + ruptura de la sensación de producto top global (Linear/Stripe no usan confirm() nativo). En borrados de usuarios/roles el coste de un mis-click es alto.",
+            "recommendation": "Extraer un confirmDialog() a core/ (basado en .rev-modal) con variante 'danger' que requiera tipear el nombre del recurso para borrados de alto impacto (usuarios/roles/purga), y reemplazar los 16 confirm()/prompt() nativos."
+          },
+          {
+            "severity": "P2",
+            "area": "Degradación insegura del perfil ante fallo de lookup",
+            "file": "admin-app/src/core/auth.js:52-57 (hydrateProfile catch)",
+            "problem": "Si el getDoc de usuarios/{uid} falla (red/permiso), la sesión queda ACTIVA con permissions:[] y profile:null. El comentario dice que la UI 'degrada a solo-lectura', pero la frontera real son las rules; esto es fail-open a nivel de sesión (el usuario sigue autenticado). No es un bypass de rules, pero un atacante que pueda inducir el fallo (ej. denegar la lectura de su propio doc) mantiene sesión sin que se evalúe su estado bloqueado/no-bloqueado en ese path (el chequeo bloqueado solo corre en el camino feliz, líneas 44-50).",
+            "impact": "Un usuario recién bloqueado cuyo lookup falle podría conservar sesión activa (las rules siguen protegiendo escrituras, pero la señal de 'bloqueado' del cliente se pierde). Defensa-en-profundidad debilitada.",
+            "recommendation": "Ante fallo de lookup, preferir cerrar sesión (signOut) o reintentar, en vez de continuar con permissions vacíos; o al menos no marcar ready hasta confirmar el estado bloqueado."
+          },
+          {
+            "severity": "P2",
+            "area": "Sincronía de catálogo RBAC duplicado (cliente vs backend)",
+            "file": "admin-app/src/domain/rbac-catalog.js:6-10 (comentario) vs js/admin/rbac-catalog.js (SSoT backend que seedSystemRoles fetchea)",
+            "problem": "Existen DOS catálogos de permisos (el del portal nuevo y el legacy que la CF seedSystemRoles consume). El comentario admite que deben mantenerse idénticos 'a mano' hasta el cutover F-6. Una deriva (permiso nuevo en uno y no en otro) produce roles con permisos que las rules no reconocen, o UI que ofrece permisos que el backend no siembra → comportamiento de autorización impredecible.",
+            "impact": "Riesgo de huecos/inconsistencias de autorización por desincronía manual. Crece con cada permiso nuevo.",
+            "recommendation": "Single source of truth: que el portal nuevo importe el catálogo desde el mismo módulo que la CF, o generar ambos desde un JSON compartido + test de paridad en CI (similar a los firestore-rules-*.test.js existentes)."
+          },
+          {
+            "severity": "P2",
+            "area": "automationLog / events / auditLog create demasiado permisivos",
+            "file": "firestore.rules:808-809 (auditLog create por audit.read), 822-823 (automationLog create por cualquier auth), 926-927 (events create por cualquier auth)",
+            "problem": "Cualquier usuario autenticado (incluido anónimo del sitio público, que también obtiene auth) puede crear documentos en automationLog y events sin validación de forma/contenido; auditLog acepta create con solo audit.read. Sin whitelist de claves ni caps, son canales de inyección de ruido/relleno (1MB/doc) en colecciones que la UI admin muestra como hechos de auditoría.",
+            "impact": "Contaminación del log de auditoría/actividad (anti-forense: un atacante puede sembrar entradas falsas), y costo/abuso de escritura. Debilita la confiabilidad del audit trail que el resto del sistema asume inmutable y veraz.",
+            "recommendation": "Restringir create a isAuthenticated() con perfil admin (hasProfile + algún permiso), añadir whitelist de claves + caps de tamaño (patrón ya usado en solicitudes/subscriptions), y para auditLog considerar que solo el Admin SDK/triggers escriban."
+          },
+          {
+            "severity": "P3",
+            "area": "Reseña de superficie pública — config read:true y system read:true",
+            "file": "firestore.rules:1064 (config read:true), 1162 (system read:true), 877 (knowledgeBase read:true)",
+            "problem": "config/*, system/* y knowledgeBase son world-readable (necesario para el form público / SSG / bot). Está justificado en comentarios, pero implica que cualquier dato que un admin guarde por error en config/system queda expuesto públicamente (ej. si alguien mete un secreto o PII en config). Es un riesgo de mal-uso, no un bug.",
+            "impact": "Bajo, pero en un producto vendible conviene un guard de forma para que estas colecciones públicas no acepten claves arbitrarias con texto libre largo.",
+            "recommendation": "Documentar/forzar que config/system solo contengan los docs esperados (counters/bookedSlots/calendarConfig/availability/...) y añadir whitelist de claves donde sea viable, para evitar exfiltración accidental por un admin."
+          }
+        ]
+      },
+      {
+        "dimension": "UX-FLUJO",
+        "summary": "El flujo lead→calificar→deal→vender está bien pensado conceptualmente (Bandeja=triage, Pipeline=ventas, conversión canónica en un diálogo <45s con Deshacer, gates acumulados en un solo prompt) y eso es lo mejor del CRM. Pero la EJECUCIÓN de layout es inconsistente y se siente \"hecho por IA\": cada módulo reinventa su propio manejo de scroll/altura, y Vehículos (el de las quejas) simplemente lo olvidó → el inventario se corta sin scroll. No hay contenedor de contenido con padding y ancho máximo a nivel del shell, por eso \"se pega al sidebar\" y \"sobra a la derecha\" en TODOS los módulos. Hay copy de \"modo desarrollador\", confirm() nativos del navegador en 16 sitios, un toggle de tema que contradice el mandato dark-only, y un onboarding inexistente (estados vacíos sin CTA). Un asesor novato entrando por primera vez no tiene guía de \"qué hago primero\", y la doble entrada de captura (Lead rápido vs Completo) confunde sin explicar la diferencia.",
+        "findings": [
+          {
+            "severity": "P0",
+            "area": "Layout / Inventario (Vehículos)",
+            "file": "admin-app/src/styles/shell.css:108 + admin-app/src/styles/vehicles.css:6",
+            "problem": "RAÍZ del 'inventario se corta y no hace scroll'. El contenedor de contenido `.outlet` tiene `flex:1 1 auto; min-height:0; overflow:hidden; display:flex` (shell.css:108). Cada módulo DEBE manejar su propia altura/scroll dentro de ese flex de altura fija. Dashboard (`.dash{height:100%}` dashboard.css:7 + `.dash__body{flex:1;min-height:0;overflow-y:auto}`:8-9), Agenda (`.agenda{height:100%}` agenda.css:5 + `:20 overflow-y:auto`) e Inbox (`.inbox__list{overflow-y:auto}` inbox.css:19) lo hacen. PERO `.veh` (vehicles.css:6) solo declara `display:flex; flex-direction:column` SIN `height:100%`, SIN `flex:1; min-height:0` y SIN `overflow-y:auto`. Resultado: la lista desborda el outlet de altura fija y queda RECORTADA, imposible de scrollear. Los únicos `overflow-y:auto` en vehicles.css están en el modal del wizard (:65) y el panel de auditoría (:118), no en la lista.",
+            "impact": "El dueño NO puede ver más allá de los primeros N vehículos de su propio inventario — funcionalidad de negocio rota en el módulo central. Es el bug nº1 reportado verbatim.",
+            "recommendation": "Fix SISTÉMICO (no parchar solo Vehículos): mover el scroll y el padding/ancho al `.outlet` una sola vez — `.outlet{ overflow-y:auto; display:block; padding: var(--s-5) var(--s-6); }` + un wrapper interno `max-width` centrado (ver P1 'sobra a la derecha'). Quitar el `overflow:hidden` y el `display:flex` del outlet. Luego retirar el manejo ad-hoc de altura/scroll de cada módulo (dash/agenda/inbox) para que todos hereden el mismo comportamiento. Esto resuelve el recorte de Vehículos Y cualquier otro módulo que 'olvide' su scroll en el futuro."
+          },
+          {
+            "severity": "P0",
+            "area": "Captura de lead / integridad de datos",
+            "file": "admin-app/src/modules/capture/quick-lead.js:123 + new-lead.js:110",
+            "problem": "Ambos formularios de captura escriben OPTIMISTA sin esperar ack del server (`addDoc(...).catch(...)` y `createManualLead(...).catch(...)`) y muestran toast de éxito de inmediato. Si el server RECHAZA (reglas, validación), el lead 'aparece registrado' pero el .catch dispara un toast de error que ya se perdió de vista. Para un asesor novato sin offline real (está online), esto significa que un lead puede creerse capturado y NO estarlo. El patrón offline-first es correcto para sin-señal, pero online se debería confirmar (o al menos el error debe ser un modal, no un toast efímero).",
+            "impact": "Pérdida silenciosa de leads = pérdida de dinero directa. El novato confía en el ✓ y no vuelve a verificar.",
+            "recommendation": "Cuando navigator.onLine: esperar el ack (o usar el snapshot de la Bandeja como confirmación visible) y, si el server rechaza, mostrar un MODAL bloqueante con el lead intacto para reintentar — nunca un toast que desaparece. Mantener el camino optimista SOLO sin señal."
+          },
+          {
+            "severity": "P1",
+            "area": "Layout global / 'sobra a la derecha' + 'pegado al sidebar'",
+            "file": "admin-app/src/core/design-system/crm-tokens.css:30-33 (no existe --content-max)",
+            "problem": "No hay token de ancho máximo de contenido ni contenedor centrado. El grid del shell es `var(--sidebar-w) 1fr` (shell.css:7) y cada módulo se pinta a sangre completa con su propio padding inconsistente (inbox usa `var(--s-6)`, vehicles `var(--s-1) 0`, dashboard `var(--s-5) var(--s-6)`). En pantallas anchas el contenido se estira de borde a borde o, peor, queda flush-izquierda con un vacío muerto a la derecha. El copy 'modo desarrollador' de Vehículos queda pegado al borde por esto mismo.",
+            "impact": "Se ve amateur e inconsistente entre secciones; rompe la sensación 'Linear/Stripe/Notion'. Es la queja 'se pega al sidebar / sobra a la derecha'.",
+            "recommendation": "Introducir `--content-max: ~1200-1320px` y un wrapper `.outlet__inner{ max-width:var(--content-max); margin-inline:auto; width:100% }` aplicado por el shell, con padding lateral uniforme. Eliminar los paddings laterales por-módulo para que todos compartan el mismo gutter."
+          },
+          {
+            "severity": "P1",
+            "area": "Acciones críticas / profesionalismo",
+            "file": "admin-app/src/modules/inbox/inbox.ui.js:507-508; hub.ui.js:279,290,323; vehicles/wizard.js:680,682; vehicles.ui.js:109; usuarios.ui.js:191; roles.ui.js:219; departamentos.ui.js:128; cerebro.ui.js:139,154; unmatched.ui.js:84; contacts.edit.js:111,156",
+            "problem": "16 usos de window.confirm()/prompt()/alert() nativos del navegador para acciones críticas (eliminar lead, fusionar contactos, cerrar/transferir conversación, borrar usuario/rol/departamento, publicar vehículo, suprimir datos personales con prompt('escribe SUPRIMIR')). El diálogo nativo del navegador rompe completamente la marca dark-only/dorada y grita 'hecho por IA'. Ya existe un modal custom (.rev-modal en vehicles.ui.js:340) que demuestra que saben hacerlo bien — pero no se extrajo a core ni se reutilizó.",
+            "impact": "Inconsistencia visual brutal en los momentos de mayor confianza requerida; un comprador empresarial lo descarta de inmediato como no-premium.",
+            "recommendation": "Extraer un `core/confirm.js` (modal de confirmación con título/cuerpo/botones renombrables y variante 'escribe X para confirmar') a partir del .rev-modal existente, y reemplazar los 16 confirm/prompt nativos. Es un cambio aditivo de alto impacto/bajo riesgo."
+          },
+          {
+            "severity": "P1",
+            "area": "Onboarding / asesor novato",
+            "file": "admin-app/src/modules/vehicles/vehicles.ui.js:462-466; deals.ui.js:302-308; contacts.list.js:104-106; dashboard.ui.js:148-153",
+            "problem": "Los estados vacíos son callejones sin salida: 'Inventario vacío' (sin botón crear), 'Embudo vacío: Convierte un lead desde la Bandeja' (sin link a la Bandeja), Contactos 'Sin resultados'. El Pipeline al menos explica de dónde vienen los deals pero no enlaza. No hay NINGÚN onboarding ni 'primeros pasos' para el asesor que entra por primera vez: el Dashboard saluda pero si no hay datos solo dice '¡Sin acciones urgentes!'. Un novato no sabe que el flujo es: capturar en Bandeja → calificar → Pipeline → vender.",
+            "impact": "Curva de aprendizaje innecesaria; el primer día el asesor no sabe por dónde empezar. Para un producto vendible multi-tenant, el onboarding implícito es un bloqueador de adopción.",
+            "recommendation": "Estados vacíos ACCIONABLES: cada uno con su CTA primario ('＋ Nuevo vehículo', '⚡ Registrar primer lead', 'Ir a la Bandeja'). Añadir un mini-tour/checklist de primeros pasos en el Dashboard cuando el tenant está vacío (capturar lead → calificar → cerrar venta)."
+          },
+          {
+            "severity": "P1",
+            "area": "Captura — doble entrada confusa",
+            "file": "admin-app/src/modules/inbox/inbox.ui.js:85-88 + core/layout/shell.js:201-204",
+            "problem": "Existen DOS formularios de captura casi idénticos sin diferencia clara para el novato: '⚡ Lead rápido' (quick-lead.js: nombre+tel+fuente) y '＋ Completo' (new-lead.js: +email, canal, interés, tráfico, campaña, vehículo). En la Bandeja aparecen ambos botones juntos (inbox.ui.js:85/87); en el topbar global solo el rápido (shell.js:202). El novato no sabe cuándo usar cuál, y los campos de consentimiento Ley 1581 difieren entre los dos (quick: checkbox 'leí el guion'; completo: checkbox pre-marcado checked:true — riesgo legal de consentimiento asumido).",
+            "impact": "Fricción de decisión + inconsistencia de consentimiento (el 'completo' viene pre-aceptado, lo que es problemático bajo Habeas Data).",
+            "recommendation": "Unificar en UN formulario progresivo (rápido por defecto, 'más campos' expande inline) o etiquetar claramente cuándo usar cada uno. NUNCA pre-marcar el consentimiento (new-lead.js:36 `checked:true`) — debe ser acción explícita como en quick-lead."
+          },
+          {
+            "severity": "P1",
+            "area": "Tema claro/oscuro contradice mandato dark-only",
+            "file": "admin-app/index.html:2,6 + core/theme.js + core/layout/shell.js:173-178",
+            "problem": "Altorra es dark-only por mandato, pero index.html arranca `data-theme=\"light\"` (default CLARO) y `color-scheme:light dark`; theme.js implementa toggle completo persistido; shell.js:173-178 renderiza un botón ☀️/🌙 en el topbar; el store arranca en 'light'. Un asesor puede dejar el CRM en modo claro y romper la identidad dorada/oscura. El toggle no aporta valor de negocio y añade superficie de bug.",
+            "impact": "Identidad de marca rota + complejidad innecesaria (queja verbatim del dueño).",
+            "recommendation": "Fijar `data-theme=\"dark\"` en index.html, eliminar el themeBtn (shell.js:173-178) y el toggle de theme.js, store.theme default 'dark', y limpiar el bloque :root light de tokens.css. Mantener applyInitialTheme solo si se quiere respetar prefers-color-scheme, pero sin UI de cambio."
+          },
+          {
+            "severity": "P1",
+            "area": "Conversión / Pipeline — selección de vehículo a escala",
+            "file": "admin-app/src/modules/capture/convert-dialog.js:25,71-75 + deals/deals.data.js fetchAvailableVehicles",
+            "problem": "El diálogo de Calificar→crear negocio elige el vehículo con un `<select>` plano que carga TODO el inventario disponible como <option> (convert-dialog.js:71-75). Con 28 vehículos hoy va bien, pero a 100-300+ (o multi-tenant con concesionarios grandes) es inusable: sin búsqueda, sin filtro, scroll infinito de opciones. Mismo patrón en otros selects de inventario.",
+            "impact": "Fricción creciente en LA acción más importante del CRM (la conversión); no escala para el producto vendible.",
+            "recommendation": "Reemplazar el <select> por un combobox con búsqueda/typeahead (marca+modelo+placa) o un mini-picker. Reutilizable en convert-dialog, retoma y cualquier punto que elija vehículo."
+          },
+          {
+            "severity": "P2",
+            "area": "Copy 'modo desarrollador'",
+            "file": "admin-app/src/modules/vehicles/vehicles.ui.js:439",
+            "problem": "Texto verbatim: 'X vehículos — alimentan el catálogo público y sus páginas (el generador corre cada 4h).' Expone detalle de implementación (cron de 4h, 'generador') al usuario final. La confirmación de revertir auditoría (vehicles.ui.js:109) y el banner de agenda con `border:1px dashed` (agenda.ui.js:25) tienen el mismo tono técnico/borrador.",
+            "impact": "Se siente interno/no-terminado; resta credibilidad premium (queja verbatim).",
+            "recommendation": "Reescribir a lenguaje de negocio ('28 vehículos publicados en tu sitio') y quitar referencias a crons/generadores. Quitar los bordes dashed de banners informativos (estética de 'placeholder')."
+          },
+          {
+            "severity": "P2",
+            "area": "Riesgo de 'null'/'undefined' renderizado",
+            "file": "admin-app/src/core/dom.js:12,18-20 (guard) vs interpolaciones ${} en dashboard.ui.js, deals.ui.js, inbox.ui.js",
+            "problem": "El helper el() SÍ omite `text:` null (dom.js:9,19) — por eso no hay literal 'null' en atributos. PERO las plantillas con `${x}` dentro de strings (p.ej. deals.ui.js:380 `${deal.name}`, dashboard sub-textos, lead-card__what) renderizan 'null'/'undefined' si el campo Firestore llega ausente, porque la coerción a String ocurre antes del guard. La queja del dueño ('null bajo Inicio/Vehículos') apunta a un campo derivado de dato sucio (ver 'dfsfdfdfs'). No es reproducible solo por lectura estática — requiere validación live con datos reales.",
+            "impact": "Texto roto visible bajo headers = se ve buggy. Correlaciona con la data sucia.",
+            "recommendation": "Auditar en vivo qué campo llega null bajo Inicio/Vehículos y blindar las interpolaciones con `?? ''` o un helper `txt(v)`; añadir defaults en la capa de enriquecimiento. Validar con la extensión Chrome sobre datos reales."
+          },
+          {
+            "severity": "P2",
+            "area": "Pipeline — densidad del kanban en pantallas pequeñas",
+            "file": "admin-app/src/modules/deals/deals.ui.js:312-328 + drag-drop",
+            "problem": "El embudo pinta TODAS las etapas abiertas (OPEN_STAGES, ~7 columnas) en un board horizontal. Con el outlet sin scroll horizontal propio y muchas etapas, en pantallas medianas las columnas se comprimen o requieren scroll-x no señalizado. El drag-drop es la interacción primaria pero hay un fallback de menú 'mover' (bien), aunque el novato puede no descubrirlo.",
+            "impact": "Fricción para mover deals en pantallas no-anchas; descubribilidad del fallback baja.",
+            "recommendation": "Asegurar scroll-x explícito y con indicador en el board; hacer el botón '↔ Mover etapa' más visible. Verificar en viewport real."
+          },
+          {
+            "severity": "P3",
+            "area": "Consistencia de iconografía (emoji vs SVG)",
+            "file": "admin-app/src/core/layout/shell.js:40-77 (NAV icons emoji) + nav-icons.js fallback",
+            "problem": "El sidebar usa emoji (🏠📥🎯…) con fallback a SVG según exista en el set (shell.js:31-36). Botones de fila y acciones también mezclan emoji (✏️🗑★⚡🎯) con SVG inline (inbox usa SVG; vehicles/deals usan glyphs/emoji). La mezcla emoji+SVG en la misma superficie es lo que más delata el 'hecho por IA'.",
+            "impact": "Inconsistencia visual fina que rompe la sensación premium.",
+            "recommendation": "Completar el set SVG (nav-icons.js) para los 24 ítems y para las acciones de fila; eliminar emoji de la UI estructural (dejar emoji solo donde sea expresivo, p.ej. estados vacíos)."
+          },
+          {
+            "severity": "P3",
+            "area": "Snackbar Deshacer — estilos inline hardcodeados",
+            "file": "admin-app/src/modules/capture/convert-dialog.js:131-143 + deals.ui.js:89-98",
+            "problem": "Los snackbars de 'Deshacer' usan estilos inline con colores hardcodeados de fallback (`background: var(--bg-elev, #1c1a17)`, `var(--line, #444)`) que NO son tokens del design system (el sistema usa --surface-*/--ink-*). Si el token no existe, cae a hex crudos que no respetan el tema.",
+            "impact": "Pequeña deriva visual del design system en un componente recurrente.",
+            "recommendation": "Mover el snackbar a una clase en components.css usando tokens reales (--surface-acrylic-hi, --surface-stroke, --shadow-32) y reutilizar entre convert-dialog y pipeline."
+          }
+        ]
+      },
+      {
+        "dimension": "Diseño visual premium (admin-app CRM)",
+        "summary": "La BASE de diseño es de clase mundial: tokens.css es un sistema maduro (paleta gold completa, ink scale, sombras Fluent, motion curves, type ramp) y components.css usa esos tokens con disciplina. El problema NO son los tokens sino la EJECUCIÓN y la consistencia: (1) raíz estructural rota — el .outlet es overflow:hidden de altura fija y cada módulo reinventa su propio scroll-container; los 3 módulos de \"sitio web\" (vehículos/marcas/banners) + listas/config NO lo implementaron → se cortan, no scrollean y quedan flush al sidebar con espacio muerto a la derecha; (2) mezcla emoji+SVG por todo el chrome (sidebar SÍ es SVG limpio, pero topbar, menús, botones de fila y empty-states siguen en emoji) → se ve amateur/\"hecho por IA\"; (3) el mandato DARK-ONLY de la marca está violado: arranca en light, hay toggle de tema, y conviven dos golds distintos (#D4A85A vs #b89658). El veredicto: a un paso de top-global, frenado por inconsistencia sistémica, no por falta de fundamentos.",
+        "findings": [
+          {
+            "severity": "P0",
+            "area": "Layout / scroll (módulo Vehículos y hermanos)",
+            "file": "admin-app/src/styles/shell.css:108 + admin-app/src/styles/vehicles.css:6",
+            "problem": "El .outlet es `flex:1 1 auto; min-height:0; overflow:hidden; display:flex` (altura fija, sin scroll, sin padding, sin max-width). El módulo Vehículos `.veh` (vehicles.css:6) declara solo `display:flex; flex-direction:column; padding: var(--s-1) 0 var(--s-6)` — SIN `height:100%`, SIN `overflow-y:auto` y con padding horizontal CERO. Resultado exacto de la queja: la lista desborda el contenedor de altura fija y se RECORTA sin posibilidad de scroll; el contenido queda pegado al sidebar (0 padding izq) y, en pantallas anchas, flush a la izquierda con espacio muerto a la derecha (sin max-width centrado). Mismo defecto en marcas (brands.css:6 .brd), banners (banners.css:7 .ban), listas (lists.css:7 .lst) y config (config.css:3 .cfg). Los demás módulos SÍ tienen el patrón correcto (dashboard.css:7-12, reportes, inbox, contactos, etc. con `height:100%` + `__host{overflow-y:auto; padding lateral}`), lo que prueba que es un olvido por-módulo, no una decisión.",
+            "impact": "Inventario inusable: no se ve todo el catálogo ni recargando. Es la queja P0 literal del dueño y rompe la percepción premium de inmediato. Afecta ≥5 secciones.",
+            "recommendation": "Arreglo SISTÉMICO en la raíz, no parche por módulo: dar al .outlet `overflow-y:auto` + padding lateral (ej. `padding: var(--s-5) var(--s-6)`) + un wrapper interno `max-width: var(--container)` centrado (`margin-inline:auto`), y quitar `overflow:hidden`. Luego eliminar los `height:100%/overflow-y:auto` redundantes de cada módulo para no duplicar scrollbars. Esto resuelve corte + flush-sidebar + espacio-muerto de una sola vez y vuelve el padding consistente en TODO el app."
+          },
+          {
+            "severity": "P1",
+            "area": "Identidad de marca / tema DARK-ONLY",
+            "file": "admin-app/index.html:2,6 + admin-app/src/core/theme.js:10-25 + admin-app/src/core/layout/shell.js:173-178",
+            "problem": "La marca es DARK-ONLY pero el CRM arranca en CLARO: `<html data-theme=\"light\">` (index.html:2), `color-scheme:\"light dark\"` (index.html:6), theme.js respeta `prefers-color-scheme` y persiste light/dark, y shell.js:173 renderiza un toggle ☀️/🌙 en el topbar. Un toggle de tema en un producto dark-only no tiene sentido (queja del dueño) y, peor, el modo claro probablemente nunca fue pulido a nivel premium → cualquiera que entre con SO en claro ve la versión menos cuidada.",
+            "impact": "Incoherencia de identidad de marca en el producto que se quiere vender como referente top-global; el primer render para muchos usuarios será el tema equivocado.",
+            "recommendation": "Fijar `data-theme=\"dark\"` en index.html, `color-scheme: dark`, eliminar el themeBtn del topbar (shell.js:173-178) y el toggle de theme.js (dejar solo applyInitialTheme forzando dark), y retirar el bloque `:root` light de tokens.css si se confirma dark-only. Mantener las variables dark como únicas."
+          },
+          {
+            "severity": "P1",
+            "area": "Iconografía — mezcla emoji/SVG (look 'hecho por IA')",
+            "file": "admin-app/src/modules/vehicles/vehicles.ui.js:217,220,225,234,249,463 + shell.js:174,189,191 + dashboard.css:64,71,97",
+            "problem": "El sidebar YA migró a SVG inline limpio (nav-icons.js cubre TODOS los ids), pero el resto del chrome sigue en EMOJI: botones de fila de Vehículos (✏️ editar, 📋 duplicar, 🕘 historial, ★/☆ destacar, 🗑 eliminar — vehicles.ui.js:217-249), el toggle de tema ☀️/🌙 (shell.js:174), los ítems del menú de usuario 👤/🚪 (shell.js:189-191), empty-states (🚗 vehicles.ui.js:463), y los emoji decorativos del dashboard (👋, ⚠️, ℹ️). Los emoji se renderizan con la fuente de cada SO (Segoe UI Emoji en Windows, Apple Color Emoji en Mac) → tamaño, color y peso inconsistentes, imposible alinearlos con el trazo Feather/Lucide del sidebar. Es la señal #1 de 'amateur/AI-generado'.",
+            "impact": "Rompe la cohesión visual justo en las acciones más vistas (botones de fila). Un evaluador percibe 'plantilla' al instante; aleja del estándar Linear/Stripe.",
+            "recommendation": "Extender nav-icons.js (o crear icons.js) con el set de acciones (edit, copy, clock, star, trash, sun/moon, user, logout, car, warning) en SVG inline currentColor 1.9px y reemplazar TODOS los emoji de UI funcional. Dejar emoji solo en contenido de usuario, nunca en chrome. Unifica peso/tamaño y hace que cada botón herede color del tema."
+          },
+          {
+            "severity": "P1",
+            "area": "Copy de producto — tono 'modo desarrollador'",
+            "file": "admin-app/src/modules/vehicles/vehicles.ui.js:439,128",
+            "problem": "Header de Vehículos renderiza verbatim: '28 vehículos — alimentan el catálogo público y sus páginas (el generador corre cada 4h).' (vehicles.ui.js:439). Expone detalle de infraestructura (un 'generador' que 'corre cada 4h') que ningún usuario de negocio debe ver — es lenguaje de dev. El patrón se repite en el modal de borrado: 'su página pública muere en la próxima corrida del generador (máx 4h)' (vehicles.ui.js:128). Además, por el bug P0 de padding, este texto aparece pegado al borde.",
+            "impact": "Mina la sensación de producto pulido/profesional; suena a herramienta interna, no a CRM vendible a grandes empresas.",
+            "recommendation": "Reescribir a lenguaje de negocio: ej. '28 vehículos publicados en el sitio' y, en el borrado, 'Dejará de mostrarse en el sitio en pocos minutos'. Esconder por completo la mecánica del CI/generador. Idealmente centralizar copys en un módulo de strings para auditarlos."
+          },
+          {
+            "severity": "P1",
+            "area": "Modal custom — calidad visual inferior al resto del sistema",
+            "file": "admin-app/src/styles/reviews.css:40-58",
+            "problem": "El modal reutilizado en TODO el app (.rev-modal__overlay/.rev-modal) vive solo en reviews.css y tiene ejecución pobre frente al lenguaje Fluent del sistema: scrim plano `rgba(0,0,0,0.55)` SIN backdrop-blur, la caja SIN box-shadow (las superficies del sistema usan --shadow-16/32) y SIN animación de entrada, mientras popover (shell.css:111-120) y toast (components.css:183-197) sí tienen blur + shadow-32 + animación spring. Además `font-size:1.02rem` (reviews.css:55) es un valor arbitrario que ignora el type ramp (--t-subtitle). Acoplamiento oculto: vehículos, cerebro, marcas, aliados, backup, listas y banners dependen de un modal definido en el CSS de RESEÑAS.",
+            "impact": "Las confirmaciones (acción crítica) se ven más baratas que toasts/popovers; inconsistencia perceptible. Riesgo de regresión si se toca reviews.css.",
+            "recommendation": "Extraer .rev-modal* a components.css (core del design-system) como componente .modal canónico: añadir `box-shadow: var(--shadow-32)`, `backdrop-filter: var(--blur-thin)` al overlay, animación de entrada (reusar pop-in/toast-in), y usar tokens del type ramp en el título. Renombrar las clases a algo no-acoplado a 'reviews'."
+          },
+          {
+            "severity": "P2",
+            "area": "Acciones críticas — confirm()/prompt()/alert() nativos",
+            "file": "admin-app/src/modules/vehicles/vehicles.ui.js:109 + cerebro.ui.js:139,154 + inbox.ui.js:507,508 + hub.ui.js:279,290,323 + roles.ui.js:219 + usuarios.ui.js:191 + departamentos.ui.js:128 + unmatched.ui.js:84 (16 sitios)",
+            "problem": "Conviven dos lenguajes de confirmación: el modal custom (.rev-modal, usado en confirmDelete de vehículos) Y 16 `window.confirm/prompt/alert` NATIVOS del navegador (ej. vehicles.ui.js:109 al revertir auditoría). El diálogo nativo del SO es la antítesis de 'premium': tipografía y botones del navegador, sin marca, sin dark mode.",
+            "impact": "Inconsistencia jarring entre acciones; rompe la inmersión de marca justo en momentos de decisión del usuario.",
+            "recommendation": "Una vez extraído el modal a core (finding anterior), exponer un helper `confirmDialog({title, body, danger})` que devuelva Promise<boolean> y un `promptDialog()`, y reemplazar los 16 confirm/prompt nativos por él."
+          },
+          {
+            "severity": "P2",
+            "area": "Deriva de color de marca (dos golds)",
+            "file": "admin-app/src/core/design-system/tokens.css:16 vs config.css:22 (y CLAUDE.md §1)",
+            "problem": "El token primario es `--gold-500:#D4A85A` (tokens.css:16), pero la doctrina del proyecto declara brand `#b89658` (CLAUDE.md §1) y config.css:22/22+ hardcodea `var(--gold, #b89658)` — un fallback a OTRO gold y a un nombre de variable (`--gold`) que NO existe en el sistema (el real es `--gold-500`). Coexisten dos dorados ligeramente distintos y una variable fantasma.",
+            "impact": "Inconsistencia sutil de color de marca entre módulos; el fallback #b89658 se activa donde --gold no resuelve. Para un producto cuyo sello ES el dorado, es un defecto de pulido perceptible.",
+            "recommendation": "Decidir el gold canónico (recomiendo respetar la doctrina #b89658 o actualizar la doctrina a #D4A85A, una sola fuente) y eliminar todos los `var(--gold, #b89658)` reemplazándolos por `var(--gold-500)`. Auditar otros hardcodes de hex gold."
+          },
+          {
+            "severity": "P2",
+            "area": "Premium de cards / superficies",
+            "file": "admin-app/src/styles/vehicles.css:13-19 + brands.css:14-21 + components.css:62-67",
+            "problem": "Las cards de los módulos no-CRM usan radios y bordes inconsistentes y carecen del refinamiento de las KPI del dashboard. Ej.: veh-row usa `--r-xl` (24px) para una fila de lista (demasiado redondeado para densidad de inventario), brd-card también `--r-xl`, mientras el componente canónico .surface usa `--r-lg` (16px) con `--shadow-2`. veh-row no tiene sombra ni hover state (la fila no responde al puntero), a diferencia de dash__action (dashboard.css:55-63) que sí eleva en hover. Falta jerarquía/microinteracción que comunique 'clickable/vivo'.",
+            "impact": "Las listas se sienten estáticas y planas ('no premium', queja del dueño) comparadas con el dashboard, que sí tiene el pulido correcto. Inconsistencia de radios delata falta de sistema.",
+            "recommendation": "Estandarizar radios por tipo de superficie (filas de lista = --r-md/--r-lg, no --r-xl), agregar `box-shadow: var(--shadow-2)` + hover `translateY(-1px)`/border-color a las filas interactivas (reusar el patrón de dash__action), y migrar veh-row/brd-card a la clase base .surface para heredar el sistema."
+          },
+          {
+            "severity": "P3",
+            "area": "Riesgo de render 'null'/'undefined' bajo headers",
+            "file": "admin-app/src/core/dom.js:9-21 + dashboard.ui.js (varios ${})",
+            "problem": "el() protege `text:` contra null (dom.js:9 salta v==null) y children null (dom.js:19), PERO las interpolaciones en template strings `${x}` NO están atrapadas: si una variable es null/undefined dentro de un `text:` ya construido como string, renderiza literal 'null'/'undefined'. dashboard.ui.js usa muchos `${}` derivados de KPIs/campos (líneas 100-117). No reproducible solo por lectura estática (depende de qué campo Firestore llegue ausente), pero es el origen más probable de la queja 'null bajo Inicio/Vehículos'.",
+            "impact": "Texto 'null' renderizado bajo un header = defecto chillón que destruye credibilidad premium al instante (queja del dueño).",
+            "recommendation": "Validación LIVE con datos reales (Chrome ext) para localizar el campo exacto. Defensivamente: helper `safe(x, fallback='—')` aplicado a toda interpolación de campo opcional, o coerción en dom.js para text vacío. No asumir; verificar runtime (doctrina §19)."
+          },
+          {
+            "severity": "P3",
+            "area": "Tipografía — fuentes cargadas vs tokens",
+            "file": "admin-app/index.html:14-17 + tokens.css:61-62",
+            "problem": "tokens.css define `--font-display: 'Plus Jakarta Sans'` y `--font-body: 'Inter'`, e index.html SÍ las precarga (bien). Pero la doctrina/memoria del proyecto menciona Manrope/Instrument Serif/Cardo para el rediseño total del sitio público; el CRM usa otra familia. No es un bug, pero verificar que la familia tipográfica del CRM sea la decisión deliberada y no una deriva respecto al sitio referente. El type ramp (tokens.css:66-74) es sólido y W11-grade.",
+            "impact": "Posible inconsistencia tipográfica entre el sitio público (referente de marca) y el CRM (producto a vender) si no es intencional.",
+            "recommendation": "Confirmar con el dueño que Plus Jakarta + Inter es la familia canónica del CRM. Si el CRM debe espejar el sitio, alinear --font-display/--font-body. Bajo riesgo; solo coherencia de portafolio."
+          }
+        ]
+      },
+      {
+        "dimension": "RESPONSIVE / LAYOUT",
+        "summary": "El shell tiene un esqueleto sólido (grid 256px+1fr, dvh, drawer móvil accesible bien hecho), pero hay un defecto ARQUITECTÓNICO de fondo: el `.outlet` es `display:flex; overflow:hidden` SIN padding ni max-width, y delega TODO el scroll/ancho a cada módulo. Eso obligó a una convención implícita (`.module{height:100%}` + host interno `flex:1;overflow-y:auto;width:100%`) que ~14 módulos cumplen pero 6 NO (vehiculos, banners, marcas, aliados, atributos, disponibilidad). En esos 6, el contenido se RECORTA sin scroll y queda flush a la izquierda con hueco muerto a la derecha — exactamente la queja del dueño, que la vio en Vehículos pero es un bug de CLASE, no de un módulo. Para un producto que se quiere vender como base multi-tenant top-global, el layout NO puede depender de que cada módulo recuerde repetir 4 reglas; debe vivir en el contenedor.",
+        "findings": [
+          {
+            "severity": "P0",
+            "area": "Shell / Outlet (contenedor de contenido)",
+            "file": "admin-app/src/styles/shell.css:108",
+            "problem": "`.outlet { flex:1 1 auto; min-height:0; overflow:hidden; display:flex; }` es de altura fija, recorta (overflow:hidden) y NO aporta scroll, padding lateral ni ancho/max-width. Convierte el scroll y el llenado de ancho en responsabilidad de CADA módulo (contrato implícito, frágil). Cualquier módulo que olvide replicar el patrón queda roto. No existe ningún wrapper de contenido con padding+max-width centrado a nivel shell.",
+            "impact": "Es la causa raíz sistémica de las 3 quejas del dueño a la vez: (1) el contenido se CORTA sin poder hacer scroll; (2) queda 'pegado al sidebar' (sin padding lateral del contenedor); (3) 'sobra espacio a la derecha' (sin ancho/max-width gestionado, los módulos que no fijan width:100% encogen a su ancho de contenido). Afecta a TODO el app, no solo a Vehículos.",
+            "recommendation": "Mover la responsabilidad al contenedor: `.outlet{ display:block; overflow-y:auto; overflow-x:hidden; }` y meter un wrapper interno único (p.ej. `.outlet > * ` o un div `.page`) con `padding: var(--s-5) var(--s-6) var(--s-8); max-width: 1200px; margin-inline:auto; width:100%; min-height:100%`. Así el scroll, el padding y el centrado dejan de depender de cada módulo y desaparece tanto el recorte como el hueco a la derecha de forma global."
+          },
+          {
+            "severity": "P0",
+            "area": "Inventario (Vehículos) — módulo de la queja",
+            "file": "admin-app/src/styles/vehicles.css:6 (y vehicles.ui.js:43-44)",
+            "problem": "`.veh { display:flex; flex-direction:column; gap; padding: var(--s-1) 0 var(--s-6); }` NO declara `height:100%` ni `overflow-y:auto` ni un host interno con scroll, a diferencia de dashboard/inbox/pipeline/etc. El módulo monta `<section class=veh>` directo en el outlet (vehicles.ui.js:43). Como el outlet es flex-stretch + overflow:hidden, `.veh` queda atrapado a la altura del viewport y su lista (.veh-list) se recorta SIN scroll. Además el padding lateral es 0 (`var(--s-1) 0`) → pegado al borde.",
+            "impact": "Reproduce EXACTAMENTE la queja verbatim: 'inventario se corta con el sidebar, no se puede hacer scroll para ver más, sobra espacio a la derecha'. Con >10-15 vehículos las filas inferiores son inalcanzables. En un demo a un cliente enterprise esto se lee como app rota.",
+            "recommendation": "Tras arreglar el outlet (P0 anterior) este se resuelve solo. Si se prefiere fix local mínimo: dar a `.veh` `height:100%; overflow-y:auto; width:100%` y padding lateral (`var(--s-5) var(--s-6) var(--s-8)`). Verificar end-to-end con 0, 1 y N vehículos (estado-cero + lista larga)."
+          },
+          {
+            "severity": "P1",
+            "area": "Módulos con el mismo defecto (bug de clase)",
+            "file": "admin-app/src/styles/banners.css:7 · brands.css:6 · dealers.css:7 · lists.css:7 · config.css:3",
+            "problem": "Banners (.ban), Marcas (.brd), Aliados (.dlr), Atributos (.lst) y Disponibilidad (.cfg) siguen la MISMA convención rota que vehículos: `display:flex;flex-direction:column;gap;padding:var(--s-1) 0 ...` SIN height:100%, SIN overflow-y, SIN width:100%. Ninguno tiene host de scroll. Contraste directo: dashboard.css:7/9, inbox.css:19-22, roles.css:6/14, reportes.css:6/19, usuarios.css:7/18, etc. SÍ lo tienen.",
+            "impact": "Estos 5 módulos se recortan y desperdician ancho igual que Vehículos en cuanto su contenido supera el viewport (galería de banners, grilla de marcas/aliados, listas de atributos largas). El dueño aún no los reportó solo porque Vehículos es el más poblado; el defecto ya está latente en 6 de ~24 rutas.",
+            "recommendation": "Resolver vía el fix del outlet (P0) elimina los 6 de un golpe. Adicionalmente, unificar la convención: un único contrato de página (clase compartida `.page`) en vez de que 6 archivos diverjan. Auditar que TODAS las rutas hereden scroll del contenedor para que un módulo nuevo no pueda volver a romperlo."
+          },
+          {
+            "severity": "P1",
+            "area": "Sistema de layout — falta de SSoT del 'page shell'",
+            "file": "admin-app/src/styles (varios) + base.css:80-95",
+            "problem": "Existen DOS convenciones de montaje conviviendo sin que ninguna esté codificada como utilidad/clase reusable: A) `height:100%`+host scroll (correcta) y B) flex-column sin height/overflow (rota). El padding de contenido se redefine ad-hoc en cada módulo (dashboard usa s-6, roles/departamentos/usuarios usan s-6, vehículos/banners usan 0). No hay token ni clase `.page`/`.page__scroll` central. Las utilidades de base.css cubren rows/stacks pero NO el contenedor de página.",
+            "impact": "Inconsistencia visual (padding lateral distinto entre secciones = se siente 'hecho a pedazos', no top-global) y fragilidad: cada módulo nuevo debe recordar 4 reglas o nace roto. Para un producto multi-tenant vendible, el layout-shell es justo lo que debe ser invariante y a prueba de errores.",
+            "recommendation": "Definir una clase canónica de página en el design-system (p.ej. `.page{display:flex;flex-direction:column;height:100%;width:100%;min-width:0}` + `.page__scroll{flex:1;min-height:0;overflow-y:auto;padding:var(--s-5) var(--s-6) var(--s-8);max-width:1200px;margin-inline:auto;width:100%}`) y migrar los módulos a ella. Un único punto de verdad para padding/scroll/ancho."
+          },
+          {
+            "severity": "P1",
+            "area": "Theme dark-only (mandato de marca)",
+            "file": "admin-app/index.html:2,6 · core/design-system/crm-tokens.css (sin forzar dark) · shell.js:173-178",
+            "problem": "Altorra es DARK-ONLY por mandato, pero index.html arranca en `data-theme=\"light\"` (línea 2) con `color-scheme:\"light dark\"` (línea 6), y el shell pinta un toggle ☀️/🌙 (shell.js:173-178) que persiste tema claro. El default visible al cargar es claro.",
+            "impact": "El primer render que ve el dueño/cliente es en tema claro (fuera de marca), y existe un control que no debería existir. Es una de las quejas verbatim y rompe la coherencia premium dorada/oscura.",
+            "recommendation": "Fijar `data-theme=\"dark\"` en index.html, `color-scheme:dark`, eliminar el themeBtn del topbar (shell.js) y el toggle de theme.js; o, si se quiere conservar para el futuro producto multi-tenant, dejarlo detrás de un flag por-tenant OFF por defecto en Altorra. Verificar que ningún módulo dependa del estado 'light'."
+          },
+          {
+            "severity": "P2",
+            "area": "Ancho en monitores anchos (espacio muerto)",
+            "file": "admin-app/src/styles/shell.css:108 (outlet) · dashboard.css:7 (width:100%)",
+            "problem": "Aun en los módulos correctos que ponen `width:100%`, no hay `max-width` ni centrado: en pantallas 1920px+ el contenido (filas, KPIs) se estira a todo lo ancho o, en los rotos, deja banda muerta a la derecha. No hay medida de lectura máxima ni columnas que aprovechen el ancho extra de forma intencional.",
+            "impact": "En monitores grandes (lo normal en un concesionario/empresa) el layout se ve o demasiado estirado o con hueco, reforzando la sensación de 'sobra espacio a la derecha' incluso donde el scroll sí funciona. No transmite calidad Linear/Stripe.",
+            "recommendation": "Añadir `max-width` + `margin-inline:auto` al wrapper de página (ver P0). Considerar que grids (dashboard KPIs, marcas, aliados) escalen columnas con el ancho disponible en vez de estirar filas. Validar a 1440px y 1920px."
+          },
+          {
+            "severity": "P2",
+            "area": "Responsive — gap de breakpoints intermedios",
+            "file": "admin-app/src/styles/shell.css:136-151",
+            "problem": "El shell colapsa a rail a ≤860px y a drawer a ≤560px, pero los módulos definen sus propios breakpoints sin coordinar (vehicles 640, config 900, lists 480, contacts detail 94vw). No hay sistema de breakpoints compartido. Entre 561px y 859px conviven el rail de 72px con módulos que aún no han colapsado su grilla (p.ej. cfg colapsa a 900, pero pipeline/otros no).",
+            "impact": "Tablets en vertical/horizontal (768px) caen en una zona donde el rail está activo pero las grillas internas pueden no haberse adaptado de forma consistente → saltos visuales y posibles desbordes horizontales módulo a módulo.",
+            "recommendation": "Centralizar breakpoints como tokens/custom-media y alinear los cortes de los módulos con los del shell (≤860, ≤560). Auditar cada módulo a 768px y 600px buscando overflow-x. No es bloqueante pero sí pulido necesario para 'top global'."
+          },
+          {
+            "severity": "P2",
+            "area": "Drawer móvil — backdrop fuera del flujo a11y/visual del shell",
+            "file": "admin-app/src/styles/shell.css:160-194 · shell.js:211,221",
+            "problem": "El drawer (≤560px) está bien implementado (off-canvas, focus trap, visibility para tab-order, reduced-motion). Punto fino: el `detailRoot` (Customer 360, z-index 8000 en contacts.css:6) y el drawer (z-index 60) coexisten; si se abre el overlay 360 y luego se rota a móvil, conviven dos capas fixed. No verificado en vivo el solape de scrim.",
+            "impact": "Posible doble scrim / scroll-lock incompleto del body al abrir 360 sobre el drawer en móvil. Riesgo menor pero visible si ocurre. base.css:25 pone `body{overflow:hidden}` global, lo que ayuda, pero el overlay 360 no bloquea el scroll del outlet detrás.",
+            "recommendation": "Verificar en vivo (Chrome ext / preview) la interacción drawer↔overlay 360 en ≤560px y confirmar que solo hay un scrim activo y el foco queda atrapado en la capa superior. Considerar un único gestor de capas (z-index tokens) para el futuro multi-tenant."
+          },
+          {
+            "severity": "P3",
+            "area": "Mensaje 'modo desarrollador' (queja verbatim) — pegado al borde por el layout",
+            "file": "admin-app/src/modules/vehicles/vehicles.ui.js:439",
+            "problem": "`ui.vehicles.length + ' vehículos — alimentan el catálogo público y sus páginas (el generador corre cada 4h).'` se renderiza como subtítulo del módulo. Es copy técnico/interno y, por el padding 0 de `.veh` (vehicles.css:6), aparece flush al sidebar.",
+            "impact": "Se lee como mensaje de desarrollador, no de producto; rompe la percepción premium. El dueño lo citó explícitamente. El 'pegado al sidebar' es efecto del mismo bug de padding (P0/P0-vehículos).",
+            "recommendation": "Reemplazar por copy de producto orientado a negocio (p.ej. 'N vehículos en catálogo') o moverlo a un tooltip/ayuda secundaria. Eliminar la referencia al 'generador cada 4h'. Es de dominio COPY pero el síntoma 'pegado al sidebar' se cierra con el fix de layout."
+          }
+        ]
+      },
+      {
+        "dimension": "BUGS / DATA-SUCIA / DEV-LEAKS",
+        "summary": "El CRM tiene buena base de tokens pero la ejecución filtra \"modo IA\": el bug estructural P0 es que .outlet (shell.css:108 overflow:hidden + display:flex SIN padding ni max-width) recorta cualquier módulo que no se fabrique su propio contenedor con scroll — Vehículos, Marcas y Aliados lo olvidaron (.veh/.brd/.dlr son flex-column sin height/overflow-y), por eso el inventario \"se corta y no scrollea\". El toggle claro/oscuro contradice el mandato dark-only (theme.js + store.theme:'light' + index.html data-theme=\"light\"). Hay 18 confirm()/prompt() nativos (incluida una supresión LEGAL Ley 1581 vía prompt()) pese a que ya existe el modal .rev-modal. Subtítulos \"modo desarrollador\" filtran detalles de backend al usuario en ≥4 secciones. La data sucia (\"dfsfdfdfs\") es de Firestore y NO hay forma owner-self-service de purgarla por sección (GAP P0 de UI, no de reglas).",
+        "findings": [
+          {
+            "severity": "P0",
+            "area": "Shell / layout (afecta TODOS los módulos)",
+            "file": "admin-app/src/styles/shell.css:108 + admin-app/src/styles/vehicles.css:6",
+            "problem": ".outlet { flex:1 1 auto; min-height:0; overflow:hidden; display:flex; } NO tiene scroll propio, ni padding, ni max-width. Cada módulo debe fabricarse su propio contenedor scrolleable. Vehículos NO lo hace: .veh (vehicles.css:6) es solo `display:flex; flex-direction:column; padding:var(--s-1) 0 var(--s-6)` — sin height/overflow-y. Resultado: la lista de inventario desborda el outlet de altura fija con overflow:hidden y se RECORTA sin scroll. Es exactamente la queja del dueño.",
+            "impact": "Inventario inusable: con >N vehículos los de abajo son inalcanzables (no se puede vender lo que no se ve). Bug de credibilidad: parece roto.",
+            "recommendation": "Sistémico: dar a .outlet `overflow-y:auto` + `padding:var(--s-5) var(--s-6)` y un wrapper interno con `max-width` centrado (resuelve también 'pegado al sidebar' y 'sobra a la derecha'). Quitar overflow:hidden del outlet. Verificar que los módulos que YA tienen scroll interno (dashboard/inbox/contactos) no dupliquen barras."
+          },
+          {
+            "severity": "P0",
+            "area": "Inventario / Marcas / Aliados (mismo bug-class)",
+            "file": "admin-app/src/styles/brands.css:6, admin-app/src/styles/dealers.css:7",
+            "problem": ".brd y .dlr tienen el MISMO defecto que .veh: `display:flex; flex-direction:column` sin height/overflow dentro del outlet overflow:hidden. Solo módulos como dashboard.css:7-12 (.dash height:100% + .dash__body overflow-y:auto) y inbox lo hacen bien. La inconsistencia es la raíz: 19 CSS declaran overflow-y:auto pero cada uno lo pone en un sub-elemento distinto, ad hoc.",
+            "impact": "Marcas y Aliados también se recortan en pantallas cortas o con muchos ítems. La queja no es solo de Vehículos; es estructural.",
+            "recommendation": "Al arreglar el .outlet de raíz (finding anterior) estos se curan de golpe. Eliminar los parches per-módulo y estandarizar UN contenedor de página con scroll+padding+max-width."
+          },
+          {
+            "severity": "P0",
+            "area": "Theme / dark-only (mandato de marca)",
+            "file": "admin-app/src/core/theme.js:10-25 + admin-app/src/core/store.js:44 + admin-app/index.html:2,6 + admin-app/src/core/layout/shell.js:173-178",
+            "problem": "Altorra es DARK-ONLY pero: index.html línea 2 arranca data-theme=\"light\"; línea 6 color-scheme:\"light dark\"; store.theme default 'light' (store.js:44); theme.js implementa toggle completo claro/oscuro persistido; shell.js:173-178 pinta el botón ☀️/🌙 en el topbar. Un usuario nuevo ve el CRM en CLARO por defecto y un toggle que no debería existir.",
+            "impact": "Rompe identidad de marca premium en el primer pixel. Para un producto que se venderá como 'top global', el default-claro + toggle inútil grita amateur. Riesgo extra: muchos colores tienen variante light a mantener (doble superficie de bugs visuales).",
+            "recommendation": "Fijar data-theme=\"dark\" e index color-scheme:dark; store.theme default 'dark'; eliminar theme.js (toggle) y el themeBtn de shell.js; (para el futuro multi-tenant, el theming por-tenant reemplazaría esto, no el toggle claro/oscuro)."
+          },
+          {
+            "severity": "P0",
+            "area": "Borrado owner por sección (GAP de UI)",
+            "file": "varios módulos *.ui.js (vehicles, dealers sin delete, etc.) vs firestore.rules + functions/src/ops/crmPurge.js",
+            "problem": "El dueño no puede limpiar data sucia él mismo. El borrado existe SOLO item-por-item y disperso; Aliados (dealers.ui.js:6-8) NO tiene borrado por decisión de port. Las reglas YA permiten delete gateado en isSuperAdmin/crm.delete y existe el callable crmPurge — o sea el bloqueo es de UI, no de backend.",
+            "impact": "Data como el concesionario 'dfsfdfdfs' o vehículos de prueba quedan visibles sin manera self-service de purgarlos. En multi-tenant esto es bloqueante: cada cliente DEBE poder limpiar su propia sección.",
+            "recommendation": "Panel owner-only (isSuperAdmin) por sección con bulk-delete/purga reutilizando reglas + crmPurge existentes, con doble confirmación en modal custom (NO nativo). Empezar por Vehículos y Aliados."
+          },
+          {
+            "severity": "P1",
+            "area": "Diálogos nativos del navegador (18 sitios)",
+            "file": "admin-app/src/modules/inbox/inbox.ui.js:507,508 · contacts/contacts.edit.js:111,156 · vehicles/wizard.js:680,682 · vehicles.ui.js:109 · hub.ui.js:279,290,323 · cerebro.ui.js:139,154 · departamentos.ui.js:128 · roles.ui.js:219 · usuarios.ui.js:191 · unmatched.ui.js:84",
+            "problem": "18 confirm()/prompt() nativos del navegador para acciones críticas (eliminar lead definitivo, eliminar rol/depto/usuario, cerrar/transferir chat, revertir auditoría, supresión legal). Lo más grave: contacts.edit.js:156 usa prompt('escribe SUPRIMIR') como gate de una supresión Ley 1581 (borrado legal de datos personales) — frágil (algunos navegadores/embeds bloquean prompt) y se ve poco profesional. Ya EXISTE el modal .rev-modal (vehicles.ui.js:121 confirmDelete, dealers, drafts) — la solución está a la mano pero no se reutiliza.",
+            "impact": "Diálogos nativos rompen el look premium (tipografía/estilo del SO), no son theme-aware (dark-only), y son inconsistentes. Para vender 'calidad Linear/Stripe' esto es descalificante.",
+            "recommendation": "Extraer el patrón .rev-modal a core/ (p.ej. core/confirm.js con confirmDialog({title,body,danger}) y promptDialog para el typed-confirm SUPRIMIR) y reemplazar los 18 nativos. Es mecánico y de alto impacto visual."
+          },
+          {
+            "severity": "P1",
+            "area": "Copy 'modo desarrollador' (dev-leaks al usuario)",
+            "file": "admin-app/src/modules/vehicles/vehicles.ui.js:439,128 · brands/brands.ui.js:186 · lists/lists.ui.js:156 · dealers/dealers.ui.js:185",
+            "problem": "Subtítulos que filtran detalles de implementación al usuario final: vehicles:439 'X vehículos — alimentan el catálogo público y sus páginas (el generador corre cada 4h)'; vehicles:128 'su página pública muere en la próxima corrida del generador (máx 4h)'; brands:186 'alimentan los filtros y páginas de marca del sitio'; lists:156 '13 listas alimentan el formulario... la web recoge el cambio en ≤5 min'; dealers:185 'proveedores de inventario (consignación / concesionarios)'. Además 'pegado al sidebar' por la falta de padding del outlet (finding P0). Nota: lists:156 hardcodea el '13' en el texto → se desincroniza si cambia LIST_DEFS.",
+            "impact": "Suena a herramienta interna de IA/dev, no a producto pulido. El dueño lo citó explícitamente como molestia. El '13' hardcodeado es además un bug latente de consistencia.",
+            "recommendation": "Reescribir como microcopy de producto orientado a beneficio ('28 vehículos publicados') sin mencionar generador/cron/4h/≤5min. Derivar conteos de datos, nunca hardcodear. Mover detalles operativos a un tooltip/ayuda contextual si hace falta."
+          },
+          {
+            "severity": "P2",
+            "area": "Render de 'null'/'undefined' por interpolación (riesgo, no reproducido estáticamente)",
+            "file": "admin-app/src/core/dom.js:9-10 + callsites con `text: x + '...'` o `${x}`",
+            "problem": "el() salta `text:null` (dom.js:9 v==null continue) así que `text:null` NO renderiza 'null'. PERO los patrones `text: campo + ' suf'` o template `${campo}` SÍ imprimen 'null'/'undefined' si el campo Firestore es null. Los renders de detalle de Contactos (contacts.ui.js:195-201) y formatPrecio/format.js están bien guardados con || '—'. El timeline de auditoría de vehículos (vehicles.ui.js:103) usa `c.from ?? '—'` que coalesce null/undefined pero NO un string literal 'null' guardado en el doc. La queja del dueño de 'null' bajo Inicio/Vehículos NO es reproducible solo leyendo: el subtítulo de Vehículos (vehicles.ui.js:439) deriva de ui.vehicles.length (siempre array) y el hero de Inicio (dashboard.ui.js:100-106) está guardado.",
+            "impact": "Si un campo (p.ej. ownerName, modelo, un subtítulo derivado) llega null en datos reales, se ve 'null' literal — exactamente lo reportado. Es un bug de datos+coerción, requiere validación live con datos reales.",
+            "recommendation": "Auditar en vivo qué campo concreto llega null bajo Inicio/Vehículos (extensión Chrome / datos reales). Como defensa de fondo: que el() coercione `text` a '' cuando sea null Y endurecer los callsites con interpolación para usar `x || '—'`. Revisar campos desnormalizados (ownerName, lastModifiedByName)."
+          },
+          {
+            "severity": "P2",
+            "area": "Cards / SVG no premium (mezcla emoji/SVG)",
+            "file": "admin-app/src/core/layout/shell.js:40-77 (NAV icon:'🏠'…) + nav-icons.js fallback + botones de fila emoji (vehicles.ui.js:217,220,225,249 '✏️📋🕘🗑'; dealers.ui.js:129)",
+            "problem": "El sidebar usa SVG si existe en nav-icons.js, si no cae a EMOJI (shell.js:31-36). Los botones de acción de fila son emoji-texto puro ('✏️','📋','🕘','🗑','★/☆'). Mezclar SVG inline y emojis del SO se ve inconsistente (cada SO/fuente dibuja el emoji distinto) — la queja 'SVG/cards no premium'.",
+            "impact": "Rompe la sensación de producto unificado clase-mundial; los emojis se ven distintos en Win/Mac/Linux y desentonan con los SVG currentColor.",
+            "recommendation": "Completar el set SVG (nav-icons.js) para TODOS los íconos de nav y migrar los botones de acción a SVG inline currentColor. Es la dirección que el propio código ya empezó (W-11 F2) pero quedó a medias."
+          },
+          {
+            "severity": "P3",
+            "area": "Consistencia de marca: token gold divergente",
+            "file": "admin-app/src/styles/tokens.css (--gold-primary #D4A85A) vs CLAUDE.md/marca (#b89658)",
+            "problem": "El brand oficial es #b89658 pero el token primary del CRM es #D4A85A (deriva documentada en el mapa). Dos dorados distintos entre sitio público y CRM.",
+            "impact": "Inconsistencia sutil de marca entre productos; para un producto-base vendible conviene un solo dorado canónico.",
+            "recommendation": "Confirmar con el dueño el dorado canónico y unificar el token (o documentar explícitamente por qué el CRM usa un dorado más claro para contraste en dark)."
+          },
+          {
+            "severity": "P3",
+            "area": "App version desincronizada (dos fuentes)",
+            "file": "admin-app/src/core/layout/shell.js:21 (APP_VERSION='0.4.1', 'Fase 4')",
+            "problem": "La versión '0.4.1 · Fase 4' está hardcodeada en el footer del sidebar, separada del cache-manager/service-worker del proyecto. Es un dato de pie de página que envejece y suena interno.",
+            "impact": "Menor: footer 'v0.4.1 · Fase 4' es jerga de desarrollo visible al usuario; se desincroniza fácil.",
+            "recommendation": "O quitar el footer de versión de la vista del usuario, o derivarlo de una sola fuente de verdad de versión. Evitar la etiqueta 'Fase N' (lenguaje de roadmap interno)."
+          }
+        ]
+      },
+      {
+        "dimension": "COPY / Mensajería profesional · i18n-readiness",
+        "summary": "La base de copy es decente y casi toda en español, pero NO se siente \"producto top global vendible\": hay strings de \"modo desarrollador\" filtrados al usuario final (contadores que explican el cron \"cada 4h\", ~30 toasts de error que vomitan codigos crudos de Firebase como \"permission-denied\", \"(rules)\", \"requiere super_admin or settings.*\"), 16 dialogos confirm()/prompt() nativos del navegador, y una INCONSISTENCIA DIALECTAL grave: el CRM tutea (Colombia, \"tú\") pero el Hub, el bot Cerebro AI (publico) y hasta el banner de login hablan en voseo argentino (\"querés\", \"decime\", \"tomala\", \"atendés\", \"necesitás\"). Para multi-tenant NO hay capa i18n: cada string esta hardcodeado inline, mezclado con la marca \"Altorra\"/\"Cartagena\", lo que hace imposible revender el CRM a otra empresa sin un find-replace masivo y riesgoso. El \"null\" reportado bajo headers NO se reproduce por lectura estatica (el header del shell solo pinta titulo + crumb \"modo demo/tiempo real\"); requiere validacion live, pero el riesgo existe en interpolaciones ${x} no guardadas.",
+        "findings": [
+          {
+            "severity": "P1",
+            "area": "Errores globales (toasts) — todos los modulos",
+            "file": "admin-app/src/modules/workflows/workflows.ui.js:58, roles.ui.js:204,229, departamentos.ui.js:115,138, cerebro.ui.js:128, banners.ui.js:177,211,230, brands.ui.js:109,146, config.ui.js:52,217, reviews.ui.js:113,147, lists.ui.js:119, backup.ui.js:71,110,187, vehicles/wizard.js:255,363,632,731, vehicles.ui.js:112",
+            "problem": "~30 toasts de error concatenan el codigo/mensaje CRUDO de Firebase al usuario final: patron `(e.message || e.code)`. El usuario ve literalmente 'No se pudo guardar: permission-denied', 'No se pudo: requiere super_admin o settings.* (rules)', 'No se pudo guardar: sin permiso (rules)', 'No se pudo eliminar: FAILED_PRECONDITION'. Es exactamente el tono 'modo desarrollador' que el dueño rechaza, multiplicado por todo el app. Contrasta con auth.js:69-75 que SI mapea codigos a frases amables — la politica buena existe pero no se aplica fuera del login.",
+            "impact": "Rompe la sensacion de producto premium en CADA fallo. Filtra detalles internos (nombres de reglas, super_admin, 'rules') que confunden a un usuario de negocio y delatan que 'lo hizo una IA / esta a medio terminar'. Para un CRM vendible a empresas grandes es descalificante.",
+            "recommendation": "Crear core/errors.js con un mapeador friendlyError(e) (estilo auth.js): permission-denied -> 'No tienes permiso para esta accion.', failed-precondition -> mensaje contextual, unavailable/network -> 'Sin conexion. Reintenta.', default -> 'Algo salio mal. Reintenta.'. Reemplazar TODOS los `(e.message || e.code)` por friendlyError(e). NUNCA mostrar e.code ni la palabra 'rules' al usuario; loguear el codigo crudo solo a consola."
+          },
+          {
+            "severity": "P1",
+            "area": "Inconsistencia dialectal (Colombia tú vs voseo) — Hub, Cerebro AI (bot publico), Login",
+            "file": "admin-app/src/modules/hub/hub.ui.js:285,295,527 · core/layout/login.js:34 · perfil.ui.js:208 · modules/cerebro/cerebro.data.js:72,73,79,82,88,94,95 (y mas)",
+            "problem": "El CRM tutea estandar colombiano ('Inicia sesion para gestionar tus clientes', 'Crea el primer miembro', 'Prueba con otro termino'), PERO conviven strings en voseo argentino: hub 'Tomala para responderle... Mientras la atendes', 'Iniciá una nueva cuando quieras', 'Podés seguir escribiendo'; login banner 'necesitás iniciar sesion'; perfil 'intentá de nuevo'; y CRITICO: las respuestas del bot Cerebro AI que VE EL CLIENTE PUBLICO usan voseo masivo: 'si querés agendar', 'decime', 'Podés financiar', 'Decime que andás buscando', 'si tenés alguna urgencia, escribime'. Altorra es Cartagena, Colombia (CLAUDE.md §1) — el cliente caribeno espera 'tú', el voseo suena extranjero.",
+            "impact": "Mezcla de registros = se siente ensamblado por una IA, no por una marca con voz unica. En el bot publico daña directamente la percepcion de los compradores reales (no solo el admin). Un comprador en Cartagena que lee 'decime que andás buscando' nota que algo no cuadra.",
+            "recommendation": "Definir UNA voz canonica (tú-Colombia, ya documentada en skill catalogo-voz). Reescribir voseo->tú: 'Tómala para responderle... Mientras la atiendes', 'Inicia una nueva cuando quieras', 'Puedes seguir escribiendo', 'necesitas iniciar sesion', 'intenta de nuevo'; y barrer cerebro.data.js completo: 'si quieres agendar', 'dime', 'Puedes financiar', 'Dime que buscas', 'si tienes alguna urgencia, escribeme'. Anadir al brain una regla de voz para que no reincida."
+          },
+          {
+            "severity": "P1",
+            "area": "i18n-readiness para multi-tenant (producto base vendible)",
+            "file": "varios (todos los *.ui.js y cerebro.data.js, dealers/brands/vehicles headers)",
+            "problem": "CERO capa de internacionalizacion/strings centralizados: cada texto esta hardcodeado inline en cada el(). Ademas la marca esta cosida al copy: 'Acceso restringido al equipo de Altorra Cars' (login.js:81), 'ALTORRA'/'CRM' (shell.js:125), 'Estamos en Cartagena, Bolivar' y la voz del bot (cerebro.data.js). Vender este CRM a otra empresa exigiria un find-replace manual por decenas de archivos, propenso a dejar 'Altorra'/'Cartagena' colgando.",
+            "impact": "Bloquea el modelo de negocio declarado (CRM multi-tenant para grandes empresas). Sin tabla de strings + tokens de marca, el onboarding de un nuevo tenant es trabajo de ingenieria por cada cliente, no configuracion.",
+            "recommendation": "Extraer strings a un modulo i18n (p.ej. core/strings.js con claves) y separar nombre-de-marca/ciudad/voz-del-bot a config de tenant. No hace falta libreria pesada: un objeto de claves + funcion t('errors.permissionDenied') ya desacopla copy de codigo y prepara multi-idioma/multi-marca."
+          },
+          {
+            "severity": "P2",
+            "area": "Copy 'modo desarrollador' en headers de seccion",
+            "file": "admin-app/src/modules/vehicles/vehicles.ui.js:439 · brands.ui.js:186 · vehicles.ui.js:128 (modal borrado)",
+            "problem": "Subtitulos que explican plomeria interna al usuario: 'N vehiculos — alimentan el catalogo publico y sus paginas (el generador corre cada 4h)' (vehicles:439, queja verbatim del dueno); identico patron en brands:186 'N marcas — alimentan los filtros y paginas de marca del sitio'; y el modal de borrado 'su pagina publica muere en la proxima corrida del generador (max 4h)' (vehicles:128). El detalle del cron de 4h es jerga de infra, no info que el dueno necesite cada vez.",
+            "impact": "Tono no profesional / 'a medio cocinar'. El usuario de negocio no debe enterarse de cron jobs; le importa el efecto, no el mecanismo.",
+            "recommendation": "Vehiculos: 'N vehiculos en tu inventario' (o solo el contador como badge). Marcas: 'N marcas'. Modal borrado: 'Desaparece del sitio publico en unos minutos. Si solo dejo de venderse, cambia su estado en lugar de eliminarlo.' Quitar toda mencion a 'generador' y '4h'."
+          },
+          {
+            "severity": "P2",
+            "area": "Dialogos nativos confirm()/prompt() del navegador (16 sitios)",
+            "file": "admin-app/src/modules/hub/hub.ui.js:279,290,323 · contacts.edit.js:111,156 · departamentos.ui.js:128 · inbox.ui.js:507,508 · vehicles/wizard.js:680,682 · usuarios.ui.js:191 · vehicles.ui.js:109 · roles.ui.js:219 · cerebro.ui.js:139,154 · unmatched.ui.js:84",
+            "problem": "Acciones criticas (borrar, fusionar, transferir, suprimir datos) usan window.confirm()/prompt() nativos. Ademas del look de SO viejo (queja del dueno), el COPY queda atrapado en un cuadro feo y, peor, mezcla emojis crudos en titulo ('🗑 ¿Eliminar DEFINITIVAMENTE...') y doble-confirm encadenado (inbox 507+508) que se ve amateur. El prompt('DOBLE CONFIRMACION: escribe SUPRIMIR...') es el peor: pide teclear una palabra en un input nativo sin estilo.",
+            "impact": "Choque visual y de tono con el resto del CRM premium; el copy no se puede formatear (negritas, jerarquia). El doble confirm seguido se siente improvisado.",
+            "recommendation": "Ya existe el modal custom .rev-modal (vehicles.ui.js:121 confirmDelete) — extraerlo a core/confirm.js (confirm + confirm-tipeado) y migrar los 16 sitios. El copy gana jerarquia: titulo corto, cuerpo con consecuencia, accion destructiva en rojo. Es prerequisito para arreglar el tono."
+          },
+          {
+            "severity": "P2",
+            "area": "Crumb del topbar 'modo demo' / 'tiempo real'",
+            "file": "admin-app/src/core/layout/shell.js:170",
+            "problem": "Junto a CADA titulo de seccion el topbar muestra un crumb permanente que dice 'tiempo real' (o 'modo demo'). 'tiempo real' es jerga tecnica que no aporta al usuario de negocio y ocupa espacio fijo bajo el header — candidato a leerse como ruido tipo 'modo desarrollador'.",
+            "impact": "Detalle que abarata la barra superior; 'tiempo real' no significa nada para el dueno y 'modo demo' solo deberia verse en demos.",
+            "recommendation": "Quitar 'tiempo real' en produccion (no informa nada al usuario). Conservar solo un badge 'Demo' discreto cuando store.mock=true. El header debe respirar marca, no estado de conexion."
+          },
+          {
+            "severity": "P2",
+            "area": "Fuga de codigos de permiso RBAC en mensajes 'Sin permiso'",
+            "file": "admin-app/src/modules/usuarios.ui.js:46 · workflows.ui.js:37 · (patron en roles/departamentos/auditoria)",
+            "problem": "Los estados 'Sin permiso' citan el codigo tecnico del permiso: 'Necesitas el permiso users.read para ver el equipo.', 'Necesitas workflows.read para ver la automatizacion.'. 'users.read'/'workflows.read' son identificadores internos del RBAC, no lenguaje de usuario.",
+            "impact": "Suena a mensaje de debug; expone el esquema interno de permisos a quien no debe gestionarlo. Un gerente sin acceso no sabe que es 'users.read'.",
+            "recommendation": "Hablar en terminos humanos: 'No tienes acceso a esta seccion. Pide a un administrador que te lo habilite.' Sin citar el codigo del permiso."
+          },
+          {
+            "severity": "P3",
+            "area": "Riesgo de 'null'/'undefined' renderizado (queja literal del dueno)",
+            "file": "admin-app/src/core/dom.js:18-21 (guard) · dashboard.ui.js (interpolaciones ${...} 101,117,178,220) · vehicles.ui.js:100,103",
+            "problem": "El() ya filtra null en text:/children (dom.js:9,19), por eso NO hay un text:'null' estatico. PERO las interpolaciones en template strings `${x}` SI imprimen 'null'/'undefined' si x llega null (no atrapado por el guard). Ej. dashboard.ui.js:220 `${t.relatedTo.name ...}` y varios contadores derivados. No reproducible por lectura estatica — depende de un campo Firestore ausente en datos reales (de ahi la queja bajo Inicio/Vehiculos).",
+            "impact": "Cuando ocurre, 'null' visible bajo un header grita 'sin terminar'. Es intermitente segun datos, lo que lo hace facil de pasar por alto en QA.",
+            "recommendation": "Validar en vivo (Chrome) que campo cae null bajo Inicio/Vehiculos y blindarlo (x ?? '' / fallback '—'). Como guardrail sistemico, anadir un helper safe(x, fallback='—') para toda interpolacion de campo opcional y prohibir `${campoOpcional}` directo."
+          },
+          {
+            "severity": "P3",
+            "area": "Microcopy de marca / huecos de tono",
+            "file": "admin-app/src/modules/ajustes/ajustes.ui.js:89,90 · config.ui.js:45,213 · dealers.ui.js:36 ('ID: —')",
+            "problem": "Sufijo '(demo)' pegado a toasts de exito ('Regeneracion iniciada (demo)', okMsg+' (demo)') se ve como anotacion de desarrollo dentro del mensaje. 'ID: —'/'ID: ... (fijo)' expone IDs tecnicos en formularios de aliado/marca. Mensajes correctos pero el envoltorio '(demo)' inline abarata.",
+            "impact": "Pulido: pequenos detalles que, sumados, restan a la sensacion 'Linear/Stripe'.",
+            "recommendation": "El estado demo va en un badge global, no incrustado en cada toast (toast queda 'Regeneracion iniciada'). Ocultar el 'ID:' tecnico a usuarios de negocio o moverlo a un detalle secundario."
+          }
+        ]
+      },
+      {
+        "dimension": "FUNCIONAL — CRUD/borrado/bulk/export por sección (owner-only)",
+        "summary": "El CRM tiene un patrón de borrado MUY desigual entre módulos: la Bandeja es ejemplar (selección múltiple, archivar reversible, purga super-admin) y Contactos cubre supresión Ley-1581 + fusión, pero secciones enteras carecen de borrado pese a que las firestore.rules YA lo permiten. El hueco más grave: el PIPELINE no tiene NINGUNA forma de borrar un deal (ni función de datos ni botón), y ALIADOS omite el borrado a propósito (\"SIN borrado\"), por lo que datos basura como el concesionario \"dfsfdfdfs\" son IMBORRABLES desde la UI — exactamente el GAP P0 que reporta el dueño. Además no existe papelera/soft-delete global (solo inbox), no hay deshacer tras borrar (salvo conversión de deal), no hay borrado masivo/purga por sección owner-only en casi ningún módulo, y 16 acciones destructivas usan confirm()/prompt() nativos del navegador. El backend NO es el bloqueo (rules permiten delete gateado); el hueco es de UI/capa de datos.",
+        "findings": [
+          {
+            "severity": "P0",
+            "area": "Pipeline (deals)",
+            "file": "admin-app/src/modules/deals/deals.data.js:1-201 (no existe deleteDeal) · admin-app/src/modules/deals/deals.ui.js (sin botón borrar) · firestore.rules:587 (allow delete permitido)",
+            "problem": "El Pipeline NO tiene forma de BORRAR un deal. deals.data.js solo expone updateDealStage/markWon/markLost/setDealAmount — cero deleteDoc. Un deal creado por error (monto equivocado, prueba, duplicado por doble conversión, spam) queda atrapado: solo puede marcarse won/lost pero nunca eliminarse, contaminando reportes/KPIs (weightedAmount, comisiones) para siempre. La regla firestore.rules:587 YA permite delete a super-admin/crm.delete, así que el bloqueo es puramente de UI+datos.",
+            "impact": "Datos sucios permanentes en el corazón del CRM (forecast/ingresos/comisiones inflados). Para un producto que se quiere vender a empresas, un Pipeline sin borrado es un defecto funcional descalificante.",
+            "recommendation": "Añadir deleteDeal(dealId) (deleteDoc + cascada de activities relacionadas, idealmente vía callable como crmPurgeLead) y exponer 'Eliminar negocio' owner-only (isSuperAdmin/crm.delete) en la card/detalle del pipeline, con modal de confirmación custom y rollback optimista."
+          },
+          {
+            "severity": "P0",
+            "area": "Aliados / Concesionarios (dealers)",
+            "file": "admin-app/src/modules/dealers/dealers.ui.js:7-8 ('SIN borrado') · admin-app/src/modules/dealers/dealers.data.js:95 (solo saveDealer, no deleteDealer)",
+            "problem": "El módulo Aliados declara explícitamente 'SIN borrado (el clásico no lo tiene → réplica exacta; la capacidad existe en rules/RBAC pero queda gated)'. dealers.data.js solo tiene saveDealer (create+update), no deleteDealer. Por eso el concesionario basura 'dfsfdfdfs' que reporta el dueño es literalmente IMBORRABLE desde la app: solo se puede editar, nunca eliminar.",
+            "impact": "Confirma textualmente la queja P0 del dueño: no puede purgar datos sucios por sección él mismo. Cada card-basura queda visible para siempre y arrastra métricas derivadas (activos/vendidos/comisiones por aliado).",
+            "recommendation": "Añadir deleteDealer(docId) y un botón 'Eliminar aliado' owner-only en la card (junto al ✏️ de dealers.ui.js:129), con guardas: bloquear/avisar si el aliado tiene vehículos asociados, modal custom de confirmación, y optimistic-UI con rollback como el resto del módulo."
+          },
+          {
+            "severity": "P0",
+            "area": "GAP transversal — purga/borrado masivo owner-only por sección",
+            "file": "varios (solo inbox.ui.js:557-608 tiene bulk; resto de módulos = sin selección múltiple ni purga de sección)",
+            "problem": "No existe un mecanismo de borrado masivo/'purgar sección' owner-only en casi ningún módulo. Solo la Bandeja tiene selección múltiple + acciones en lote (inbox.ui.js:557 bulkAssign/bulkSetStatus/bulkArchive). Vehículos, Marcas, Reseñas, Banners, Aliados, Roles, Departamentos, Usuarios, Atributos, FAQs (cerebro), Unmatched borran SIEMPRE item-por-item. Para limpiar data de prueba (decenas de registros), el dueño debe borrar uno a uno. functions/src/ops/crmPurge.js existe (purga server) pero ningún módulo lo invoca como 'purgar todo lo de esta sección'.",
+            "impact": "Onboarding/limpieza de un tenant nuevo es inviable a mano; el dueño no puede resetear una sección a cero. Es el núcleo de la queja P0 ('borrado/purga por sección él mismo').",
+            "recommendation": "Patrón reutilizable: barra de selección múltiple (checkbox por fila/card como ya hace inbox) + acción 'Eliminar seleccionados', y un panel owner-only (isSuperAdmin) 'Zona peligrosa' por sección con 'Purgar todos los de esta sección' apoyado en las rules existentes (o callable crmPurge extendido). Reusar el componente .inbox__bulkbar como base."
+          },
+          {
+            "severity": "P1",
+            "area": "Transversal — confirmaciones destructivas",
+            "file": "contacts.edit.js:111,156 · cerebro.ui.js:139,154 · departamentos.ui.js:128 · hub.ui.js:279,290,323 · inbox.ui.js:507,508 · unmatched.ui.js:84 · roles.ui.js:219 · usuarios.ui.js:191 · vehicles.ui.js:109 · wizard.js:680,682",
+            "problem": "16 acciones críticas usan confirm()/prompt()/window.confirm nativos del navegador, incluyendo borrados definitivos (FAQ, departamento, rol, usuario, lead-purge, query) y la supresión Ley-1581 (prompt 'escribe SUPRIMIR'). Es la queja verbatim del dueño. Coexisten con un modal custom .rev-modal ya usado en vehicles/reviews/banners/dealers, así que es inconsistente además de poco premium.",
+            "impact": "Rompe la sensación 'top global' (Linear/Stripe), delata 'hecho por IA/dev', no respeta dark-only ni el brand dorado, y los diálogos nativos no son estilizables ni testeables.",
+            "recommendation": "Extraer el patrón rev-modal a un helper core (p.ej. core/confirm.js → confirmDialog({title, body, danger, requireText})) y reemplazar los 16 confirm()/prompt() nativos. Ya hay TODO-24 anotado en vehicles.ui.js:340 — completarlo a nivel app."
+          },
+          {
+            "severity": "P1",
+            "area": "Agenda (citas)",
+            "file": "admin-app/src/modules/agenda/agenda.data.js:31-37 (citaAction: confirm|reschedule|cancel|no_show|complete) · agenda.ui.js:23-26",
+            "problem": "La Agenda solo permite cancelar/no-show/reprogramar una cita, pero NO eliminarla. Una cita creada por error o de prueba queda como registro cancelado para siempre; no hay purga owner-only ni acción 'eliminar cita'. Tampoco hay exportación de la agenda.",
+            "impact": "Acumulación de citas-basura canceladas; el dueño no puede limpiar su calendario. Menor que pipeline/dealers pero parte del mismo GAP de purga por sección.",
+            "recommendation": "Añadir acción owner-only 'Eliminar cita' (extender citaAction con action:'delete' transaccional que libere el cupo) y/o un botón de purga de citas canceladas antiguas. Considerar export CSV de la agenda como en reportes."
+          },
+          {
+            "severity": "P1",
+            "area": "Customer 360 (contactos) — borrado vs supresión",
+            "file": "admin-app/src/modules/contacts/contacts.data.js:120-128 (suppress/cancelSuppression) · contacts.edit.js:130-167",
+            "problem": "Contactos solo ofrece supresión Ley-1581 (soft, 72h de gracia, anonimiza pero conserva histórico) y fusión. NO hay borrado definitivo de un contacto de PRUEBA/spam que nunca debió existir: la supresión deja el doc anonimizado, no lo elimina. Para datos basura de testing eso es ruido permanente. Tampoco hay export de contactos (CSV) ni borrado masivo.",
+            "impact": "La limpieza de contactos de prueba durante onboarding deja residuos anónimos; no hay vía de purga real. Falta export para un Customer 360 'vendible'.",
+            "recommendation": "Distinguir 'supresión legal' (cliente real) de 'eliminar registro de prueba' (purga dura owner-only, reusando crmPurgeLead/cascada). Añadir export CSV de la lista de contactos (existe el helper download() en reportes.ui.js:358 — reutilizar)."
+          },
+          {
+            "severity": "P2",
+            "area": "Soft-delete / papelera / deshacer global",
+            "file": "inbox.data.js:152-164 (único archive reversible) · resto de módulos = borrado duro inmediato",
+            "problem": "El único soft-delete reversible del CRM es 'archivar' en Bandeja (inbox.data.js:156) y la supresión de contactos (72h). Todos los demás borrados (vehículo, marca, reseña, banner, rol, departamento, FAQ, usuario, query) son deleteDoc DURO e inmediato, sin papelera ni 'deshacer'. Un clic mal dado = pérdida irreversible (las rules ya permiten delete, no hay red de seguridad).",
+            "impact": "Riesgo de pérdida accidental de datos en producción y para un producto multi-tenant. La ausencia de 'undo' tras borrar es UX por debajo del estándar Linear/Notion (que ofrecen toast 'Deshacer').",
+            "recommendation": "Introducir un patrón de soft-delete opcional (deletedAt/tombstone) o como mínimo un toast con 'Deshacer' (5-10s) tras cada borrado, recreando el doc si el usuario revierte. Evaluar papelera por sección con restore para datos críticos (vehículos, contactos)."
+          },
+          {
+            "severity": "P2",
+            "area": "Workflows / CMS / Config — sin borrado de entidades",
+            "file": "workflows.data.js:37-58 (solo enable/disable + saveRuleStates) · cms.data.js:27-58 (solo load/save) · config.data.js:54-77 (save/override via deleteField)",
+            "problem": "Workflows solo permite activar/desactivar reglas predefinidas (no CRUD de reglas custom → aceptable hoy). CMS de marca solo carga/guarda contenido (no hay 'resetear/borrar contenido de marca'). Config de disponibilidad usa deleteField para limpiar claves (ok). No hay purga por sección en ninguno.",
+            "impact": "Menor: son módulos de configuración, no de datos transaccionales. Pero para multi-tenant faltará poder resetear/limpiar la configuración de un tenant.",
+            "recommendation": "Añadir 'restablecer/limpiar' owner-only donde aplique (p.ej. borrar contenido CMS de una marca). Documentar que workflows es catálogo estático por ahora."
+          },
+          {
+            "severity": "P2",
+            "area": "Exportación de datos por sección",
+            "file": "reportes.ui.js:271-322 (único export CSV) · resto de módulos sin export",
+            "problem": "Solo Reportes exporta CSV. Contactos, Pipeline, Bandeja, Vehículos, Aliados, Agenda no tienen exportación, pese a que existe la infraestructura backup (functions/src/ops/crmBackup.js + módulo backup). Para un CRM 'top global' vendible, export por sección (CSV/Excel) es esperado.",
+            "impact": "El dueño/empresa no puede sacar sus datos por sección para análisis externo o respaldo granular; solo el backup global.",
+            "recommendation": "Reutilizar los helpers toCsv()/download() de reportes.ui.js para añadir '⤓ Exportar' en Contactos, Pipeline, Vehículos y Aliados (respetando RBAC de cada sección)."
+          },
+          {
+            "severity": "P3",
+            "area": "Consistencia de borrado item-level ya existente",
+            "file": "brands.data.js:110 · reviews.data.js:60 · banners.data.js:102 · cerebro.data.js:40 · departamentos.data.js:56 · roles.data.js:59 · usuarios.data.js:139 · unmatched.data.js:53 · vehicles.data.js:78",
+            "problem": "Estos módulos SÍ tienen delete item-level y la mayoría con modal custom (reviews/banners/vehicles), pero varios (cerebro, departamentos, roles, usuarios, unmatched) siguen con confirm() nativo (ver P1) y ninguno tiene borrado masivo. La cobertura existe pero es heterogénea en UX y profundidad.",
+            "impact": "Inconsistencia visible al navegar entre secciones; sensación de producto sin pulir.",
+            "recommendation": "Unificar todos los borrados al mismo componente de confirmación custom y añadir selección múltiple donde el volumen lo justifique (FAQs, unmatched, usuarios)."
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "veredicto": "El CRM (admin-app/) es un panel funcional y bien intencionado para Altorra Cars, con buenas piezas (design-system con type ramp W11-grade, optimistic-UI, RBAC de 71 permisos, infra de purga/backup server-side ya escrita), PERO HOY no es ni un producto vendible multi-tenant ni un panel \"premium top-global\" como pretende la tesis de negocio. Tiene DOS clases de bloqueantes: (1) seguridad/datos REAL — el dataScope (own/dept/all) es teatro porque NINGUNA query ni regla de Firestore lo aplica (fuga de PII de toda la cartera a cualquier asesor, viola Habeas Data Ley 1581), y un admin con roles.create puede auto-escalarse a control total porque la creación de roles no valida subconjunto de permisos; (2) productización — CERO concepto de tenant en el código (0 ocurrencias de tenantId/orgId), Firebase y marca hardcodeados a un solo proyecto, colecciones raíz globales Spanglish dispersas en ~30 archivos sin constantes, y cero capa i18n/branding-por-tenant: vender a un 2º cliente hoy = clonar el proyecto o reescribir el modelo de datos. A eso se suman quejas verbatim del dueño que abaratan el producto: el módulo Vehículos (y 5 hermanos) se RECORTA sin scroll por un bug sistémico del .outlet, no puede purgar data sucia él mismo (Aliados/Pipeline ni siquiera exponen borrado pese a que el backend lo permite), 16-18 diálogos confirm()/prompt() nativos, ~30 toasts que filtran errores crudos de Firebase, copy \"modo desarrollador\" (crons de 4h), tema light por defecto contra el mandato dark-only, y voseo argentino en el bot público de Cartagena. Veredicto honesto: base sólida pero con fugas de seguridad explotables HOY y una brecha de productización estructural — antes de añadir features hay que decidir la estrategia de tenancy (Decisión Fuerte) y cerrar el enforcement de dataScope/RBAC; el resto son quick wins de alto impacto.",
+      "p0": [
+        "SEGURIDAD — dataScope no enforced: own/dept/all se hidrata en el cliente (auth.js, store.js) pero NINGUNA query ni regla de Firestore lo aplica (grep where(ownerId/departmentId/dataScope)=0). subscribeLeads lee TODA la colección leads/contacts/deals → cualquier asesor ve la PII de toda la cartera (nombres, teléfonos, emails). Viola Habeas Data Ley 1581 CO. El scope es cosmético; no debe venderse como control de seguridad. Fix: where(ownerId/departmentId) en queries + reglas que lo exijan, o servir el CRM solo por callables server-side.",
+        "SEGURIDAD — escalada de privilegios vía roles.create/edit: la rule de roles solo exige hasPermission('roles.create')+!isSystem; NO valida que los permisos otorgados sean subconjunto de los que el creador posee, y buildMatrix() muestra el catálogo completo. Un admin no-dueño se fabrica un rol con users.create/users.edit/crm.delete, se lo asigna, y onUserRoleAssigned lo copia sin verificación → control efectivo del sistema (también dentro de un tenant). Fix: callable Admin SDK que valide subset + isOwner para perms críticos, defensa en reglas, UI deshabilita (no oculta) perms que el creador no tiene.",
+        "PRODUCTIZACIÓN — cero multi-tenancy en el código: 0 ocurrencias de tenantId/orgId/workspaceId; FIREBASE_CONFIG y APP_NAME hardcodeados a 'altorra-cars'; todas las colecciones son raíz globales sin partición por cliente. Vender a una 2ª empresa = clonar proyecto Firebase o reescribir el modelo de datos. Es el bloqueo #1 de la tesis 'CRM multi-tenant'. Exige Decisión Fuerte sobre la estrategia de tenancy ANTES de seguir construyendo features.",
+        "LAYOUT — bug sistémico del .outlet (shell.css:108): es flex de altura fija con overflow:hidden, sin scroll/padding/max-width; delega el scroll a cada módulo. Vehículos (.veh) y 5 hermanos (marcas/aliados/banners/atributos/disponibilidad) NO replican el patrón → la lista se RECORTA sin poder hacer scroll, queda pegada al sidebar (padding 0) y deja hueco a la derecha (sin max-width). Es la queja P0 verbatim del dueño y afecta ≥6 de ~24 rutas. Fix sistémico en el .outlet (overflow-y:auto + padding + wrapper max-width centrado), no parche por módulo.",
+        "FUNCIONAL/OWNER — sin purga/borrado owner-only por sección (queja verbatim): el dueño no puede limpiar su data sucia ('dfsfdfdfs'). Pipeline (deals) NO tiene deleteDeal y Aliados (dealers) declara 'SIN borrado' → deals y concesionarios basura son IMBORRABLES desde la app y contaminan KPIs/forecast para siempre. El backend YA lo permite (rules isSuperAdmin/crm.delete + crmPurge.js); el bloqueo es solo de UI. Fix: panel owner-only por sección con bulk-delete/purge (gate server-side, modal custom, doble confirmación).",
+        "CAPTURA DE LEADS — pérdida silenciosa: quick-lead.js y new-lead.js escriben optimista (addDoc().catch) y muestran toast de éxito inmediato; si el server rechaza, el error es un toast efímero ya perdido → el asesor cree que capturó el lead y NO lo hizo (pérdida de dinero). Fix: estando online, esperar ack (o confirmar vía snapshot de la Bandeja) y, ante rechazo, modal bloqueante con el lead intacto para reintentar; camino optimista solo sin señal."
+      ],
+      "temas": [
+        {
+          "tema": "Multi-tenancy / Productización (estructural)",
+          "severidad": "P0",
+          "hallazgos": [
+            "Cero concepto de tenant en src (0 ocurrencias tenantId/orgId/workspaceId/companyId); FIREBASE_CONFIG y APP_NAME hardcodeados a un único proyecto altorra-cars",
+            "Colecciones raíz globales sin partición por cliente, con naming Spanglish disperso (~50 literales collection(db,'x') en ~30 archivos, sin constantes centralizadas) → refactor a tenant toca todo a mano con alto riesgo de dejar una query sin migrar (fuga)",
+            "CERO capa i18n: cada string hardcodeado inline; marca cosida al copy ('Altorra Cars', 'ALTORRA', 'Cartagena', voz del bot) → onboarding de un tenant nuevo es ingeniería, no configuración",
+            "Theming cableado a Altorra (gold fijo en tokens, título, localStorage key, logo) → cada cliente nuevo sería un fork de CSS/HTML, no un producto configurable"
+          ],
+          "recomendacion": "Decisión Fuerte sobre estrategia de tenancy ANTES de más features: (a) tenants/{tenantId}/{coleccion}+collectionGroup o (b) tenantId por doc forzado en reglas. Habilitadores previos: centralizar nombres de colección en core/collections.js con helpers que incorporen el tenant path; externalizar FIREBASE_CONFIG a runtime por dominio/tenant; extraer strings a core/strings.js (t('key')); separar brand (color/logo/nombre/voz/ciudad) a config de tenant en variables CSS sobreescribibles."
+        },
+        {
+          "tema": "Seguridad / RBAC / Aislamiento de datos",
+          "severidad": "P0",
+          "hallazgos": [
+            "dataScope (own/dept/all), nivel y departmentId se materializan en el cliente pero NO se aplican en ninguna regla ni query → fuga de PII de toda la cartera a cualquier asesor (Habeas Data Ley 1581)",
+            "Escalada de privilegios: roles.create/edit no valida subconjunto de permisos; basta fabricarse un rol con users.*/crm.delete y asignárselo (onUserRoleAssigned lo copia sin verificación)",
+            "Owner-detection drift: crmBackup.js y crmPurge.js gatean solo en rol==='super_admin' (legacy) mientras index.js/rules reconocen 3 formas → tras el 'R8 cleanup' el dueño real pierde backup/restore/purga (denial) y un gate más débil que el canónico (bypass)",
+            "auditLog/automationLog/events con create demasiado permisivo (cualquier auth, incl. anónimo público) sin whitelist ni caps → contaminación/anti-forense del audit trail",
+            "Degradación insegura: si falla el lookup de usuarios/{uid}, la sesión sigue activa con permissions:[] y no se evalúa el estado 'bloqueado' (fail-open de sesión)",
+            "validVersion (optimistic locking) inconsistente: ausente en concesionarios y reseñas (create/update) y en todos los delete → lost-update silencioso"
+          ],
+          "recomendacion": "Hacer dataScope frontera real (queries filtradas + reglas que lo exijan, o CRM servido por callables); creación de roles vía callable Admin SDK con validación de subset + isOwner para perms críticos; unificar isOwnerData() canónico (3 formas) en crmBackup/crmPurge + test de paridad; restringir create de logs a perfil admin con whitelist+caps (idealmente solo Admin SDK/triggers); ante fallo de lookup hacer signOut/retry en vez de continuar; política uniforme de _version."
+        },
+        {
+          "tema": "Layout / scroll / responsive (raíz sistémica)",
+          "severidad": "P0",
+          "hallazgos": [
+            ".outlet (shell.css:108) es flex de altura fija con overflow:hidden, sin scroll/padding/max-width → delega scroll a cada módulo (contrato implícito frágil)",
+            "Vehículos (.veh) + 5 hermanos (banners/marcas/aliados/atributos/disponibilidad) no replican el patrón → recorte sin scroll, pegado al sidebar (padding 0) y hueco a la derecha (sin max-width). Reproduce las 3 quejas verbatim a la vez",
+            "Existen DOS convenciones de montaje conviviendo (height:100%+host scroll vs flex-column roto) sin clase .page canónica; padding lateral ad-hoc por módulo = se siente 'hecho a pedazos'",
+            "En monitores anchos (1920px+) falta max-width/centrado: contenido estirado o con banda muerta incluso donde el scroll funciona",
+            "Breakpoints sin coordinar: shell colapsa a 860/560 pero módulos usan 640/900/480 propios → zona 561-859px (tablets 768px) con saltos/overflow-x posibles"
+          ],
+          "recomendacion": "Arreglo SISTÉMICO en el .outlet (overflow-y:auto, overflow-x:hidden, padding lateral, wrapper interno .page con max-width ~1200-1320px + margin-inline:auto + min-height:100%) y quitar overflow:hidden; luego retirar el manejo de scroll/altura ad-hoc de los módulos para que TODOS hereden. Definir clase canónica .page/.page__scroll como SSoT del page-shell. Centralizar breakpoints y alinearlos con el shell."
+        },
+        {
+          "tema": "Borrado / purga / bulk / export owner-only (autoservicio)",
+          "severidad": "P0",
+          "hallazgos": [
+            "Sin UI de purga/borrado masivo owner-only por sección (queja verbatim); el dueño depende de Claude/dev para limpiar data sucia",
+            "Pipeline NO tiene deleteDeal y Aliados declara 'SIN borrado' → deals y concesionarios basura imborrables, contaminan KPIs/forecast/comisiones; el backend ya lo permite (rules + crmPurge.js), bloqueo solo de UI",
+            "Solo la Bandeja tiene selección múltiple/bulk; el resto borra item-por-item; Agenda/Contactos sin borrado duro real (solo cancelar/suprimir), residuos permanentes",
+            "Casi nula red de seguridad: solo 'archivar' (inbox) y supresión 72h (contactos) son reversibles; todo lo demás es deleteDoc duro inmediato sin papelera ni 'Deshacer'",
+            "Export por sección ausente: solo Reportes exporta CSV pese a existir helpers toCsv()/download() y backup global"
+          ],
+          "recomendacion": "Patrón reutilizable: barra de selección múltiple (reusar .inbox__bulkbar) + 'Zona peligrosa' owner-only por sección con purga apoyada en rules/crmPurge (gate server-side, NUNCA solo cliente); añadir deleteDeal/deleteDealer; toast 'Deshacer' (5-10s) o soft-delete/tombstone para datos críticos; '⤓ Exportar' CSV en Contactos/Pipeline/Vehículos/Aliados reutilizando toCsv()/download()."
+        },
+        {
+          "tema": "Profesionalismo de UI: diálogos nativos + errores crudos + copy dev",
+          "severidad": "P1",
+          "hallazgos": [
+            "16-18 window.confirm()/prompt()/alert() nativos para acciones críticas (borrar usuario/rol/depto, purgar lead, fusionar, supresión Ley-1581 con prompt('SUPRIMIR')) → rompe dark-only/dorado, no estilizable ni testeable; ya existe .rev-modal que no se reutilizó",
+            "~30 toasts concatenan el error crudo de Firebase (e.message||e.code): 'permission-denied', 'requiere super_admin (rules)' → tono 'modo dev' y fuga de internals; auth.js SÍ mapea amable pero no se aplica fuera del login",
+            "Copy 'modo desarrollador': 'el generador corre cada 4h', 'su página pública muere en la próxima corrida', '13 listas' hardcodeado, crumb 'tiempo real', footer 'v0.4.1 · Fase 4', sufijo '(demo)' inline, mensajes 'Necesitas el permiso users.read' (expone IDs RBAC)",
+            "Modal .rev-modal vive en reviews.css con ejecución pobre (sin shadow/blur/animación, font-size arbitrario) y acopla 7+ módulos al CSS de reseñas"
+          ],
+          "recomendacion": "Extraer core/confirm.js (confirmDialog/promptDialog con variante danger y typed-confirm) desde .rev-modal, moverlo a components.css con shadow-32+blur+animación, y reemplazar los ~16-18 nativos; crear core/errors.js friendlyError(e) y reemplazar todos los (e.message||e.code), logueando el código crudo solo a consola (nunca mostrar e.code ni 'rules'/'super_admin' ni IDs de permiso); reescribir copy a lenguaje de negocio, derivar conteos de datos, quitar 'tiempo real'/'Fase N'/'(demo)' inline."
+        },
+        {
+          "tema": "Identidad de marca: dark-only, voz, iconografía, color, tipografía",
+          "severidad": "P1",
+          "hallazgos": [
+            "Mandato dark-only pero index.html arranca data-theme='light' + color-scheme 'light dark', store.theme='light', toggle ☀️/🌙 completo en el topbar → primer render fuera de marca + superficie de bug del modo claro nunca pulido",
+            "Voseo argentino conviviendo con tú-Colombia, CRÍTICO en el bot público Cerebro AI ('decime que andás buscando', 'si tenés urgencia') visible a compradores reales en Cartagena",
+            "Mezcla emoji/SVG: sidebar ya en SVG pero botones de fila/acciones/empty-states en emoji del SO (tamaño/color inconsistente por plataforma) = señal #1 de 'hecho por IA'",
+            "Deriva de gold: token --gold-500 #D4A85A vs doctrina #b89658, con var(--gold,#b89658) fantasma (variable inexistente) → dos dorados",
+            "Cards/superficies inconsistentes (radios --r-xl en filas de lista, sin sombra/hover) frente al pulido del dashboard; snackbars con hex hardcodeados fuera de tokens"
+          ],
+          "recomendacion": "Fijar data-theme='dark'+color-scheme:dark, eliminar themeBtn/toggle, store.theme='dark' (para producto: 'tema permitido' como capability por-tenant, no toggle libre); definir UNA voz canónica (tú-Colombia, skill catalogo-voz) y barrer cerebro.data.js/hub/login; completar set SVG (icons.js currentColor) y erradicar emoji del chrome; un solo gold canónico (resolver #D4A85A vs #b89658) eliminando el fantasma --gold; estandarizar radios/sombra/hover por tipo de superficie migrando a .surface."
+        },
+        {
+          "tema": "Validación de entrada / data sucia / render null",
+          "severidad": "P1",
+          "hallazgos": [
+            "saveDealer (y patrón repetido) escribe sin trim/maxLen/regex; rules de concesionarios sin validación de nombre ni _version → entra basura tipo 'dfsfdfdfs'",
+            "Riesgo de 'null'/'undefined' renderizado: el() guarda text:null pero las interpolaciones ${x} en template strings no, y un campo Firestore ausente imprime literal 'null' bajo Inicio/Vehículos (queja del dueño, no reproducible solo por lectura estática)",
+            "Consentimiento Ley 1581 inconsistente entre formularios: quick-lead exige checkbox, new-lead viene checked:true (consentimiento pre-asumido, problemático)"
+          ],
+          "recomendacion": "Capa de validación reutilizable en domain/ (required/trim/maxLen/regex) aplicada en cada *.data.js + espejada en reglas; helper safe(x,'—')/coerción para toda interpolación de campo opcional y validación LIVE (Chrome) para localizar el campo null exacto; NUNCA pre-marcar consentimiento (new-lead.js checked:true → explícito como quick-lead)."
+        },
+        {
+          "tema": "Escalabilidad de estado / queries",
+          "severidad": "P2",
+          "hallazgos": [
+            "Full-scans sin paginar: fetchDealerStats (getDocs vehiculos+deals completos en cliente), subscribeVehicles (onSnapshot de toda la colección), fetchTeam (todos los usuarios) → la regla de inbox (siempre limit/paginar) no se aplica consistentemente",
+            "Select plano que carga TODO el inventario en el diálogo de conversión (la acción más importante del CRM) → inusable a 100-300+ vehículos o multi-tenant",
+            "Kanban pinta ~7 etapas sin scroll-x señalizado en pantallas medianas; fallback 'mover' poco descubrible"
+          ],
+          "recomendacion": "Estandarizar paginación/cursores en TODOS los *.data.js; precomputar agregados server-side (CFs/contadores) para stats de aliados; reemplazar el <select> de vehículos por combobox con typeahead (marca+modelo+placa) reutilizable; scroll-x explícito y CTA 'mover etapa' visible en el board."
+        },
+        {
+          "tema": "Deuda strangler: doble fuente RBAC + cutover F-6",
+          "severidad": "P2",
+          "hallazgos": [
+            "Catálogo de 71+ permisos DUPLICADO: copia ESM en el portal nuevo y SSoT en admin clásico que seedSystemRoles fetchea; deben mantenerse idénticos a mano hasta el cutover F-6 → divergencia = RBAC roto/silencioso (riesgo de seguridad y soporte)"
+          ],
+          "recomendacion": "Cerrar el cutover F-6 (cuarentenar admin.html) para que la copia ESM quede única, o generar ambas listas desde un artefacto compartido; mientras tanto, test de paridad de IDs entre las dos listas (estilo firestore-rules-*.test.js)."
+        },
+        {
+          "tema": "Onboarding / asesor novato",
+          "severidad": "P1",
+          "hallazgos": [
+            "Estados vacíos sin salida: 'Inventario vacío' sin CTA crear, 'Embudo vacío' sin link a la Bandeja, Contactos 'Sin resultados' sin acción",
+            "Sin onboarding/checklist de primeros pasos: el novato no sabe que el flujo es Bandeja→calificar→Pipeline→vender",
+            "Doble captura confusa (⚡ Lead rápido vs ＋ Completo) sin guía de cuándo usar cada uno + consentimiento divergente"
+          ],
+          "recomendacion": "Estados vacíos accionables (cada uno con su CTA primario); mini-tour/checklist en el Dashboard cuando el tenant está vacío; unificar captura en un formulario progresivo (rápido por defecto, 'más campos' expande) con consentimiento siempre explícito."
+        }
+      ],
+      "quickWins": [
+        "Fix sistémico del .outlet (shell.css:108): overflow-y:auto + padding lateral + wrapper .page con max-width centrado y quitar overflow:hidden → cura de un golpe el recorte de Vehículos y de los 5 módulos hermanos + 'pegado al sidebar' + 'hueco a la derecha' (las 3 quejas verbatim).",
+        "Forzar dark-only: data-theme='dark', color-scheme:dark, store.theme='dark', eliminar themeBtn (shell.js:173-178) y el toggle de theme.js — bajo riesgo, alto impacto de marca.",
+        "core/errors.js friendlyError(e) (replicando el mapeo que ya existe en auth.js) y reemplazar los ~30 (e.message||e.code) → nunca mostrar e.code/'rules'/'super_admin' al usuario.",
+        "Extraer core/confirm.js desde el .rev-modal ya existente (confirmDialog/promptDialog) y reemplazar los 16-18 confirm()/prompt() nativos → consistencia premium en todas las acciones críticas.",
+        "Reescribir copy 'modo desarrollador': quitar 'generador cada 4h', 'tiempo real', footer 'v0.4.1 · Fase 4', '(demo)' inline, mensajes con IDs de permiso (users.read); derivar el '13 listas' de los datos en vez de hardcodear.",
+        "Helper safe(x,'—') / coerción en interpolaciones ${} para erradicar el 'null'/'undefined' visible bajo Inicio/Vehículos (validar el campo exacto en vivo con Chrome).",
+        "Unificar el gold canónico: eliminar var(--gold,#b89658) fantasma y resolver #D4A85A vs #b89658 a una sola fuente.",
+        "Quitar el consentimiento pre-marcado (new-lead.js checked:true → explícito), corrige un riesgo Habeas Data con un cambio de una línea.",
+        "Estados vacíos accionables: añadir el CTA primario que ya falta ('＋ Nuevo vehículo', 'Ir a la Bandeja') en vehicles/deals/contacts."
+      ],
+      "productizacion": [
+        "Decisión Fuerte sobre estrategia de tenancy (tenants/{tenantId}/{coleccion}+collectionGroup vs tenantId por doc forzado en reglas) ANTES de seguir construyendo features — es el bloqueo #1.",
+        "Externalizar FIREBASE_CONFIG y APP_NAME a runtime (config por dominio/tenant); parametrizar el alias de apps.",
+        "Centralizar nombres de colección en core/collections.js con helpers que ya incorporen el tenant path (habilitador del refactor de tenancy; evita dejar queries sin migrar = fugas cross-tenant).",
+        "Enforcement real de dataScope/RBAC por tenant: sin esto, un admin de un cliente escala dentro de su tenant y ve datos cross-departamento — la promesa multi-tenant es teatro.",
+        "Capa i18n/strings centralizada (core/strings.js, t('key')) + separar marca (nombre, ciudad, color, logo, voz del bot) a config de tenant en variables CSS sobreescribibles — hoy onboarding de un tenant es ingeniería, no configuración.",
+        "Theming por-tenant: brand sobre variables CSS + 'tema permitido' (dark-only/light-only/ambos) como capability del tenant, en vez del toggle libre actual.",
+        "Panel owner-only de gestión y purga por sección, multi-tenant (cada owner administra y limpia SU espacio), con gate server-side y audit log — funcionalidad esperada de un CRM base vendible.",
+        "Validación server-side espejada en reglas para todas las colecciones (la frontera real es la regla, no el cliente) — en multi-tenant la data sucia de un cliente degrada la percepción de calidad del producto.",
+        "Cerrar el cutover F-6 para eliminar la doble fuente RBAC (catálogo de permisos único) — un RBAC desincronizado es riesgo de seguridad/soporte inaceptable en un producto vendible.",
+        "Export por sección y red de seguridad (papelera/undo/soft-delete) como features estándar esperadas en un CRM 'top global'."
+      ]
+    },
+    "totalFindings": 81
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Mapa"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Auditoria"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Sintesis"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "map:admin-app",
+      "phaseIndex": 1,
+      "phaseTitle": "Mapa",
+      "agentId": "a466f245660c48cc9",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708082330,
+      "queuedAt": 1782708082308,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "ROUTER: hash mínimo core/router.js (#/{name}); 24 rutas en …",
+      "promptPreview": "Mapea la estructura del admin-app CRM de Altorra para orientar una auditoría. \nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUE…",
+      "lastProgressAt": 1782708350934,
+      "tokens": 145522,
+      "toolCalls": 34,
+      "durationMs": 268604,
+      "resultPreview": "{\"routes\":[\"inicio (Dashboard/Home — KPIs+NBA+pendientes; dashboard.ui.js)\",\"bandeja (Bandeja Inteligente — inbox.ui.js)\",\"pipeline (Pipeline de ventas — deals.ui.js)\",\"agenda (Agenda — agenda.ui.js)\",\"reportes (Reportes y KPIs — reportes.ui.js)\",\"contactos (Customer 360 — contacts.list.js + contacts.ui.js detail panel)\",\"config (Disponibilidad de citas — perm calendar.config)\",\"resenas (Reseñas —…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "audit:arquitectura",
+      "phaseIndex": 2,
+      "phaseTitle": "Auditoria",
+      "agentId": "aadd02c817456452a",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708350973,
+      "queuedAt": 1782708350952,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Arquitectura & Multi-tenant / Productización",
+      "promptPreview": "Eres un AUDITOR ADVERSARIAL especializado. Lente: ARQUITECTURA.\n\nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUEJAS VERBATIM D…",
+      "lastProgressAt": 1782708880999,
+      "tokens": 143719,
+      "toolCalls": 21,
+      "durationMs": 530026,
+      "resultPreview": "{\"dimension\":\"Arquitectura & Multi-tenant / Productización\",\"summary\":\"La BASE es sólida y de buena ingeniería: vanilla modular limpio (core/domain/modules/styles), store pub/sub minimalista, router hash, patrón consistente *.data.js + *.ui.js, optimistic-lock real (_version) y RBAC denormalizado. PERO como PRODUCTO multi-tenant vendible está estructuralmente bloqueado: CERO concepto de tenantId e…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "audit:seguridad",
+      "phaseIndex": 2,
+      "phaseTitle": "Auditoria",
+      "agentId": "a912b0e83cbdb6cae",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708350975,
+      "queuedAt": 1782708350952,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Seguridad / RBAC / Owner-Delete",
+      "promptPreview": "Eres un AUDITOR ADVERSARIAL especializado. Lente: SEGURIDAD.\n\nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUEJAS VERBATIM DEL …",
+      "lastProgressAt": 1782708960244,
+      "tokens": 171895,
+      "toolCalls": 26,
+      "durationMs": 609269,
+      "resultPreview": "{\"dimension\":\"Seguridad / RBAC / Owner-Delete\",\"summary\":\"La frontera de seguridad REAL (firestore.rules + callables Admin SDK) está sorprendentemente madura para un producto en construcción: el dueño es inamovible (§212/§213 con triple anti-takeover en usuarios/roles), hay whitelists de claves anti-exfiltración, optimistic locking y bloqueo fiscal. PERO hay UN hueco P0 explotable: escalada de pri…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "audit:ux-flujo",
+      "phaseIndex": 2,
+      "phaseTitle": "Auditoria",
+      "agentId": "a5c1c789b11c0e5bc",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708350976,
+      "queuedAt": 1782708350952,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "UX-FLUJO",
+      "promptPreview": "Eres un AUDITOR ADVERSARIAL especializado. Lente: UX-FLUJO.\n\nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUEJAS VERBATIM DEL D…",
+      "lastProgressAt": 1782708979923,
+      "tokens": 182006,
+      "toolCalls": 27,
+      "durationMs": 628947,
+      "resultPreview": "{\"dimension\":\"UX-FLUJO\",\"summary\":\"El flujo lead→calificar→deal→vender está bien pensado conceptualmente (Bandeja=triage, Pipeline=ventas, conversión canónica en un diálogo <45s con Deshacer, gates acumulados en un solo prompt) y eso es lo mejor del CRM. Pero la EJECUCIÓN de layout es inconsistente y se siente \\\"hecho por IA\\\": cada módulo reinventa su propio manejo de scroll/altura, y Vehículos (…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "audit:diseno",
+      "phaseIndex": 2,
+      "phaseTitle": "Auditoria",
+      "agentId": "a60a0701a95170438",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708350979,
+      "queuedAt": 1782708350952,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Diseño visual premium (admin-app CRM)",
+      "promptPreview": "Eres un AUDITOR ADVERSARIAL especializado. Lente: DISENO.\n\nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUEJAS VERBATIM DEL DUE…",
+      "lastProgressAt": 1782709001826,
+      "tokens": 157153,
+      "toolCalls": 29,
+      "durationMs": 650846,
+      "resultPreview": "{\"dimension\":\"Diseño visual premium (admin-app CRM)\",\"summary\":\"La BASE de diseño es de clase mundial: tokens.css es un sistema maduro (paleta gold completa, ink scale, sombras Fluent, motion curves, type ramp) y components.css usa esos tokens con disciplina. El problema NO son los tokens sino la EJECUCIÓN y la consistencia: (1) raíz estructural rota — el .outlet es overflow:hidden de altura fija …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "audit:responsive",
+      "phaseIndex": 2,
+      "phaseTitle": "Auditoria",
+      "agentId": "a7bce96c829a1d2e1",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708350980,
+      "queuedAt": 1782708350952,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "RESPONSIVE / LAYOUT",
+      "promptPreview": "Eres un AUDITOR ADVERSARIAL especializado. Lente: RESPONSIVE.\n\nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUEJAS VERBATIM DEL…",
+      "lastProgressAt": 1782708941204,
+      "tokens": 134957,
+      "toolCalls": 26,
+      "durationMs": 590224,
+      "resultPreview": "{\"dimension\":\"RESPONSIVE / LAYOUT\",\"summary\":\"El shell tiene un esqueleto sólido (grid 256px+1fr, dvh, drawer móvil accesible bien hecho), pero hay un defecto ARQUITECTÓNICO de fondo: el `.outlet` es `display:flex; overflow:hidden` SIN padding ni max-width, y delega TODO el scroll/ancho a cada módulo. Eso obligó a una convención implícita (`.module{height:100%}` + host interno `flex:1;overflow-y:a…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 7,
+      "label": "audit:bugs",
+      "phaseIndex": 2,
+      "phaseTitle": "Auditoria",
+      "agentId": "a67273b61852474a6",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708350982,
+      "queuedAt": 1782708350952,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "BUGS / DATA-SUCIA / DEV-LEAKS",
+      "promptPreview": "Eres un AUDITOR ADVERSARIAL especializado. Lente: BUGS.\n\nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUEJAS VERBATIM DEL DUEÑO…",
+      "lastProgressAt": 1782709024229,
+      "tokens": 169866,
+      "toolCalls": 32,
+      "durationMs": 673246,
+      "resultPreview": "{\"dimension\":\"BUGS / DATA-SUCIA / DEV-LEAKS\",\"summary\":\"El CRM tiene buena base de tokens pero la ejecución filtra \\\"modo IA\\\": el bug estructural P0 es que .outlet (shell.css:108 overflow:hidden + display:flex SIN padding ni max-width) recorta cualquier módulo que no se fabrique su propio contenedor con scroll — Vehículos, Marcas y Aliados lo olvidaron (.veh/.brd/.dlr son flex-column sin height/o…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 8,
+      "label": "audit:copy",
+      "phaseIndex": 2,
+      "phaseTitle": "Auditoria",
+      "agentId": "a267cc21da9b47dec",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708350983,
+      "queuedAt": 1782708350952,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "COPY / Mensajería profesional · i18n-readiness",
+      "promptPreview": "Eres un AUDITOR ADVERSARIAL especializado. Lente: COPY.\n\nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUEJAS VERBATIM DEL DUEÑO…",
+      "lastProgressAt": 1782708965891,
+      "tokens": 135757,
+      "toolCalls": 21,
+      "durationMs": 614908,
+      "resultPreview": "{\"dimension\":\"COPY / Mensajería profesional · i18n-readiness\",\"summary\":\"La base de copy es decente y casi toda en español, pero NO se siente \\\"producto top global vendible\\\": hay strings de \\\"modo desarrollador\\\" filtrados al usuario final (contadores que explican el cron \\\"cada 4h\\\", ~30 toasts de error que vomitan codigos crudos de Firebase como \\\"permission-denied\\\", \\\"(rules)\\\", \\\"requiere su…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 9,
+      "label": "audit:funcional",
+      "phaseIndex": 2,
+      "phaseTitle": "Auditoria",
+      "agentId": "af095002dfe567c66",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782708350985,
+      "queuedAt": 1782708350952,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "FUNCIONAL — CRUD/borrado/bulk/export por sección (owner-onl…",
+      "promptPreview": "Eres un AUDITOR ADVERSARIAL especializado. Lente: FUNCIONAL.\n\nCONTEXTO DE NEGOCIO: este CRM (admin-app/) es el PRODUCTO BASE de un negocio futuro: vender CRMs multi-tenant a grandes empresas. El de Altorra Cars (concesionario de autos usados, Cartagena, brand dorado #b89658, DARK-ONLY) es el referente. Debe sentirse top global (calidad Linear/Stripe/Notion), NO \"hecho por IA\".\nQUEJAS VERBATIM DEL …",
+      "lastProgressAt": 1782708958653,
+      "tokens": 124278,
+      "toolCalls": 31,
+      "durationMs": 607668,
+      "resultPreview": "{\"dimension\":\"FUNCIONAL — CRUD/borrado/bulk/export por sección (owner-only)\",\"summary\":\"El CRM tiene un patrón de borrado MUY desigual entre módulos: la Bandeja es ejemplar (selección múltiple, archivar reversible, purga super-admin) y Contactos cubre supresión Ley-1581 + fusión, pero secciones enteras carecen de borrado pese a que las firestore.rules YA lo permiten. El hueco más grave: el PIPELIN…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 10,
+      "label": "synth:master",
+      "phaseIndex": 3,
+      "phaseTitle": "Sintesis",
+      "agentId": "a4392900d7c09de09",
+      "model": "claude-opus-4-8[1m]",
+      "state": "done",
+      "startedAt": 1782709024252,
+      "queuedAt": 1782709024231,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "El CRM (admin-app/) es un panel funcional y bien intenciona…",
+      "promptPreview": "Eres el SÍNTETIZADOR del audit holístico del CRM. Te paso 81 findings de 8 lentes (JSON). Dedup, agrupa por TEMA transversal, prioriza (P0 primero), separa QUICK WINS (alto impacto/bajo costo) y lo que exige la PRODUCTIZACIÓN multi-tenant. Da un veredicto global honesto. NO inventes; solo consolida lo reportado.\n\nFINDINGS: [{\"severity\":\"P0\",\"area\":\"Multi-tenant / Aislamiento de datos\",\"file\":\"admi…",
+      "lastProgressAt": 1782709155645,
+      "tokens": 121345,
+      "toolCalls": 1,
+      "durationMs": 131393,
+      "resultPreview": "{\"veredicto\":\"El CRM (admin-app/) es un panel funcional y bien intencionado para Altorra Cars, con buenas piezas (design-system con type ramp W11-grade, optimistic-UI, RBAC de 71 permisos, infra de purga/backup server-side ya escrita), PERO HOY no es ni un producto vendible multi-tenant ni un panel \\\"premium top-global\\\" como pretende la tesis de negocio. Tiene DOS clases de bloqueantes: (1) segur…"
+    }
+  ],
+  "totalTokens": 1486498,
+  "totalToolCalls": 248
+}

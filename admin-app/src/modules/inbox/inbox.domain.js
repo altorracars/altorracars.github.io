@@ -30,10 +30,10 @@ export function enrichAll(leads) {
 }
 
 export const QUEUES = [
-  { id: 'calientes', label: 'Calientes sin contestar', icon: '🔥' },
-  { id: 'mios', label: 'Mis asignados', icon: '👤' },
-  { id: 'sin_asignar', label: 'Sin asignar', icon: '🆕' },
-  { id: 'todo', label: 'Todo', icon: '📥' },
+  { id: 'calientes', label: 'Calientes sin contestar', iconId: 'flame' },
+  { id: 'mios', label: 'Mis asignados', iconId: 'user' },
+  { id: 'sin_asignar', label: 'Sin asignar', iconId: 'userPlus' },
+  { id: 'todo', label: 'Todo', iconId: 'inbox' },
 ];
 
 export function inQueue(lead, queueId, uid) {

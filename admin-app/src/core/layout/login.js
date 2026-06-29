@@ -31,7 +31,7 @@ function migrationBanner() {
     el('span', { class: 'login__notice-icon', 'aria-hidden': 'true', text: '✨' }),
     el('div', { class: 'login__notice-body' }, [
       el('p', { class: 'login__notice-title', text: 'Renovamos el panel de Altorra' }),
-      el('p', { class: 'login__notice-text u-caption', text: 'Por la actualización necesitás iniciar sesión de nuevo, con tu correo y contraseña de siempre.' }),
+      el('p', { class: 'login__notice-text u-caption', text: 'Por la actualización necesitas iniciar sesión de nuevo, con tu correo y contraseña de siempre.' }),
     ]),
     close,
   ]);

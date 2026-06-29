@@ -130,6 +130,8 @@
   color: var(--ink-950); border-color: transparent;
 }
 .chip__count { font-size: 11px; font-weight: 700; opacity: 0.7; }
+.chip__ico { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.chip__ico svg { width: 16px; height: 16px; display: block; }
 
 /* ─────────────── Inputs ─────────────── */
 .field { display: flex; flex-direction: column; gap: var(--s-2); }
@@ -208,7 +210,8 @@
   display: grid; place-items: center; justify-items: center; gap: var(--s-3);
   padding: var(--s-16) var(--s-6); text-align: center; color: var(--ink-text-muted);
 }
-.state__icon { font-size: 40px; opacity: 0.6; }
+.state__icon { font-size: 40px; opacity: 0.6; display: flex; justify-content: center; }
+.state__icon svg { width: 40px; height: 40px; flex: 0 0 auto; }
 .state__title { font-family: var(--font-display); font-weight: 700; font-size: var(--t-subtitle); color: var(--ink-text); }
 .state__msg { max-width: 38ch; font-size: var(--t-body); }
 

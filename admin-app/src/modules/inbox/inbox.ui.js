@@ -260,7 +260,7 @@ export function mountInbox(root) {
         class: 'chip' + (active ? ' chip--active' : ''),
         role: 'tab', 'aria-selected': String(active), type: 'button',
       }, [
-        el('span', { 'aria-hidden': 'true', text: q.icon }),
+        el('span', { class: 'chip__ico', 'aria-hidden': 'true', html: icon(q.iconId) }),
         el('span', { text: q.label }),
         el('span', { class: 'chip__count', text: String(counts[q.id] || 0) }),
       ]);

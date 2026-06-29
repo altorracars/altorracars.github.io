@@ -88,6 +88,11 @@ ul, ol { list-style: none; padding: 0; }
 .u-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .u-caption { font-size: var(--t-caption); line-height: var(--t-caption-lh); }
 .u-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* Icono SVG inline + texto, alineados (títulos/labels fuera de .btn). TODO-52 P1. */
+.u-ico-text { display: inline-flex; align-items: center; gap: var(--s-2); }
+.u-ico { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.u-ico-text > svg, .u-ico-text > .u-ico > svg, .u-ico > svg { width: 1em; height: 1em; flex: 0 0 auto; }
+.chip__ico svg { flex: 0 0 auto; }
 .u-sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;

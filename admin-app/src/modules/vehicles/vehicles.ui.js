@@ -76,7 +76,10 @@ export function mountVehicles(root) {
     const closeBtn = el('button', { class: 'btn btn--soft', type: 'button', text: 'Cerrar' });
     const overlay = el('div', { class: 'rev-modal__overlay' }, [
       el('div', { class: 'rev-modal', role: 'dialog', 'aria-modal': 'true' }, [
-        el('h3', { class: 'rev-modal__title', text: '🕘 Historial: ' + [brandName(v), v.modelo].filter(Boolean).join(' ') }),
+        el('h3', { class: 'rev-modal__title u-ico-text' }, [
+          el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('clock') }),
+          'Historial: ' + [brandName(v), v.modelo].filter(Boolean).join(' '),
+        ]),
         body,
         el('div', { class: 'rev-modal__actions' }, [closeBtn]),
       ]),
@@ -166,8 +169,8 @@ export function mountVehicles(root) {
     if ((v.estado || 'disponible') !== 'disponible') return null;
     const d = daysInStock(v);
     if (d === null) return null;
-    if (d >= 90) return el('span', { class: 'veh-stock is-crit', text: '🔴 ' + d + ' días en stock' });
-    if (d >= 60) return el('span', { class: 'veh-stock is-warn', text: '⚠️ ' + d + ' días en stock' });
+    if (d >= 90) return el('span', { class: 'veh-stock is-crit', html: icon('alertTriangle') + ' ' + d + ' días en stock' });
+    if (d >= 60) return el('span', { class: 'veh-stock is-warn', html: icon('alertTriangle') + ' ' + d + ' días en stock' });
     return el('span', { class: 'veh-stock u-caption u-faint', text: d + ' días' });
   }
 
@@ -188,9 +191,9 @@ export function mountVehicles(root) {
     } catch (e) { toast('No se pudo guardar el orden: ' + friendlyError(e), 'error'); }
   }
   function reorderRow(v, idx) {
-    const up = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '↑', disabled: idx === 0, 'aria-label': 'Subir' });
+    const up = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('arrowUp'), disabled: idx === 0, 'aria-label': 'Subir' });
     up.addEventListener('click', () => { reorderList.splice(idx - 1, 0, reorderList.splice(idx, 1)[0]); renderList(); });
-    const down = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '↓', disabled: idx === reorderList.length - 1, 'aria-label': 'Bajar' });
+    const down = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('arrowDown'), disabled: idx === reorderList.length - 1, 'aria-label': 'Bajar' });
     down.addEventListener('click', () => { reorderList.splice(idx + 1, 0, reorderList.splice(idx, 1)[0]); renderList(); });
     return el('article', { class: 'veh-row' }, [
       el('span', { class: 'u-caption u-faint veh-row__pos', text: String(idx + 1) }),
@@ -206,7 +209,7 @@ export function mountVehicles(root) {
     const thumb = el('div', { class: 'veh-row__thumb' }, [
       v.imagen && v.imagen.indexOf('placeholder') < 0
         ? el('img', { src: v.imagen, alt: '', loading: 'lazy' })
-        : el('span', { text: '🚗' }),
+        : el('span', { class: 'veh-thumb-ph', 'aria-hidden': 'true', html: icon('car') }),
     ]);
 
     const precio = el('div', { class: 'veh-row__price' },
@@ -220,12 +223,12 @@ export function mountVehicles(root) {
       const e1 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Editar', html: icon('edit') });
       e1.addEventListener('click', () => openWizard(v));
       actions.push(e1);
-      const dup = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '📋', 'aria-label': 'Duplicar', title: 'Duplicar como nuevo' });
+      const dup = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('copy'), 'aria-label': 'Duplicar', title: 'Duplicar como nuevo' });
       dup.addEventListener('click', () => duplicateVehicle(v));
       actions.push(dup);
     }
     {
-      const h = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🕘', 'aria-label': 'Historial' });
+      const h = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('clock'), 'aria-label': 'Historial', title: 'Historial' });
       h.addEventListener('click', () => openAudit(v));
       actions.push(h);
     }
@@ -234,7 +237,7 @@ export function mountVehicles(root) {
         class: 'veh-star' + (v.destacado ? ' is-on' : ''), type: 'button',
         'aria-label': v.destacado ? 'Quitar de destacados' : 'Destacar',
         title: v.destacado ? 'Quitar de destacados' : 'Destacar en el home',
-        text: v.destacado ? '★' : '☆',
+        html: icon('star'),
       });
       star.addEventListener('click', async () => {
         if (store.get().mock) {
@@ -378,7 +381,7 @@ export function mountVehicles(root) {
       ]);
     });
     return el('div', { class: 'veh-drafts' }, [
-      el('strong', { class: 'u-caption', text: '📝 Borradores (' + ui.drafts.length + ')' }),
+      el('strong', { class: 'u-caption u-ico-text', html: icon('fileText') + ' Borradores (' + ui.drafts.length + ')' }),
       ...rows,
     ]);
   }
@@ -395,13 +398,13 @@ export function mountVehicles(root) {
     estadoSel.addEventListener('change', () => { ui.estado = estadoSel.value; renderList(); });
 
     if (reorderMode) {
-      const saveOrd = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '✓ Guardar orden' });
+      const saveOrd = el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('check') + ' Guardar orden' });
       saveOrd.addEventListener('click', commitReorder);
       const cancelOrd = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: 'Cancelar' });
       cancelOrd.addEventListener('click', cancelReorder);
       wrap.append(
         el('div', { class: 'rev-head' }, [
-          el('span', { class: 'u-caption u-muted', text: '⇅ Reordenando el catálogo COMPLETO (los filtros no aplican). El orden manda sobre la web pública.' }),
+          el('span', { class: 'u-caption u-muted', text: 'Reordenando el catálogo COMPLETO (los filtros no aplican). El orden manda sobre la web pública.' }),
           el('div', { class: 'u-row u-row--tight' }, [cancelOrd, saveOrd]),
         ]),
         listRoot,
@@ -412,7 +415,7 @@ export function mountVehicles(root) {
     const canCreate = hasPermission('vehicles.create');
     const headBtns = [];
     if (canEdit || hasPermission('vehicles.export')) {
-      const csv = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '⬇ CSV' });
+      const csv = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV' });
       csv.addEventListener('click', async () => {
         let dealerNames = null;
         if (!store.get().mock) {
@@ -427,7 +430,7 @@ export function mountVehicles(root) {
       headBtns.push(csv);
     }
     if (canEdit && ui.vehicles.length > 1) {
-      const ord = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '⇅ Reordenar' });
+      const ord = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('arrowUpDown') + ' Reordenar' });
       ord.addEventListener('click', startReorder);
       headBtns.push(ord);
     }
@@ -464,7 +467,7 @@ export function mountVehicles(root) {
     const list = filtered();
     if (!list.length) {
       listRoot.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🚗' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('car') }),
         el('div', { class: 'state__title', text: ui.vehicles.length ? 'Nada coincide con el filtro' : 'Inventario vacío' }),
       ]));
       return;

@@ -13,7 +13,7 @@
 // El panel Customer 360 lee de store.leads → lo seteamos al abrir un lead.
 // ============================================================
 
-import { el, clear } from '../../core/dom.js';
+import { el, clear, appendAll } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { navigate } from '../../core/router.js';
@@ -81,7 +81,7 @@ export function mountDashboard(root) {
     store.set({ leads: m.enriched });
     clear(body);
 
-    body.append(
+    appendAll(body, [
       renderHero(m),
       renderKpis(m),
       ui.capped ? el('div', { class: 'dash__notice u-caption' },
@@ -90,7 +90,7 @@ export function mountDashboard(root) {
         renderActions(m),
         el('div', { class: 'dash__side' }, [renderPendientes(), renderAccesos()]),
       ]),
-    );
+    ]);
   }
 
   // ── Hero: saludo + resumen de una línea ──

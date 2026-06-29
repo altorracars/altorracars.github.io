@@ -12,10 +12,10 @@
 
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
-> 🟢 **FOCO (28/06 ⟦OPUS-4.8⟧)**:
-> **1. TODO-50 fase 2c — supresión rol-aware: IMPL+VERIF+DEPLOYED+CERTIFICADA.** El nombre desnormalizado del consignante se soft-redacta (tenencia vehículo + snapshot del comprador; busca por `ownerRefId`≠`contactId`). **Certificación legal (comité ×5 + 2ª opinión Gemini, ambas verificadas vs `.gov.co`)** cazó: (a) `contractRef` huérfano → **C1+C4**; (b) Gemini acertó el patrón "no destruir cédula a 72h para consignante-con-venta" (exógena/doc-soporte la transmiten a la DIAN) → **DECISIÓN: `delete`→BLOQUEO FISCAL** (retiene cédula+nombre, desactiva uso vivo, `crm_block_retention_1581`; delete solo si `retentionUntil` prescrito). **Ciclo bloqueo→purga COMPLETO+deployed** (`retentionUntil`=venta+5a + cron purga diferida; 302 tests). **BORRADOR de textos legales en `42`.** SSoT → `42` §Certificación + spec + `30` L-57. **RESTA**: colegiado (ratifica texto+plazo) · contador (umbral exógena) · TODO-51 menores · val.live.
-> **2. ALIADOS — validar LIVE** (TODO-25 §259, dueño).
-> **DIFERIDO**: bot v2 iter-2 + val.live bot; filtros L-56 (en main); facturación TODO-26.
+> 🟢 **RELEVO (28/06 ⟦OPUS-4.8⟧ · contexto saturado → sesión FRESCA)**:
+> **✅ CERRADO esta sesión — TODO-50 fase 2c (supresión rol-aware + BLOQUEO FISCAL del consignante).** Certificado (comité ×5 + 2ª opinión Gemini, ambas verificadas vs `.gov.co`), corregido (C1/C4), arquitectura SEGURA (`delete`→BLOQUEO: consignante-con-venta retiene la cédula por deber fiscal hasta `retentionUntil`=venta+5a; cron de purga diferida). 302 tests, DEPLOYED, dev==main. **RESTA (HUMANOS):** colegiado ratifica el BORRADOR de textos (en `42`) · contador (umbral exógena) · val.live. SSoT → `42` §Certificación + spec `2026-06-28-todo50`.
+> **🎯 PRÓXIMO FOCO (sesión fresca): ALIADOS — validar LIVE** (TODO-25 §259, dueño) · luego facturación TODO-26.
+> **DIFERIDO**: bot v2 iter-2 + val.live bot; filtros L-56 (en main); TODO-51 menores.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

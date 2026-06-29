@@ -14,7 +14,7 @@
 >
 > 🟢 **RELEVO (29/06 ⟦OPUS-4.8⟧)**:
 > **✅ TODO-25 Aliados (§259) VALIDADO LIVE** (29/06; detalle en `05` + callejón j; pend. ADR a `99`). **🧹 LIMPIEZA dueño (irreversible):** purgar `ZZZ PRUEBA` (incl. deal ganado $1.25M = el $1.3M falso en Alexander Daza + `vehiculos/47`) — se desbloquea con P0-OWNER-DELETE de TODO-52.
-> **🟣 EPIC MAESTRO #1 (29/06): TODO-52 — CRM Overhaul + Productización**. SSoT = brief `…2026-06-29-crm-overhaul…` (§MEGA-PLAN P0→P3 + §PASE-1). **Avance 29/06 b ⟦OPUS⟧:** A.1✅ síntesis✅ (81 findings; **2 P0 seguridad**: dataScope no-enforced=fuga PII/Habeas Data + privesc vía roles.create) · A.2-local✅ · **PASE-1 shipped+verif** (dark-only·`null`·copy-dev·P0-LAYOUT-f1). **SIGUE:** P0-OWNER-DELETE (desbloquea ZZZ) · P0 seguridad · Fase B Gemini (tenancy/seguridad) · mockups.
+> **🟣 EPIC MAESTRO #1: TODO-52 — CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). **Corrección dueño 29/06: Altorra NO se vende → single-tenant; meta = top mundial como ESPEJO; NADA de multi-tenancy aquí.** Hecho: A.1✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1) Fase-B-Gemini✅(2 P0-SEG verificados en rules; tenancy=futuro archivado). **SIGUE:** P0-OWNER-DELETE (desbloquea ZZZ) · P0-SEC (privesc + dataScope·espera decisión menor) · mockups.
 > **🐞 Backlog UI** → brief §MEGA-PLAN P1 (confirm() callejón j; voseo; emoji→SVG; gold canónico; errores crudos). ✅ PASE-1: `null`, theme toggle, dev-copy.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).

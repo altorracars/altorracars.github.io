@@ -9,6 +9,7 @@ import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
+import { friendlyError } from '../../core/errors.js';
 import { hasPermission } from '../../core/auth.js';
 import { initials, copShort, timeAgo } from '../../domain/format.js';
 import {
@@ -310,7 +311,7 @@ export function mountPipeline(root) {
       if (removedOpen) ui.deals.splice(io, 0, removedOpen);
       if (removedWon) ui.won.splice(iw, 0, removedWon);
       render(); // rollback
-      toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+      toast('No se pudo eliminar: ' + friendlyError(e), 'error');
     }
   }
 

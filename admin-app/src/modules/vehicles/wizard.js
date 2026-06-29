@@ -14,6 +14,7 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
+import { friendlyError } from '../../core/errors.js';
 import { hasPermission } from '../../core/auth.js';
 import {
   deriveTipoFromKm, TIPO_LABELS, buildVehicleDoc, smartPreview, smartValidate,
@@ -253,7 +254,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
         toast('✓ Consignante guardado' + (store.get().mock ? ' (demo)' : ''), 'ok');
       } catch (e) {
         saveB.disabled = false; saveB.textContent = 'Guardar consignante';
-        toast('No se pudo guardar: ' + (e.message || e.code || ''), 'error');
+        toast('No se pudo guardar: ' + friendlyError(e), 'error');
       }
     });
     document.body.append(ov);
@@ -361,7 +362,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       if (rejected.length) toast('Rechazadas: ' + rejected.join(' · '), 'error');
     } catch (e) {
       upStatus.textContent = '';
-      toast('No se pudieron subir: ' + (e.message || e.code), 'error');
+      toast('No se pudieron subir: ' + friendlyError(e), 'error');
     }
   });
   const sec4 = el('div', { class: 'veh-wiz__sec' }, [
@@ -630,7 +631,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       return true;
     } catch (e) {
       _draftId = prev.id; _lastSaved = prev.last; // rollback COMPLETO (§111)
-      toast('El borrador NO se guardó: ' + (e.message || e.code), 'error');
+      toast('El borrador NO se guardó: ' + friendlyError(e), 'error');
       return false;
     }
   }
@@ -736,7 +737,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       if (derived && derived.length) toast('✨ ' + derived.map(formatSuggestion).join(' · '), 'info');
     } catch (e) {
       saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Publicar vehículo';
-      toast('No se pudo guardar: ' + (e.message || e.code), 'error');
+      toast('No se pudo guardar: ' + friendlyError(e), 'error');
     }
   });
 

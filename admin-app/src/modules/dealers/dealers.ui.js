@@ -15,6 +15,7 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
+import { friendlyError } from '../../core/errors.js';
 import { hasPermission } from '../../core/auth.js';
 import {
   MOCK_DEALERS, MOCK_DEALER_STATS, subscribeDealers, fetchDealerStats,
@@ -105,7 +106,7 @@ export function mountDealers(root) {
         close(); toast(isEdit ? '✓ Aliado actualizado' : '✓ Aliado creado', 'ok');
       } catch (e) {
         saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Crear aliado';
-        toast('No se pudo guardar: ' + (e.message || e.code), 'error');
+        toast('No se pudo guardar: ' + friendlyError(e), 'error');
       }
     });
 
@@ -135,7 +136,7 @@ export function mountDealers(root) {
       toast('✓ Aliado eliminado', 'ok');
     } catch (e) {
       if (removed) { ui.dealers.splice(idx, 0, removed); renderGrid(); } // rollback
-      toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+      toast('No se pudo eliminar: ' + friendlyError(e), 'error');
     }
   }
 

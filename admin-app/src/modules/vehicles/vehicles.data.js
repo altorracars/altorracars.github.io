@@ -212,9 +212,9 @@ export async function fetchConsignantes() {
 
 /** §TODO-50: alta/upsert de consignante vía callable (Admin SDK: dedup por cédula,
  *  docId opaco, rol con arrayUnion). Devuelve {id, nombre} para fijar tenancy.ownerRefId. */
-export async function createConsignante({ nombre, cedula, telefono, email }) {
+export async function createConsignante({ nombre, cedula, telefono, email, habeasData }) {
   const call = httpsCallable(fns, 'crmUpsertConsignante');
-  const res = await call({ nombre, cedula, telefono, email });
+  const res = await call({ nombre, cedula, telefono, email, habeasData });
   return res.data; // { id, nombre, created }
 }
 

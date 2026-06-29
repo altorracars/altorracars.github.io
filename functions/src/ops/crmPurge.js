@@ -22,14 +22,25 @@ const BATCH = 200;
 
 function db() { return admin.firestore(); }
 
+// §213/R8 — espejo EXACTO de functions/index.js:800 (isOwnerData). NO simplificar:
+// el dueño se identifica por CUALQUIERA de las 3 formas (rol legacy | roleId CEO | '*').
+// Antes este gate solo miraba `rol === 'super_admin'` (drift R8): si un dueño se crea
+// vía RBAC nuevo sin el campo legacy, quedaría bloqueado de la purga.
+function isOwnerData(d) {
+  return d.rol === 'super_admin'
+    || d.roleId === 'system_super_admin'
+    || (Array.isArray(d.permissions) && d.permissions.includes('*'));
+}
+
 async function verifySuperAdmin(auth) {
   if (!auth || !auth.uid) throw new HttpsError('unauthenticated', 'Debes iniciar sesion.');
   const callerDoc = await db().collection('usuarios').doc(auth.uid).get();
   if (!callerDoc.exists) throw new HttpsError('permission-denied', 'No tienes un perfil de administrador.');
-  if (callerDoc.data().rol !== 'super_admin') {
+  const callerData = callerDoc.data();
+  if (!isOwnerData(callerData)) {
     throw new HttpsError('permission-denied', 'Solo un Super Admin puede eliminar definitivamente.');
   }
-  return callerDoc.data();
+  return callerData;
 }
 
 async function deleteRefs(refs) {

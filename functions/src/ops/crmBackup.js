@@ -42,13 +42,23 @@ const callableOptions = {
 
 function db() { return admin.firestore(); }
 
+// §213/R8 — espejo EXACTO de functions/index.js:800 (isOwnerData). NO simplificar:
+// el dueño se identifica por CUALQUIERA de las 3 formas (rol legacy | roleId CEO | '*').
+// Antes este gate solo miraba `rol === 'super_admin'` (drift R8) → un dueño creado
+// vía RBAC nuevo sin el campo legacy quedaría bloqueado de backup/restore.
+function isOwnerData(d) {
+  return d.rol === 'super_admin'
+    || d.roleId === 'system_super_admin'
+    || (Array.isArray(d.permissions) && d.permissions.includes('*'));
+}
+
 /* Espejo de verifySuperAdmin de index.js (módulo autocontenido, como ingestion/). */
 async function verifySuperAdmin(auth) {
   if (!auth || !auth.uid) throw new HttpsError('unauthenticated', 'Debes iniciar sesion.');
   const callerDoc = await db().collection('usuarios').doc(auth.uid).get();
   if (!callerDoc.exists) throw new HttpsError('permission-denied', 'No tienes un perfil de administrador.');
   const callerData = callerDoc.data();
-  if (callerData.rol !== 'super_admin') {
+  if (!isOwnerData(callerData)) {
     throw new HttpsError('permission-denied', 'Solo un Super Admin puede ejecutar backups/restores del CRM.');
   }
   return callerData;

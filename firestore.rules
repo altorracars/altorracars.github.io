@@ -1185,14 +1185,23 @@ service cloud.firestore {
     match /roles/{roleId} {
       allow read: if isEditorOrAbove()
         || hasPermission('roles.read');
-      allow create: if isSuperAdmin()
-        || hasPermission('roles.create');
+      // §218 (P0-SEC-2 — defensa en profundidad): un roles.create NUNCA siembra un rol
+      // con PODER DE DUEÑO desde el cliente — ni wildcard '*' ni isSystem. Solo el Admin
+      // SDK (seedSystemRoles) crea el rol CEO. Un rol '*' es inerte hoy (§217 bloquea '*'
+      // en user docs) pero esto cierra el vector en su origen. NO es subset-check (el modelo
+      // §217 permite delegar perms NO-dueño — eso es decisión de diseño, no este parche).
+      allow create: if (isSuperAdmin() || hasPermission('roles.create'))
+        && request.resource.data.get('isSystem', false) == false
+        && !('*' in request.resource.data.get('permissions', []));
       // §212: los system roles (CEO 'system_super_admin' con '*') son INMUTABLES desde
       // el cliente — solo el CF seedSystemRoles (Admin SDK) los toca. Antes cualquier
       // roles.edit/roles.delete podía editar/borrar el rol del dueño (hueco FATAL; el
       // comentario de onRoleDeleted asumía este bloqueo que NO existía).
+      // §218: además, un roles.edit NO puede ESCALAR un rol a poder de dueño ('*'/isSystem).
       allow update: if (isSuperAdmin() || hasPermission('roles.edit'))
-        && resource.data.get('isSystem', false) == false;
+        && resource.data.get('isSystem', false) == false
+        && request.resource.data.get('isSystem', false) == false
+        && !('*' in request.resource.data.get('permissions', []));
       allow delete: if (isSuperAdmin() || hasPermission('roles.delete'))
         && resource.data.get('isSystem', false) == false;
     }

@@ -10,9 +10,11 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { initials } from '../../domain/format.js';
+import { confirmDialog } from '../../core/confirm.js';
 import {
   fmtDate, compressImageToWebp, uploadAvatar, saveProfile, requestCedulaChange,
   PW_RULES, passwordScore, changePassword,
+  telegramDeepLink, unlinkTelegram, subscribeOwnProfile,
 } from './perfil.data.js';
 
 const PREFIJOS = ['+57', '+1', '+34', '+52', '+54', '+56', '+51'];
@@ -153,6 +155,73 @@ export function mountPerfil(root) {
     infoRow('⏱️ Último acceso', fmtDate(p.ultimoAcceso || p.lastLoginAt)),
   ]);
 
+  /* ─── Tarjeta: Notificaciones por Telegram (§26.5/§39) ─── */
+  // Independiente del login (es push, no auth): el backend (linkTelegramChat +
+  // senders) ya está deployed. Vincular = deep-link; el estado se refleja EN VIVO
+  // por onSnapshot del propio doc (en cuanto el webhook persiste telegramChatId).
+  let tgState = { chatId: p.telegramChatId || null, userName: p.telegramUserName || '' };
+  let tgUnsub = () => {};
+  const tgBody = el('div', { class: 'perfil-tg' });
+
+  function renderTelegram() {
+    clear(tgBody);
+    if (tgState.chatId) {
+      const unlinkBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: 'Desvincular' });
+      unlinkBtn.addEventListener('click', onTgUnlink);
+      tgBody.append(
+        el('div', { class: 'perfil-tg__status is-linked' }, [
+          el('span', { class: 'perfil-tg__dot', 'aria-hidden': 'true' }),
+          el('div', { class: 'u-grow' }, [
+            el('strong', { text: 'Conectado' }),
+            el('div', { class: 'u-caption u-muted', text: tgState.userName ? '@' + tgState.userName : 'Recibís las alertas del equipo en Telegram.' }),
+          ]),
+        ]),
+        unlinkBtn,
+      );
+    } else {
+      const connectBtn = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: 'Conectar Telegram' });
+      connectBtn.addEventListener('click', onTgConnect);
+      tgBody.append(
+        el('p', { class: 'u-caption u-muted', text: 'Conectá tu Telegram para recibir las alertas de leads y chats en el celular — gratis y sin instalar nada extra.' }),
+        connectBtn,
+      );
+    }
+  }
+  function onTgConnect() {
+    if (mock) { toast('Vinculación de Telegram no disponible en demo.', 'info'); return; }
+    window.open(telegramDeepLink(uid), '_blank', 'noopener');
+    toast('Abrí Telegram y tocá INICIAR en el chat del bot. La conexión aparecerá aquí sola.', 'info');
+  }
+  async function onTgUnlink() {
+    const ok = await confirmDialog({
+      title: '¿Desvincular Telegram?',
+      message: 'Dejarás de recibir las alertas push del equipo en Telegram.',
+      confirmText: 'Desvincular', danger: true,
+    });
+    if (!ok) return;
+    try {
+      if (!mock) await unlinkTelegram();
+      tgState = { chatId: null, userName: '' };
+      renderTelegram();
+      toast('Telegram desvinculado.', 'ok');
+    } catch (e) { toast('No se pudo desvincular: ' + (e.message || 'error'), 'error'); }
+  }
+  renderTelegram();
+  if (!mock && uid) {
+    tgUnsub = subscribeOwnProfile(uid, (data) => {
+      const chatId = data.telegramChatId || null;
+      const userName = data.telegramUserName || '';
+      if (chatId !== tgState.chatId || userName !== tgState.userName) {
+        tgState = { chatId, userName };
+        renderTelegram();
+      }
+    });
+  }
+  const cardTelegram = el('div', { class: 'perfil-card' }, [
+    el('h3', { class: 'perfil-card__title', text: 'Notificaciones por Telegram' }),
+    tgBody,
+  ]);
+
   /* ─── Tarjeta: Seguridad (cambio de contraseña con reauth) ─── */
   const cardSeguridad = buildSecurityCard(mock);
 
@@ -245,13 +314,13 @@ export function mountPerfil(root) {
     hero,
     el('div', { class: 'perfil-grid' }, [
       el('div', { class: 'perfil-col' }, [cardPersonal, saveBar]),
-      el('div', { class: 'perfil-col' }, [cardDoc, cardCuenta]),
+      el('div', { class: 'perfil-col' }, [cardDoc, cardCuenta, cardTelegram]),
       cardSeguridad,
     ]),
   );
 
   refreshSaveBar();
-  return function cleanup() {};
+  return function cleanup() { tgUnsub(); };
 }
 
 /* ════════════════ helpers de construcción ════════════════ */

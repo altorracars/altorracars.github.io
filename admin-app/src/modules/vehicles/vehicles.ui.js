@@ -8,6 +8,7 @@
 
 import { el, clear, appendAll } from '../../core/dom.js';
 import { confirmDialog } from '../../core/confirm.js';
+import { friendlyError } from '../../core/errors.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -110,7 +111,7 @@ export function mountVehicles(root) {
           if (!await confirmDialog({ title: '¿Revertir estos cambios?', message: 'Se restauran los valores anteriores del vehículo.', confirmText: 'Revertir', danger: true })) return;
           rv.disabled = true;
           try { await revertAuditEntry(v, entry); close(); toast('↩ Cambios revertidos', 'ok'); }
-          catch (e) { rv.disabled = false; toast('No se pudo revertir: ' + (e.message || e.code), 'error'); }
+          catch (e) { rv.disabled = false; toast('No se pudo revertir: ' + friendlyError(e), 'error'); }
         });
         row.append(rv);
       }
@@ -146,7 +147,7 @@ export function mountVehicles(root) {
         close(); toast('✓ Vehículo eliminado', 'ok');
       } catch (e) {
         delBtn.disabled = false;
-        toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+        toast('No se pudo eliminar: ' + friendlyError(e), 'error');
       }
     });
     document.body.append(overlay);
@@ -183,7 +184,7 @@ export function mountVehicles(root) {
       const n = await saveReorder(reorderList);
       reorderMode = false; render();
       toast('✓ Orden guardado (' + n + ' posiciones actualizadas)', 'ok');
-    } catch (e) { toast('No se pudo guardar el orden: ' + (e.message || e.code), 'error'); }
+    } catch (e) { toast('No se pudo guardar el orden: ' + friendlyError(e), 'error'); }
   }
   function reorderRow(v, idx) {
     const up = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '↑', disabled: idx === 0, 'aria-label': 'Subir' });
@@ -242,7 +243,7 @@ export function mountVehicles(root) {
         }
         star.disabled = true;
         try { await toggleDestacado(v); toast(v.destacado ? '✓ Quitado de destacados' : '✓ Destacado', 'ok'); }
-        catch (e) { star.disabled = false; toast('No se pudo: ' + (e.message || e.code), 'error'); }
+        catch (e) { star.disabled = false; toast('No se pudo: ' + friendlyError(e), 'error'); }
       });
       actions.push(star);
     }
@@ -335,7 +336,7 @@ export function mountVehicles(root) {
           toast('✓ Borrador eliminado', 'ok');
         } catch (e) {
           ui.drafts.splice(idx, 0, removed); render(); // rollback (§110)
-          toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+          toast('No se pudo eliminar: ' + friendlyError(e), 'error');
         }
       };
       // Modal custom (consistencia pro; reemplaza el window.confirm nativo — TODO-24)

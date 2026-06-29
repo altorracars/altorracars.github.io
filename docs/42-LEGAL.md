@@ -131,6 +131,28 @@ contable; (2) los DOS relojes de conservación (10 años C.Co. vs firmeza renta 
 (4) texto del `policyVersion` + contrato firmado; (5) proporcionalidad de la ventana de 45 días. **El comité CERTIFICA la
 arquitectura técnica y los hechos de código; NO sustituye la firma del colegiado.**
 
+#### 🛰️ 2ª opinión externa (Antigravity/Gemini) VERIFICADA + DECISIÓN DE ARQUITECTURA (28/06) ⟦OPUS-4.8⟧
+> Consejo externo (code-aware) + **verificación claim-por-claim vs `.gov.co`** (6 agentes Opus, `tasks/wgmorwbtq.output`).
+> Veredicto reconciliado: **`AMBOS_PARCIAL` · `cedulaDestruibleA72h = DEPENDE_CONTADOR` · confianza ALTA.**
+
+Gemini acertó el **patrón** (no destruir la cédula a 72h para un consignante con venta) pero **erró los detalles** (verificado):
+base legal = **Dec.1377 art.11** (deber del RESPONSABLE), NO art.9 (deber del titular, inexistente); exógena = **Formato 1647**
+(ingresos para terceros), no 1001/1007; sanción art.651 = tope **7.500 UVT** (no 15.000 — la de 15.000 fue derogada por
+Ley 2277/2022 art.80); documento soporte (Res.DIAN 165/23) solo si Altorra **COMPRA**, no en consignación pura.
+**Síntesis verificada — DOS CAPAS:** el *soporte/contrato* (con cédula incrustada) se conserva 10 años (C.Co. art.60); el
+*dato vivo en el CRM* se rige por Habeas Data. **PERO** si un reporte fiscal (exógena 1647 / doc-soporte) transmitió la cédula
+a la DIAN, esa cédula tiene **deber de permanencia** hasta su firmeza (E.T. art.714) → **NO destruir a 72h**. Y borrar el doc
+dejaría al titular sin respuesta veraz a una consulta (Ley 1581 **art.14/17**).
+
+**DECISIÓN (dueño autorizó, 28/06): el `delete` a 72h se cambia por BLOQUEO/cold-storage.** ✅ **Guardrail IMPLEMENTADO**
+(`executeSuppression`): un consignante con venta ejecutada (snapshot/tenencia que lo referencian) → **NO se borra**: se desactiva
+el uso vivo (email/teléfono null, `doNotContact`, soft-redact de reportes) pero se **RETIENE** `[cédula, nombre, montos]` con
+`suppressionStatus='bloqueado_retencion_fiscal'` + dedup de cédula conservado (consulta art.14), `action='crm_block_retention_1581'`.
+Si `retentionUntil` ya prescribió → purga completa (delete). **Falta (TODO-51):** purga DIFERIDA + el `retentionUntil` real.
+- **CONTADOR fija el `retentionUntil`:** (1) ¿consignación pura (intermedia, Formato 1647) o COMPRA-en-firme (doc-soporte/1001)?;
+  (2) ¿supera umbral por beneficiario (24 UVT) → exógena?; (3) FECHA de firmeza del reporte que exigió la cédula = `retentionUntil`.
+- **COLEGIADO ratifica:** cuál reloj manda (10a C.Co. vs firmeza renta), el texto de la respuesta de bloqueo art.14/17, la cláusula.
+
 **[a verificar con abogado]:** el TEXTO LITERAL de la cláusula + la política de tratamiento (art. 13) + si la cesión al
 comprador es "transmisión" o "transferencia" (Dec. 1377). **RNBD:** micro/pequeña probablemente EXENTA de inscribir la
 base (100.000 UVT) pero NO del resto (confirmar tamaño con contador, §área 1).

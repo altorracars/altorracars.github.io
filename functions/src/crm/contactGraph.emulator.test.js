@@ -106,6 +106,8 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
     await db.collection('contacts').doc('multi_x').set({
       fullName: 'Marta Multirol', cedula: '99887766', phone: '+573007778899', email: null,
       type: 'consignante', roles: ['consignante', 'lead'], lifecycleStage: 'opportunity',
+      // retención fiscal YA PRESCRITA (el contador la fijó y venció) → la supresión SÍ procede a borrar.
+      retentionUntil: '2020-01-01T00:00:00.000Z',
       dedupKeys: ['cedula_99887766', 'phone__573007778899'],
       createdAt: '2026-06-11T10:00:00.000Z', _version: 1,
     });
@@ -226,47 +228,45 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
     expect(notas.size).toBe(0);                   // notas DESTRUIDAS, no movidas
   });
 
-  it('§TODO-50 fase 2c — SUPRESIÓN ROL-AWARE: purga el nombre del consignante en tenencia + snapshot, conserva ownerRefId opaco + economics', async () => {
+  it('§BLOQUEO FISCAL — consignante con venta ejecutada: NO se borra (retiene cédula/nombre fiscal), desactiva uso vivo + redacta reportes', async () => {
     const res = await g.executeSuppression(db, 'cons_x', { by: 'test' });
+    expect(res.blocked).toBe(true);                          // bifurcación → BLOQUEO, no delete
 
-    // doc del consignante BORRADO + dedup retirado (cédula incluida)
-    expect((await db.collection('contacts').doc('cons_x').get()).exists).toBe(false);
-    expect((await db.collection('dedup').doc('cedula_12345678').get()).exists).toBe(false);
-    expect(res.consignante).toMatchObject({ vehiclesRedacted: 1, dealsRedacted: 1, snapshotEntriesRedacted: 1 });
+    // contacto RETENIDO (deber de conservación fiscal: exógena/doc-soporte con cédula a la DIAN)
+    const cdoc = await db.collection('contacts').doc('cons_x').get();
+    expect(cdoc.exists).toBe(true);
+    const cv = cdoc.data();
+    expect(cv.suppressionStatus).toBe('bloqueado_retencion_fiscal');
+    expect(cv.fullName).toBe('Pedro Consignante');          // nombre RETENIDO (fiscal + consultable art.14)
+    expect(cv.cedula).toBe('12345678');                     // cédula RETENIDA
+    expect(cv.email).toBeNull();                            // uso vivo de contacto DESACTIVADO
+    expect(cv.phone).toBeNull();
+    expect(cv.doNotContact).toBe(true);
 
-    // §Condición 1 (certificación legal): el puntero al CONTRATO físico (contractRef) SOBREVIVE
-    // en el auditLog durable (sin PII) tras borrarse el contacto → el snapshot económico NO queda
-    // huérfano (reconciliable Cód.Comercio art.60 / E.T. art.632 / Ley 1581 art.12).
-    expect(res.habeasProof).toMatchObject({ contractRef: 'CONS-TEST-001', policyVersion: 'v1-borrador' });
-    const audit = await db.collection('auditLog').where('contactHash', '==', g.contactHashOf('cons_x')).limit(1).get();
-    expect(audit.empty).toBe(false);
-    const ev = audit.docs[0].data();
-    expect(ev.action).toBe('crm_suppress_1581');
-    expect(ev.habeasProof.contractRef).toBe('CONS-TEST-001');     // el contrato sigue trazable
-    expect(ev.habeasProof.purposes.gestionConsigna).toBe(true);
-    expect(ev.counts.snapshotEntriesRedacted).toBe(1);            // §Cond.4: conteo MATCHED exacto
+    // dedup: cédula CONSERVADA (la consulta art.14 resuelve por cédula); phone retirado
+    expect((await db.collection('dedup').doc('cedula_12345678').get()).exists).toBe(true);
+    expect((await db.collection('dedup').doc('phone__573005556677').get()).exists).toBe(false);
 
-    // (a) tenencia VIVA del vehículo: NOMBRE purgado · ownerRefId OPACO + economics CONSERVADOS
+    // reportes ACTIVOS anonimizados (Habeas Data: el nombre sale del uso vivo aunque la identidad fiscal se retenga)
     const v = (await db.collection('vehiculos').doc('veh_cons').get()).data();
     expect(v.tenancy.ownerDisplayName).toBe('(Suprimido — Ley 1581)');
-    expect(v.tenancy.ownerRefId).toBe('cons_x');            // grupo anónimo cuadrado, no se desreferencia
-    expect(v.tenancy.economics.baselineValue).toBe(40000000);
-
-    // (b) snapshot del deal del COMPRADOR: nombre purgado · comprador NO re-apuntado · economics intacta
+    expect(v.tenancy.ownerRefId).toBe('cons_x');
     const deal = (await db.collection('deals').doc('deal_buyer').get()).data();
-    expect(deal.contactId).toBe('buyer_other');            // el comprador NO es el suprimido
-    const ft = deal.commissionSnapshots[0].frozenTenancy;
-    expect(ft.ownerDisplayName).toBe('(Suprimido — Ley 1581)');
-    expect(ft.ownerRefId).toBe('cons_x');                  // opaco conservado (cifra anónima)
+    expect(deal.contactId).toBe('buyer_other');            // el comprador NO se toca
+    expect(deal.commissionSnapshots[0].frozenTenancy.ownerDisplayName).toBe('(Suprimido — Ley 1581)');
     expect(deal.commissionSnapshots[0].altorraRevenue).toBe(5000000);
 
-    // idempotente/resumible: 2ª pasada de redacción (ya redactado) = no-op
-    const again = await g.redactConsignanteReferences(db, 'cons_x');
-    expect(again).toMatchObject({ vehiclesRedacted: 0, dealsRedacted: 0 });
+    // auditoría = evento de BLOQUEO + puntero durable al contrato (C1)
+    expect(res.habeasProof).toMatchObject({ contractRef: 'CONS-TEST-001' });
+    const audit = await db.collection('auditLog').where('contactHash', '==', g.contactHashOf('cons_x')).limit(1).get();
+    expect(audit.empty).toBe(false);
+    expect(audit.docs[0].data().action).toBe('crm_block_retention_1581');
+    expect(audit.docs[0].data().habeasProof.contractRef).toBe('CONS-TEST-001');
   });
 
-  it('§TODO-50 fase 2c — MULTI-ROL (retoma): re-apunta sus deals de COMPRADOR y redacta SOLO su rol de consignante', async () => {
+  it('§MULTI-ROL + retención PRESCRITA: purga completa — borra el contacto, re-apunta su rol COMPRADOR, redacta su rol CONSIGNANTE', async () => {
     const res = await g.executeSuppression(db, 'multi_x', { by: 'test' });
+    expect(res.blocked).toBeUndefined();                    // retención vencida → SÍ borra (no bloqueo)
     expect((await db.collection('contacts').doc('multi_x').get()).exists).toBe(false);
 
     // rol COMPRADOR: su deal abierto se re-apunta al stub + anonimiza (repointContact)
@@ -289,5 +289,19 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
 
     // counts: 1 vehículo + 1 deal de VENTA (el de COMPRA no tiene snapshot → no cuenta)
     expect(res.consignante).toMatchObject({ vehiclesRedacted: 1, dealsRedacted: 1, snapshotEntriesRedacted: 1 });
+  });
+
+  it('§BLOQUEO FISCAL — consignante SIN venta ejecutada: borra normal (no hay operación → no hay deber fiscal)', async () => {
+    await db.collection('contacts').doc('cons_bare').set({
+      fullName: 'Sin Venta', cedula: '55554444', email: null, phone: null, type: 'consignante',
+      roles: ['consignante'], lifecycleStage: 'consignante', dedupKeys: ['cedula_55554444'],
+      createdAt: '2026-06-12T10:00:00.000Z', _version: 1,
+    });
+    await db.collection('dedup').doc('cedula_55554444').set({ contactId: 'cons_bare' });
+    const res = await g.executeSuppression(db, 'cons_bare', { by: 'test' });
+    expect(res.blocked).toBeUndefined();                    // sin venta ejecutada → NO bloqueo
+    expect(res.stubId).toBeTruthy();                        // borró + creó stub anónimo
+    expect((await db.collection('contacts').doc('cons_bare').get()).exists).toBe(false);
+    expect((await db.collection('dedup').doc('cedula_55554444').get()).exists).toBe(false);
   });
 });

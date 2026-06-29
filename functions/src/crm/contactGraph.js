@@ -400,6 +400,49 @@ async function executeSuppression(db, contactId, { by } = {}) {
     method: hd.method || null,
   } : null;
 
+  // §TODO-50 fase 2c: rol-aware — purga el nombre DESNORMALIZADO del consignante que SOBREVIVE
+  // en la tenencia de sus vehículos + los snapshots de comisión (repointContact no los alcanza:
+  // busca por contactId, no por ownerRefId). Conserva ownerRefId opaco + economics. Idempotente.
+  // Se corre ARRIBA porque su conteo `matched` decide la bifurcación bloqueo↔delete.
+  const consignante = await redactConsignanteReferences(db, contactId);
+
+  // §BLOQUEO FISCAL (verificación 28/06: comité ×5 + consejo Gemini, AMBOS verificados vs `.gov.co`
+  // — veredicto DEPENDE_CONTADOR). Un CONSIGNANTE con OPERACIÓN EJECUTADA (venta cerrada → snapshot/
+  // tenencia que lo referencian) PUEDE tener deber de conservación fiscal de su cédula: documento
+  // soporte electrónico (Res.DIAN 165/23 si Altorra COMPRA) o exógena Formato 1647 (si intermedia),
+  // ambos transmiten la cédula a la DIAN → firmeza E.T. art.714. Dec.1377 art.11 (deber del
+  // RESPONSABLE) IMPIDE destruirla a las 72h; y borrar el doc dejaría al titular SIN respuesta veraz
+  // a una consulta (Ley 1581 art.14/17). Hasta que el CONTADOR fije `retentionUntil` y prescriba, NO
+  // se borra: se DESACTIVA el uso vivo (marketing/contacto) pero se RETIENE la identidad fiscal
+  // [cédula, nombre, montos] bajo acceso restringido + consultable. Purga REAL = diferida (TODO-51).
+  const esConsignante = (Array.isArray(c.roles) && c.roles.includes('consignante')) || c.type === 'consignante';
+  const ventaEjecutada = consignante.snapshotEntriesMatched > 0 || consignante.vehiclesMatched > 0;
+  const retencionPrescrita = !!c.retentionUntil && c.retentionUntil <= nowISO();
+  if (esConsignante && ventaEjecutada && !retencionPrescrita) {
+    await cRef.update({
+      email: null, phone: null, doNotContact: true,            // PII de contacto vivo (no fiscal) fuera
+      suppressionStatus: 'bloqueado_retencion_fiscal',
+      retentionUntil: c.retentionUntil || null,                // lo fija el contador (firmeza fiscal)
+      _blockedAt: nowISO(), updatedAt: nowISO(), _version: FV().increment(1),
+      // fullName + cedula SE CONSERVAN (deber fiscal art.11 Dec.1377 + consultable art.14).
+    });
+    // dedup: retira email/phone; CONSERVA la clave de cédula (la consulta art.14 resuelve por cédula).
+    const keepKey = c.cedula ? sanitizeContactId('cedula:' + String(c.cedula).replace(/\D/g, '')) : null;
+    const ds = await db.collection('dedup').where('contactId', '==', contactId).limit(100).get();
+    for (const d of ds.docs) { if (d.id !== keepKey) await d.ref.delete(); }
+    await db.collection('auditLog').add({
+      action: 'crm_block_retention_1581', contactHash: contactHashOf(contactId),
+      counts: {
+        vehiclesRedacted: consignante.vehiclesMatched, dealsRedacted: consignante.dealsMatched,
+        snapshotEntriesRedacted: consignante.snapshotEntriesMatched,
+      },
+      habeasProof, retentionUntil: c.retentionUntil || null,
+      note: 'consignante con venta ejecutada: retención fiscal pendiente (contador fija retentionUntil)',
+      by: by || 'crmDailyJob', at: nowISO(),
+    });
+    return { blocked: true, consignante, habeasProof };
+  }
+
   // Stub anónimo (ID aleatorio — el determinista delata el email/tel).
   const stubRef = db.collection('contacts').doc();
   await stubRef.set({
@@ -415,12 +458,7 @@ async function executeSuppression(db, contactId, { by } = {}) {
 
   const counts = await repointContact(db, contactId, stubRef.id, { anonymize: true });
   const notes = await moveNotes(db, contactId, stubRef.id, { drop: true });
-
-  // §TODO-50 fase 2c: rol-aware — purga el nombre del consignante que SOBREVIVE en
-  // la tenencia de sus vehículos + los snapshots de comisión de los deals del comprador
-  // (repointContact no los alcanza: busca por contactId, no por ownerRefId). Conserva
-  // ownerRefId opaco + economics (conservación mercantil). Idempotente/resumible.
-  const consignante = await redactConsignanteReferences(db, contactId);
+  // (la redacción rol-aware del consignante + su conteo ya corrió ARRIBA, antes de la bifurcación.)
 
   // TOMBSTONES de fusión (review §185 — CRÍTICO): los duplicados marcados
   // _mergedInto → este contacto conservan fullName/email/phone de la MISMA

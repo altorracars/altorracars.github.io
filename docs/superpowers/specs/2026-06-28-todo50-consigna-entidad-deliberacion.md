@@ -92,7 +92,12 @@ con cubo "Sin identificar" · 4 viejas se reconcilian por **tabla de alias en le
   mataba `contractRef` → snapshot económico HUÉRFANO. **C1 (rescatar contractRef+policyVersion+purposes al auditLog durable) +
   C4 (conteo MATCHED exacto art.12) IMPLEMENTADAS + verificadas** (301 tests). C2 (cédula en backups .gz 45d) pend.; C3 (relojes de
   conservación 10a vs firmeza renta) + C5 (exógena DIAN) = **colegiado/contador**. Detalle → `42-LEGAL` §Certificación. CRUDO → `tasks/w3qios44d.output`.
-- ⏳ **PENDIENTE: validación live** (suprimir un consignante de prueba + ver `auditLog.counts.snapshotEntriesRedacted` + `habeasProof.contractRef`).
+- ✅ **2ª opinión externa (Gemini) VERIFICADA + DECISIÓN (28/06):** `AMBOS_PARCIAL`/`DEPENDE_CONTADOR`. Gemini acertó el patrón
+  (no destruir la cédula a 72h para consignante-con-venta: exógena Formato 1647 / doc-soporte transmiten la cédula a la DIAN →
+  deber de permanencia Dec.1377 art.11 hasta firmeza E.T. art.714) pero erró detalles (base art.11≠art.9, sanción 7.500≠15.000 UVT).
+  **DECISIÓN: el `delete` a 72h se cambia por BLOQUEO FISCAL** (guardrail implementado: consignante-con-venta → retiene cédula+nombre+
+  desactiva uso vivo+redacta reportes, `crm_block_retention_1581`; delete solo si `retentionUntil` prescrito). Detalle → `42` §Certificación; CRUDO → `tasks/wgmorwbtq.output`.
+- ⏳ **PENDIENTE:** TODO-51 (purga diferida) · contador fija `retentionUntil` · colegiado (texto + respuesta art.14) · validación live.
 - ⏳ **Ratificación del TEXTO** del contrato por abogado colegiado (gate duro) → fija `policyVersion: v1` (dueño). **+ pregunta
   nueva para el abogado** (revisión legal 28/06): ¿destruir la cédula en la BD viva satisface Cód.Comercio art.60/DIAN dado que el
   soporte mercantil es el contrato firmado físico? Detalle → `42-LEGAL` LEGAL-07.

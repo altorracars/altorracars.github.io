@@ -714,7 +714,7 @@ exports.triggerSeoRegeneration = onCall({
         throw new HttpsError('unauthenticated', 'Debes iniciar sesion.');
     }
     const callerDoc = await db.collection('usuarios').doc(request.auth.uid).get();
-    if (!callerDoc.exists || callerDoc.data().rol !== 'super_admin') {
+    if (!callerDoc.exists || !isOwnerData(callerDoc.data())) { // R8: 3 formas (isOwnerData L800), no solo rol legacy
         throw new HttpsError('permission-denied', 'Solo Super Admin puede regenerar paginas SEO.');
     }
 

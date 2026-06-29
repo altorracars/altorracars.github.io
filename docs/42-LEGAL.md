@@ -89,7 +89,23 @@ sistema solo **REGISTRA que el soporte firmado existe**. Modelo de datos del reg
 lit. e) NO es absoluto — Dec. 1377 art. 9 + **Cód. Comercio art. 60 (soportes 10 años)** + deber DIAN lo limitan cuando
 hay operación ejecutada. Regla: un consignante con **deal CERRADO** → la supresión **conserva** el soporte mínimo
 (anonimiza dejando el `consignanteId` OPACO + economics; **soft-redacta** `ownerDisplayName` del snapshot) en vez de
-borrar todo. Implementación = fase 2b (extender `executeSuppression` rol-aware).
+borrar todo.
+
+**✅ MECANISMO IMPLEMENTADO (fase 2c, 28/06 ⟦OPUS-4.8⟧):** `executeSuppression` (functions/src/crm/contactGraph.js) extendido
+con `redactConsignanteReferences`: purga el `ownerDisplayName` (única PII desnormalizada; buildTenancy NUNCA congela
+cédula/teléfono) en los DOS lugares donde sobrevive — `vehiculos.tenancy.ownerDisplayName` (tenencia viva) y
+`deals.commissionSnapshots[].frozenTenancy.ownerDisplayName` (snapshot congelado del deal del comprador), buscando por
+`ownerRefId` (el `deal.contactId` es el comprador, no el consignante). Conserva `ownerRefId` opaco + economics. Soft-redact
+server-side (Admin SDK), idempotente. Verificado: 13 tests puros + emulador E2E (rol-aware + multi-rol/retoma) + revisión
+adversarial 4 lentes. La supresión registra en `auditLog` `{vehiclesRedacted, dealsRedacted, snapshotEntriesRedacted}` (prueba
+de cumplimiento, art. 12).
+
+**[a verificar con abogado — además del texto]:** ¿la **destrucción de la cédula** del consignante en la BD viva (la supresión
+borra el contact + sus `dedupKeys` de cédula) satisface Cód. Comercio art. 60 / deber DIAN, **dado que el soporte mercantil
+real es el CONTRATO de consignación FIRMADO** (físico/archivado) y el snapshot conserva la cifra económica con `ownerRefId`
+opaco? Lo levantó la revisión legal adversarial (28/06): el `ownerRefId` opaco queda sin doc-dueño (FK a stub anónimo). Mi
+lectura: el contrato firmado ES el soporte, la cédula en la BD NO es necesaria y su destrucción ES el punto del Habeas Data
+— pero **el abogado lo ratifica** (gate duro).
 
 **[a verificar con abogado]:** el TEXTO LITERAL de la cláusula + la política de tratamiento (art. 13) + si la cesión al
 comprador es "transmisión" o "transferencia" (Dec. 1377). **RNBD:** micro/pequeña probablemente EXENTA de inscribir la

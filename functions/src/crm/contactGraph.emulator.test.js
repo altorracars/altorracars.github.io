@@ -63,11 +63,79 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
     });
     await db.collection('contacts').doc('phone__573001112233')
       .collection('crmNotes').doc('n1').set({ body: 'nota privada', createdAt: 'x' });
+
+    // §TODO-50 fase 2c: CONSIGNANTE (rol-aware). Su nombre vive DESNORMALIZADO en la
+    // tenencia del vehículo + el snapshot de comisión del deal del COMPRADOR (otra
+    // persona, contactId distinto) — la supresión por grafo no los alcanza.
+    await db.collection('contacts').doc('cons_x').set({
+      fullName: 'Pedro Consignante', cedula: '12345678', phone: '+573005556677', email: null,
+      type: 'consignante', roles: ['consignante'], lifecycleStage: 'consignante',
+      dedupKeys: ['cedula_12345678', 'phone__573005556677'],
+      createdAt: '2026-06-10T10:00:00.000Z', _version: 1,
+    });
+    await db.collection('dedup').doc('cedula_12345678').set({ contactId: 'cons_x' });
+    await db.collection('dedup').doc('phone__573005556677').set({ contactId: 'cons_x' });
+    await db.collection('vehiculos').doc('veh_cons').set({
+      marca: 'Toyota', modelo: 'Corolla', estado: 'vendido',
+      tenancy: {
+        type: 'CONSIGNA', ownerRefType: 'contact', ownerRefId: 'cons_x',
+        ownerDisplayName: 'Pedro Consignante',
+        economics: { method: 'SPREAD', baselineValue: 40000000, percentageRate: null, flatFee: null },
+      },
+    });
+    await db.collection('deals').doc('deal_buyer').set({
+      contactId: 'buyer_other', status: 'won', stageId: 'vendido', amount: 45000000,
+      name: 'Comprador Real · Toyota Corolla', vehicleId: 'veh_cons', _version: 1,
+      commissionSnapshots: [{
+        rev: 1, salePrice: 45000000, altorraRevenue: 5000000, vehicleId: 'veh_cons',
+        frozenTenancy: {
+          type: 'CONSIGNA', ownerRefType: 'contact', ownerRefId: 'cons_x',
+          ownerDisplayName: 'Pedro Consignante',
+          economics: { method: 'SPREAD', baselineValue: 40000000, percentageRate: null, flatFee: null },
+        },
+      }],
+    });
+
+    // §TODO-50 fase 2c — MULTI-ROL (retoma, gap del comité): la MISMA persona es consignante
+    // (de SU carro) Y comprador (de otro). repointContact (rol comprador) y
+    // redactConsignanteReferences (rol consignante) deben operar INDEPENDIENTES sin pisarse.
+    await db.collection('contacts').doc('multi_x').set({
+      fullName: 'Marta Multirol', cedula: '99887766', phone: '+573007778899', email: null,
+      type: 'consignante', roles: ['consignante', 'lead'], lifecycleStage: 'opportunity',
+      dedupKeys: ['cedula_99887766', 'phone__573007778899'],
+      createdAt: '2026-06-11T10:00:00.000Z', _version: 1,
+    });
+    await db.collection('dedup').doc('cedula_99887766').set({ contactId: 'multi_x' });
+    await db.collection('vehiculos').doc('veh_multi').set({
+      marca: 'Mazda', modelo: 'CX-5', estado: 'vendido',
+      tenancy: {
+        type: 'CONSIGNA', ownerRefType: 'contact', ownerRefId: 'multi_x',
+        ownerDisplayName: 'Marta Multirol',
+        economics: { method: 'PERCENTAGE', baselineValue: 0, percentageRate: 0.1, flatFee: null },
+      },
+    });
+    await db.collection('deals').doc('deal_multi_sale').set({ // OTRO comprador compra SU carro
+      contactId: 'buyer_z', status: 'won', stageId: 'vendido', amount: 70000000,
+      name: 'Comprador Z · Mazda CX-5', vehicleId: 'veh_multi', _version: 1,
+      commissionSnapshots: [{
+        rev: 1, salePrice: 70000000, altorraRevenue: 7000000, vehicleId: 'veh_multi',
+        frozenTenancy: {
+          type: 'CONSIGNA', ownerRefType: 'contact', ownerRefId: 'multi_x',
+          ownerDisplayName: 'Marta Multirol',
+          economics: { method: 'PERCENTAGE', baselineValue: 0, percentageRate: 0.1, flatFee: null },
+        },
+      }],
+    });
+    await db.collection('deals').doc('deal_multi_buy').set({ // multi_x es el COMPRADOR aquí
+      contactId: 'multi_x', status: 'open', stageId: 'negociacion', amount: 30000000,
+      contactName: 'Marta Multirol', name: 'Marta Multirol · Chevrolet Onix',
+      vehicleName: 'Chevrolet Onix', _version: 1,
+    });
   });
 
   afterAll(async () => {
     if (!db) return;
-    for (const col of ['contacts', 'dedup', 'leads', 'deals', 'activities', 'solicitudes', 'auditLog']) {
+    for (const col of ['contacts', 'dedup', 'leads', 'deals', 'activities', 'solicitudes', 'vehiculos', 'auditLog']) {
       const snap = await db.collection(col).get();
       for (const d of snap.docs) {
         const subs = await d.ref.listCollections();
@@ -152,5 +220,58 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
     expect((await db.collection('dedup').doc('email_a_x_co').get()).exists).toBe(false);
     const notas = await db.collection('contacts').doc(res.stubId).collection('crmNotes').get();
     expect(notas.size).toBe(0);                   // notas DESTRUIDAS, no movidas
+  });
+
+  it('§TODO-50 fase 2c — SUPRESIÓN ROL-AWARE: purga el nombre del consignante en tenencia + snapshot, conserva ownerRefId opaco + economics', async () => {
+    const res = await g.executeSuppression(db, 'cons_x', { by: 'test' });
+
+    // doc del consignante BORRADO + dedup retirado (cédula incluida)
+    expect((await db.collection('contacts').doc('cons_x').get()).exists).toBe(false);
+    expect((await db.collection('dedup').doc('cedula_12345678').get()).exists).toBe(false);
+    expect(res.consignante).toMatchObject({ vehiclesRedacted: 1, dealsRedacted: 1, snapshotEntriesRedacted: 1 });
+
+    // (a) tenencia VIVA del vehículo: NOMBRE purgado · ownerRefId OPACO + economics CONSERVADOS
+    const v = (await db.collection('vehiculos').doc('veh_cons').get()).data();
+    expect(v.tenancy.ownerDisplayName).toBe('(Suprimido — Ley 1581)');
+    expect(v.tenancy.ownerRefId).toBe('cons_x');            // grupo anónimo cuadrado, no se desreferencia
+    expect(v.tenancy.economics.baselineValue).toBe(40000000);
+
+    // (b) snapshot del deal del COMPRADOR: nombre purgado · comprador NO re-apuntado · economics intacta
+    const deal = (await db.collection('deals').doc('deal_buyer').get()).data();
+    expect(deal.contactId).toBe('buyer_other');            // el comprador NO es el suprimido
+    const ft = deal.commissionSnapshots[0].frozenTenancy;
+    expect(ft.ownerDisplayName).toBe('(Suprimido — Ley 1581)');
+    expect(ft.ownerRefId).toBe('cons_x');                  // opaco conservado (cifra anónima)
+    expect(deal.commissionSnapshots[0].altorraRevenue).toBe(5000000);
+
+    // idempotente/resumible: 2ª pasada de redacción (ya redactado) = no-op
+    const again = await g.redactConsignanteReferences(db, 'cons_x');
+    expect(again).toMatchObject({ vehiclesRedacted: 0, dealsRedacted: 0 });
+  });
+
+  it('§TODO-50 fase 2c — MULTI-ROL (retoma): re-apunta sus deals de COMPRADOR y redacta SOLO su rol de consignante', async () => {
+    const res = await g.executeSuppression(db, 'multi_x', { by: 'test' });
+    expect((await db.collection('contacts').doc('multi_x').get()).exists).toBe(false);
+
+    // rol COMPRADOR: su deal abierto se re-apunta al stub + anonimiza (repointContact)
+    const buy = (await db.collection('deals').doc('deal_multi_buy').get()).data();
+    expect(buy.contactId).toBe(res.stubId);
+    expect(buy.name).toContain('Suprimido');
+    expect(buy.amount).toBe(30000000);                      // registro comercial intacto
+
+    // rol CONSIGNANTE: el snapshot del deal del OTRO comprador se redacta; ese comprador NO se toca
+    const sale = (await db.collection('deals').doc('deal_multi_sale').get()).data();
+    expect(sale.contactId).toBe('buyer_z');                 // el comprador del carro consignado NO es el suprimido
+    const ft = sale.commissionSnapshots[0].frozenTenancy;
+    expect(ft.ownerDisplayName).toBe('(Suprimido — Ley 1581)');
+    expect(ft.ownerRefId).toBe('multi_x');                  // opaco conservado
+    expect(sale.commissionSnapshots[0].altorraRevenue).toBe(7000000);
+
+    // tenencia viva del carro consignado: nombre purgado
+    const v = (await db.collection('vehiculos').doc('veh_multi').get()).data();
+    expect(v.tenancy.ownerDisplayName).toBe('(Suprimido — Ley 1581)');
+
+    // counts: 1 vehículo + 1 deal de VENTA (el de COMPRA no tiene snapshot → no cuenta)
+    expect(res.consignante).toMatchObject({ vehiclesRedacted: 1, dealsRedacted: 1, snapshotEntriesRedacted: 1 });
   });
 });

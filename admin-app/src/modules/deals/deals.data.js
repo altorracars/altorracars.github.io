@@ -6,11 +6,12 @@
 
 import {
   collection, query, where, orderBy, limit, onSnapshot, getDocs,
-  doc, updateDoc, addDoc, increment,
+  doc, updateDoc, deleteDoc, addDoc, increment,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, fns } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
+import { writeAudit } from '../../core/audit.js';
 import { dealFromLead, stageById, probFor } from '../../domain/pipeline.js';
 
 const nowISO = () => new Date().toISOString();
@@ -58,6 +59,22 @@ export async function createDealFromLead(lead, extras = {}) {
   });
   await activity(ref.id, base.contactName, 'Oportunidad creada desde lead');
   return ref.id;
+}
+
+/**
+ * Borrado owner-only de un deal (rules: isSuperAdmin || crm.delete) — para
+ * PURGAR data de prueba/basura (TODO-52 P0-OWNER-DELETE). Borra solo el doc del
+ * deal; el lead de origen queda con `convertedTo` apuntando a un deal inexistente
+ * (inocuo; si el lead también es basura se purga aparte con crmPurgeLead). Borrar
+ * un deal GANADO lo saca de los reportes de Aliados/forecast (se recalculan vivos).
+ * Para REVERTIR una conversión real (descongelar el lead) usar anularConversion.
+ */
+export async function deleteDeal(deal) {
+  const dealId = typeof deal === 'string' ? deal : (deal && deal.id);
+  if (!dealId) throw new Error('ID de negocio inválido.');
+  await deleteDoc(doc(db, 'deals', dealId));
+  const who = deal && (deal.contactName || deal.name);
+  writeAudit('deal_delete', 'deal ' + dealId + (who ? ' (' + who + ')' : ''), '');
 }
 
 /** F7 — anulación compensatoria server-side (el "Deshacer" de la conversión). */

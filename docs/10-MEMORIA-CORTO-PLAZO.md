@@ -14,7 +14,7 @@
 >
 > 🟢 **RELEVO (29/06 ⟦OPUS-4.8⟧)**:
 > **✅ TODO-25 Aliados VALIDADO LIVE** (§259; →`05`; pend ADR). **🧹 Purgar `ZZZ PRUEBA`** (deal falso $1.3M Alexander Daza + `vehiculos/47`) tras P0-OWNER-DELETE.
-> **🟣 EPIC MAESTRO #1: TODO-52 — CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). **🌟 VISIÓN #1 (NO negociable): Altorra a NIVEL TOP MUNDIAL (Linear/Stripe/Notion-grade, premium, jamás genérico) — es EL criterio de aceptación.** Negocio (secundario): un CRM POR empresa (clones), **multi-tenancy DESCARTADA**; clonabilidad = SUBPRODUCTO, no compite con la Visión #1. NO re-correr comité/Gemini (sin fork). Hecho: A.1✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1) Fase-B✅(2 P0-SEG verificados). **SIGUE:** P0-OWNER-DELETE (✅`confirm.js`+Aliados; falta Pipeline `deleteDeal`) · P0-SEC (privesc+dataScope) · mockups.
+> **🟣 EPIC MAESTRO #1: TODO-52 — CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). **🌟 VISIÓN #1 (NO negociable): Altorra a NIVEL TOP MUNDIAL (Linear/Stripe/Notion-grade, premium, jamás genérico) — es EL criterio de aceptación.** Negocio (secundario): un CRM POR empresa (clones), **multi-tenancy DESCARTADA**; clonabilidad = SUBPRODUCTO, no compite con la Visión #1. NO re-correr comité/Gemini (sin fork). Hecho: A.1✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1) Fase-B✅(2 P0-SEG verificados). **SIGUE:** P0-OWNER-DELETE (✅confirm.js+Aliados+Pipeline; falta Contactos crmPurgeLead/R8 + bulkbar) · P0-SEC · mockups.
 > **🐞 Backlog UI** → brief §MEGA-PLAN P1 (confirm() j; voseo; emoji→SVG; gold; errores crudos). ✅ PASE-1: `null`, theme, dev-copy.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).

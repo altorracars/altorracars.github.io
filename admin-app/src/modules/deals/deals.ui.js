@@ -8,6 +8,7 @@ import { el, clear } from '../../core/dom.js';
 import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { hasPermission } from '../../core/auth.js';
 import { initials, copShort, timeAgo } from '../../domain/format.js';
 import {
@@ -16,7 +17,7 @@ import {
 } from '../../domain/pipeline.js';
 import {
   subscribeDeals, updateDealStage, setDealAmount, markWon, markLost,
-  subscribeWonDeals, updatePostventaItem, setRecibeVehiculo, crearBorradorRetoma,
+  subscribeWonDeals, updatePostventaItem, setRecibeVehiculo, crearBorradorRetoma, deleteDeal,
 } from './deals.data.js';
 import { getMockDeals, updateMockDeal } from '../../core/mock.js';
 
@@ -28,6 +29,7 @@ export function mountPipeline(root) {
     collisionByDeal: new Map(),           // F26: dealId → tamaño del grupo
   };
   const canEdit = hasPermission('crm.edit');
+  const canDelete = hasPermission('crm.delete');
   const liveOverlays = new Set();         // modales vivos → se cierran en cleanup
 
   const bar = el('div', { class: 'pipeline__bar' });
@@ -279,6 +281,39 @@ export function mountPipeline(root) {
     catch (e) { patch(deal.id, prev); toast('Error', 'error'); }
   }
 
+  /**
+   * Borrado owner-only (TODO-52). Para data de prueba/basura. Un deal GANADO
+   * afecta los reportes de comisiones → typed-confirm "ELIMINAR" (fricción
+   * deliberada). Optimista en la lista correspondiente (open/won) + rollback.
+   */
+  async function deleteDealFlow(deal) {
+    const won = deal.status === 'won';
+    const ok = await confirmDialog({
+      title: '¿Eliminar el negocio de "' + (deal.contactName || deal.name || 'sin nombre') + '"?',
+      message: won
+        ? 'Es una venta GANADA: al borrarla, su comisión deja de contar en los reportes de Aliados y en el forecast. Úsalo SOLO para datos de prueba. No se puede deshacer.'
+        : 'Se elimina del pipeline. Úsalo solo para datos de prueba o basura. No se puede deshacer.',
+      confirmText: 'Eliminar', danger: true,
+      typedConfirm: won ? 'ELIMINAR' : null,
+    });
+    if (!ok) return;
+    const io = ui.deals.findIndex((d) => d.id === deal.id);
+    const removedOpen = io >= 0 ? ui.deals.splice(io, 1)[0] : null;
+    const iw = ui.won.findIndex((d) => d.id === deal.id);
+    const removedWon = iw >= 0 ? ui.won.splice(iw, 1)[0] : null;
+    render(); // OPTIMISTA
+    if (store.get().mock) { toast('Negocio eliminado (demo)', 'ok'); return; }
+    try {
+      await deleteDeal(deal);
+      toast('✓ Negocio eliminado', 'ok');
+    } catch (e) {
+      if (removedOpen) ui.deals.splice(io, 0, removedOpen);
+      if (removedWon) ui.won.splice(iw, 0, removedWon);
+      render(); // rollback
+      toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+    }
+  }
+
   // ── Render ──
   function render() {
     if (ui.loading) return renderSkeleton();
@@ -400,12 +435,12 @@ export function mountPipeline(root) {
         el('span', { class: 'u-grow u-truncate', text: deal.ownerName ? '👤 ' + deal.ownerName : 'Sin asesor' }),
         el('span', { text: timeAgo(deal.lastActivityAt) }),
       ]),
-      el('div', { class: 'deal-card__actions' }, canEdit ? [
+      el('div', { class: 'deal-card__actions' }, (canEdit ? [
         miniBtn('stage', '↔', 'Mover etapa'),
         miniBtn('won', '✓', 'Marcar ganado'),
         miniBtn('lost', '✕', 'Marcar perdido'),
         miniBtn('open', '⤢', 'Abrir 360'),
-      ] : [miniBtn('open', '⤢', 'Abrir 360')]),
+      ] : [miniBtn('open', '⤢', 'Abrir 360')]).concat(canDelete ? [miniBtn('del', '🗑', 'Eliminar')] : [])),
     ]);
 
     card.addEventListener('dragstart', (e) => {
@@ -434,6 +469,7 @@ export function mountPipeline(root) {
         (it) => doStage(deal, it.value), { title: 'Mover a etapa' });
     }
     if (action === 'won') return doWon(deal);
+    if (action === 'del') return deleteDealFlow(deal);
     if (action === 'lost') {
       return openMenu(anchor, LOST_REASONS.map((r) => ({ value: r.id, label: r.label })), (it) => doLost(deal, it.value), { title: 'Motivo de pérdida' });
     }
@@ -599,6 +635,12 @@ export function mountPipeline(root) {
     const base = Number(snap.salePrice != null ? snap.salePrice : (snap.amount != null ? snap.amount : deal.amount)) || 0;
     const wonDate = (deal.wonAt || deal.lastActivityAt || '').slice(0, 10);
 
+    let delBtn = null;
+    if (canDelete) {
+      delBtn = el('button', { class: 'icon-btn icon-btn--xs', type: 'button', title: 'Eliminar negocio', 'aria-label': 'Eliminar negocio' }, ['🗑']);
+      delBtn.addEventListener('click', () => deleteDealFlow(deal));
+    }
+
     const checks = POSTVENTA_CHECKLIST.map((item) => {
       const done = !!(deal.postventa && deal.postventa[item.id]);
       const cb = el('input', { type: 'checkbox', class: 'checkbox' });
@@ -643,6 +685,7 @@ export function mountPipeline(root) {
             : 'La comisión se liquida cuando el checklist esté completo',
           text: liquidable ? '✓ Liquidable' : '⏳ Pendiente',
         }),
+        delBtn,
       ]),
       el('div', { class: 'u-caption u-muted' }, [
         el('span', { text: (deal.vehicleName ? '🚗 ' + deal.vehicleName + ' · ' : '') + copShort(base) }),

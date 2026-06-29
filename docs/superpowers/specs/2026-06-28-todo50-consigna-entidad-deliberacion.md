@@ -85,8 +85,9 @@ con cubo "Sin identificar" · 4 viejas se reconcilian por **tabla de alias en le
   `{vehiclesRedacted, dealsRedacted, snapshotEntriesRedacted}` (art. 12). **Tests:** 13 puros (`contactGraph.redact.test.js`)
   + emulador E2E rol-aware + **multi-rol/retoma** (`contactGraph.emulator.test.js`) — 300 verdes. **Revisión adversarial 4 lentes
   (PII/legal/regresión/conformidad) = 4×SOLIDO_CON_CAMBIOS**; accionados: `snapshotEntriesRedacted` al auditLog + test multi-rol;
-  rechazado (alucinación): "índice no registrado" (no existe `firestore.indexes.json`). Lección → `30` L-57. **PENDIENTE: deploy
-  functions + validación live (suprimir un consignante de prueba).**
+  rechazado (alucinación): "índice no registrado" (no existe `firestore.indexes.json`). Lección → `30` L-57. **DEPLOYED ✅ 28/06**
+  (`crmDailyJob`+`crmRunDailyMaintenance`, commit `224758d`). **PENDIENTE: validación live (suprimir un consignante de prueba + ver
+  `auditLog.counts.snapshotEntriesRedacted`).**
 - ⏳ **Ratificación del TEXTO** del contrato por abogado colegiado (gate duro) → fija `policyVersion: v1` (dueño). **+ pregunta
   nueva para el abogado** (revisión legal 28/06): ¿destruir la cédula en la BD viva satisface Cód.Comercio art.60/DIAN dado que el
   soporte mercantil es el contrato firmado físico? Detalle → `42-LEGAL` LEGAL-07.

@@ -13,7 +13,7 @@
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **FOCO (28/06 ⟦OPUS-4.8⟧)**:
-> **1. TODO-50 fase 2c — supresión rol-aware del consignante: IMPLEMENTADA + VERIFICADA.** `redactConsignanteReferences` (contactGraph.js): soft-redact de `ownerDisplayName` en los 2 lugares donde sobrevive a la supresión-por-grafo (tenencia viva del vehículo + snapshot del deal del COMPRADOR — el consignante se referencia por `ownerRefId`, no `contactId`); conserva `ownerRefId` opaco + economics. **300 tests verdes** (13 puros + emulador rol-aware/multi-rol) + **revisión adversarial 4 lentes**. SSoT → **spec `2026-06-28-todo50-...`** + `42` LEGAL-07 + lección `30` L-57. **RESTA**: deploy functions (Claude) + validación live (suprimir consignante de prueba) · ratificación TEXTO abogado (+ pregunta nueva: cédula vs Cód.Comercio art.60).
+> **1. TODO-50 fase 2c — supresión rol-aware del consignante: IMPLEMENTADA + VERIFICADA.** `redactConsignanteReferences` (contactGraph.js): soft-redact de `ownerDisplayName` en los 2 lugares donde sobrevive a la supresión-por-grafo (tenencia viva del vehículo + snapshot del deal del COMPRADOR — el consignante se referencia por `ownerRefId`, no `contactId`); conserva `ownerRefId` opaco + economics. **300 tests verdes** (13 puros + emulador rol-aware/multi-rol) + **revisión adversarial 4 lentes**. SSoT → **spec `2026-06-28-todo50-...`** + `42` LEGAL-07 + lección `30` L-57. **DEPLOYED ✅** (28/06: `crmDailyJob`+`crmRunDailyMaintenance`, commit `224758d`). **RESTA**: validación live (suprimir un consignante de prueba + ver counts en auditLog) · ratificación TEXTO abogado (+ pregunta: cédula vs Cód.Comercio art.60).
 > **2. ALIADOS — validar LIVE** (TODO-25 §259, dueño).
 > **DIFERIDO**: bot v2 iter-2 + val.live bot; filtros L-56 (en main); facturación TODO-26.
 >
@@ -63,7 +63,7 @@
 | **TODO-46→F-1** | **Bot v2 FLUJO + chat vivo ⟦OPUS⟧** — rediseño B1/B2/B3 VALIDADO LIVE + 3 bugs post-val FIXED. Detalle→defects-log. RESTA: roundtrip chat live (dueño=asesor) + iter-2 (marca·FAQ·visual·ARIA). | 🔄 | roundtrip+iter2 |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧** — MF4.x del admin viejo NO portadas (360°/Contactos-KPIs/masivas/Postventa-NPS) + doc-fixes. Detalle→bóveda `…barrido-drift…`. | 🔵 | tras bot |
 
-| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — chunk 1 + fase 2 mecanismo + **fase 2c supresión rol-aware IMPLEMENTADA+VERIFICADA** 28/06 ✅ (L-57; 300 tests + emulador + revisión adversarial 4 lentes). SSoT → spec `2026-06-28-todo50-…` + `42` LEGAL-07. **RESTA:** deploy fase 2c (Claude) + val.live · TEXTO + pregunta cédula art.60 (abogado) · 3 `ZZZ PRUEBA` (dueño) · 4 viejas (deuda menor). | 🔄 | deploy+val.live+texto |
+| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — chunk 1 + fase 2 mecanismo + **fase 2c supresión rol-aware IMPLEMENTADA+VERIFICADA** 28/06 ✅ (L-57; 300 tests + emulador + revisión adversarial 4 lentes). SSoT → spec `2026-06-28-todo50-…` + `42` LEGAL-07. **DEPLOYED ✅** (`224758d`). **RESTA:** val.live (suprimir consignante prueba) · TEXTO + pregunta cédula art.60 (abogado) · 3 `ZZZ PRUEBA` (dueño) · 4 viejas (deuda menor). | 🔄 | val.live+texto |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

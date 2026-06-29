@@ -12,10 +12,9 @@
 
 ## 1. Visión estratégica (lo que realmente se pide)
 
-> ⚠️ **CORRECCIÓN DEL DUEÑO (29/06 — reemplaza el encuadre original):** Altorra Cars **NO se va a vender**. Este CRM es **PARA Altorra Cars** (single-tenant). La meta es llevarlo a **nivel TOP mundial** para que sirva de **ESPEJO/referencia**: una vez Altorra esté en el tope, ESE conocimiento permite desarrollar **OTROS CRMs vendibles de clase mundial** (productos SEPARADOS, en otro momento). *"No podría venderlo si todavía no puedo llevar al nivel top a Altorra Cars."*
-> → **Implicación:** NO se construye multi-tenancy en este repo. Se construye con **patrones, modularidad y calidad world-class** (para que sea buen espejo), pero la separación por-tenant, GCIP, metering, etc. son conocimiento para los **futuros productos**, no trabajo de Altorra. La calidad/arquitectura/seguridad/UX de Altorra SÍ debe ser de las mejores del mundo.
+> 🌟 **VISIÓN #1 (NO negociable, es EL criterio de aceptación):** llevar el CRM/panel de Altorra Cars a **NIVEL TOP MUNDIAL** — premium, intuitivo, de la calidad de **las mejores plataformas del mundo** (Linear/Stripe/Notion-grade), NUNCA algo genérico / "hecho por IA". Cada decisión (arquitectura, diseño, copy, flujo, seguridad, responsive) se piensa a ese nivel. Esto es lo que importa; todo lo demás se subordina. ("El arquitecto de software piensa en TODO.")
 
-El CRM de Altorra Cars debe ser el **referente top global** de calidad, no "algo hecho por IA". Cada decisión (arquitectura, diseño, copy, flujo, seguridad) se piensa como **las mejores plataformas del mundo** (Linear/Stripe/Notion-grade) y con **patrones limpios y reutilizables** — para que mañana sea el molde de productos vendibles.
+**Aclaración de negocio (secundaria, 29/06):** Altorra NO se vende; el futuro = **un CRM separado por empresa** (clones configurados), NO un sistema multi-tenant → **multi-tenancy DESCARTADA**. Por eso, además de world-class, conviene que el código sea **limpio y configurable** (marca/textos/reglas/Firebase externalizados) para que clonarlo mañana sea fácil — pero eso es un **subproducto** de hacerlo top mundial, **no** un objetivo que compita con la Visión #1. (El dueño no sabía qué era multi-tenancy; el flujo de decisión lo resolvió — §FASE-B.)
 
 ## 2. Mandato del dueño (objetivos)
 
@@ -137,7 +136,7 @@ Quick-wins del synthesis A.1, todos reversibles/aditivos/cero-regresión, verifi
 > Unifica el overhaul con la productización. ✅ = shipped Pase-1. Cada ítem "respira la visión" o no se declara listo (Directiva Permanente).
 
 ### P0 — bloqueantes (seguridad/datos/dueño + base premium)
-- **P0-SEC-1 · dataScope NO enforced (fuga PII / Habeas Data Ley 1581) — ✅ VERIFICADO (§FASE-B):** `firestore.rules` read = `hasPermission('crm.read')` SIN `ownerId/departmentId` (L421 leads, L467 contacts, L488 activities, L568 deals); el scope own/dept/all vive solo en el cliente. Era decisión deliberada previa (SEC-01 §187 "Opción A estricto"). Fix = **patrón world-class reusable**: reglas + queries honran el scope del rol. **Decisión menor del dueño:** ¿asesores ven solo lo suyo/su depto, o todo el equipo ve todo? (default recomendado: asesor→own+depto, gerente/CEO→all).
+- **P0-SEC-1 · dataScope NO enforced (fuga PII / Habeas Data Ley 1581) — ✅ VERIFICADO (§FASE-B):** `firestore.rules` read = `hasPermission('crm.read')` SIN `ownerId/departmentId` (L421 leads, L467 contacts, L488 activities, L568 deals); el scope own/dept/all vive solo en el cliente. Era decisión deliberada previa (SEC-01 §187 "Opción A estricto"). Fix = **patrón world-class**: reglas + queries honran el scope del rol. **Decisión tomada (guía):** default asesor→own+depto · gerente/CEO→all, config-able (§FASE-B).
 - **P0-SEC-2 · escalada de privilegios (roles.create) — ✅ VERIFICADO (§FASE-B):** `firestore.rules` L1188 `allow create: if isSuperAdmin() || hasPermission('roles.create')` SIN validar el payload → se crea un rol con `permissions:['*']`. (§212 ya tapó la mutación de roles-sistema, NO el create.) Fix: callable Admin SDK valida subset ⊆ permisos del creador + `isOwner` para perms críticos; UI deshabilita (no oculta); defensa en reglas. + unificar `isOwnerData()` canónico en `crmBackup/crmPurge` (drift R8).
 - **P0-OWNER-DELETE · purga owner-only por sección (P0 #1 del dueño, desbloquea limpieza ZZZ):** backend YA lo permite (rules `isSuperAdmin`/`crm.delete` + `crmPurge.js`) → solo UI. Patrón reusable: bulkbar (`.inbox__bulkbar`) + "Zona peligrosa" + modal typed-confirm + gate server-side. Añadir `deleteDeal`/`deleteDealer` (Pipeline/Aliados HOY imborrables).
 - **P0-CAPTURE · pérdida silenciosa de leads (pierde dinero):** `quick-lead/new-lead` muestran éxito optimista; si el server rechaza, el error es un toast efímero → el asesor cree que capturó y NO. Fix: con señal, esperar ack/confirmar por snapshot; ante rechazo, modal bloqueante con el lead intacto.
@@ -160,10 +159,13 @@ Quick-wins del synthesis A.1, todos reversibles/aditivos/cero-regresión, verifi
 - Cerrar cutover F-6 (doble fuente RBAC 71 perms) → test de paridad mientras tanto.
 - Export por sección (reusar `toCsv()/download()`) + red de seguridad (papelera/undo/soft-delete).
 
-### P3 — ~~Multi-tenant~~ → NO para Altorra (conocimiento de FUTUROS productos-espejo)
-> **Corrección del dueño 29/06:** Altorra NO se vende → NO se construye multi-tenancy aquí. Lo de abajo se **archiva como guía para los futuros CRMs vendibles**, NO como trabajo de Altorra. Lo que SÍ aplica de la deliberación Gemini a Altorra son los 2 P0-SEC (ver P0, verificados §FASE-B).
-- **Para los futuros productos** (Gemini verificado): jerarquía `tenants/{tenantId}/{col}` > atributo-por-doc (aislamiento por diseño, offboarding recursivo, evita agotar los 200 índices compuestos; collectionGroup innecesario → BigQuery para analítica del dueño-SaaS); **GCIP** (no Firebase Auth normal) para tenancy nativa en el JWT; **custom claims ≤1000 B** (solo tenantId+roleId; hidratar permisos desde DB — Altorra YA lo hace bien); **metering custom** en CF (Firebase no atribuye consumo por tenant); SSL multi-dominio vía APIs GCP; **dedup por-tenant** (global cruzaría prospectos de clientes rivales).
-- **Lección que SÍ aplica a Altorra hoy:** Gemini confirmó que el enforcement de dataScope es **ortogonal a la tenancy** → fixearlo hoy en single-tenant NO es desechable; si algún día hubiera tenancy, "baja un nivel" en la ruta. Por eso P0-SEC-1 es el patrón world-class correcto + reusable-espejo.
+### P3 — TEMPLATABILIDAD (el "espejo" = clonar por empresa, NO multi-tenancy)
+> **Multi-tenancy DESCARTADA** (modelo = un CRM por empresa). El espejo se logra haciendo el código **fácil de clonar + reconfigurar por empresa.** No es tenancy: es higiene de arquitectura (que además mejora Altorra). Encaja con P1/P2.
+- **Externalizar la marca** (nombre, ciudad, color/oro, logo, voz del bot) a UN punto de config → hoy está cosida en CSS/HTML/copy. Clonar = editar ese config.
+- **Externalizar `FIREBASE_CONFIG`** (hoy hardcodeado) → cada empresa apunta a SU proyecto Firebase cambiando un archivo.
+- **Centralizar nombres de colección** (`core/collections.js`) y strings (i18n `t()`) → menos puntos a tocar al adaptar.
+- **Reglas/funciones parametrizables** donde haya lógica de negocio específica de Altorra.
+> Nota: la deliberación Gemini sobre tenancy (jerarquía/GCIP/metering/dedup-por-tenant) queda **archivada como NO-aplicable** (crudo en bóveda); se conserva solo por trazabilidad del proceso.
 
 ### Defectos del cerebro a corregir (pase enfocado)
 - `CLAUDE.md §1`: dice Firebase "compat" pero `admin-app` usa **modular v11**.
@@ -180,9 +182,9 @@ Quick-wins del synthesis A.1, todos reversibles/aditivos/cero-regresión, verifi
 2. **privesc roles.create** ✅ — L1188 sin validar payload → rol con `*`. (§212 ya cubrió la mutación de roles-sistema, no el create.)
 3. **0 tenancy** ✅ — ya conocido; **irrelevante** tras la corrección del dueño (Altorra = single-tenant).
 
-**Qué se ADOPTA para Altorra:** los 2 P0-SEC (arriba). El fix de dataScope es además el patrón world-class reusable (Gemini: es ortogonal a tenancy → "baja un nivel" si algún día hubiera).
-**Qué se ARCHIVA como futuro-espejo (NO Altorra):** toda la estrategia de tenancy/GCIP/metering/dedup-por-tenant (§MEGA-PLAN P3).
-**Gemini fiable de nuevo** (como §224) → reservarlo a R1-R4 (seguridad/dinero/arquitectura).
+**Qué se ADOPTA para Altorra:** los 2 P0-SEC (arriba).
+**Resolución de tenancy (DEFINITIVA, dueño 29/06):** **multi-tenancy DESCARTADA** — el modelo es **un CRM por empresa** (clones configurados), no un sistema para todas. La estrategia tenancy/GCIP/metering/dedup queda **archivada como NO-aplicable** (crudo en bóveda, solo trazabilidad). El "espejo" pasa a ser **templatabilidad** (§MEGA-PLAN P3).
+**Gemini fiable de nuevo** (como §224) → reservarlo a R1-R4. **NO se re-corre el flujo comité/consejo** (decisión del guía, autorizada por el dueño 29/06): ya no queda fork que deliberar (la pregunta estratégica la resolvió el dueño); la evidencia (A.1 + Gemini verificado) es sólida; re-correr = maquinaria sin objeto (L-50). Se reserva la artillería para una Decisión Fuerte real (p.ej. la implementación de seguridad si se vuelve riesgosa).
 
-### Decisión pendiente del dueño (menor, no bloquea el resto)
-- **dataScope:** ¿los asesores deben ver SOLO sus leads / los de su departamento, o todo el equipo ve todo? (default recomendado world-class: asesor→own+depto · gerente/CEO→all). El fix de privesc (P0-SEC-2) procede sin depender de esto.
+### Decisión de dataScope (la toma el guía — dueño delegó 29/06)
+- **Decisión:** construir el enforcement por rol (patrón world-class + buen default de plantilla). **Default Altorra:** asesor → sus leads + los de su departamento · gerente/CEO/super → todo. Es **config-able** (si rompe el flujo colaborativo del concesionario chico, se afloja). Cierra la fuga Habeas Data. P0-SEC-2 (privesc) procede igual, sin depender de esto.

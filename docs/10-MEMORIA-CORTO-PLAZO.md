@@ -13,9 +13,9 @@
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **RELEVO (29/06 ⟦OPUS-4.8⟧)**:
-> **✅ TODO-25 Aliados (§259) VALIDADO LIVE** (29/06; detalle en `05` + callejón j; pend. ADR a `99`). **🧹 LIMPIEZA dueño (irreversible):** purgar `ZZZ PRUEBA` (incl. deal ganado $1.25M = el $1.3M falso en Alexander Daza + `vehiculos/47`) — se desbloquea con P0-OWNER-DELETE de TODO-52.
-> **🟣 EPIC MAESTRO #1: TODO-52 — CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). **Corrección dueño 29/06: Altorra NO se vende → single-tenant; meta = top mundial como ESPEJO; NADA de multi-tenancy aquí.** Hecho: A.1✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1) Fase-B-Gemini✅(2 P0-SEG verificados en rules; tenancy=futuro archivado). **SIGUE:** P0-OWNER-DELETE (desbloquea ZZZ) · P0-SEC (privesc + dataScope·espera decisión menor) · mockups.
-> **🐞 Backlog UI** → brief §MEGA-PLAN P1 (confirm() callejón j; voseo; emoji→SVG; gold canónico; errores crudos). ✅ PASE-1: `null`, theme toggle, dev-copy.
+> **✅ TODO-25 Aliados VALIDADO LIVE** (§259; →`05`; pend ADR). **🧹 Purgar `ZZZ PRUEBA`** (deal falso $1.3M Alexander Daza + `vehiculos/47`) tras P0-OWNER-DELETE.
+> **🟣 EPIC MAESTRO #1: TODO-52 — CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). **🌟 VISIÓN #1 (NO negociable): Altorra a NIVEL TOP MUNDIAL (Linear/Stripe/Notion-grade, premium, jamás genérico) — es EL criterio de aceptación.** Negocio (secundario): un CRM POR empresa (clones), **multi-tenancy DESCARTADA**; clonabilidad = SUBPRODUCTO, no compite con la Visión #1. NO re-correr comité/Gemini (sin fork). Hecho: A.1✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1) Fase-B✅(2 P0-SEG verificados). **SIGUE:** P0-OWNER-DELETE (desbloquea ZZZ) · P0-SEC (privesc + dataScope rol-based) · mockups.
+> **🐞 Backlog UI** → brief §MEGA-PLAN P1 (confirm() j; voseo; emoji→SVG; gold; errores crudos). ✅ PASE-1: `null`, theme, dev-copy.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

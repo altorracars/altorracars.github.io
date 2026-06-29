@@ -12,9 +12,9 @@
 
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
-> 🟢 **FOCO (RELEVO a sesión FRESCA — contexto reventado 27/06)**:
-> **1. ALIADOS — validar LIVE el flujo de venta** (TODO-25, MVP DESPLEGADO §259; rules+functions+UI en prod): registrar carro aliado/consigna → vender (captura ganancia) → ver comisión REAL en módulo Aliados/reportes. Tras Ctrl+Shift+R (cache en `05`). Wizard YA verificado en mock. Plan→`docs/superpowers/plans/2026-06-27-aliados-mvp-impl-plan.md`.
-> **2. CONSIGNA = ENTIDAD FORMAL** (TODO-50): flujo fuerte ejecutado 28/06 ✅ — decisión + chunk-1 (primitivas ✅) → spec `2026-06-28-todo50-...` (ver tabla). Sigue: cablear+deploy.
+> 🟢 **FOCO (RELEVO a sesión FRESCA — 28/06; turno monumental cerrado limpio)**:
+> **1. TODO-50 fase 2c — supresión rol-aware** (`executeSuppression`: consignante con deal cerrado conserva soporte + soft-redact snapshot; flujo 1581 **SENSIBLE**). Chunk 1 + fase 2 mecanismo YA en prod + validado live. Todo (estado/lección/borrador/pendientes) → **spec `2026-06-28-todo50-...`** + `42` LEGAL-07 (ver tabla TODO-50).
+> **2. ALIADOS — validar LIVE** (TODO-25 §259, dueño).
 > **DIFERIDO**: bot v2 iter-2 + val.live bot; filtros L-56 (en main); facturación TODO-26.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).

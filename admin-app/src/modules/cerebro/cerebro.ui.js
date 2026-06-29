@@ -12,6 +12,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { navigate } from '../../core/router.js';
@@ -136,7 +137,11 @@ export function mountCerebro(root) {
   /* ── Acciones ────────────────────────────────────────────── */
   async function doDelete(f) {
     if (!canDelete) { toast('Necesitas kb.delete para eliminar.', 'error'); return; }
-    if (!window.confirm(`¿Eliminar esta FAQ? El bot dejará de usarla.\n\n"${(f.question || '').slice(0, 80)}"`)) return;
+    if (!await confirmDialog({
+      title: '¿Eliminar esta FAQ?',
+      message: `El bot dejará de usarla.\n\n"${(f.question || '').slice(0, 120)}"`,
+      confirmText: 'Eliminar', danger: true,
+    })) return;
     if (store.get().mock) { ui.faqs = ui.faqs.filter((x) => x._docId !== f._docId); render(); toast('FAQ eliminada (demo)', 'ok'); return; }
     try { await deleteFaq(f._docId); writeAudit('kb_delete', 'FAQ ' + (f.question || '').slice(0, 40), ''); toast('✓ FAQ eliminada', 'ok'); }
     catch (err) { toast('No se pudo eliminar: ' + (err.message || err.code), 'error'); }
@@ -151,7 +156,11 @@ export function mountCerebro(root) {
 
   async function doBootstrap() {
     if (!canBootstrap) { toast('Solo super admin puede sembrar la KB.', 'error'); return; }
-    if (!window.confirm('Esto creará las FAQs profesionales base que falten (las existentes NO se duplican). ¿Continuar?')) return;
+    if (!await confirmDialog({
+      title: 'Sembrar FAQs base',
+      message: 'Se crearán las FAQs profesionales base que falten (las existentes NO se duplican).',
+      confirmText: 'Crear FAQs base',
+    })) return;
     if (store.get().mock) { toast('Bootstrap no disponible en modo demo.', 'info'); return; }
     try {
       const n = await bootstrapFaqs(ui.faqs, uid);

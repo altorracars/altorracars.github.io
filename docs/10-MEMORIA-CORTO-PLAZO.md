@@ -15,7 +15,7 @@
 > 🟢 **RELEVO (29/06 ⟦OPUS-4.8⟧)**:
 > **✅ TODO-25 Aliados** (§259→`05`). **🧹 Purgar `ZZZ`** (deal falso $1.3M Alexander Daza, confirmado live) con el borrado nuevo.
 > **🟣 EPIC MAESTRO #1: TODO-52 — CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). **🌟 VISIÓN #1 (NO negociable): Altorra a NIVEL TOP MUNDIAL (Linear/Stripe/Notion-grade, premium, jamás genérico) — es EL criterio de aceptación.** Negocio (secundario): un CRM POR empresa (clones), **multi-tenancy DESCARTADA**; clonabilidad = SUBPRODUCTO, no compite con la Visión #1. NO re-correr comité/Gemini (sin fork). Hecho: A.1✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1) Fase-B✅(2 P0-SEG verificados). **SIGUE:** P0-OWNER-DELETE (✅confirm.js+Aliados+Pipeline; falta Contactos crmPurgeLead/R8 + bulkbar) · P0-SEC · mockups.
-> **🐞 Backlog UI** → brief §MEGA-PLAN P1 (voseo; emoji→SVG; errores crudos). ✅ null(veh+dash)/theme/copy/layout/confirm.js+3RBAC. **Live-val✅** (acento emerald→¿oro?).
+> **🐞 Backlog UI** → brief §MEGA-PLAN P1 (voseo; emoji→SVG; errores crudos). ✅ null(veh+dash)/theme/copy/layout · confirm.js ~10/16 (falta hub/wizard) · Live-val✅ · acento→oro.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

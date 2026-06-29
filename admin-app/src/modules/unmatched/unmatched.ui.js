@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { navigate } from '../../core/router.js';
@@ -81,7 +82,11 @@ export function mountUnmatched(root) {
 
   async function doDelete(e) {
     if (!canDelete) { toast('Solo super admin puede eliminar', 'error'); return; }
-    if (!window.confirm('¿Eliminar esta query del histórico?\n\nNo afecta al cliente, solo limpia tu bandeja.')) return;
+    if (!await confirmDialog({
+      title: '¿Eliminar esta query del histórico?',
+      message: 'No afecta al cliente, solo limpia tu bandeja.',
+      confirmText: 'Eliminar', danger: true,
+    })) return;
     const prev = ui.entries.slice();
     removeLocal(e._docId);
     if (store.get().mock) { toast('Query eliminada', 'ok'); return; }

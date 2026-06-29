@@ -13,10 +13,13 @@ import { db, fns } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 import { writeAudit } from '../../core/audit.js';
 import { dealFromLead, stageById, probFor } from '../../domain/pipeline.js';
+import { isAllScope } from '../../core/auth.js';
 
 const nowISO = () => new Date().toISOString();
 const withId = (d) => ({ id: d.id, ...d.data() });
 const currentUid = () => (store.get().user ? store.get().user.uid : null);
+// §dataScope (opción A): el asesor (scope 'own') solo ve SUS deals; all/dueño sin filtro.
+const scopeCons = () => (isAllScope() ? [] : [where('ownerId', '==', currentUid())]);
 
 function activity(dealId, name, subject) {
   return addDoc(collection(db, 'activities'), {
@@ -30,6 +33,7 @@ function activity(dealId, name, subject) {
 export function subscribeDeals({ pageSize = 100, onData, onError }) {
   const q = query(
     collection(db, 'deals'),
+    ...scopeCons(),
     where('status', '==', 'open'),
     orderBy('lastActivityAt', 'desc'),
     limit(pageSize)
@@ -165,6 +169,7 @@ export async function markLost(dealId, reasonId, deal = {}) {
 export function subscribeWonDeals({ pageSize = 100, onData, onError }) {
   const q = query(
     collection(db, 'deals'),
+    ...scopeCons(),
     where('status', '==', 'won'),
     orderBy('lastActivityAt', 'desc'),
     limit(pageSize)

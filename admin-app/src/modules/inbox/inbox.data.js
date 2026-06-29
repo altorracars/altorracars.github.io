@@ -12,8 +12,12 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, fns } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
+import { isAllScope } from '../../core/auth.js';
 
 const nowISO = () => new Date().toISOString();
+// §dataScope (opción A): el asesor (scope 'own') solo consulta SUS leads; el dueño/
+// gerente (scope 'all') sin filtro. Espejo de scopeAllowsOwn() en firestore.rules.
+const scopeCons = () => (isAllScope() ? [] : [where('ownerId', '==', currentUid())]);
 const withId = (d) => ({ id: d.id, ...d.data() });
 
 /**
@@ -22,7 +26,7 @@ const withId = (d) => ({ id: d.id, ...d.data() });
  */
 export function subscribeLeads({ pageSize = 40, onData, onError }) {
   let lastDoc = null;
-  const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(pageSize));
+  const q = query(collection(db, 'leads'), ...scopeCons(), orderBy('createdAt', 'desc'), limit(pageSize));
   const unsubscribe = onSnapshot(
     q,
     (snap) => {
@@ -38,7 +42,7 @@ export function subscribeLeads({ pageSize = 40, onData, onError }) {
 /** Página siguiente (no realtime) a partir de un cursor. */
 export async function loadMoreLeads({ pageSize = 40, after }) {
   if (!after) return { rows: [], lastDoc: null, hasMore: false };
-  const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'), startAfter(after), limit(pageSize));
+  const q = query(collection(db, 'leads'), ...scopeCons(), orderBy('createdAt', 'desc'), startAfter(after), limit(pageSize));
   const snap = await getDocs(q);
   return {
     rows: snap.docs.map(withId),

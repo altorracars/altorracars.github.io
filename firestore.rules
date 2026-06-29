@@ -91,6 +91,24 @@ service cloud.firestore {
           && grantWithinCaller(perms);
     }
 
+    // §dataScope (P0-SEC-1, opción A — dueño 29/06): visibilidad de DATOS por rol.
+    // El dueño ('*'/super_admin legacy) y los roles con dataScope:'all' (gerente/CEO) ven
+    // TODO; los demás (asesor: dataScope 'own'/'department') ven SOLO lo SUYO (ownerId == su
+    // uid). Aplica a los work-items con dueño claro: leads · lead_intake · deals. Contactos
+    // y actividades quedan visibles al equipo (directorio compartido — modelo estándar).
+    // Para list queries el cliente DEBE filtrar where('ownerId','==',uid) si no es 'all'
+    // (admin-app inbox/deals.data.js lo hace). 'department' degrada a 'own' hasta
+    // denormalizar departmentId en los docs (refinamiento futuro).
+    function userDataScope() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('dataScope', 'own');
+    }
+    function scopeAllowsOwn(d) {
+      return isSuperAdmin()
+          || ('*' in getUserPermissions())
+          || userDataScope() == 'all'
+          || d.get('ownerId', '') == request.auth.uid;
+    }
+
     // F4.5: Optimistic locking — validate _version increment
     // Allows: new docs with _version=1, updates with _version+1, or migration from null→1
     function validVersion() {
@@ -450,7 +468,7 @@ service cloud.firestore {
                    ['inalcanzable', 'no_califica', 'duplicado', 'ya_compro_en_otra_parte', 'spam_prueba'])
           );
       }
-      allow read:   if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
+      allow read:   if hasPermission('crm.read') && scopeAllowsOwn(resource.data); // §dataScope: asesor solo SUS leads; all/dueño todo
       allow create: if isSuperAdmin() || hasPermission('crm.edit');
       allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && leadStatusUnlocked() && leadStatusV3Ok();
       allow delete: if isSuperAdmin() || hasPermission('crm.delete');
@@ -462,7 +480,7 @@ service cloud.firestore {
     // canónico. Owner FORZADO = quien lo registra. Sin update/delete de cliente
     // (la marca _ingestedAt la pone el server vía Admin SDK).
     match /lead_intake/{intakeId} {
-      allow read: if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
+      allow read: if hasPermission('crm.read') && scopeAllowsOwn(resource.data); // §dataScope: asesor solo los suyos
       allow create: if (isSuperAdmin() || hasPermission('crm.edit') || hasPermission('crm.create'))
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.nombre is string
@@ -597,7 +615,7 @@ service cloud.firestore {
             .hasOnly(['postventa', 'recibeVehiculo', 'lastActivityAt',
                       'updatedAt', 'updatedBy', '_version'].toSet());
       }
-      allow read:   if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
+      allow read:   if hasPermission('crm.read') && scopeAllowsOwn(resource.data); // §dataScope: asesor solo SUS deals; all/dueño todo
       // F7: el deal nace SOLO en cuadrando_cita, abierto, con valor y owner.
       // E4: y JAMÁS con campos server-only — un commissionSnapshot forjado en
       // el create sobreviviría al ganar (el trigger lo respeta por idempotencia).

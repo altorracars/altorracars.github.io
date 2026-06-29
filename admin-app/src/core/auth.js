@@ -18,6 +18,20 @@ export function hasPermission(perm) {
   return perms.includes('*') || perms.includes(perm);
 }
 
+// §dataScope (P0-SEC-1, opción A): ¿el usuario ve TODOS los datos (gerente/CEO/dueño) o
+// SOLO los suyos (asesor)? Espejo cliente de scopeAllowsOwn() de firestore.rules: el
+// dueño ('*'/super_admin) y dataScope:'all' ven todo; el resto se filtra por ownerId==uid.
+// SIN dataScope explícito = scoped (own) — igual que el default de las reglas (seguro).
+export function isAllScope() {
+  const s = store.get();
+  const p = s.profile || {};
+  const perms = s.permissions || [];
+  return p.dataScope === 'all'
+    || p.rol === 'super_admin'
+    || p.roleId === 'system_super_admin'
+    || perms.includes('*');
+}
+
 function permissionsFromProfile(profile) {
   if (!profile) return [];
   if (profile.rol === 'super_admin' || profile.roleId === 'system_super_admin') return ['*'];

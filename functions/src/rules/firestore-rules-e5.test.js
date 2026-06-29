@@ -29,7 +29,7 @@ describe.skipIf(!EMU)('Rules E5 — SEC-01: canónico CRM solo con crm.read', ()
     });
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
-      await db.doc('usuarios/' + CON).set({ rol: 'custom', permissions: ['crm.read'], estado: 'activo' });
+      await db.doc('usuarios/' + CON).set({ rol: 'custom', permissions: ['crm.read'], dataScope: 'all', estado: 'activo' }); // §220: dataScope:'all' aísla este test al GATE crm.read (no al scope por dueño)
       await db.doc('usuarios/' + SIN).set({ rol: 'custom', permissions: ['vehicles.read'], estado: 'activo' });
       await db.doc('leads/l1').set({ status: 'nuevo', fullName: 'PII Lead' });
       await db.doc('lead_intake/i1').set({ nombre: 'PII Intake', ownerId: 'x' });

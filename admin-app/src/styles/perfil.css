@@ -23,6 +23,15 @@
   font-size: var(--t-subtitle); color: var(--ink-text); margin: 0;
 }
 
+/* ── §39 Notificaciones por Telegram ── */
+.perfil-tg { display: flex; flex-direction: column; gap: var(--s-3); align-items: flex-start; }
+.perfil-tg__status { display: flex; align-items: center; gap: var(--s-2); width: 100%; }
+.perfil-tg__dot {
+  width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto;
+  background: var(--success, #3fb950);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success, #3fb950) 22%, transparent);
+}
+
 /* ── Hero ── */
 .perfil-hero { flex-direction: row; align-items: center; gap: var(--s-5, 20px); }
 .perfil-hero__avatarwrap { position: relative; flex: 0 0 auto; }

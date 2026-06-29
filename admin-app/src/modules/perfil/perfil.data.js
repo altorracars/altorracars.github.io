@@ -4,11 +4,14 @@
 // identidad (avatar/Storage + datos personales + cédula one-time-edit) +
 // cambio de contraseña SEGURO (reauth + política fuerte).
 //
-// DIFERIDO a una fase de MFA-hardening (fuera de F-6, no encaja en el auth
-// modular actual que es email+password puro): 2FA-SMS, dispositivos de
-// confianza, backup codes, preguntas de seguridad, Telegram link.
-// (auth.js: "claims/endurecimiento = Fase 5"). El portal nuevo YA está live
-// email+password-only → soltar el stack SMS-MFA NO es regresión de F-6.
+// + TELEGRAM (notificaciones, §26.5/§39): portado 29/06 e — el dueño lo pidió.
+// Es INDEPENDIENTE del login (es push, no auth): el backend (webhook
+// linkTelegramChat + senders) YA está deployed → vincular ES funcional.
+//
+// DIFERIDO a una fase de MFA-hardening (atado al LOGIN, que el admin nuevo NO
+// tiene — es email+password puro; TODO-43): 2FA-SMS, dispositivos de confianza,
+// backup codes, preguntas de seguridad. Portar su UI sin el login-MFA sería un
+// control que no hace nada (anti-"inútil") → se reconstruyen con el login.
 //
 // Self-update permitido por firestore.rules (whitelist diff-keys §43):
 //   nombre, telefono, prefijo, cargo, photoURL, tipoDoc, cedula,
@@ -20,7 +23,7 @@
 import {
   EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile,
 } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteField, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
@@ -131,4 +134,40 @@ export async function changePassword(currentPassword, newPassword) {
   const cred = EmailAuthProvider.credential(user.email, currentPassword);
   await reauthenticateWithCredential(user, cred); // lanza auth/invalid-credential si la actual está mal
   await updatePassword(user, newPassword);
+}
+
+/* ─── Telegram: notificaciones push gratis (§26.5/§39) ─── */
+// El backend (webhook linkTelegramChat + senders onChatEscalatedTelegram/sendTelegramAlert)
+// YA está deployed. Vincular = deep-link al bot con start=ASESOR_{uid}; el webhook
+// (Admin SDK) persiste telegramChatId en el doc del usuario. Desvincular = self-update
+// (campos en el whitelist diff-keys de firestore.rules §43).
+export const TELEGRAM_BOT_USERNAME = 'AltorraCarsbot';
+
+/** Deep-link al bot que dispara el /start con el payload de vínculo. */
+export function telegramDeepLink(uid) {
+  return 'https://t.me/' + TELEGRAM_BOT_USERNAME + '?start=ASESOR_' + encodeURIComponent(uid || '');
+}
+
+/** Quita el vínculo de Telegram del usuario actual (deja de recibir alertas). */
+export async function unlinkTelegram() {
+  const { user, profile } = store.get();
+  if (!user || !user.uid) throw new Error('No hay sesión activa.');
+  await updateDoc(doc(db, 'usuarios', user.uid), {
+    telegramChatId: deleteField(),
+    telegramLastUsedAt: deleteField(),
+    telegramUserName: deleteField(),
+    telegramLinkedAt: deleteField(),
+  });
+  const p = { ...(profile || {}) };
+  delete p.telegramChatId; delete p.telegramLastUsedAt; delete p.telegramUserName; delete p.telegramLinkedAt;
+  store.set({ profile: p });
+}
+
+/** onSnapshot del propio doc usuarios/{uid} — para reflejar EN VIVO el vínculo de
+ *  Telegram en cuanto el webhook lo persiste (sin pedir recargar). */
+export function subscribeOwnProfile(uid, onData) {
+  if (!uid) return () => {};
+  return onSnapshot(doc(db, 'usuarios', uid), (snap) => {
+    if (snap.exists()) onData(snap.data());
+  }, () => { /* permiso/red: silencioso, la card queda en su último estado */ });
 }

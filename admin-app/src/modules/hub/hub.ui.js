@@ -13,6 +13,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -275,8 +276,8 @@ export function mountHub(root) {
   }
 
   /* ── Acciones de gestión (3c) ───────────────────────────── */
-  function doClose(chat) {
-    if (!window.confirm('¿Cerrar esta conversación?\n\nEl cliente verá un aviso de cierre. Los mensajes se conservan.')) return;
+  async function doClose(chat) {
+    if (!await confirmDialog({ title: '¿Cerrar esta conversación?', message: 'El cliente verá un aviso de cierre. Los mensajes se conservan.', confirmText: 'Cerrar' })) return;
     const a = asesor(); const ts = new Date().toISOString();
     const snap = { status: chat.status, closedAt: chat.closedAt, closedBy: chat.closedBy, closedByName: chat.closedByName, closedReason: chat.closedReason, lastMessage: chat.lastMessage, lastMessageAt: chat.lastMessageAt };
     chat.status = 'closed'; chat.closedAt = ts; chat.closedBy = a.uid; chat.closedByName = a.nombre; chat.closedReason = 'admin_resolved';
@@ -286,8 +287,8 @@ export function mountHub(root) {
     closeChatDoc(chat._docId, a).then(() => toast('Conversación cerrada', 'ok'))
       .catch(() => { Object.assign(chat, snap); renderList(); renderDetail(); toast('No se pudo cerrar.', 'error'); });
   }
-  function doReopen(chat) {
-    if (!window.confirm('¿Reabrir esta conversación?\n\nEl cliente podrá volver a escribir aquí.')) return;
+  async function doReopen(chat) {
+    if (!await confirmDialog({ title: '¿Reabrir esta conversación?', message: 'El cliente podrá volver a escribir aquí.', confirmText: 'Reabrir' })) return;
     const a = asesor(); const ts = new Date().toISOString();
     const snap = { status: chat.status, lastMessage: chat.lastMessage, lastMessageAt: chat.lastMessageAt };
     chat.status = 'active'; chat.lastMessage = '↻ Conversación reabierta por ' + a.nombre; chat.lastMessageAt = ts;
@@ -317,10 +318,10 @@ export function mountHub(root) {
       .catch(() => { ui.transfer.loading = false; ui.transfer.advisors = []; renderTransferModal(); });
   }
   function closeTransfer() { ui.transfer.open = false; renderTransferModal(); }
-  function doTransfer(adv) {
+  async function doTransfer(adv) {
     const chat = activeChat();
     if (!chat) return;
-    if (!window.confirm('¿Transferir esta conversación a ' + adv.nombre + '?\n\nRecibirá una notificación.')) return;
+    if (!await confirmDialog({ title: '¿Transferir esta conversación a ' + adv.nombre + '?', message: 'Recibirá una notificación.', confirmText: 'Transferir' })) return;
     const a = asesor();
     const snap = { claimedBy: chat.claimedBy, claimedByName: chat.claimedByName };
     chat.claimedBy = adv.uid; chat.claimedByName = adv.nombre; renderList(); renderDetail();

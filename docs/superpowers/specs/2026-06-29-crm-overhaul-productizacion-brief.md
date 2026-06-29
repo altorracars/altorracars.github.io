@@ -143,7 +143,7 @@ Quick-wins del synthesis A.1, todos reversibles/aditivos/cero-regresión, verifi
 - **P0-LAYOUT fase 1** ✅ Pase-1. **P0-DARK-ONLY** ✅ Pase-1.
 
 ### P1 — profesionalismo ("se ve hecho por IA" → premium)
-- `confirm()/prompt()/alert()` nativos → ✅ `core/confirm.js` + **~10/16 reemplazados**: RBAC ×3 (Usuarios/Roles/Departamentos) + **contacts** (fusión + `prompt('SUPRIMIR')`→**typedConfirm**, Ley 1581) + **cerebro** (FAQ delete + bootstrap) + **unmatched** + **inbox** (doble-confirm nativo→1 modal danger+typedConfirm). Verificado (build + live cerebro/departamentos). **FALTA:** hub (3 — `doClose/doReopen/doTransfer`, requieren volverlos `async`) + wizard (2 — confirms en flujo de guardado) + vehicles revert-audit (1).
+- `confirm()/prompt()/alert()` nativos → ✅✅ **COMPLETO: CERO nativos** (grep verificado; el único match es un comentario). `core/confirm.js` reemplazó TODOS: RBAC ×3 + contacts (fusión + `prompt('SUPRIMIR')`→**typedConfirm** Ley 1581) + cerebro ×2 + unmatched + inbox (doble→1 danger+typedConfirm) + hub ×3 (`doClose/doReopen/doTransfer` vueltos `async`) + vehicles revert + wizard ×2 (placa-dup + publicar). Verificado: build limpio + grep cero + live (cerebro/departamentos/Aliados/deals).
 - `core/errors.js` `friendlyError(e)` (replicar mapeo de `auth.js`) → reemplazar ~30 toasts que filtran `e.code`/'rules'/'super_admin'/IDs de permiso.
 - Copy dev restante: **voseo argentino** (bot Cerebro AI público en Cartagena + ajustes "cambiás/Usá") → tú-Colombia (skill `catalogo-voz`); "(demo)" inline; "13 listas" hardcode→derivado.
 - **Emoji→SVG** en filas/acciones/empty-states (la base `nav-icons.js`/`icons.js` existe; sidebar ya migrado).

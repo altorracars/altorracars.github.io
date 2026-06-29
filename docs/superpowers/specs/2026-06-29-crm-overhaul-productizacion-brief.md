@@ -52,7 +52,7 @@ Dark-only premium (oro `#b89658` sobre dark). Cero copy "modo desarrollador". Ca
 
 ## 8. Checklist (evidencia, no dibujito)
 
-- [ ] Fase A.1 auditoría de código (workflow) → findings priorizados
+- [x] Fase A.1 auditoría de código (workflow, 10 agentes/1.48M tok, 29/06) → findings crudos en `docs/superpowers/2026-06-29-crm-holistic-audit-findings.json` (SÍNTESIS pendiente de leer en sesión fresca)
 - [ ] Fase A.2 auditoría live Chrome (cada sección, POV novato) → findings
 - [ ] Fase B deliberación comité + Gemini (verificada)
 - [ ] Fase C mega-plan + mockups + design-system premium + prompt Gemini

@@ -6,7 +6,7 @@
 // — sin botones muertos: la cabecera lo dice. RBAC: vehicles.*.
 // ============================================================
 
-import { el, clear } from '../../core/dom.js';
+import { el, clear, appendAll } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -125,7 +125,7 @@ export function mountVehicles(root) {
     const overlay = el('div', { class: 'rev-modal__overlay' }, [
       el('div', { class: 'rev-modal rev-modal--sm', role: 'alertdialog', 'aria-modal': 'true' }, [
         el('h3', { class: 'rev-modal__title', text: '¿Eliminar "' + label + '"?' }),
-        el('p', { class: 'u-caption lst-warn', text: '⚠️ Desaparece del catálogo al instante; su página pública muere en la próxima corrida del generador (máx 4h). Si solo salió de circulación, usa el estado en su lugar.' }),
+        el('p', { class: 'u-caption lst-warn', text: '⚠️ Desaparece del catálogo al instante y deja de aparecer en el sitio web poco después. Si solo salió de circulación, cambia su estado en lugar de eliminarlo.' }),
         el('p', { class: 'u-caption u-muted', text: 'Las fotos y el historial de auditoría se conservan.' }),
         el('div', { class: 'rev-modal__actions' }, [cancelBtn, delBtn]),
       ]),
@@ -434,15 +434,16 @@ export function mountVehicles(root) {
       headBtns.push(newBtn);
     }
 
-    wrap.append(
+    const n = ui.vehicles.length;
+    appendAll(wrap, [
       el('div', { class: 'rev-head' }, [
-        el('span', { class: 'u-caption u-muted', text: ui.vehicles.length + ' vehículos — alimentan el catálogo público y sus páginas (el generador corre cada 4h).' }),
+        el('span', { class: 'u-caption u-muted', text: n + (n === 1 ? ' vehículo en el catálogo' : ' vehículos en el catálogo') }),
         el('div', { class: 'u-row u-row--tight' }, headBtns),
       ]),
       draftsPanel(),
       el('div', { class: 'veh-filters' }, [search, estadoSel]),
       listRoot,
-    );
+    ]);
     renderList();
   }
 

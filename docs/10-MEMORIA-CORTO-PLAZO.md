@@ -13,10 +13,9 @@
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **RELEVO (29/06 ⟦OPUS-4.8⟧)**:
-> **✅ TODO-25 Aliados (§259) VALIDADO LIVE end-to-end** (Claude vía extensión Chrome): venta de prueba `vehiculos/47` (tenencia ALIADO+MANUAL) → deal → gate Vender comisión MANUAL $1.25M → `onDealUpdated` grabó snapshot (frozenTenancy=alexander-daza) → reporte Aliados **$0→$1.3M**. El "$0 siempre" MUERTO. Recetas/gotchas → callejón (j). (28/06: TODO-50 fase 2c cerrado.)
-> **🧹 LIMPIEZA (dueño, irreversible):** purga en lote de los `ZZZ PRUEBA` — incl. `ZZZ PRUEBA Aliado` (contacto + deal ganado $1.25M = el $1.3M falso en Alexander Daza + `vehiculos/47` vendido). Won=terminal→"anular".
-> **🟣 EPIC MAESTRO #1 (29/06): TODO-52 — CRM Overhaul + Productización** (audit holístico lanzado; brief→spec `…2026-06-29-crm-overhaul…`). Subordina TODO-26/web. DIFERIDO: bot v2; TODO-29 GC.
-> **🐞 Backlog UI (29/06) → spec brief §4** (`null` headers; `confirm()` nativo callejón j; theme toggle; dev-copy; `dfsfdfdfs`).
+> **✅ TODO-25 Aliados (§259) VALIDADO LIVE** (29/06; detalle en `05` + callejón j; pend. ADR a `99`). **🧹 LIMPIEZA dueño (irreversible):** purgar `ZZZ PRUEBA` (incl. deal ganado $1.25M = el $1.3M falso en Alexander Daza + `vehiculos/47`) — se desbloquea con P0-OWNER-DELETE de TODO-52.
+> **🟣 EPIC MAESTRO #1 (29/06): TODO-52 — CRM Overhaul + Productización**. SSoT = brief `…2026-06-29-crm-overhaul…` (§MEGA-PLAN P0→P3 + §PASE-1). **Avance 29/06 b ⟦OPUS⟧:** A.1✅ síntesis✅ (81 findings; **2 P0 seguridad**: dataScope no-enforced=fuga PII/Habeas Data + privesc vía roles.create) · A.2-local✅ · **PASE-1 shipped+verif** (dark-only·`null`·copy-dev·P0-LAYOUT-f1). **SIGUE:** P0-OWNER-DELETE (desbloquea ZZZ) · P0 seguridad · Fase B Gemini (tenancy/seguridad) · mockups.
+> **🐞 Backlog UI** → brief §MEGA-PLAN P1 (confirm() callejón j; voseo; emoji→SVG; gold canónico; errores crudos). ✅ PASE-1: `null`, theme toggle, dev-copy.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -40,7 +39,7 @@
 
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
-| **TODO-52** | **🟣 EPIC MAESTRO — CRM Overhaul + Productización ⟦OPUS⟧ (prioridad #1, 29/06)** — rediseño total premium dark-only + reorg flujo + **borrado owner-only por sección (P0, desbloquea limpieza)** + camino multi-tenant/producto. Flujo W-11 (audit holístico comité+Gemini+skills+agentes+Claude Design+Chrome). SSoT → spec `2026-06-29-crm-overhaul-productizacion-brief.md`. Fase A.1 (audit código) lanzada. | 🔵 audit | síntesis (sesión fresca) |
+| **TODO-52** | **🟣 EPIC MAESTRO — CRM Overhaul + Productización ⟦OPUS⟧ (prioridad #1, 29/06)** — rediseño premium dark-only + reorg flujo + **borrado owner-only por sección (P0, desbloquea limpieza)** + multi-tenant/producto + **2 P0 seguridad** (PII/Habeas Data + privesc). SSoT → brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1). A.1✅ síntesis✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1). | 🔄 impl | sigue P0-owner-delete + seguridad + Fase B Gemini |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |

@@ -172,5 +172,11 @@
 - **Compartido**: `css/home/marca-cinematic.css` viste 24 páginas (busqueda+marca+19 horneadas+4 categorías) → corrige todas; verifica el toggle-JS (`classList.toggle('collapsed')`) antes de ampliar su breakpoint.
 - **Familia**: L-23/L-54 (geometría sticky/max-*) · L-16/L-21 (cascada legacy↔cinematic por-propiedad) · L-55 (mata transiciones para medir end-states).
 
+### L-58 · `parent.append(null)` nativo pinta el literal `"null"` (≠ `el()` que filtra) ⟦OPUS-4.8⟧
+- `append(a, panel(), b)` con `null` → text-node "null" (NO era campo Firestore ausente; A.1 adivinó §3.3). Fix: helper `core/dom.js` `appendAll()`. Detalle → brief `…crm-overhaul…` §PASE-1.
+
+### L-59 · Recorte/scroll del shell sin romper los auto-scroll (TODO-52) ⟦OPUS-4.8⟧
+- Módulos FLUJO se recortan/encogen/pegan bajo `.outlet{overflow:hidden}`. Fix: `.outlet`→`overflow-y:auto` + `.outlet>*{min-width:100%}` + `padding-inline` flow, **manteniendo `display:flex` ROW (no `column` → rompe los auto-scroll)**. Receta → brief §PASE-1.
+
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

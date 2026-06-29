@@ -63,7 +63,7 @@
 | **TODO-46→F-1** | **Bot v2 FLUJO + chat vivo ⟦OPUS⟧** — rediseño (B1/B2/B3) VALIDADO LIVE ✅; +3 bugs post-validación FIXED: escalado **gatea datos** (no anónimo) · **chat asesor RECIBE** (subscribeToChat, contrato reglas ok) · búsqueda banner/doble-scroll/filtro/gap. Detalle→defects-log. RESTA: validar roundtrip chat live (dueño=asesor) + iter-2 (marca·FAQ·visual·ARIA). | 🔄 | roundtrip+iter2 |
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧** — MF4.x del admin viejo NO portadas (360°/Contactos-KPIs/masivas/Postventa-NPS) + doc-fixes. Detalle→bóveda `…barrido-drift…`. | 🔵 | tras bot |
 
-| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — flujo fuerte + chunk 1 **DESPLEGADO + VALIDADO LIVE 28/06** ✅ (callable+UI+reporte en prod; bug cross-trigger `dedupKeysFor`/cédula cazado live + FIXED). Detalle+lección+pendientes → **spec `2026-06-28-todo50-...`** (SSoT). Resta: suprimir 3 `ZZZ PRUEBA` (dueño) · redeploy coherencia (deuda menor) · reconciliar 4 viejas (futuro) · fase 2 legal (`legal-colombia`). | 🔄 cierre | pruebas+fase2 |
+| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — chunk 1 (entidad+reporte) **VALIDADO LIVE** + **fase 2 mecanismo Habeas Data por finalidad DESPLEGADO** 28/06 ✅. Detalle+lección(bug cross-trigger)+borrador legal → **spec `2026-06-28-todo50-...`** + lóbulo `42` LEGAL-07 (SSoT). **RESTA (relevo):** fase 2c **supresión rol-aware** (flujo 1581 sensible) · ratificación TEXTO contrato (abogado→`policyVersion v1`) · suprimir 3 `ZZZ PRUEBA` (dueño) · reconciliar 4 viejas + redeploy coherencia (deuda menor). | 🔄 relevo | fase2c+texto |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

@@ -14,7 +14,7 @@
 >
 > 🟢 **RELEVO (29/06 ⟦OPUS-4.8⟧)** — **🟣 EPIC #1: TODO-52 CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). 🌟 **VISIÓN #1 = nivel TOP MUNDIAL** (Linear/Stripe/Notion-grade, jamás genérico) — ya escrita ahí, NO re-preguntar. Multi-tenancy DESCARTADA (CRM por empresa). NO re-correr comité/Gemini (sin fork).
 > **Hecho:** A.1✅ A.2-live✅ Fase-B✅ · PASE-1✅(dark/null/copy/layout) · confirm.js 16/16✅ · P0-OWNER-DELETE Aliados+Pipeline✅ · **errors.js COMPLETO (13 mód, grep cero crudos + leaks limpiados; en `dev`)✅** · **`var(--gold)` fantasma MUERTO (oro Aliados live `#D4A85A`)✅**.
-> **SIGUE:** **Backend** [irreversible, foco fresco] = purga Contactos/Bandeja (drift R8 `crmPurgeLead`) + 2 P0-SEC (privesc `roles.create` + dataScope reglas/queries) · **P1 resto** = emoji→SVG (acotar, ~408 ocurr) · separar `--brand-gold` del accent picker · voseo→tú · **Fase C** mockups.
+> **SIGUE:** **Backend P0-SEC** [irreversible, foco fresco, UN deploy + live-val dueño] = privesc `roles.create` + **dataScope** reglas/queries (Decisión-Fuerte; dataScope RESTRINGE reads → emulador+alinear `*.data.js` ANTES) + bundle hardening drift R8 (`isOwnerData` compartido — LATENTE, dueño pasa hoy). **Owner-delete YA NO bloquea** (recon 29/06 c: completo; dueño purga ZZZ hoy). · **P1 resto** = emoji→SVG (acotar, ~408 ocurr) · separar `--brand-gold` del accent picker · voseo→tú · **Fase C** mockups.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).

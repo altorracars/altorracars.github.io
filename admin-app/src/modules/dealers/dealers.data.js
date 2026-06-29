@@ -15,7 +15,7 @@
 // ============================================================
 
 import {
-  collection, query, where, orderBy, onSnapshot, getDocs, setDoc, updateDoc, doc,
+  collection, query, where, orderBy, onSnapshot, getDocs, setDoc, updateDoc, deleteDoc, doc,
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { writeAudit } from '../../core/audit.js';
@@ -114,6 +114,15 @@ export async function saveDealer(docId, fields) {
     writeAudit('dealer_create', 'aliado ' + fields.nombre, '');
   }
   return id;
+}
+
+/** Borrado owner-only (rules: isSuperAdmin || dealers.delete). NO toca
+ *  `vehiculos.concesionario` (slug string): los vehículos del aliado quedan
+ *  con su origen pero sin doc de aliado — es lo esperado para purgar basura. */
+export async function deleteDealer(id, nombre) {
+  if (!id) throw new Error('ID de aliado inválido.');
+  await deleteDoc(doc(db, 'concesionarios', id));
+  writeAudit('dealer_delete', 'aliado ' + (nombre || id), '');
 }
 
 export const MOCK_DEALERS = [

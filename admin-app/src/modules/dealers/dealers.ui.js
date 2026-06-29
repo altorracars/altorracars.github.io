@@ -14,16 +14,18 @@
 import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { hasPermission } from '../../core/auth.js';
 import {
   MOCK_DEALERS, MOCK_DEALER_STATS, subscribeDealers, fetchDealerStats,
-  saveDealer, slugifyDealer,
+  saveDealer, slugifyDealer, deleteDealer,
 } from './dealers.data.js';
 
 export function mountDealers(root) {
   const ui = { dealers: [], stats: {}, consignantes: [], sub: null, loaded: false, search: '' };
   const canCreate = hasPermission('dealers.create');
   const canEdit = hasPermission('dealers.edit');
+  const canDelete = hasPermission('dealers.delete');
 
   const wrap = el('section', { class: 'dlr' });
   clear(root); root.append(wrap);
@@ -111,6 +113,32 @@ export function mountDealers(root) {
     nombreIn.focus();
   }
 
+  /* ── Borrado owner-only (modal premium + advertencia si tiene vehículos) ── */
+  async function deleteDealerFlow(d) {
+    const s = ui.stats[d.id] || {};
+    const conVeh = (s.activos || 0) + (s.vendidos || 0);
+    const aviso = conVeh > 0
+      ? ' Tiene ' + conVeh + ' vehículo(s) vinculados: NO se borran, pero quedarán sin aliado.'
+      : '';
+    const ok = await confirmDialog({
+      title: '¿Eliminar el aliado "' + (d.nombre || d.id) + '"?',
+      message: 'Se quita de la lista de aliados.' + aviso + ' Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar', danger: true,
+    });
+    if (!ok) return;
+    const idx = ui.dealers.findIndex((x) => x.id === d.id);
+    const removed = idx >= 0 ? ui.dealers.splice(idx, 1)[0] : null;
+    renderGrid(); // OPTIMISTA
+    if (store.get().mock) { toast('Aliado eliminado (demo)', 'ok'); return; }
+    try {
+      await deleteDealer(d.id, d.nombre);
+      toast('✓ Aliado eliminado', 'ok');
+    } catch (e) {
+      if (removed) { ui.dealers.splice(idx, 0, removed); renderGrid(); } // rollback
+      toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+    }
+  }
+
   /* ── Card de aliado (métricas réplica del clásico) ──────── */
   function card(d) {
     const s = ui.stats[d.id] || { activos: 0, vendidos: 0, ventasAltorra: 0, comisiones: 0 };
@@ -129,6 +157,11 @@ export function mountDealers(root) {
       const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️', 'aria-label': 'Editar' });
       editBtn.addEventListener('click', () => openModal(d));
       head.append(editBtn);
+    }
+    if (canDelete) {
+      const delBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑', 'aria-label': 'Eliminar aliado', title: 'Eliminar aliado' });
+      delBtn.addEventListener('click', () => deleteDealerFlow(d));
+      head.append(delBtn);
     }
     const meta = [];
     if (d.telefono) meta.push(el('div', { class: 'u-caption u-muted', text: 'Tel: ' + d.telefono }));

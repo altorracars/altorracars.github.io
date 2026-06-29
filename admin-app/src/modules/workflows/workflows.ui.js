@@ -14,6 +14,7 @@ import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { writeAudit } from '../../core/audit.js';
 import { timeAgo } from '../../domain/format.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   BUILT_IN_RULES, TRIGGER_LABELS, effectiveEnabled,
   subscribeRuleStates, saveRuleStates, fetchHistory,
@@ -55,7 +56,7 @@ export function mountWorkflows(root) {
       inputEl.disabled = false;
     } catch (e) {
       inputEl.checked = !nextOn; inputEl.disabled = false;
-      toast('No se pudo: ' + (e.code === 'permission-denied' ? 'requiere super_admin o settings.* (rules)' : (e.message || e.code)), 'error');
+      toast('No se pudo: ' + friendlyError(e), 'error');
     }
   }
 
@@ -141,7 +142,7 @@ export function mountWorkflows(root) {
       ui.history = await fetchHistory(50); ui.histLoaded = true; renderHistory();
     } catch (e) {
       ui.histLoaded = true; ui.history = []; renderHistory();
-      toast('No se pudo cargar el historial: ' + (e.message || e.code), 'error');
+      toast('No se pudo cargar el historial: ' + friendlyError(e), 'error');
     }
   }
 

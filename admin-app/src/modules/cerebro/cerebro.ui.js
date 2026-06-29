@@ -18,6 +18,7 @@ import { toast } from '../../core/toast.js';
 import { navigate } from '../../core/router.js';
 import { hasPermission } from '../../core/auth.js';
 import { writeAudit } from '../../core/audit.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   CATEGORIES, subscribeFaqs, createFaq, updateFaq, deleteFaq, toggleFaq, bootstrapFaqs, MOCK_FAQS,
 } from './cerebro.data.js';
@@ -126,7 +127,7 @@ export function mountCerebro(root) {
         close(); toast(isEdit ? '✓ FAQ actualizada' : '✓ FAQ creada', 'ok');
       } catch (err) {
         saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Crear FAQ';
-        toast('No se pudo guardar: ' + (err.code === 'permission-denied' ? 'sin permiso (rules)' : (err.message || err.code)), 'error');
+        toast('No se pudo guardar: ' + friendlyError(err), 'error');
       }
     });
 
@@ -144,7 +145,7 @@ export function mountCerebro(root) {
     })) return;
     if (store.get().mock) { ui.faqs = ui.faqs.filter((x) => x._docId !== f._docId); render(); toast('FAQ eliminada (demo)', 'ok'); return; }
     try { await deleteFaq(f._docId); writeAudit('kb_delete', 'FAQ ' + (f.question || '').slice(0, 40), ''); toast('✓ FAQ eliminada', 'ok'); }
-    catch (err) { toast('No se pudo eliminar: ' + (err.message || err.code), 'error'); }
+    catch (err) { toast('No se pudo eliminar: ' + friendlyError(err), 'error'); }
   }
 
   async function doToggle(f, enabled) {
@@ -166,7 +167,7 @@ export function mountCerebro(root) {
       const n = await bootstrapFaqs(ui.faqs, uid);
       writeAudit('kb_bootstrap', `${n} FAQs base`, '');
       toast(n ? `✓ ${n} FAQs base sembradas` : 'Las FAQs base ya estaban sembradas', n ? 'ok' : 'info');
-    } catch (err) { toast('No se pudo sembrar: ' + (err.message || err.code), 'error'); }
+    } catch (err) { toast('No se pudo sembrar: ' + friendlyError(err), 'error'); }
   }
 
   /* ── Tarjeta ─────────────────────────────────────────────── */

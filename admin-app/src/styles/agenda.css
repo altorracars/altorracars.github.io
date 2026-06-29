@@ -90,6 +90,6 @@
   text-align: left; cursor: pointer;
   border-radius: var(--r-md);
 }
-.cita-pick__row:hover { background: color-mix(in srgb, var(--gold, #b89658) 10%, transparent); }
+.cita-pick__row:hover { background: color-mix(in srgb, var(--gold-500) 10%, transparent); }
 .cita-pick__row:last-child { border-bottom: 0; }
 .cita-pick__sep { text-align: center; padding: 2px 0; }

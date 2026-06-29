@@ -11,6 +11,7 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   LIST_DEFS, LIST_PERMS, MOCK_LISTS, MOCK_COUNTS,
   fetchLists, saveList, fetchUsageCounts, usageOf,
@@ -116,7 +117,7 @@ export function mountLists(root) {
         toast(`✓ Lista "${def.title}" guardada`, 'ok');
       } catch (e) {
         saveBtn.disabled = false; saveBtn.textContent = 'Guardar';
-        toast('No se pudo guardar: ' + (e.message || e.code), 'error');
+        toast('No se pudo guardar: ' + friendlyError(e), 'error');
       }
     }
 

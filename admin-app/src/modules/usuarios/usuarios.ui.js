@@ -16,6 +16,7 @@ import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { initials } from '../../domain/format.js';
 import { writeAudit } from '../../core/audit.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   MOCK_USERS, MOCK_ROLES, MOCK_DEPARTMENTS,
   isOwner, assignableRoles, fetchDepartments,
@@ -164,7 +165,7 @@ export function mountUsuarios(root) {
         }
       } catch (e) {
         saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Crear usuario';
-        toast('No se pudo guardar: ' + (e.message || e.code || 'error'), 'error');
+        toast('No se pudo guardar: ' + friendlyError(e), 'error');
       }
     });
 
@@ -184,7 +185,7 @@ export function mountUsuarios(root) {
       await setUserBlocked(u._docId, next);
       writeAudit(next ? 'user_block' : 'user_unlock', 'usuario ' + (u.nombre || u.email), u.email || '');
       toast(next ? '✓ Usuario bloqueado' : '✓ Usuario desbloqueado', 'ok');
-    } catch (e) { toast('No se pudo cambiar el estado: ' + (e.message || e.code), 'error'); }
+    } catch (e) { toast('No se pudo cambiar el estado: ' + friendlyError(e), 'error'); }
   }
 
   /* ── Baja ────────────────────────────────────────────────── */
@@ -202,7 +203,7 @@ export function mountUsuarios(root) {
       await deleteManagedUser(u._docId);
       writeAudit('user_delete', 'usuario ' + (u.nombre || u.email), u.email || '');
       toast('✓ Usuario eliminado', 'ok');
-    } catch (e) { toast('No se pudo eliminar: ' + (e.message || e.code), 'error'); }
+    } catch (e) { toast('No se pudo eliminar: ' + friendlyError(e), 'error'); }
   }
 
   /* ── Fila de usuario ─────────────────────────────────────── */

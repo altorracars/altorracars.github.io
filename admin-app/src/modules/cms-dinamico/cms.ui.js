@@ -14,6 +14,7 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   subscribeBrands, MOCK_BRANDS, loadBrandContent, saveBrandContent, uploadBrandBanner, ABOUT_MAX,
 } from './cms.data.js';
@@ -112,7 +113,7 @@ export function mountCmsDinamico(root) {
         textarea.disabled = !canEdit; refreshSaveBtn(); setCounter(); renderBanner();
       }
     } catch (e) {
-      toast('No se pudo cargar el contenido: ' + (e.message || e.code || ''), 'error');
+      toast('No se pudo cargar el contenido: ' + friendlyError(e), 'error');
     }
     textarea.placeholder = 'Escribe el texto "Acerca de" que verán los visitantes…';
   });
@@ -133,7 +134,7 @@ export function mountCmsDinamico(root) {
     } catch (e) {
       const msg = (e && e.code === 'permission-denied')
         ? 'Rechazado: el texto no puede tener números largos (teléfonos/cédulas) y el banner debe subirse desde aquí. Es público y permanente.'
-        : ('No se pudo guardar: ' + (e && (e.message || e.code) || ''));
+        : ('No se pudo guardar: ' + friendlyError(e));
       toast(msg, 'error');
     }
     saveBtn.disabled = false; saveBtn.textContent = prev;

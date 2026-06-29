@@ -11,6 +11,7 @@ import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { fetchAdvisors } from '../../core/advisors.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   AVAILABILITY_DEFAULTS, FESTIVOS_CO_2026, subscribeAvailability, saveAvailability,
   subscribeOverrides, saveOverrides, deleteField,
@@ -49,7 +50,7 @@ export function mountConfig(root) {
       await saveAvailability(patch, store.get().user && store.get().user.uid);
       toast(okMsg, 'ok');
     } catch (e) {
-      toast('No se pudo guardar: ' + (e.message || e.code), 'error');
+      toast('No se pudo guardar: ' + friendlyError(e), 'error');
     }
   }
 
@@ -214,7 +215,7 @@ export function mountConfig(root) {
     try {
       await saveOverrides(next, store.get().user && store.get().user.uid);
       toast(okMsg, 'ok');
-    } catch (e) { toast('No se pudo guardar: ' + (e.message || e.code), 'error'); }
+    } catch (e) { toast('No se pudo guardar: ' + friendlyError(e), 'error'); }
   }
   function cardAsesores() {
     const ov = ui.overrides || {};

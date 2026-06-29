@@ -11,6 +11,7 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   SOURCE_LABELS, MOCK_REVIEWS, subscribeReviews, saveReview, deleteReview, initialsOf,
 } from './reviews.data.js';
@@ -110,7 +111,7 @@ export function mountReviews(root) {
         close(); toast(isEdit ? '✓ Reseña actualizada' : '✓ Reseña creada — ya está en el sitio', 'ok');
       } catch (e) {
         saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Crear reseña';
-        toast('No se pudo guardar: ' + (e.message || e.code), 'error');
+        toast('No se pudo guardar: ' + friendlyError(e), 'error');
       }
     });
 
@@ -144,7 +145,7 @@ export function mountReviews(root) {
         close(); toast('✓ Reseña eliminada', 'ok');
       } catch (e) {
         delBtn.disabled = false;
-        toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+        toast('No se pudo eliminar: ' + friendlyError(e), 'error');
       }
     });
     document.body.append(overlay);

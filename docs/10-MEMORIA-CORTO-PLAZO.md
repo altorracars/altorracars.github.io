@@ -12,10 +12,10 @@
 
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
-> 🟢 **RELEVO (29/06 ⟦OPUS-4.8⟧)**:
-> **✅ TODO-25 Aliados** (§259→`05`). **🧹 Purgar `ZZZ`** (deal falso $1.3M Alexander Daza) con el borrado nuevo.
-> **🟣 EPIC MAESTRO #1: TODO-52 — CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). **🌟 VISIÓN #1 (NO negociable): Altorra a NIVEL TOP MUNDIAL (Linear/Stripe/Notion-grade, premium, jamás genérico) — es EL criterio de aceptación.** Negocio (secundario): un CRM POR empresa (clones), **multi-tenancy DESCARTADA**; clonabilidad = SUBPRODUCTO, no compite con la Visión #1. NO re-correr comité/Gemini (sin fork). Hecho: A.1✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1) Fase-B✅(2 P0-SEG verificados). **SIGUE:** P0-OWNER-DELETE (✅confirm.js+Aliados+Pipeline; falta Contactos crmPurgeLead/R8 + bulkbar) · P0-SEC · mockups.
-> **🐞 Backlog UI** → brief §MEGA-PLAN P1 (voseo; emoji→SVG; errores crudos). ✅ null/theme/copy/layout · confirm.js 16/16 · errors.js (clúster ventas; falta resto) · Live-val✅ · acento→oro.
+> 🟢 **RELEVO (29/06 ⟦OPUS-4.8⟧)** — **🟣 EPIC #1: TODO-52 CRM Overhaul.** SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B). 🌟 **VISIÓN #1 = nivel TOP MUNDIAL** (Linear/Stripe/Notion-grade, jamás genérico) — ya escrita ahí, NO re-preguntar. Multi-tenancy DESCARTADA (CRM por empresa). NO re-correr comité/Gemini (sin fork).
+> **Hecho:** A.1✅ A.2-live✅ Fase-B✅ · PASE-1✅(dark/null/copy/layout) · confirm.js 16/16✅ · P0-OWNER-DELETE Aliados+Pipeline✅ · **errors.js COMPLETO (13 mód, grep cero crudos + leaks limpiados; en `dev`)✅** · **`var(--gold)` fantasma MUERTO (oro Aliados live `#D4A85A`)✅**.
+> **SIGUE:** **Backend** [irreversible, foco fresco] = purga Contactos/Bandeja (drift R8 `crmPurgeLead`) + 2 P0-SEC (privesc `roles.create` + dataScope reglas/queries) · **P1 resto** = emoji→SVG (acotar, ~408 ocurr) · separar `--brand-gold` del accent picker · voseo→tú · **Fase C** mockups.
+> **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -39,21 +39,21 @@
 
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
-| **TODO-52** | **🟣 EPIC MAESTRO — CRM Overhaul + Productización ⟦OPUS⟧ (prioridad #1, 29/06)** — rediseño premium dark-only + reorg flujo + **borrado owner-only por sección (P0, desbloquea limpieza)** + multi-tenant/producto + **2 P0 seguridad** (PII/Habeas Data + privesc). SSoT → brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1). A.1✅ síntesis✅ A.2-local✅ PASE-1✅(dark/null/copy/layout-f1). | 🔄 impl | sigue P0-owner-delete + seguridad + Fase B Gemini |
+| **TODO-52** | **🟣 EPIC #1 — CRM Overhaul + Productización ⟦OPUS⟧ (29/06)** — rediseño premium dark-only + reorg + owner-delete P0 + 2 P0-SEC. Detalle VIVO → foco ↑ + brief SSoT. | 🔄 impl | backend P0-SEC + P1 + Fase C |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
 | **TODO-21** | **Plan CRM E0→E6** — E0→E5 ✅ main · E6 ⏳ (§188) | ⏳ | — |
 | **TODO-22** | **Fábrica de skills web** (rescate webs monolíticas) §193.2 | 🔮 | post-panel |
-| **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — secciones editables + bloques tipados. CMS por marca ✅ (§222); resta CMS total. Plan→bóveda · skill `cms-dinamico`. | 🔮 plan ✅ | al final |
+| **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS⟧** — CMS por marca ✅ (§222); resta CMS total. Skill `cms-dinamico`. | 🔮 | al final |
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
 | **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
 | **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; kernel/hook ×3. **Índice range-shardeable ✅** (§258; aplicado bersaglio §140). Resta: 99a/99b · `ignoreDirs` · **shardear `00-INDICE`** (52.7k/48k) **+ `30-LECCIONES`** (386L/350, ⚠️ excede — extraer categoría a hija). | 🔄 | — |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; índice range-shard ✅ (§258). Resta: 99a/99b · `ignoreDirs` · shardear `00-INDICE` + `30-LECCIONES` (ambos exceden). | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |
-| **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧** — P0 `deadcode:check`✅ + P1 skill✅. Huérfanos cutover (`manifest-admin.json`+`js/admin/*`→`_legacy/`). DIFERIDO ~03/07 (M-19). | 🔄 | ~03/07 |
+| **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧** — `deadcode:check`✅ + skill✅. Huérfanos cutover→`_legacy/`. DIFERIDO ~03/07 (M-19). | 🔄 | ~03/07 |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS⟧ (§244)** — 7 skills + agente `seo-auditor` ✅ (25/06). RESTA: Core JS `visibility-core/` + `tenant_config`. | 🔄 | por-proyecto |
 | **TODO-41** | **🔴 Motor automatización NO corre post-cutover ⟦OPUS⟧** (§242.5/§257/barrido) — `admin-automation.js` era client-side SOLO en `admin.html` (retirado) → reglas "Activas" pero NO ejecutan (SLA/cita core SÍ por cron). Migrar a Cloud Function + gap RBAC `workflows.edit`. | 🔴 sube | dueño/escala |
 | **TODO-45** | **Cleanups §257 ⟦OPUS⟧** — (a) functions residuales clásico (sin uso); (b) `brands.saveBrand` desc=nombre; (c) `kb.edit` sin editor `_brain`; (d/e) coment stale+NBA. | 🔮 | bajo |
@@ -64,8 +64,8 @@
 | **TODO-46** | **Bot v2 flujo + chat vivo ⟦OPUS⟧** — B1/B2/B3 LIVE + 3 bugs FIXED (defects-log). RESTA: roundtrip chat + iter-2 (marca·FAQ·ARIA). | 🔄 | roundtrip |
 | **TODO-48** | **Drift CRM del cutover ⟦OPUS⟧** — MF4.x admin viejo NO portadas (360°/KPIs/masivas/NPS) + doc-fixes. Bóveda `…barrido-drift…`. | 🔵 | tras bot |
 
-| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — IMPL+DEPLOYED 28/06 ✅ (L-57; 302 tests; certif. comité×5+Gemini vs `.gov.co`; `delete`→bloqueo fiscal del consignante-con-venta). SSoT→spec + `42` §Certificación. RESTA (humanos): colegiado(texto)·contador(`retentionUntil`)·val.live·purga ZZZ. | 🔄 | colegiado/contador |
-| **TODO-51** | **Bloqueo fiscal — refinamientos ⟦OPUS⟧** — ciclo bloqueo→purga COMPLETO ✅ (`retentionUntil`=venta+5a + cron; 302 tests). RESTA (menor): grafo-comprador multi-rol + TEXTO art.14 (colegiado, borrador `42`). | 🔵 | menor |
+| **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — IMPL+DEPLOYED ✅ (L-57; 302 tests; SSoT→spec + `42`). RESTA (humanos): colegiado·contador·val.live·purga ZZZ. | 🔄 | colegiado/contador |
+| **TODO-51** | **Bloqueo fiscal — refinamientos ⟦OPUS⟧** — ciclo bloqueo→purga ✅ (`retentionUntil`+cron). RESTA (menor): grafo-comprador multi-rol + texto art.14 (`42`). | 🔵 | menor |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

@@ -86,8 +86,13 @@ con cubo "Sin identificar" · 4 viejas se reconcilian por **tabla de alias en le
   + emulador E2E rol-aware + **multi-rol/retoma** (`contactGraph.emulator.test.js`) — 300 verdes. **Revisión adversarial 4 lentes
   (PII/legal/regresión/conformidad) = 4×SOLIDO_CON_CAMBIOS**; accionados: `snapshotEntriesRedacted` al auditLog + test multi-rol;
   rechazado (alucinación): "índice no registrado" (no existe `firestore.indexes.json`). Lección → `30` L-57. **DEPLOYED ✅ 28/06**
-  (`crmDailyJob`+`crmRunDailyMaintenance`, commit `224758d`). **PENDIENTE: validación live (suprimir un consignante de prueba + ver
-  `auditLog.counts.snapshotEntriesRedacted`).**
+  (`crmDailyJob`+`crmRunDailyMaintenance`, commit `224758d`).
+- ✅ **CERTIFICACIÓN LEGAL (28/06, comité ×5 vs `.gov.co`, confianza ALTA): `CUMPLE_CON_CAMBIOS`.** Cédula: SÍ defendible
+  destruirla (el soporte es factura+contrato firmado, no la cédula). **Hallazgo que el código-review no vio:** borrar el contacto
+  mataba `contractRef` → snapshot económico HUÉRFANO. **C1 (rescatar contractRef+policyVersion+purposes al auditLog durable) +
+  C4 (conteo MATCHED exacto art.12) IMPLEMENTADAS + verificadas** (301 tests). C2 (cédula en backups .gz 45d) pend.; C3 (relojes de
+  conservación 10a vs firmeza renta) + C5 (exógena DIAN) = **colegiado/contador**. Detalle → `42-LEGAL` §Certificación. CRUDO → `tasks/w3qios44d.output`.
+- ⏳ **PENDIENTE: validación live** (suprimir un consignante de prueba + ver `auditLog.counts.snapshotEntriesRedacted` + `habeasProof.contractRef`).
 - ⏳ **Ratificación del TEXTO** del contrato por abogado colegiado (gate duro) → fija `policyVersion: v1` (dueño). **+ pregunta
   nueva para el abogado** (revisión legal 28/06): ¿destruir la cédula en la BD viva satisface Cód.Comercio art.60/DIAN dado que el
   soporte mercantil es el contrato firmado físico? Detalle → `42-LEGAL` LEGAL-07.

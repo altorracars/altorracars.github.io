@@ -70,6 +70,10 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
     await db.collection('contacts').doc('cons_x').set({
       fullName: 'Pedro Consignante', cedula: '12345678', phone: '+573005556677', email: null,
       type: 'consignante', roles: ['consignante'], lifecycleStage: 'consignante',
+      // §Condición 1 (certificación legal): el puntero al contrato físico firmado debe sobrevivir.
+      consent: { habeasData: { granted: true, method: 'paper-contract', contractRef: 'CONS-TEST-001',
+        policyVersion: 'v1-borrador', purposes: { gestionConsigna: true, publicacionAnuncio: true },
+        grantedAt: '2026-06-10T10:00:00.000Z', capturedBy: 'staff_test' } },
       dedupKeys: ['cedula_12345678', 'phone__573005556677'],
       createdAt: '2026-06-10T10:00:00.000Z', _version: 1,
     });
@@ -229,6 +233,18 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
     expect((await db.collection('contacts').doc('cons_x').get()).exists).toBe(false);
     expect((await db.collection('dedup').doc('cedula_12345678').get()).exists).toBe(false);
     expect(res.consignante).toMatchObject({ vehiclesRedacted: 1, dealsRedacted: 1, snapshotEntriesRedacted: 1 });
+
+    // §Condición 1 (certificación legal): el puntero al CONTRATO físico (contractRef) SOBREVIVE
+    // en el auditLog durable (sin PII) tras borrarse el contacto → el snapshot económico NO queda
+    // huérfano (reconciliable Cód.Comercio art.60 / E.T. art.632 / Ley 1581 art.12).
+    expect(res.habeasProof).toMatchObject({ contractRef: 'CONS-TEST-001', policyVersion: 'v1-borrador' });
+    const audit = await db.collection('auditLog').where('contactHash', '==', g.contactHashOf('cons_x')).limit(1).get();
+    expect(audit.empty).toBe(false);
+    const ev = audit.docs[0].data();
+    expect(ev.action).toBe('crm_suppress_1581');
+    expect(ev.habeasProof.contractRef).toBe('CONS-TEST-001');     // el contrato sigue trazable
+    expect(ev.habeasProof.purposes.gestionConsigna).toBe(true);
+    expect(ev.counts.snapshotEntriesRedacted).toBe(1);            // §Cond.4: conteo MATCHED exacto
 
     // (a) tenencia VIVA del vehículo: NOMBRE purgado · ownerRefId OPACO + economics CONSERVADOS
     const v = (await db.collection('vehiculos').doc('veh_cons').get()).data();

@@ -54,9 +54,18 @@ describe('redactConsignanteInSnapshots — purga el nombre, conserva ownerRefId 
     expect(arr[0].frozenTenancy.ownerDisplayName).toBe('Pedro Consignante'); // original intacto
   });
 
-  it('idempotente: ya redactado → changed=0 (re-ejecutar es no-op)', () => {
+  it('idempotente: ya redactado → changed=0 (re-ejecutar es no-op) pero matched=1 (sigue siendo referencia)', () => {
     const arr = [cons('c1', SUPPRESSED_OWNER_NAME)];
-    expect(redactConsignanteInSnapshots(arr, 'c1').changed).toBe(0);
+    const r = redactConsignanteInSnapshots(arr, 'c1');
+    expect(r.changed).toBe(0);
+    expect(r.matched).toBe(1); // §Cond.4: la prueba art.12 cuenta la referencia aunque ya esté redactada
+  });
+
+  it('§Cond.4: matched cuenta TODAS las referencias (ya-sentinel + nuevas); changed solo el delta', () => {
+    const arr = [cons('c1', SUPPRESSED_OWNER_NAME), cons('c1', 'Pedro'), cons('c2', 'Ana')];
+    const r = redactConsignanteInSnapshots(arr, 'c1');
+    expect(r.matched).toBe(2);  // las 2 de c1 (una ya-sentinel, una con PII)
+    expect(r.changed).toBe(1);  // solo la que tenía PII se redactó este run
   });
 
   it('NO toca a OTRO consignante (ownerRefId distinto)', () => {

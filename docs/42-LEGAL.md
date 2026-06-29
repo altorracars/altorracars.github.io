@@ -100,12 +100,36 @@ server-side (Admin SDK), idempotente. Verificado: 13 tests puros + emulador E2E 
 adversarial 4 lentes. La supresión registra en `auditLog` `{vehiclesRedacted, dealsRedacted, snapshotEntriesRedacted}` (prueba
 de cumplimiento, art. 12).
 
-**[a verificar con abogado — además del texto]:** ¿la **destrucción de la cédula** del consignante en la BD viva (la supresión
-borra el contact + sus `dedupKeys` de cédula) satisface Cód. Comercio art. 60 / deber DIAN, **dado que el soporte mercantil
-real es el CONTRATO de consignación FIRMADO** (físico/archivado) y el snapshot conserva la cifra económica con `ownerRefId`
-opaco? Lo levantó la revisión legal adversarial (28/06): el `ownerRefId` opaco queda sin doc-dueño (FK a stub anónimo). Mi
-lectura: el contrato firmado ES el soporte, la cédula en la BD NO es necesaria y su destrucción ES el punto del Habeas Data
-— pero **el abogado lo ratifica** (gate duro).
+### ⚖️ Certificación legal de la supresión rol-aware — comité ×5 verificado vs `.gov.co` (28/06) ⟦OPUS-4.8⟧
+> Flujo fuerte (skills `legal-colombia` + `comite-expertos`): 5 expertos (abogado mercantil · datos Ley 1581 · contador
+> DIAN · escéptico · ejecutor) + peer-review anónimo + síntesis; **4/4 normas VERIFICADAS contra funcionpublica.gov.co
+> (Gestor Normativo) + secretariasenado.gov.co**. CRUDO (15 agentes Opus, ~1.7M tok) → `tasks/w3qios44d.output`.
+> 🚫 **Gate §0 sigue: NO sustituye al abogado COLEGIADO ni al contador titulado.**
+
+**Veredicto: `CUMPLE_CON_CAMBIOS` (confianza ALTA). Pregunta de la cédula: SÍ es defendible DESTRUIR la cédula de la
+BD viva tras la venta** — la conservación obligatoria recae sobre el SOPORTE de la operación (factura + **contrato de
+consignación firmado**), NO sobre la cédula (no figura en E.T. art.632 ni la exige C.Co. art.60, texto vigente art.28
+Ley 962/2005); borrarla ES el Habeas Data legítimo (Ley 1581 art.8e + art.4 lit.b/g + Dec.1377 art.9/11). PERO con condiciones.
+
+**Hallazgo que el comité cazó (y la revisión de código NO):** al borrar el contacto moría `consent.habeasData.contractRef`
+— único puntero al contrato físico → el snapshot económico conservado quedaba **HUÉRFANO**, no reconciliable con su soporte
+(viola C.Co. art.60 "reproducción exacta" + E.T. art.632 num.1 + Ley 1581 art.12 prueba de la autorización).
+
+**Condiciones:**
+- **C1 ✅ IMPLEMENTADA:** `executeSuppression` rescata `contractRef`+`policyVersion`+`purposes` al `auditLog` durable (SIN PII)
+  antes de `cRef.delete` → contrato trazable; reconcilia con el snapshot vía `contactHash=sha256(ownerRefId)`.
+- **C4 ✅ IMPLEMENTADA:** conteo MATCHED en la auditoría → prueba art.12 EXACTA aunque la supresión se reanude tras un corte.
+- **C2 ⏳ pend.:** la cédula sobrevive en backups `.gz` hasta 45 días (purga por edad) = gap de LATENCIA (restaurable). Opciones:
+  purga DIRIGIDA por evento de supresión · ventana menor · cifrado por-titular + destrucción de clave.
+- **C3 ⚖️ COLEGIADO:** el trigger de gracia 72h NO consulta si el deber de conservación (10 años C.Co. / firmeza renta E.T.)
+  prescribió → para un deal recién cerrado destruiría contractRef con el deber VIGENTE (Dec.1377 art.9). Registrar `retention-until` + decisión del abogado.
+- **C5 📊 CONTADOR:** ¿la operación entra en INFORMACIÓN EXÓGENA (medios magnéticos DIAN)? Si aplica, la cédula SÍ tendría deber
+  de permanencia hasta la firmeza de ESE reporte → acotaría el "destruir" a "tras firmeza de la exógena".
+
+**Residual COLEGIADO/contador (gate duro §0):** (1) decisión del caso concreto + si la cédula fue ANEXO integral del soporte
+contable; (2) los DOS relojes de conservación (10 años C.Co. vs firmeza renta E.T. art.714) y cuál manda; (3) si aplica exógena;
+(4) texto del `policyVersion` + contrato firmado; (5) proporcionalidad de la ventana de 45 días. **El comité CERTIFICA la
+arquitectura técnica y los hechos de código; NO sustituye la firma del colegiado.**
 
 **[a verificar con abogado]:** el TEXTO LITERAL de la cláusula + la política de tratamiento (art. 13) + si la cesión al
 comprador es "transmisión" o "transferencia" (Dec. 1377). **RNBD:** micro/pequeña probablemente EXENTA de inscribir la

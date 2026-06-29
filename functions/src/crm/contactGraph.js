@@ -282,16 +282,18 @@ function tenancyRefsContact(ft, contactId) {
  */
 function redactConsignanteInSnapshots(snapshots, contactId, sentinel) {
   const name = sentinel || SUPPRESSED_OWNER_NAME;
-  if (!Array.isArray(snapshots)) return { snapshots, changed: 0 };
+  if (!Array.isArray(snapshots)) return { snapshots, changed: 0, matched: 0 };
   let changed = 0;
+  let matched = 0;
   const out = snapshots.map((entry) => {
     const ft = entry && entry.frozenTenancy;
     if (!tenancyRefsContact(ft, contactId)) return entry;
+    matched++;                                                          // §Cond.4: referencia (nueva o ya-sentinel)
     if (!ft.ownerDisplayName || ft.ownerDisplayName === name) return entry; // sin PII / ya redactado
     changed++;
     return { ...entry, frozenTenancy: { ...ft, ownerDisplayName: name } };
   });
-  return { snapshots: out, changed };
+  return { snapshots: out, changed, matched };
 }
 
 /**
@@ -303,7 +305,14 @@ function redactConsignanteInSnapshots(snapshots, contactId, sentinel) {
  * onVehiclePriceAlert mira el precio) = cero side-effects (re-freeze, alertas, SEO).
  */
 async function redactConsignanteReferences(db, contactId) {
-  const out = { vehiclesRedacted: 0, dealsRedacted: 0, snapshotEntriesRedacted: 0 };
+  // §Condición 4 (certificación legal 28/06): además del delta `*Redacted` (lo que ESTE run
+  // cambió) se cuenta `*Matched` (TODAS las referencias al consignante, ya-redactadas o nuevas)
+  // → la prueba de cumplimiento art.12 es EXACTA aunque la supresión se reanude tras un corte
+  // (el delta de un re-run sería parcial: las ya-sentinel no cuentan en `changed`).
+  const out = {
+    vehiclesRedacted: 0, dealsRedacted: 0, snapshotEntriesRedacted: 0,
+    vehiclesMatched: 0, dealsMatched: 0, snapshotEntriesMatched: 0,
+  };
 
   // (a) Tenencia VIVA de los vehículos consignados (el reporte fetchDealerStats lee
   // v.tenancy.ownerDisplayName). Query por el ownerRefId OPACO (nested-field equality,
@@ -318,6 +327,7 @@ async function redactConsignanteReferences(db, contactId) {
       for (const d of snap.docs) {
         const t = d.data().tenancy || {};
         if (t.ownerRefType !== 'contact') continue;                       // defensa: no es consignante
+        out.vehiclesMatched++;                                            // §Cond.4: referencia (nueva o ya-sentinel)
         if (!t.ownerDisplayName || t.ownerDisplayName === SUPPRESSED_OWNER_NAME) continue; // nada que purgar
         await d.ref.update({ 'tenancy.ownerDisplayName': SUPPRESSED_OWNER_NAME, updatedAt: nowISO() });
         out.vehiclesRedacted++;
@@ -338,7 +348,8 @@ async function redactConsignanteReferences(db, contactId) {
       if (last) q = q.startAfter(last);
       const snap = await q.get();
       for (const d of snap.docs) {
-        const { snapshots, changed } = redactConsignanteInSnapshots(d.data().commissionSnapshots, contactId);
+        const { snapshots, changed, matched } = redactConsignanteInSnapshots(d.data().commissionSnapshots, contactId);
+        if (matched) { out.dealsMatched++; out.snapshotEntriesMatched += matched; }   // §Cond.4: total referencias
         if (!changed) continue;
         await d.ref.update({
           commissionSnapshots: snapshots, updatedAt: nowISO(),
@@ -372,6 +383,22 @@ async function executeSuppression(db, contactId, { by } = {}) {
   const cSnap = await cRef.get();
   if (!cSnap.exists) return { skipped: 'no-existe' };
   const c = cSnap.data();
+
+  // §Condición 1 (certificación legal 28/06, lóbulo 42 LEGAL-07 — comité ×5 verificado vs
+  // .gov.co): el puntero al CONTRATO físico firmado (contractRef) + policyVersion + purposes
+  // vive en consent.habeasData DENTRO del doc que esta función BORRA. Hay que RESCATARLO antes:
+  // sin él, el snapshot económico que se conserva queda HUÉRFANO (no se podría reconciliar la
+  // comisión con su soporte documental — Cód.Comercio art.60 + E.T. art.632 num.1 "verificar la
+  // exactitud"; Ley 1581 art.12 prueba de la autorización). NO es PII (id de documento mercantil
+  // + versión + finalidades). Reconcilia con el snapshot vía contactHash = sha256(ownerRefId).
+  const hd = (c.consent && c.consent.habeasData) || null;
+  const habeasProof = hd ? {
+    contractRef: hd.contractRef || null,
+    policyVersion: hd.policyVersion || null,
+    purposes: hd.purposes || null,
+    grantedAt: hd.grantedAt || null,
+    method: hd.method || null,
+  } : null;
 
   // Stub anónimo (ID aleatorio — el determinista delata el email/tel).
   const stubRef = db.collection('contacts').doc();
@@ -436,15 +463,17 @@ async function executeSuppression(db, contactId, { by } = {}) {
     counts: {
       ...counts, notesDeleted: notes, tombstones,
       // §TODO-50 fase 2c — la auditoría legal (Ley 1581 art.12: la empresa debe PROBAR el
-      // cumplimiento de la supresión) registra QUÉ se purgó del consignante: vehículos +
-      // deals + entradas de snapshot soft-redactadas.
-      vehiclesRedacted: consignante.vehiclesRedacted,
-      dealsRedacted: consignante.dealsRedacted,
-      snapshotEntriesRedacted: consignante.snapshotEntriesRedacted,
+      // cumplimiento de la supresión) registra QUÉ se purgó del consignante. §Cond.4: se usa
+      // el conteo MATCHED (total de referencias, todas redactadas al completar) → prueba EXACTA
+      // aunque la supresión se reanude tras un corte.
+      vehiclesRedacted: consignante.vehiclesMatched,
+      dealsRedacted: consignante.dealsMatched,
+      snapshotEntriesRedacted: consignante.snapshotEntriesMatched,
     },
+    habeasProof,   // §Condición 1: puntero durable al contrato físico firmado (SIN PII)
     by: by || 'crmDailyJob', at: nowISO(),
   });
-  return { stubId: stubRef.id, counts, notesDeleted: notes, tombstones, consignante };
+  return { stubId: stubRef.id, counts, notesDeleted: notes, tombstones, consignante, habeasProof };
 }
 
 module.exports = {

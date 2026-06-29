@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -156,10 +157,10 @@ export function mountDepartamentos(root) {
     ]);
     const actions = el('div', { class: 'dep-card__actions' });
     if (canManage) {
-      const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️ Editar' });
+      const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('edit') + ' Editar' });
       editBtn.addEventListener('click', () => openModal(d));
       actions.append(editBtn);
-      const delBtn = el('button', { class: 'btn btn--danger btn--sm', type: 'button', text: '🗑' });
+      const delBtn = el('button', { class: 'btn btn--danger btn--sm', type: 'button', 'aria-label': 'Eliminar', html: icon('trash') });
       delBtn.addEventListener('click', () => confirmDelete(d));
       actions.append(delBtn);
     }
@@ -179,7 +180,7 @@ export function mountDepartamentos(root) {
   let searchTimer = null;
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { ui.search = searchInput.value; renderGrid(); }, 180); });
   const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
-  const newBtn = canManage ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nuevo departamento' }) : null;
+  const newBtn = canManage ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo departamento' }) : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
 
   wrap.append(

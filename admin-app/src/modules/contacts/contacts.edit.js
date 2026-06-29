@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -156,7 +157,7 @@ export function openContactEdit(contact, { onChanged } = {}) {
       zone.append(cancelBtn);
     } else {
       zone.append(el('p', { class: 'u-caption u-muted', text: 'Derecho de supresión: borra los datos personales (nombre, contacto, notas) de forma DEFINITIVA tras 72h de gracia. El historial comercial (montos, fechas, carro) se conserva anónimo. Las copias ya enviadas por Telegram/email quedan fuera del alcance técnico.' }));
-      const supBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑 Solicitar supresión definitiva…' });
+      const supBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('trash') + ' Solicitar supresión definitiva…' });
       supBtn.addEventListener('click', async () => {
         const ok = await confirmDialog({
           title: 'Suprimir datos personales de ' + (contact.fullName || 'este contacto'),

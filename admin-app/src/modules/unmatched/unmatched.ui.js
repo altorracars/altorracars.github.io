@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -147,7 +148,7 @@ export function mountUnmatched(root) {
     if (canPromote) {
       const b = e.promotedToFAQ
         ? el('button', { class: 'btn btn--ghost btn--sm', type: 'button', disabled: true }, ['✓ Ya en KB'])
-        : el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['＋ Crear FAQ']);
+        : el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Crear FAQ' });
       if (!e.promotedToFAQ) b.addEventListener('click', () => doPromote(e));
       actions.push(b);
     }

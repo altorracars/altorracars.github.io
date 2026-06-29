@@ -5,6 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
@@ -84,9 +85,9 @@ export function mountInbox(root) {
   const elFilters = el('div', { class: 'inbox__filters' });
   // F36 §178: el camino RÁPIDO es el primario (WhatsApp/walk-in en <30s);
   // el form completo queda como secundario (canales con campaña/vehículo).
-  const elQuickBtn = canEdit ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', style: { marginLeft: 'auto' } }, ['⚡ Lead rápido']) : null;
+  const elQuickBtn = canEdit ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', style: { marginLeft: 'auto' }, html: icon('zap') + ' Lead rápido' }) : null;
   if (elQuickBtn) elQuickBtn.addEventListener('click', () => openQuickLeadForm());
-  const elNewBtn = canEdit ? el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['＋ Completo']) : null;
+  const elNewBtn = canEdit ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Completo' }) : null;
   if (elNewBtn) elNewBtn.addEventListener('click', () => openNewLeadForm());
   // P2 §178: Pendientes hoy + vencidos.
   const elPendBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['📋 Pendientes hoy']);

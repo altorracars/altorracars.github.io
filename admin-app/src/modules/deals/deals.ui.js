@@ -10,6 +10,7 @@ import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { friendlyError } from '../../core/errors.js';
+import { icon } from '../../core/icons.js';
 import { hasPermission } from '../../core/auth.js';
 import { initials, copShort, timeAgo } from '../../domain/format.js';
 import {
@@ -671,7 +672,7 @@ export function mountPipeline(root) {
       }
       retomaEl = el('div', { class: 'pv-retoma' }, kids);
     } else if (canEdit) {
-      const btn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['＋ Retoma']);
+      const btn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', html: icon('plus') + ' Retoma' });
       btn.addEventListener('click', () => openRetomaPrompt(deal));
       retomaEl = el('div', { class: 'pv-retoma' }, [btn]);
     }

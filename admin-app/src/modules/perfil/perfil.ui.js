@@ -11,6 +11,7 @@ import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { initials } from '../../domain/format.js';
 import { confirmDialog } from '../../core/confirm.js';
+import { icon } from '../../core/icons.js';
 import {
   fmtDate, compressImageToWebp, uploadAvatar, saveProfile, requestCedulaChange,
   PW_RULES, passwordScore, changePassword,
@@ -121,7 +122,7 @@ export function mountPerfil(root) {
     ? '🛡️ Documento verificado y bloqueado. Para modificarlo, solicitá autorización al Super Admin.'
     : 'Ingresá tu número y guardá. Una vez guardado quedará bloqueado.' });
 
-  const requestBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✉️ Solicitar cambio al Super Admin' });
+  const requestBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('mail') + ' Solicitar cambio al Super Admin' });
   requestBtn.addEventListener('click', async () => {
     if (p.cedulaChangeRequested) { toast('Ya hay una solicitud pendiente.', 'info'); return; }
     requestBtn.disabled = true;

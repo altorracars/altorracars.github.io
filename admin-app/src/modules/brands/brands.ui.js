@@ -7,6 +7,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -156,12 +157,12 @@ export function mountBrands(root) {
     const logo = getBrandLogoUrl(b);
     const actions = [];
     if (canEdit) {
-      const e1 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️' , 'aria-label': 'Editar' });
+      const e1 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Editar', html: icon('edit') });
       e1.addEventListener('click', () => openModal(b));
       actions.push(e1);
     }
     if (canDelete) {
-      const d = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑', 'aria-label': 'Eliminar' });
+      const d = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Eliminar', html: icon('trash') });
       d.addEventListener('click', () => confirmDelete(b));
       actions.push(d);
     }
@@ -180,7 +181,7 @@ export function mountBrands(root) {
   function render() {
     clear(wrap);
     const newBtn = canCreate
-      ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nueva marca' })
+      ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva marca' })
       : null;
     if (newBtn) newBtn.addEventListener('click', () => openModal(null));
     wrap.append(el('div', { class: 'rev-head' }, [

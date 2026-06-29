@@ -12,6 +12,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
@@ -155,12 +156,12 @@ export function mountDealers(root) {
       ]),
     ]);
     if (canEdit) {
-      const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️', 'aria-label': 'Editar' });
+      const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Editar', html: icon('edit') });
       editBtn.addEventListener('click', () => openModal(d));
       head.append(editBtn);
     }
     if (canDelete) {
-      const delBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑', 'aria-label': 'Eliminar aliado', title: 'Eliminar aliado' });
+      const delBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Eliminar aliado', title: 'Eliminar aliado', html: icon('trash') });
       delBtn.addEventListener('click', () => deleteDealerFlow(d));
       head.append(delBtn);
     }
@@ -201,7 +202,7 @@ export function mountDealers(root) {
     searchTimer = setTimeout(() => { ui.search = searchIn.value; renderGrid(); }, 200);
   });
   const newBtn = canCreate
-    ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nuevo aliado' })
+    ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo aliado' })
     : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
 

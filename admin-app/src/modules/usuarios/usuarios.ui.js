@@ -10,6 +10,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -233,16 +234,16 @@ export function mountUsuarios(root) {
       actions.append(el('span', { class: 'usr-lock', title: 'El CEO solo se gestiona desde Mi Perfil', text: '🔒' }));
     } else {
       if (canEdit) {
-        const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️ Editar' });
+        const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('edit') + ' Editar' });
         editBtn.addEventListener('click', () => openModal(u));
         actions.append(editBtn);
-        const blockBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: u.bloqueado ? '🔓 Desbloquear' : '🚫 Bloquear', disabled: isSelf });
+        const blockBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: u.bloqueado ? (icon('unlock') + ' Desbloquear') : (icon('lock') + ' Bloquear'), disabled: isSelf });
         if (!isSelf) blockBtn.addEventListener('click', () => toggleBlock(u));
         else blockBtn.title = 'No puedes bloquear tu propia cuenta';
         actions.append(blockBtn);
       }
       if (canDelete && !isSelf) {
-        const delBtn = el('button', { class: 'btn btn--danger btn--sm', type: 'button', text: '🗑' });
+        const delBtn = el('button', { class: 'btn btn--danger btn--sm', type: 'button', 'aria-label': 'Eliminar', html: icon('trash') });
         delBtn.addEventListener('click', () => confirmDelete(u));
         actions.append(delBtn);
       }
@@ -269,7 +270,7 @@ export function mountUsuarios(root) {
   const roleFilter = el('select', { class: 'select usr-filter', 'aria-label': 'Filtrar por rol' });
   roleFilter.addEventListener('change', () => { ui.filter = roleFilter.value; renderList(); });
 
-  const newBtn = canCreate ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nuevo usuario' }) : null;
+  const newBtn = canCreate ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo usuario' }) : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
 
   const toolbar = el('div', { class: 'usr-toolbar' }, [

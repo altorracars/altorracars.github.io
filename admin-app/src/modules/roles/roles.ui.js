@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -259,11 +260,11 @@ export function mountRoles(root) {
     const dot = el('span', { class: 'rol-card__dot', style: { background: color }, 'aria-hidden': 'true', text: (r.name || '?').slice(0, 1).toUpperCase() });
 
     const actions = el('div', { class: 'rol-card__actions' });
-    const viewBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: r.isSystem ? '👁 Ver' : '✏️ Editar' });
+    const viewBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: r.isSystem ? (icon('eye') + ' Ver') : (icon('edit') + ' Editar') });
     viewBtn.addEventListener('click', () => openModal(r));
     actions.append(viewBtn);
     if (!r.isSystem && canDelete) {
-      const delBtn = el('button', { class: 'btn btn--danger btn--sm', type: 'button', text: '🗑' });
+      const delBtn = el('button', { class: 'btn btn--danger btn--sm', type: 'button', 'aria-label': 'Eliminar', html: icon('trash') });
       delBtn.addEventListener('click', () => confirmDelete(r));
       actions.append(delBtn);
     }
@@ -287,7 +288,7 @@ export function mountRoles(root) {
   let searchTimer = null;
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { ui.search = searchInput.value; renderGrid(); }, 180); });
   const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
-  const newBtn = canCreate ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nuevo rol' }) : null;
+  const newBtn = canCreate ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo rol' }) : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
 
   const toolbar = el('div', { class: 'rol-toolbar' }, [search, el('div', { class: 'u-row u-row--tight' }, [countEl, newBtn])]);

@@ -20,6 +20,7 @@ import {
   saveReorder, exportVehiclesCSV, fetchVehicleAudit, revertAuditEntry,
 } from './vehicles.data.js';
 import { openVehicleWizard } from './wizard.js';
+import { icon } from '../../core/icons.js';
 
 /* Tiempo relativo legible para la galería de borradores (TODO-24). */
 function relTimeDraft(iso) {
@@ -216,7 +217,7 @@ export function mountVehicles(root) {
 
     const actions = [];
     if (canEdit) {
-      const e1 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️', 'aria-label': 'Editar' });
+      const e1 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Editar', html: icon('edit') });
       e1.addEventListener('click', () => openWizard(v));
       actions.push(e1);
       const dup = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '📋', 'aria-label': 'Duplicar', title: 'Duplicar como nuevo' });
@@ -248,7 +249,7 @@ export function mountVehicles(root) {
       actions.push(star);
     }
     if (canDelete) {
-      const d = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑', 'aria-label': 'Eliminar' });
+      const d = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Eliminar', html: icon('trash') });
       d.addEventListener('click', () => confirmDelete(v));
       actions.push(d);
     }
@@ -319,7 +320,7 @@ export function mountVehicles(root) {
         }
         openWizard(vehicle, { id: d._draftId, snap: d });
       });
-      const del = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑', 'aria-label': 'Eliminar borrador' });
+      const del = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Eliminar borrador', html: icon('trash') });
       const doDelete = async () => {
         const idx = ui.drafts.findIndex((x) => x._draftId === d._draftId);
         if (idx < 0) return;
@@ -431,7 +432,7 @@ export function mountVehicles(root) {
       headBtns.push(ord);
     }
     if (canCreate) {
-      const newBtn = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nuevo vehículo' });
+      const newBtn = el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo vehículo' });
       newBtn.addEventListener('click', () => openWizard(null));
       headBtns.push(newBtn);
     }

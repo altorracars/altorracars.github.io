@@ -8,6 +8,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -157,7 +158,7 @@ export function mountReviews(root) {
     const avg = total ? (ui.reviews.reduce((a, r) => a + (parseInt(r.rating, 10) || 0), 0) / total).toFixed(1) : '0.0';
     const featured = ui.reviews.filter((r) => r.featured).length;
     const newBtn = canCreate
-      ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nueva reseña' })
+      ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva reseña' })
       : null;
     if (newBtn) newBtn.addEventListener('click', () => openModal(null));
     return el('div', { class: 'rev-head' }, [
@@ -173,12 +174,12 @@ export function mountReviews(root) {
   function card(r) {
     const actions = [];
     if (canEdit) {
-      const b = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️ Editar' });
+      const b = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('edit') + ' Editar' });
       b.addEventListener('click', () => openModal(r));
       actions.push(b);
     }
     if (canDelete) {
-      const b = el('button', { class: 'btn btn--soft btn--sm rev-card__del', type: 'button', text: '🗑' , 'aria-label': 'Eliminar' });
+      const b = el('button', { class: 'btn btn--soft btn--sm rev-card__del', type: 'button', 'aria-label': 'Eliminar', html: icon('trash') });
       b.addEventListener('click', () => confirmDelete(r));
       actions.push(b);
     }

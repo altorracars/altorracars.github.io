@@ -12,6 +12,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -178,11 +179,11 @@ export function mountCerebro(root) {
       const tgl = el('input', { type: 'checkbox' }); tgl.checked = !disabled;
       tgl.addEventListener('change', () => doToggle(f, tgl.checked));
       actions.append(el('label', { class: 'kb-toggle u-caption' }, [tgl, el('span', { text: disabled ? 'Pausada' : 'Activa' })]));
-      const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️ Editar' });
+      const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('edit') + ' Editar' });
       editBtn.addEventListener('click', () => openModal(f)); actions.append(editBtn);
     }
     if (canDelete) {
-      const delBtn = el('button', { class: 'btn btn--danger btn--sm', type: 'button', text: '🗑' });
+      const delBtn = el('button', { class: 'btn btn--danger btn--sm', type: 'button', 'aria-label': 'Eliminar', html: icon('trash') });
       delBtn.addEventListener('click', () => doDelete(f)); actions.append(delBtn);
     }
     const kws = (f.keywords && f.keywords.length)
@@ -210,7 +211,7 @@ export function mountCerebro(root) {
   let searchTimer = null;
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { ui.search = searchInput.value; render(); }, 180); });
   const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
-  const newBtn = canCreate ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nueva FAQ' }) : null;
+  const newBtn = canCreate ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva FAQ' }) : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
   const seedBtn = canBootstrap ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🌱 Sembrar 25 base' }) : null;
   if (seedBtn) seedBtn.addEventListener('click', doBootstrap);

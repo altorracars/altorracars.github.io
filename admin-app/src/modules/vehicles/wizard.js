@@ -11,6 +11,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
@@ -181,7 +182,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
     f.consignante = id ? { id, nombre: (consignantes.find((c) => c.id === id) || f.consignante || {}).nombre || 'Consignante' } : null;
     scheduleRecovery();
   });
-  const nuevoConsignanteBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '＋ Nuevo' });
+  const nuevoConsignanteBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Nuevo' });
   nuevoConsignanteBtn.addEventListener('click', openConsignanteForm);
   const consignaField = field('Consignante',
     el('div', { class: 'u-row u-row--tight' }, [consignanteSel, nuevoConsignanteBtn]),
@@ -330,7 +331,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   }
   renderGallery();
   const urlIn = el('input', { class: 'input', type: 'text', placeholder: 'https://… o multimedia/…' });
-  const urlBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '＋ Agregar URL' });
+  const urlBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Agregar URL' });
   urlBtn.addEventListener('click', () => {
     const u = urlIn.value.trim();
     if (!/^https?:\/\//.test(u) && u.indexOf('multimedia/') !== 0) { toast('URL no válida: usa http(s):// o multimedia/…', 'error'); return; }
@@ -398,7 +399,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   renderFeats();
   const featIn = el('input', { class: 'input', type: 'text', placeholder: 'Nueva característica…', maxlength: '60' });
   const featCat = selectFrom(FEAT_CATEGORIES.map(([k, l]) => ({ value: k, label: l })), { empty: false });
-  const featBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '＋ Agregar' });
+  const featBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Agregar' });
   featBtn.addEventListener('click', async () => {
     const v = featIn.value.trim();
     if (!v) return;

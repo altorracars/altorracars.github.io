@@ -7,6 +7,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -219,9 +220,9 @@ export function mountBanners(root) {
   function card(b) {
     const actions = [];
     if (canEdit) {
-      const e1 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✏️ Editar' });
+      const e1 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('edit') + ' Editar' });
       e1.addEventListener('click', () => openModal(b));
-      const e2 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: b.active ? '🙈 Ocultar' : '👁 Mostrar' });
+      const e2 = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: b.active ? (icon('eyeOff') + ' Ocultar') : (icon('eye') + ' Mostrar') });
       e2.addEventListener('click', async () => {
         if (store.get().mock) {
           b.active = !b.active; render(); toast(b.active ? 'Banner visible (demo)' : 'Banner pausado (demo)', 'ok');
@@ -233,7 +234,7 @@ export function mountBanners(root) {
       actions.push(e1, e2);
     }
     if (canDelete) {
-      const d = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🗑', 'aria-label': 'Eliminar' });
+      const d = el('button', { class: 'btn btn--soft btn--sm', type: 'button', 'aria-label': 'Eliminar', html: icon('trash') });
       d.addEventListener('click', () => confirmDelete(b));
       actions.push(d);
     }
@@ -273,7 +274,7 @@ export function mountBanners(root) {
   function render() {
     clear(wrap);
     const newBtn = canCreate
-      ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nuevo banner' })
+      ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo banner' })
       : null;
     if (newBtn) newBtn.addEventListener('click', () => openModal(null));
     wrap.append(el('div', { class: 'rev-head' }, [

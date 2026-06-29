@@ -4,6 +4,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
 import {
@@ -47,7 +48,7 @@ export function mountAgenda(root) {
     ]);
     // Gap 5 (F23-7 §188): crear cita SIN pasar por el 360 — walk-ins incluidos.
     if (hasPermission('crm.edit')) {
-      const nueva = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: '＋ Nueva cita' });
+      const nueva = el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva cita' });
       nueva.addEventListener('click', () => openCitaChooser({}));
       nav.append(nueva);
     }

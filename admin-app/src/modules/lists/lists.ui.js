@@ -8,6 +8,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -80,7 +81,7 @@ export function mountLists(root) {
     }
     items.forEach((it) => rows.append(row(def, it, markDirty)));
 
-    const addBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '＋ Agregar opción' });
+    const addBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Agregar opción' });
     addBtn.addEventListener('click', () => {
       const r = row(def, null, markDirty);
       rows.append(r);

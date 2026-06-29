@@ -97,7 +97,17 @@ Dark-only premium (oro `#b89658` sobre dark). Cero copy "modo desarrollador". Ca
 
 ## ▶️ ARRANQUE EN SESIÓN FRESCA — ejecutar en orden (NO saltar pasos)
 
-> Disparador: el dueño dirá *"continúa el EPIC TODO-52"*. Estado: Fase A.1 ✅. Sigue A.2.
+> Disparador: el dueño dirá *"continúa el EPIC TODO-52"*.
+>
+> ### 📍 ESTADO AL CIERRE 29/06 (relevo a sesión fresca — sesión larga, saturada)
+> **HECHO y EN `main`** (el dueño mergeó): A.1+síntesis ✅ · A.2 live ✅ · Fase B Gemini verificada ✅ · **PASE-1** (dark-only · `null` Vehículos+Dashboard · copy dev · **layout sistémico `.outlet`**) ✅ · **P0-OWNER-DELETE** Aliados + Pipeline (deals; typed-confirm en ganados) ✅ · **`confirm()` 16/16 → modal premium** `core/confirm.js` ✅ · **`core/errors.js`** + clúster inventario/ventas ✅ · acento→ORO ✅ · validación live ✅.
+> **SIGUE (orden sugerido):**
+> 1. **Backend** [con tests + deploy, IRREVERSIBLE — foco fresco]: purga Contactos/Bandeja (arreglar **drift R8** de `crmPurgeLead`: gatea `super_admin` legacy, no las 3 formas) + **2 P0-SEGURIDAD** (privesc `roles.create` vía callable subset-validation; **dataScope** rol-based en reglas+queries, default asesor→own+depto·gerente/CEO→all).
+> 2. **Terminar P1 premium** [cliente, seguro]: `friendlyError` en los **~28 callsites restantes** (Edit `replace_all` por archivo — **NUNCA script node masivo: corrompe CRLF, L-60**) · emoji→SVG (filas/acciones, base en `nav-icons.js`/`icons.js`) · **gold canónico** (`--gold-500 #D4A85A` → doctrina `#b89658`) + separar brand-gold del accent picker.
+> 3. **Fase C**: mockups premium (Claude Design/visualize) + design-system dark-only.
+> **Pendiente del dueño:** purgar los `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo: Pipeline → card del negocio → 🗑 → teclear "ELIMINAR".
+>
+> ↓ Los pasos de abajo son el plan ORIGINAL A.2/B/C/D (A.2 y B ya ✅) — referencia.
 
 0. **Boot normal** (CLAUDE.md + `05` + `10` + `brain:check`). En `10` verás **TODO-52 = EPIC #1** → entra a este brief.
 1. **LEE este brief completo + el findings crudo** `…2026-06-29-crm-holistic-audit-findings.json` (entero, o con un agente Explore read-only que devuelva el `synthesis` + P0 + quickWins).

@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -216,7 +217,11 @@ export function mountRoles(root) {
       toast(`No se puede eliminar: ${n} usuario(s) con este rol. Reasígnalos primero en Usuarios.`, 'error');
       return;
     }
-    if (!window.confirm(`¿Eliminar el rol "${role.name}"? Esta acción no se puede deshacer.`)) return;
+    if (!await confirmDialog({
+      title: `¿Eliminar el rol "${role.name}"?`,
+      message: 'Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar', danger: true,
+    })) return;
     if (store.get().mock) {
       ui.roles = ui.roles.filter((r) => r._docId !== role._docId);
       renderGrid(); toast('Rol eliminado (demo)', 'ok'); return;

@@ -10,6 +10,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -188,7 +189,11 @@ export function mountUsuarios(root) {
 
   /* ── Baja ────────────────────────────────────────────────── */
   async function confirmDelete(u) {
-    if (!window.confirm('¿Eliminar a "' + (u.nombre || u.email) + '"?\n\nSe elimina su perfil y su cuenta de acceso. Esta acción no se puede deshacer.')) return;
+    if (!await confirmDialog({
+      title: '¿Eliminar a "' + (u.nombre || u.email) + '"?',
+      message: 'Se elimina su perfil y su cuenta de acceso. Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar', danger: true,
+    })) return;
     if (store.get().mock) {
       ui.users = ui.users.filter((x) => x._docId !== u._docId);
       renderList(); toast('Usuario eliminado (demo)', 'ok'); return;

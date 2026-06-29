@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -125,7 +126,11 @@ export function mountDepartamentos(root) {
   async function confirmDelete(d) {
     const n = d.userCount || 0;
     if (n > 0) { toast(`No se puede eliminar: ${n} usuario(s) asignado(s). Reasígnalos primero en Usuarios (§66).`, 'error'); return; }
-    if (!window.confirm(`¿Eliminar el departamento "${d.name}"? Esta acción no se puede deshacer.`)) return;
+    if (!await confirmDialog({
+      title: `¿Eliminar el departamento "${d.name}"?`,
+      message: 'Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar', danger: true,
+    })) return;
     if (store.get().mock) {
       ui.depts = ui.depts.filter((x) => x._docId !== d._docId);
       renderGrid(); toast('Departamento eliminado (demo)', 'ok'); return;

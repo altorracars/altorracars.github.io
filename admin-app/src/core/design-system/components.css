@@ -56,7 +56,7 @@
 
 /* Icon button (acción compacta) */
 .icon-btn {
-  display: inline-grid; place-content: center;
+  display: inline-grid; place-content: center; padding: 0;
   width: 34px; height: 34px; border-radius: var(--r-sm);
   color: var(--ink-text-muted); background: transparent;
   border: 1px solid transparent; cursor: pointer;

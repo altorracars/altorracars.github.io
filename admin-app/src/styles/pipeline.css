@@ -66,7 +66,7 @@
 
 .deal-card__top { display: flex; align-items: center; gap: var(--s-2); }
 .deal-card__name { font-weight: 700; font-size: var(--t-body); }
-.deal-card__rot { flex: 0 0 auto; }
+.deal-card__rot { flex: 0 0 auto; display: inline-flex; color: var(--warning); }
 .deal-card__row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
 .deal-card__amount {
   border: 1px dashed var(--surface-stroke-hi); background: transparent;
@@ -87,6 +87,8 @@
 .deal-card:hover .deal-card__actions, .deal-card:focus-within .deal-card__actions { opacity: 1; }
 
 .icon-btn--xs { width: 26px; height: 26px; font-size: 13px; border-radius: var(--r-xs); }
+.icon-btn--xs svg { width: 15px; height: 15px; }
+.deal-card__rot svg { width: 14px; height: 14px; }
 
 /* ── E4 §186 ──────────────────────────────────────────────── */
 
@@ -95,10 +97,12 @@
 
 /* F26: warning de colisión comercial en la tarjeta */
 .deal-card__collision {
+  display: flex; align-items: flex-start; gap: 4px;
   padding: 2px var(--s-2); border-radius: var(--r-xs);
   background: rgba(229,115,26,0.12); border: 1px solid rgba(229,115,26,0.45);
   color: var(--warning); font-weight: 600;
 }
+.deal-card__collision svg { width: 1em; height: 1em; flex: 0 0 auto; margin-top: 1px; }
 
 /* F10: vista Post-venta (lista vertical, no kanban) */
 .pipeline__board--list {

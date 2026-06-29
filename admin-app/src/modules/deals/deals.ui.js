@@ -168,7 +168,7 @@ export function mountPipeline(root) {
       // SPREAD/%/FIJO el trigger la computa del vehículo e IGNORA este valor.
       f.altorraRevenueManual = el('input', { class: 'input', type: 'number', min: '0', step: '50000', placeholder: 'Vacío = se calcula sola' });
       fields.push(el('label', { class: 'field' }, [
-        el('span', { class: 'field__label', text: '💰 Ganancia de Altorra (COP) — solo si es MANUAL' }),
+        el('span', { class: 'field__label u-ico-text', html: icon('dollar') + ' Ganancia de Altorra (COP) — solo si es MANUAL' }),
         f.altorraRevenueManual,
         el('span', { class: 'u-caption u-faint', text: 'Déjalo vacío si la comisión se calcula sola (spread/%/fijo).' }),
       ]));
@@ -184,7 +184,7 @@ export function mountPipeline(root) {
       f.retomaCheck.addEventListener('change', () => { detalle.hidden = !f.retomaCheck.checked; });
       fields.push(el('div', {}, [
         el('label', { class: 'u-row u-row--tight', style: { cursor: 'pointer' } }, [
-          f.retomaCheck, el('span', { text: '🚙 Recibe vehículo en parte de pago (retoma)' }),
+          f.retomaCheck, el('span', { class: 'u-ico-text', html: icon('car') + ' Recibe vehículo en parte de pago (retoma)' }),
         ]),
         detalle,
       ]));
@@ -319,7 +319,7 @@ export function mountPipeline(root) {
   // ── Render ──
   function render() {
     if (ui.loading) return renderSkeleton();
-    if (ui.error) return renderState('⚠️', 'No se pudo cargar', ui.error);
+    if (ui.error) return renderState(icon('alertTriangle'), 'No se pudo cargar', ui.error);
 
     const open = ui.deals.filter((d) => d.status === 'open');
 
@@ -338,7 +338,7 @@ export function mountPipeline(root) {
 
     if (!open.length) {
       board.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🎯' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('target') }),
         el('div', { class: 'state__title', text: 'Embudo vacío' }),
         el('div', { class: 'state__msg', text: 'Convierte un lead en oportunidad desde la Bandeja para empezar.' }),
       ]));
@@ -373,18 +373,18 @@ export function mountPipeline(root) {
     // La suscripción de wons arranca en start() → el contador es real
     // también en kanban (subscribeDeals solo trae open).
     const wonCount = ui.wonLoading ? null : ui.won.length;
-    const viewBtn = (id, label) => {
+    const viewBtn = (id, html) => {
       const b = el('button', {
         class: 'btn btn--sm ' + (ui.view === id ? 'btn--gold' : 'btn--ghost'),
-        type: 'button', 'aria-pressed': ui.view === id ? 'true' : 'false',
-      }, [label]);
+        type: 'button', 'aria-pressed': ui.view === id ? 'true' : 'false', html,
+      });
       b.addEventListener('click', () => setView(id));
       return b;
     };
     bar.append(
       el('div', { class: 'pipeline__views', role: 'group', 'aria-label': 'Vista' }, [
-        viewBtn('kanban', '🎯 Embudo'),
-        viewBtn('postventa', '🏁 Post-venta' + (wonCount === null || wonCount === 0 ? '' : ' (' + wonCount + ')')),
+        viewBtn('kanban', icon('target') + ' Embudo'),
+        viewBtn('postventa', icon('flag') + ' Post-venta' + (wonCount === null || wonCount === 0 ? '' : ' (' + wonCount + ')')),
       ]),
       stat('Oportunidades', String(open.length)),
       stat('Valor del embudo', copShort(tv) || '$0'),
@@ -419,30 +419,33 @@ export function mountPipeline(root) {
       el('div', { class: 'deal-card__top' }, [
         el('span', { class: 'avatar avatar--sm', 'aria-hidden': 'true', text: initials(deal.contactName) }),
         el('span', { class: 'deal-card__name u-grow u-truncate', text: deal.name }),
-        rot ? el('span', { class: 'deal-card__rot', title: 'Estancado >14 días', text: '🐌' }) : null,
+        rot ? el('span', { class: 'deal-card__rot', title: 'Estancado >14 días', 'aria-hidden': 'true', html: icon('clock') }) : null,
       ]),
-      deal.vehicleName ? el('div', { class: 'u-caption u-muted u-truncate', text: '🚗 ' + deal.vehicleName }) : null,
+      deal.vehicleName ? el('div', { class: 'u-caption u-muted u-ico-text' }, [
+        el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('car') }),
+        el('span', { class: 'u-truncate', text: deal.vehicleName }),
+      ]) : null,
       // F26 (E4): warning de colisión comercial — visible en TODOS los deals
       // del grupo. No bloquea: dos compradores reales pueden competir.
       ui.collisionByDeal.has(deal.id) ? el('div', {
         class: 'deal-card__collision u-caption',
         title: 'Otro negocio activo persigue este mismo carro. Coordinen quién va primero.',
-        text: '🥊 ' + ui.collisionByDeal.get(deal.id) + ' negocios por este carro',
+        html: icon('alertTriangle') + ' ' + ui.collisionByDeal.get(deal.id) + ' negocios por este carro',
       }) : null,
       el('div', { class: 'deal-card__row' }, [
         amountEl,
         el('span', { class: 'badge badge--gold', text: `${Math.round(probFor(deal.stageId) * 100)}%` }),
       ]),
       el('div', { class: 'deal-card__foot u-caption u-faint' }, [
-        el('span', { class: 'u-grow u-truncate', text: deal.ownerName ? '👤 ' + deal.ownerName : 'Sin asesor' }),
+        deal.ownerName ? el('span', { class: 'u-grow u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('user') }), el('span', { class: 'u-truncate', text: deal.ownerName })]) : el('span', { class: 'u-grow u-truncate', text: 'Sin asesor' }),
         el('span', { text: timeAgo(deal.lastActivityAt) }),
       ]),
       el('div', { class: 'deal-card__actions' }, (canEdit ? [
-        miniBtn('stage', '↔', 'Mover etapa'),
-        miniBtn('won', '✓', 'Marcar ganado'),
-        miniBtn('lost', '✕', 'Marcar perdido'),
-        miniBtn('open', '⤢', 'Abrir 360'),
-      ] : [miniBtn('open', '⤢', 'Abrir 360')]).concat(canDelete ? [miniBtn('del', '🗑', 'Eliminar')] : [])),
+        miniBtn('stage', 'arrowLeftRight', 'Mover etapa'),
+        miniBtn('won', 'check', 'Marcar ganado'),
+        miniBtn('lost', 'x', 'Marcar perdido'),
+        miniBtn('open', 'maximize', 'Abrir 360'),
+      ] : [miniBtn('open', 'maximize', 'Abrir 360')]).concat(canDelete ? [miniBtn('del', 'trash', 'Eliminar')] : [])),
     ]);
 
     card.addEventListener('dragstart', (e) => {
@@ -459,8 +462,8 @@ export function mountPipeline(root) {
     return card;
   }
 
-  function miniBtn(action, glyph, label) {
-    return el('button', { class: 'icon-btn icon-btn--xs', type: 'button', 'data-action': action, title: label, 'aria-label': label, draggable: 'false' }, [glyph]);
+  function miniBtn(action, iconId, label) {
+    return el('button', { class: 'icon-btn icon-btn--xs', type: 'button', 'data-action': action, title: label, 'aria-label': label, draggable: 'false', html: icon(iconId) });
   }
 
   function handleAction(action, deal, anchor) {
@@ -575,7 +578,7 @@ export function mountPipeline(root) {
     const form = el('form', { class: 'nl-form' }, [marca, modelo, year, placa, valor, err, el('div', { class: 'nl-actions' }, [cancel, ok])]);
     const overlay = el('div', { class: 'modal-overlay' }, [
       el('div', { class: 'modal' }, [
-        el('div', { class: 'modal__head' }, [el('h2', { class: 'modal__title', text: '🚙 Vehículo recibido (retoma)' })]),
+        el('div', { class: 'modal__head' }, [el('h2', { class: 'modal__title u-ico-text', html: icon('car') + ' Vehículo recibido (retoma)' })]),
         form,
       ]),
     ]);
@@ -606,10 +609,10 @@ export function mountPipeline(root) {
     clear(board);
     board.classList.add('pipeline__board--list');
     if (ui.wonError) {
-      const retry = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['↻ Reintentar']);
+      const retry = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('refresh') + ' Reintentar' });
       retry.addEventListener('click', () => { ui.wonError = null; ui.wonLoading = true; startWon(); render(); });
       board.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '⚠️' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('alertTriangle') }),
         el('div', { class: 'state__title', text: 'No se pudieron cargar los ganados' }),
         el('div', { class: 'state__msg', text: ui.wonError }),
         retry,
@@ -622,7 +625,7 @@ export function mountPipeline(root) {
     }
     if (!ui.won.length) {
       board.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🏁' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('flag') }),
         el('div', { class: 'state__title', text: 'Sin ventas ganadas aún' }),
         el('div', { class: 'state__msg', text: 'Cuando marques un negocio como ganado, su checklist de entrega vivirá aquí.' }),
       ]));
@@ -639,7 +642,7 @@ export function mountPipeline(root) {
 
     let delBtn = null;
     if (canDelete) {
-      delBtn = el('button', { class: 'icon-btn icon-btn--xs', type: 'button', title: 'Eliminar negocio', 'aria-label': 'Eliminar negocio' }, ['🗑']);
+      delBtn = el('button', { class: 'icon-btn icon-btn--xs', type: 'button', title: 'Eliminar negocio', 'aria-label': 'Eliminar negocio', html: icon('trash') });
       delBtn.addEventListener('click', () => deleteDealFlow(deal));
     }
 
@@ -658,11 +661,11 @@ export function mountPipeline(root) {
     const rv = deal.recibeVehiculo;
     let retomaEl;
     if (rv && (rv.marca || rv.placa)) {
-      const kids = [el('span', {
-        class: 'u-caption u-muted',
-        text: '🚙 Retoma: ' + [rv.marca, rv.modelo, rv.placa].filter(Boolean).join(' ')
-          + (rv.valorEstimado ? ' · ' + copShort(rv.valorEstimado) : ''),
-      })];
+      const kids = [el('span', { class: 'u-caption u-muted u-ico-text' }, [
+        el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('car') }),
+        el('span', { text: 'Retoma: ' + [rv.marca, rv.modelo, rv.placa].filter(Boolean).join(' ')
+          + (rv.valorEstimado ? ' · ' + copShort(rv.valorEstimado) : '') }),
+      ])];
       if (deal.retomaVehicleId) {
         kids.push(el('span', { class: 'badge badge--gold', text: 'Borrador #' + deal.retomaVehicleId + ' ✓' }));
       } else if (canEdit) {
@@ -682,30 +685,33 @@ export function mountPipeline(root) {
         el('span', { class: 'avatar avatar--sm', 'aria-hidden': 'true', text: initials(deal.contactName) }),
         el('span', { class: 'deal-card__name u-grow u-truncate', text: deal.name }),
         el('span', {
-          class: 'badge ' + (liquidable ? 'badge--gold' : ''),
+          class: 'badge u-ico-text ' + (liquidable ? 'badge--gold' : ''),
           title: liquidable ? 'Checklist completo: entra a liquidación de comisiones (F42)'
             : 'La comisión se liquida cuando el checklist esté completo',
-          text: liquidable ? '✓ Liquidable' : '⏳ Pendiente',
+          html: liquidable ? icon('check') + ' Liquidable' : icon('clock') + ' Pendiente',
         }),
         delBtn,
       ]),
       el('div', { class: 'u-caption u-muted' }, [
-        el('span', { text: (deal.vehicleName ? '🚗 ' + deal.vehicleName + ' · ' : '') + copShort(base) }),
+        el('span', { class: deal.vehicleName ? 'u-ico-text' : null }, [
+          deal.vehicleName ? el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('car') }) : null,
+          el('span', { text: (deal.vehicleName ? deal.vehicleName + ' · ' : '') + copShort(base) }),
+        ]),
         el('span', { class: 'u-faint', text: (deal.tipoPago ? ' · ' + deal.tipoPago : '') + (wonDate ? ' · ganado ' + wonDate : '') }),
       ]),
       el('div', { class: 'pv-checklist' }, checks),
       retomaEl || null,
       el('div', { class: 'deal-card__foot u-caption u-faint' }, [
-        el('span', { class: 'u-grow u-truncate', text: deal.ownerName ? '👤 ' + deal.ownerName : 'Sin asesor' }),
+        deal.ownerName ? el('span', { class: 'u-grow u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('user') }), el('span', { class: 'u-truncate', text: deal.ownerName })]) : el('span', { class: 'u-grow u-truncate', text: 'Sin asesor' }),
       ]),
     ]);
   }
 
   // ── Estados ──
-  function renderState(icon, title, msg) {
+  function renderState(glyph, title, msg) {
     clear(board);
     board.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: icon }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: glyph }),
       el('div', { class: 'state__title', text: title }),
       el('div', { class: 'state__msg', text: msg }),
     ]));

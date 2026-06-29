@@ -58,6 +58,9 @@
 .rol-perm__info { display: flex; flex-direction: column; min-width: 0; }
 .rol-perm__name { font-size: var(--t-caption); }
 .rol-perm--critical .rol-perm__name { color: var(--danger); }
+/* §219: owner-only — visible pero deshabilitado (no se delega) */
+.rol-perm--owner { opacity: 0.5; cursor: not-allowed; }
+.rol-perm--owner .rol-perm__id { color: var(--gold-500); }
 .rol-perm__id { font-size: 10px; color: var(--ink-text-faint); }
 
 .rol-wildcard {

@@ -32,8 +32,10 @@ describe.skipIf(!EMU)('Rules §217 — no MINTAR dueño (users.edit/users.create
     });
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
-      await db.doc('usuarios/' + EDITOR).set({ rol: 'custom', roleId: 'r_ed', permissions: ['users.edit'], estado: 'activo' });
-      await db.doc('usuarios/' + CREATOR).set({ rol: 'custom', roleId: 'r_cr', permissions: ['users.create'], estado: 'activo' });
+      // §219: el granter necesita TENER los perms que asigna (subset). Para que las
+      // regresiones de "asignación normal" sigan pasando, el fixture incluye vehicles.read/crm.read.
+      await db.doc('usuarios/' + EDITOR).set({ rol: 'custom', roleId: 'r_ed', permissions: ['users.edit', 'vehicles.read', 'crm.read'], estado: 'activo' });
+      await db.doc('usuarios/' + CREATOR).set({ rol: 'custom', roleId: 'r_cr', permissions: ['users.create', 'vehicles.read'], estado: 'activo' });
       await db.doc('usuarios/' + STAFF).set({ rol: 'custom', roleId: 'r_st', permissions: ['vehicles.read'], estado: 'activo', nombre: 'Asesor' });
     });
   });

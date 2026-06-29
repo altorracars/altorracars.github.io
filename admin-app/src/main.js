@@ -65,7 +65,6 @@ import { mountDepartamentos } from './modules/departamentos/departamentos.ui.js'
 import { mountWorkflows } from './modules/workflows/workflows.ui.js';
 import { mountAuditoria } from './modules/auditoria/auditoria.ui.js';
 import { mountAjustes } from './modules/ajustes/ajustes.ui.js';
-import { applyInitialAccent } from './modules/ajustes/ajustes.data.js';
 import { mountCerebro } from './modules/cerebro/cerebro.ui.js';
 import { mountUnmatched } from './modules/unmatched/unmatched.ui.js';
 import { mountHub } from './modules/hub/hub.ui.js';
@@ -74,7 +73,6 @@ import { initFcm } from './core/fcm.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
-applyInitialAccent();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
 const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes, cerebro: mountCerebro, unmatched: mountUnmatched, hub: mountHub, perfil: mountPerfil };

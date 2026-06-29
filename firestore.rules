@@ -66,6 +66,31 @@ service cloud.firestore {
           || ('*' in d.get('permissions', []));
     }
 
+    // §219 (P0-SEC-2 — decisión del dueño 29/06): permisos OWNER-EXCLUSIVOS. La
+    // administración de IDENTIDAD/SEGURIDAD (agregar/editar/eliminar usuarios y roles,
+    // backup/restore, token SEO, borrar auditoría) NUNCA se delega a un rol/usuario custom
+    // — vive SOLO en el '*' del dueño (sembrado por Admin SDK). Verbatim dueño: "agregar y
+    // eliminar usuarios entre otras cosas delicadas que nunca se puede igualar".
+    function ownerOnlyPerms() {
+      return ['users.create', 'users.edit', 'users.delete',
+              'roles.create', 'roles.edit', 'roles.delete',
+              'settings.backup', 'settings.seo', 'audit.delete'];
+    }
+    // §219: el que OTORGA solo puede dar permisos que él mismo tiene (subconjunto). Un '*'
+    // (o super_admin legacy) puede dar cualquier perm NO-owner-only.
+    function grantWithinCaller(perms) {
+      return isSuperAdmin()
+          || ('*' in getUserPermissions())
+          || perms.hasOnly(getUserPermissions());
+    }
+    // §218+§219: una lista de permisos es OTORGABLE desde el cliente si NO incluye '*'
+    // (poder de dueño), NO incluye ningún owner-only, y es subconjunto del que otorga.
+    function grantablePerms(perms) {
+      return !('*' in perms)
+          && !perms.hasAny(ownerOnlyPerms())
+          && grantWithinCaller(perms);
+    }
+
     // F4.5: Optimistic locking — validate _version increment
     // Allows: new docs with _version=1, updates with _version+1, or migration from null→1
     function validVersion() {
@@ -180,8 +205,11 @@ service cloud.firestore {
       // gestiona todo el doc del usuario (alta, baja, rol, bloqueado, etc.)
       // §217 — pero NO puede MINTAR un dueño ('*'/system_super_admin) desde el
       // cliente: solo el Admin SDK (seed/createManagedUserV2) crea dueños.
+      // §219: además de no MINTAR un dueño, el doc nuevo no puede recibir perms
+      // owner-only ni perms fuera del alcance del creador (grantablePerms).
       allow create: if (isSuperAdmin() || hasPermission('users.create'))
-        && !isOwnerDoc(request.resource.data);
+        && !isOwnerDoc(request.resource.data)
+        && grantablePerms(request.resource.data.get('permissions', []));
       allow delete: if isSuperAdmin()
         || hasPermission('users.delete');
 
@@ -236,7 +264,11 @@ service cloud.firestore {
       allow update: if
         ( (isSuperAdmin() || hasPermission('users.edit'))
           && !isOwnerDoc(resource.data)          // §212 — no editar al dueño EXISTENTE
-          && !isOwnerDoc(request.resource.data) ) // §217 — no MINTAR un dueño nuevo (self o 3º; vector §215.7)
+          && !isOwnerDoc(request.resource.data)  // §217 — no MINTAR un dueño nuevo (self o 3º; vector §215.7)
+          // §219 — si la escritura TOCA permissions, deben ser otorgables (no owner-only,
+          // subset del editor). Edits que NO tocan permissions (bloquear, depto, etc.) pasan.
+          && ( !request.resource.data.diff(resource.data).affectedKeys().hasAny(['permissions'])
+               || grantablePerms(request.resource.data.get('permissions', [])) ) )
         || (request.auth.uid == userId &&
             request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly([
@@ -1185,23 +1217,26 @@ service cloud.firestore {
     match /roles/{roleId} {
       allow read: if isEditorOrAbove()
         || hasPermission('roles.read');
-      // §218 (P0-SEC-2 — defensa en profundidad): un roles.create NUNCA siembra un rol
-      // con PODER DE DUEÑO desde el cliente — ni wildcard '*' ni isSystem. Solo el Admin
-      // SDK (seedSystemRoles) crea el rol CEO. Un rol '*' es inerte hoy (§217 bloquea '*'
-      // en user docs) pero esto cierra el vector en su origen. NO es subset-check (el modelo
-      // §217 permite delegar perms NO-dueño — eso es decisión de diseño, no este parche).
+      // §218+§219 (P0-SEC-2): un rol custom desde el cliente NUNCA puede tener poder de
+      // dueño (no '*', no isSystem, no perms owner-only) y sus permisos deben ser SUBCONJUNTO
+      // de los del que lo crea (no se otorga lo que no se tiene). Solo el Admin SDK
+      // (seedSystemRoles) crea el rol CEO. → grantablePerms() (helper arriba).
       allow create: if (isSuperAdmin() || hasPermission('roles.create'))
         && request.resource.data.get('isSystem', false) == false
-        && !('*' in request.resource.data.get('permissions', []));
+        && grantablePerms(request.resource.data.get('permissions', []));
       // §212: los system roles (CEO 'system_super_admin' con '*') son INMUTABLES desde
       // el cliente — solo el CF seedSystemRoles (Admin SDK) los toca. Antes cualquier
       // roles.edit/roles.delete podía editar/borrar el rol del dueño (hueco FATAL; el
       // comentario de onRoleDeleted asumía este bloqueo que NO existía).
-      // §218: además, un roles.edit NO puede ESCALAR un rol a poder de dueño ('*'/isSystem).
+      // §218+§219: además, un roles.edit NO puede ESCALAR un rol a poder de dueño ni
+      // a perms fuera del alcance del editor.
       allow update: if (isSuperAdmin() || hasPermission('roles.edit'))
         && resource.data.get('isSystem', false) == false
         && request.resource.data.get('isSystem', false) == false
-        && !('*' in request.resource.data.get('permissions', []));
+        // §219: solo si la edición TOCA permissions se exige grantablePerms; renombrar/
+        // recolorear un rol cuyos perms exceden los del editor sigue permitido.
+        && ( !request.resource.data.diff(resource.data).affectedKeys().hasAny(['permissions'])
+             || grantablePerms(request.resource.data.get('permissions', [])) );
       allow delete: if (isSuperAdmin() || hasPermission('roles.delete'))
         && resource.data.get('isSystem', false) == false;
     }

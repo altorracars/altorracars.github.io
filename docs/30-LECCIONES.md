@@ -93,9 +93,7 @@
 
 ## 🪞 Meta: fallos del propio cerebro (Reflejo de Autocrítica `CLAUDE.md §G.4`)
 
-> El cerebro se critica a SÍ MISMO: dónde una neurona/regla **causó un error o me
-> engañó**, y qué se corrigió. Cierra el bucle: usar → criticar → corregir = madurez.
-> Formato: **Defecto del cerebro → Causa → Corrección**.
+> El cerebro se critica a sí mismo. Formato: **Defecto → Causa → Corrección**.
 
 ### M-01 · Una neurona stale me habría engañado (Memoria Espacial)
 - **Defecto**: tras reorganizar `js/` (§119), `20-ESPACIAL` siguió describiendo el `js/` plano viejo → una sesión futura habría leído rutas inexistentes y errado.
@@ -112,10 +110,8 @@
 - **Corrección**: **Reflejo de Cierre (§G.4)** — checklist enforzable ANTES de declarar lista una tarea (10/05/99/00/30/cache/brain:check); si falta algo, NO está cerrada (ADR §123). **Principio**: lo crítico se convierte en checklist accionable en el momento exacto donde falla, no en doctrina de arranque.
 
 ### M-04 · Iterar fixes sin verificar la fuente de verdad real (no solo el código de aplicación)
-- **Defecto**: durante SP-5.0 rastro saga, las primeras 3 rondas (c, d, e) iteraron sobre el código de aplicación (`historial-visitas.js`, `home-carousels.js`) asumiendo que el bug era ahí. Cada round failed porque la causa raíz real estaba en **el service worker** (stale-while-revalidate servía código viejo en páginas de detalle). Ronda 4 (SP-5.0.f) cazó el bug solo cuando LEÍ el SW.
-- **Causa**: §19 RCA dice "verificar leyendo el código antes de tocar". Pero "código" lo interpreté como "código de aplicación" — olvidé que el SW, la cache strategy, la configuración del hosting, son TAMBIÉN parte del sistema donde puede esconderse la causa raíz.
-- **Corrección**: §19 RCA se debe leer "la fuente de verdad real" — no solo el código que parece relevante. Antes de iterar fixes en un módulo, verifica también: SW strategy, cache headers, CDN config, build pipeline. Si el bug persiste tras 2 hipótesis fallidas en un módulo, mira FUERA del módulo (infraestructura). Cierra el bucle: §G.2 Trigger de Error (si fallas 2× el mismo bug) ahora debe incluir "verificar infraestructura/cache/SW", no solo "leer §NN en el historial".
-- **Principio**: cuando iteras un fix y el bug persiste, el bug probablemente NO está donde estás mirando. Cambia el lente, no la profundidad. ADR §124.
+- **Defecto (SP-5.0)**: 3 rondas iteraron sobre el código de app (`historial-visitas.js`...) asumiendo el bug ahí; la causa real era **el service worker** (stale-while-revalidate servía código viejo). La ronda 4 lo cazó al LEER el SW.
+- **Corrección**: "verificar la fuente de verdad real" (§19 RCA) = NO solo el código de app — también SW/cache/CDN/build. Si el bug persiste tras 2 hipótesis fallidas en un módulo, mira FUERA (infraestructura); el Trigger de Error §G.2 lo incluye. **Principio**: cambia el lente, no la profundidad. ADR §124.
 
 ### M-05 · El cerebro debe crecer en dominios ESTRATÉGICOS, no solo operacionales
 - **Defecto**: el cerebro acumulaba memoria operacional pero NO análisis especializado (seguridad/legal/UX/SEO/perf/a11y) — cada sesión re-investigaba esos dominios desde cero.
@@ -157,11 +153,10 @@
 - **Corrección**: §3.3 generalizada a "evidencia antes de afirmar CUALQUIER hecho" + gate (citar evidencia del turno o decir "no verificado"). Per M-10, lo verificable (huérfanas/frescura/caps) ya vive en `brain:check`; el git/SessionStart hook lo hará automático.
 - **Principio**: el ALCANCE de una doctrina es tan importante como la doctrina misma. Y doctrina sola no basta (M-10) → la red dura es el determinismo (linter + hooks); la doctrina es el respaldo.
 
-### M-12 · Claude COMMITEA Y PUSHEA al cerrar trabajo — el dueño SOLO mergea en web (recidiva AGRAVADA 2026-06-19)
-- **Defecto (2026-06-05)**: cerraba turnos con árbol sucio sin entregar el mensaje de commit. **REINCIDENCIA AGRAVADA 2026-06-19 ⟦OPUS-4.8⟧**: aun entregando el mensaje, seguía pidiéndole al dueño que ÉL commiteara/pusheara ("push/merge son tuyos"). Me corrigió molesto: *"los commit y los push los haces TÚ, yo SOLO hago el merge en GitHub web"*. La regla de raíz (un §2 stale) ERA el error.
-- **Causa**: §2 decía "push y merge a main = SIEMPRE el cliente" — doctrina OBSOLETA. El dueño no quiere redactar ni ejecutar git: quiere que Claude commitee+pushee y él solo apruebe el merge en web.
-- **Corrección (regla dura, §2 REESCRITO 2026-06-19)**: al cerrar trabajo VERIFICADO, Claude **commitea Y pushea** la rama él mismo (`git add` específico + footer Co-Authored + `Modelo:`); el dueño SOLO mergea a `main` en GitHub web. Árbol sucio sin commitear+pushear = turno incompleto (Reflejo de Cierre §G.4). Cruza con `feedback_auto_deploy_crm` (memoria).
-- **Principio**: el dueño APRUEBA (merge), no OPERA (git). Entregar un mensaje "para que él commitee" es la regresión, no la solución.
+### M-12 · Claude hace TODO el git (commit + push + MERGE dev→main) — el dueño NO toca git (drift RECURRENTE 19/06·27/06·29/06)
+- **Defecto**: le devolví el git al dueño. 19/06 *"los commit/push los haces TÚ"*; 27/06 delegó TAMBIÉN el merge (*"commit + push + merge para que sea más rápido"*); 29/06 RECIDIVA: volví a dejarle el merge → me corrigió, preocupado por la pérdida de memoria. **Causa raíz = META (M-25)**: el hecho vivía en registros que se CONTRADECÍAN (`single_branch`+`MEMORY.md` decían "dueño mergea"; `auto_deploy`+`CLAUDE.md §2`+`05` decían "Claude mergea") → leo el índice de memorias primero → seguí el viejo.
+- **Corrección definitiva (29/06)**: Claude hace el pipeline completo `commit+push` + merge `git checkout main && git merge dev && git push origin main && git checkout dev`. El dueño **NO toca git, NUNCA**; si un push a main se bloquea, busco otra vía. Alineé los 6 registros.
+- **Principio**: el dueño da VISIÓN y DECIDE (dinero/legal); **NO opera git ni delibera código**. [HONOR]
 
 ### M-13 · Una "cura" se verifica en la capa que el BOOT lee, con grep — no se declara en el historial (recidiva RECURSIVA 2026-06-09)
 - **Defecto**: el ADR §171.7 declaró "añadí el Reflejo de Captura de Deliberación a §G.4" — pero `grep CLAUDE.md = 0 matches`. La cura vivía SOLO en §171 (historial on-demand que un boot fresco NUNCA lee, §G.1). El comité de Validación Final (Mandato 3, §172) lo cazó y se NEGÓ a certificar.
@@ -224,6 +219,11 @@
 - **Defecto (27/06, bot v2)**: el bug "Ver sedanes no filtra" → construí `busqueda?categoria=` de 2 lados (bot + `applyUrlFilters`) + reestructuré búsqueda a sidebar. PERO ya existían **páginas dedicadas** `vehiculos-{suv,sedan,pickup,hatchback}.html` con el layout correcto — el fix simple era apuntar el bot a ESAS. Las hallé solo al re-reportar el dueño.
 - **Causa**: no inventarié lo que YA EXISTÍA antes de diseñar (W-11 cap.1 verifica el código TOCADO, no barre páginas/componentes hermanos que ya resuelven). Sesgo de constructor: "lo hago" vs "¿ya está hecho?".
 - **Cura**: ante bug de navegación/feature, **primero `Glob`/`Grep` por lo existente** (¿página dedicada? ¿patrón hermano?) y reusar lo simple ANTES de construir. Suma al IAP §3.4: "¿qué ya existe a la mano?". Familia sobre-ingeniería. [HONOR]
+
+### M-25 · El cerebro PIERDE MEMORIA cuando el MISMO hecho vive en registros que se CONTRADICEN ⟦OPUS-4.8⟧
+- **Defecto (29/06)**: el dueño repitió 3× lo mismo (merge=mío; yo-decido-no-pregunto) y se preocupó: *"¿por qué se pierde memoria? Temo que se pierdan más cosas."*
+- **Causa (NO es olvido, es CONTRADICCIÓN)**: cada hecho vive en varios nodos (CLAUDE.md + memorias + índice `MEMORY.md` + brief + 05). Cambio uno y no los demás → **dos verdades**; al arrancar leo el índice de memorias primero → sigo el viejo. `brain:check` valida estructura, NO barre memorias `.claude` ni detecta contradicciones semánticas.
+- **Cura (SSoT real §G.3)**: al cambiar un hecho always-on, actualizar **TODOS** sus registros en el mismo acto (o marcar el viejo `⛔SUPERSEDED`). Si repito una instrucción del dueño → la causa por defecto es un registro stale, no mi olvido → cazarlo y alinear. TODO-29: que `brain:check` barre `memory/*.md`. [HONOR]
 
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
 

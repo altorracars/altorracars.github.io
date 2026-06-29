@@ -114,7 +114,7 @@ Dark-only premium (oro `#b89658` sobre dark). Cero copy "modo desarrollador". Ca
 2. **Fase A.2 — Auditoría LIVE (Chrome)** (skill `validacion-live-chrome`): recorre **CADA sección** del CRM como **asesor novato que recibe su 1er negocio**. Caza el `null` bajo headers (vivo), cortes/scroll/responsive, copy dev, falta de borrado owner, fricción, estados-cero. **Screenshot por sección** (callejón i = sin screenshot es cobertura fingida). ⚠️ `confirm()` nativo **bloquea la extensión** (callejón j) → el **dueño** da Aceptar a los diálogos grises; yo lleno/navego/verifico-Firestore; tab atascado → `tabs_create_mcp`.
 3. **Fase B — Deliberación** sobre evidencia VERIFICADA: comité de expertos **ACOTADO** (skill `comite-expertos`, sin tools, razona sobre el diagnóstico — L-50/machinery-bounded) + **consejo Gemini** (skill `proceso-decision-fuerte` / `15-CONSEJO-EXTERNO`; **verificar cada claim, no acatar**). Artefacto W-11: **prompt de Gemini pegado COMPLETO en chat** (memoria prompts-in-chat).
 4. **Fase C — Mega-plan + mockups:** plan priorizado **P0→P3**, **unificado con los planes web pendientes**; **design-system premium DARK-ONLY** definido a medida; **mockups** de pantallas clave vía **Claude Design** (`visualize`/`show_widget` o `mcp__stitch__*`; skills `frontend-design`/`design-taste-frontend`). Artefactos W-11: mockup + prompt Gemini + (luego) validación live.
-5. **Fase D — Implementar por fases** (gate dinero/staging donde aplique; **cache bump §4**; **deploy = Claude**, **merge dev→main = DUEÑO en web**). **Validación live Chrome holística al cierre de cada fase.** Repetir `auditar→pulir` hasta que **respire** (DIRECTIVA PERMANENTE).
+5. **Fase D — Implementar por fases** (gate dinero/staging donde aplique; **cache bump §4**; **deploy = Claude**, **merge dev→main = CLAUDE** él mismo — el dueño NO toca git, M-12/M-25). **Validación live Chrome holística al cierre de cada fase.** Repetir `auditar→pulir` hasta que **respire** (DIRECTIVA PERMANENTE).
 
 ### ⚙️ Restricciones / gotchas heredados (NO tropezar)
 - **Fan-out de agentes:** SOLO read-only + in-cwd + structured-output + **SIN Bash/git/MCP gateado** (si no, cuelga en background — L-50/§226/machinery-bounded). El audit A.1 funcionó así (10 agentes OK).
@@ -124,7 +124,7 @@ Dark-only premium (oro `#b89658` sobre dark). Cero copy "modo desarrollador". Ca
 
 ### 🟡 Decisiones / pendientes abiertos del dueño
 - **Limpieza datos de prueba** (irreversible, dueño): `ZZZ PRUEBA` (incl. el **deal ganado $1.25M = el $1.3M falso en Alexander Daza** + `vehiculos/47` vendido + contactos ZZZ). Se resuelve cuando exista el borrado owner-only (P0) → **fast-track ese P0** y con eso el dueño purga.
-- **Merge `dev`→`main` = DUEÑO en web** (el clasificador me lo bloquea; corregir `CLAUDE.md §2` que dice que Claude mergea).
+- **Merge `dev`→`main` = CLAUDE** (pipeline completo commit+push+merge; el dueño NO toca git — delegado 27/06, re-corregido 29/06; M-12/M-25). El claim viejo "el clasificador me lo bloquea / dueño en web" era el registro STALE que causó el drift — `CLAUDE.md §2`/`05` siempre dijeron Claude-mergea.
 
 ---
 

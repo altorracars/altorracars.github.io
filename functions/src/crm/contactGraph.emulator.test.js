@@ -89,6 +89,7 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
     });
     await db.collection('deals').doc('deal_buyer').set({
       contactId: 'buyer_other', status: 'won', stageId: 'vendido', amount: 45000000,
+      wonAt: '2026-06-15T10:00:00.000Z',                     // §bloqueo fiscal: base del retentionUntil (+5 años)
       name: 'Comprador Real · Toyota Corolla', vehicleId: 'veh_cons', _version: 1,
       commissionSnapshots: [{
         rev: 1, salePrice: 45000000, altorraRevenue: 5000000, vehicleId: 'veh_cons',
@@ -237,6 +238,7 @@ describe.skipIf(!EMU)('E3 — grafo de contacto: repoint, índice dedup, supresi
     expect(cdoc.exists).toBe(true);
     const cv = cdoc.data();
     expect(cv.suppressionStatus).toBe('bloqueado_retencion_fiscal');
+    expect(cv.retentionUntil).toBe('2031-06-15T10:00:00.000Z'); // venta 2026-06-15 + 5 años (firmeza renta)
     expect(cv.fullName).toBe('Pedro Consignante');          // nombre RETENIDO (fiscal + consultable art.14)
     expect(cv.cedula).toBe('12345678');                     // cédula RETENIDA
     expect(cv.email).toBeNull();                            // uso vivo de contacto DESACTIVADO

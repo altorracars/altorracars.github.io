@@ -312,6 +312,7 @@ async function redactConsignanteReferences(db, contactId) {
   const out = {
     vehiclesRedacted: 0, dealsRedacted: 0, snapshotEntriesRedacted: 0,
     vehiclesMatched: 0, dealsMatched: 0, snapshotEntriesMatched: 0,
+    latestSaleWonAt: null,   // §bloqueo fiscal: fecha de la ÚLTIMA venta del consignante → base del retentionUntil
   };
 
   // (a) Tenencia VIVA de los vehículos consignados (el reporte fetchDealerStats lee
@@ -349,7 +350,11 @@ async function redactConsignanteReferences(db, contactId) {
       const snap = await q.get();
       for (const d of snap.docs) {
         const { snapshots, changed, matched } = redactConsignanteInSnapshots(d.data().commissionSnapshots, contactId);
-        if (matched) { out.dealsMatched++; out.snapshotEntriesMatched += matched; }   // §Cond.4: total referencias
+        if (matched) {
+          out.dealsMatched++; out.snapshotEntriesMatched += matched;                  // §Cond.4: total referencias
+          const w = d.data().wonAt;                                                    // §bloqueo fiscal: última venta
+          if (w && (!out.latestSaleWonAt || w > out.latestSaleWonAt)) out.latestSaleWonAt = w;
+        }
         if (!changed) continue;
         await d.ref.update({
           commissionSnapshots: snapshots, updatedAt: nowISO(),
@@ -409,20 +414,28 @@ async function executeSuppression(db, contactId, { by } = {}) {
   // §BLOQUEO FISCAL (verificación 28/06: comité ×5 + consejo Gemini, AMBOS verificados vs `.gov.co`
   // — veredicto DEPENDE_CONTADOR). Un CONSIGNANTE con OPERACIÓN EJECUTADA (venta cerrada → snapshot/
   // tenencia que lo referencian) PUEDE tener deber de conservación fiscal de su cédula: documento
-  // soporte electrónico (Res.DIAN 165/23 si Altorra COMPRA) o exógena Formato 1647 (si intermedia),
-  // ambos transmiten la cédula a la DIAN → firmeza E.T. art.714. Dec.1377 art.11 (deber del
-  // RESPONSABLE) IMPIDE destruirla a las 72h; y borrar el doc dejaría al titular SIN respuesta veraz
-  // a una consulta (Ley 1581 art.14/17). Hasta que el CONTADOR fije `retentionUntil` y prescriba, NO
-  // se borra: se DESACTIVA el uso vivo (marketing/contacto) pero se RETIENE la identidad fiscal
-  // [cédula, nombre, montos] bajo acceso restringido + consultable. Purga REAL = diferida (TODO-51).
+  // exógena Formato 1647 (Altorra SIEMPRE intermedia, NUNCA compra — decisión dueño 28/06: si compra
+  // es vehículo PROPIO, no consigna) → transmite la cédula a la DIAN → firmeza renta E.T. art.714.
+  // Dec.1377 art.11 (deber del RESPONSABLE) IMPIDE destruirla a las 72h; y borrar el doc dejaría al
+  // titular SIN respuesta veraz a una consulta (Ley 1581 art.14/17). Hasta que `retentionUntil`
+  // prescriba, NO se borra: se DESACTIVA el uso vivo (marketing/contacto) pero se RETIENE la identidad
+  // fiscal [cédula, nombre, montos] bajo acceso restringido + consultable. Purga REAL = diferida (TODO-51).
+  // CONDICIÓN = venta CERRADA (snapshot): un carro consignado SIN vender NO genera deber fiscal → se borra.
   const esConsignante = (Array.isArray(c.roles) && c.roles.includes('consignante')) || c.type === 'consignante';
-  const ventaEjecutada = consignante.snapshotEntriesMatched > 0 || consignante.vehiclesMatched > 0;
-  const retencionPrescrita = !!c.retentionUntil && c.retentionUntil <= nowISO();
+  const ventaEjecutada = consignante.snapshotEntriesMatched > 0;
+  // retentionUntil por defecto = última venta + 5 AÑOS (firmeza renta E.T. art.714: 3 años general, hasta 5
+  // con pérdidas → 5 = piso conservador que NO sub-retiene; el abogado/contador puede afinar). Decisión dueño.
+  let retentionUntil = c.retentionUntil || null;
+  if (ventaEjecutada && !retentionUntil && consignante.latestSaleWonAt) {
+    const rd = new Date(consignante.latestSaleWonAt);
+    if (!isNaN(rd.getTime())) { rd.setFullYear(rd.getFullYear() + 5); retentionUntil = rd.toISOString(); }
+  }
+  const retencionPrescrita = !!retentionUntil && retentionUntil <= nowISO();
   if (esConsignante && ventaEjecutada && !retencionPrescrita) {
     await cRef.update({
       email: null, phone: null, doNotContact: true,            // PII de contacto vivo (no fiscal) fuera
       suppressionStatus: 'bloqueado_retencion_fiscal',
-      retentionUntil: c.retentionUntil || null,                // lo fija el contador (firmeza fiscal)
+      retentionUntil: retentionUntil,                          // firmeza fiscal (última venta + 5 años)
       _blockedAt: nowISO(), updatedAt: nowISO(), _version: FV().increment(1),
       // fullName + cedula SE CONSERVAN (deber fiscal art.11 Dec.1377 + consultable art.14).
     });
@@ -436,8 +449,8 @@ async function executeSuppression(db, contactId, { by } = {}) {
         vehiclesRedacted: consignante.vehiclesMatched, dealsRedacted: consignante.dealsMatched,
         snapshotEntriesRedacted: consignante.snapshotEntriesMatched,
       },
-      habeasProof, retentionUntil: c.retentionUntil || null,
-      note: 'consignante con venta ejecutada: retención fiscal pendiente (contador fija retentionUntil)',
+      habeasProof, retentionUntil: retentionUntil,
+      note: 'consignante con venta ejecutada: bloqueo hasta firmeza fiscal (retentionUntil = última venta + 5 años)',
       by: by || 'crmDailyJob', at: nowISO(),
     });
     return { blocked: true, consignante, habeasProof };

@@ -13,7 +13,7 @@
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **FOCO (28/06 ⟦OPUS-4.8⟧)**:
-> **1. TODO-50 fase 2c — supresión rol-aware: IMPL+VERIF+DEPLOYED+CERTIFICADA.** El nombre desnormalizado del consignante se soft-redacta (tenencia vehículo + snapshot del comprador; busca por `ownerRefId`≠`contactId`). **Certificación legal (comité ×5 + 2ª opinión Gemini, ambas verificadas vs `.gov.co`)** cazó: (a) `contractRef` huérfano → **C1+C4**; (b) Gemini acertó el patrón "no destruir cédula a 72h para consignante-con-venta" (exógena/doc-soporte la transmiten a la DIAN) → **DECISIÓN: `delete`→BLOQUEO FISCAL** (retiene cédula+nombre, desactiva uso vivo, `crm_block_retention_1581`; delete solo si `retentionUntil` prescrito). **Guardrail IMPL+verif (302 tests, 3 ramas, deployed).** SSoT → `42` §Certificación + spec + `30` L-57. **RESTA**: TODO-51 (purga diferida) · **contador** (`retentionUntil`) + **colegiado** (texto) · val.live.
+> **1. TODO-50 fase 2c — supresión rol-aware: IMPL+VERIF+DEPLOYED+CERTIFICADA.** El nombre desnormalizado del consignante se soft-redacta (tenencia vehículo + snapshot del comprador; busca por `ownerRefId`≠`contactId`). **Certificación legal (comité ×5 + 2ª opinión Gemini, ambas verificadas vs `.gov.co`)** cazó: (a) `contractRef` huérfano → **C1+C4**; (b) Gemini acertó el patrón "no destruir cédula a 72h para consignante-con-venta" (exógena/doc-soporte la transmiten a la DIAN) → **DECISIÓN: `delete`→BLOQUEO FISCAL** (retiene cédula+nombre, desactiva uso vivo, `crm_block_retention_1581`; delete solo si `retentionUntil` prescrito). **Ciclo bloqueo→purga COMPLETO+deployed** (`retentionUntil`=venta+5a + cron purga diferida; 302 tests). **BORRADOR de textos legales en `42`.** SSoT → `42` §Certificación + spec + `30` L-57. **RESTA**: colegiado (ratifica texto+plazo) · contador (umbral exógena) · TODO-51 menores · val.live.
 > **2. ALIADOS — validar LIVE** (TODO-25 §259, dueño).
 > **DIFERIDO**: bot v2 iter-2 + val.live bot; filtros L-56 (en main); facturación TODO-26.
 >
@@ -40,7 +40,7 @@
 |---|---|---|---|
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
-| **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto (7 verificadores colgados). Re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
+| **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
 | **TODO-21** | **Plan CRM E0→E6** — E0→E5 ✅ main · E6 ⏳ (§188) | ⏳ | — |
 | **TODO-22** | **Fábrica de skills web** (rescate webs monolíticas) §193.2 | 🔮 | post-panel |
 | **TODO-23** | **DINAMISMO/CMS web TOTAL ⟦OPUS-4.8⟧** — secciones editables + bloques tipados. CMS por marca ✅ (§222); resta CMS total. Plan→bóveda · skill `cms-dinamico`. | 🔮 plan ✅ | al final |
@@ -64,7 +64,7 @@
 | **TODO-48** | **Remediar drift CRM del cutover ⟦OPUS⟧** — MF4.x del admin viejo NO portadas (360°/Contactos-KPIs/masivas/Postventa-NPS) + doc-fixes. Detalle→bóveda `…barrido-drift…`. | 🔵 | tras bot |
 
 | **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — chunk1+fase2+**fase2c rol-aware + C1+C4 + GUARDRAIL BLOQUEO FISCAL** IMPL+VERIF+DEPLOYED 28/06 ✅ (L-57; 302 tests; **certificación legal comité×5 + 2ª opinión Gemini, ambas vs `.gov.co`**: `delete`→**bloqueo** para consignante-con-venta). SSoT → spec + `42` §Certificación. **RESTA:** val.live · **contador** (`retentionUntil`) + **colegiado** (texto) · 3 `ZZZ PRUEBA` (dueño) · 4 viejas. | 🔄 | TODO-51+abogado |
-| **TODO-51** | **Purga DIFERIDA del bloqueo fiscal ⟦OPUS⟧** — el guardrail bloquea (no borra) al consignante-con-venta. FALTA: cron que purgue los `bloqueado_retencion_fiscal` con `retentionUntil` vencido (delete + backups, cierra C2) + grafo-comprador multi-rol + respuesta art.14. → `42` §Certificación. | 🔵 | contador fija retentionUntil |
+| **TODO-51** | **Bloqueo fiscal — refinamientos ⟦OPUS⟧** — ciclo bloqueo→purga COMPLETO ✅ (`retentionUntil`=venta+5a + cron `crmDailyJob` d2-ter; 302 tests). RESTA (menor): grafo-comprador multi-rol durante el bloqueo + TEXTO art.14 (colegiado; borrador en `42`). | 🔵 | colegiado/menor |
 
 Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 

@@ -226,6 +226,25 @@ async function runDailyMaintenance(db, deps) {
     report.supresionesEjecutadas = ejecutadas;
   }
 
+  // ── d2-ter-TODO-51) PURGA DIFERIDA del BLOQUEO FISCAL: un consignante con venta cerrada que pidió
+  // supresión quedó en `bloqueado_retencion_fiscal` (se retiene su cédula por deber fiscal — exógena
+  // Formato 1647 / firmeza renta E.T. art.714, default última-venta + 5 años). Cuando su `retentionUntil`
+  // PRESCRIBE → purga REAL: executeSuppression cae a la rama delete (la retención venció) y destruye la
+  // cédula + grafo. Query de 1 campo + filtro en memoria (evita índice compuesto; volumen diminuto).
+  {
+    const { executeSuppression } = require('../crm/contactGraph');
+    let purgados = 0;
+    const blocked = await db.collection('contacts')
+      .where('suppressionStatus', '==', 'bloqueado_retencion_fiscal').limit(200).get();
+    for (const d of blocked.docs) {
+      const ru = d.data().retentionUntil;
+      if (!ru || ru > nowIso) continue;                 // retención fiscal aún vigente → sigue bloqueado
+      try { await executeSuppression(db, d.id, { by: 'crmDailyJob:purga-fiscal-diferida' }); purgados++; }
+      catch (err) { console.error('[crmDailyJob] purga fiscal diferida falló:', err.message); }
+    }
+    report.bloqueosFiscalesPurgados = purgados;
+  }
+
   // ── d2-bis) retención de backups (review §185): los exports diarios y de
   // operaciones conservan PII pre-supresión — caducan a los 45 días.
   {

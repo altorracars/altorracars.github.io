@@ -148,14 +148,40 @@ dejaría al titular sin respuesta veraz a una consulta (Ley 1581 **art.14/17**).
 (`executeSuppression`): un consignante con venta ejecutada (snapshot/tenencia que lo referencian) → **NO se borra**: se desactiva
 el uso vivo (email/teléfono null, `doNotContact`, soft-redact de reportes) pero se **RETIENE** `[cédula, nombre, montos]` con
 `suppressionStatus='bloqueado_retencion_fiscal'` + dedup de cédula conservado (consulta art.14), `action='crm_block_retention_1581'`.
-Si `retentionUntil` ya prescribió → purga completa (delete). **Falta (TODO-51):** purga DIFERIDA + el `retentionUntil` real.
-- **CONTADOR fija el `retentionUntil`:** (1) ¿consignación pura (intermedia, Formato 1647) o COMPRA-en-firme (doc-soporte/1001)?;
-  (2) ¿supera umbral por beneficiario (24 UVT) → exógena?; (3) FECHA de firmeza del reporte que exigió la cédula = `retentionUntil`.
-- **COLEGIADO ratifica:** cuál reloj manda (10a C.Co. vs firmeza renta), el texto de la respuesta de bloqueo art.14/17, la cláusula.
+Si `retentionUntil` ya prescribió → purga completa (delete).
 
-**[a verificar con abogado]:** el TEXTO LITERAL de la cláusula + la política de tratamiento (art. 13) + si la cesión al
-comprador es "transmisión" o "transferencia" (Dec. 1377). **RNBD:** micro/pequeña probablemente EXENTA de inscribir la
-base (100.000 UVT) pero NO del resto (confirmar tamaño con contador, §área 1).
+**✅ HECHO FISCAL CONFIRMADO (dueño, 28/06):** Altorra **SIEMPRE consigna, NUNCA compra** ("si compra es vehículo PROPIO,
+no consigna") → **NO aplica documento soporte** (Res.DIAN 165/23, solo para compras); el deber nace de **exógena Formato 1647**
+(ingresos para terceros) + renta. Consigna actual = **digital** (el dueño mantiene el carro al día); la **física** = a >1 año
+(fuera de alcance). → **DECISIÓN (autorizada): `retentionUntil` por defecto = última venta + 5 AÑOS** (firmeza renta E.T.
+art.714: 3 años, hasta 5 con pérdidas → 5 = piso conservador). ✅ **Implementado**: auto-cómputo + **cron de PURGA DIFERIDA**
+(`crmDailyJob` d2-ter) que destruye la cédula cuando prescribe. 302 tests.
+- **CONTADOR** (cuando opere): confirmar el umbral exógena (24 UVT/beneficiario) y afinar el plazo si una declaración tuvo pérdidas.
+- **COLEGIADO ratifica** (gate duro): el plazo definitivo (5a vs firmeza-vs-C.Co.art.60), el TEXTO de la cláusula/política/respuesta art.14 (borrador ↓).
+
+### 📝 BORRADOR de textos legales (consignación) — ⚠️ REQUIERE RATIFICACIÓN DE ABOGADO COLEGIADO (gate duro §0) ⟦OPUS-4.8⟧
+> Redactado conforme a los hallazgos VERIFICADOS (28/06). **NO usar con un cliente sin la firma de un abogado colombiano
+> colegiado.** `policyVersion` permanece `v1-borrador` hasta la ratificación. El dueño delegó la redacción; el GATE no se delega.
+
+**(a) Cláusula de autorización Habeas Data — por FINALIDAD (Ley 1581 art.9; el silencio NO autoriza, Dec.1377 art.7):**
+> «Autorizo de manera **previa, expresa e informada** a ALTORRA Company SAS (NIT __) como Responsable, para tratar mis datos
+> personales (nombre, cédula, contacto) y los del vehículo (placa/RUNT) con las finalidades que marque: ☐ (1) gestionar la
+> consignación y venta [necesaria]; ☐ (2) publicar el anuncio en los canales de ALTORRA; ☐ (3) usar/transferir mis datos para
+> el cierre, el traspaso ante el RUNT y la facturación con el comprador; ☐ (4) [OPCIONAL] contactarme con ofertas futuras.
+> Conozco la Política de Tratamiento (URL) y mis derechos a conocer, actualizar, rectificar y suprimir (art.8), y que ALTORRA
+> conservará el soporte de la operación por el término legal (Cód.Comercio art.60 / deber DIAN).»
+
+**(b) Política de supresión (cómo opera ALTORRA):** recibida la solicitud, suprime el dato de marketing/prospección en el plazo
+legal. Si hubo **venta cerrada**, CONSERVA la identidad mínima (cédula, nombre, montos) bajo acceso restringido y finalidad
+ÚNICA de cumplimiento fiscal (exógena 1647 / firmeza renta art.714), por un término que no excede ~5 años, tras el cual la suprime.
+
+**(c) Respuesta a una CONSULTA (art.14/17) durante el bloqueo — NUNCA "no tenemos nada":**
+> «Sus datos de marketing fueron suprimidos. Conservamos su nombre, cédula y los montos de la operación por un **deber legal de
+> conservación contable/fiscal** (Cód.Comercio art.60; Estatuto Tributario), con finalidad exclusiva de cumplimiento ante la
+> DIAN/autoridades, hasta el __ (firmeza). Después de esa fecha se suprimen definitivamente. Ejerza sus derechos en (canal PQR).»
+
+**[a verificar con abogado]:** texto literal + política (art.13) + si la cesión al comprador es "transmisión" o "transferencia"
+(Dec.1377). **RNBD:** micro/pequeña probablemente EXENTA de inscribir la base (100.000 UVT) pero NO del resto (confirmar con contador).
 
 ## Excepciones / decisiones específicas de Altorra
 - La captura de leads vía web **ya incluye** nota Habeas Data + link a privacidad en el newsletter (§164); falta extenderlo a TODOS los forms (LEGAL-02) y la **autorización expresa** (checkbox), no solo el aviso.

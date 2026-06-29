@@ -19,7 +19,7 @@
   padding: 6px 10px; border: 1px solid var(--line);
   border-radius: var(--r-md); cursor: pointer; user-select: none;
 }
-.cfg-day:has(input:checked) { border-color: var(--gold, #b89658); background: color-mix(in srgb, var(--gold, #b89658) 12%, transparent); }
+.cfg-day:has(input:checked) { border-color: var(--gold-500); background: color-mix(in srgb, var(--gold-500) 12%, transparent); }
 
 .cfg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--s-3); }
 .cfg-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }

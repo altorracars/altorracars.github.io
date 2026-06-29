@@ -12,6 +12,7 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   runExport, planRestore, runRestore, dailyPathFor,
   MOCK_EXPORT, MOCK_PLAN,
@@ -68,7 +69,7 @@ export function mountBackup(root) {
         render(); toast('✓ Respaldo creado', 'ok');
       } catch (e) {
         btn.disabled = false; btn.textContent = 'Crear respaldo ahora';
-        toast('No se pudo exportar: ' + (e.message || e.code), 'error');
+        toast('No se pudo exportar: ' + friendlyError(e), 'error');
       }
     });
     return el('div', { class: 'cfg-card' }, [
@@ -107,7 +108,7 @@ export function mountBackup(root) {
         render();
       } catch (e) {
         planBtn.disabled = false; planBtn.textContent = 'Ver plan (simulacro — no escribe nada)';
-        toast('No se pudo leer el respaldo: ' + (e.message || e.code), 'error');
+        toast('No se pudo leer el respaldo: ' + friendlyError(e), 'error');
       }
     });
 
@@ -184,7 +185,7 @@ export function mountBackup(root) {
         close(); render(); toast('✓ Restauración completada', 'ok');
       } catch (e) {
         okBtn.disabled = false; okBtn.textContent = 'Sí, restaurar';
-        toast('No se pudo restaurar: ' + (e.message || e.code), 'error');
+        toast('No se pudo restaurar: ' + friendlyError(e), 'error');
       }
     });
     document.body.append(overlay);

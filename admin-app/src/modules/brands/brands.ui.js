@@ -10,6 +10,7 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   MOCK_BRANDS, MOCK_COUNTS, subscribeBrands, fetchVehicleCounts,
   saveBrand, deleteBrand, uploadBrandLogo, getBrandLogoUrl, slugify,
@@ -63,7 +64,7 @@ export function mountBrands(root) {
         renderDrop();
       } catch (e) {
         status.textContent = '';
-        toast(e.message || 'No se pudo subir el logo.', 'error');
+        toast(friendlyError(e, 'No se pudo subir el logo.'), 'error');
       }
     });
 
@@ -106,7 +107,7 @@ export function mountBrands(root) {
         close(); toast(isEdit ? '✓ Marca actualizada' : '✓ Marca creada', 'ok');
       } catch (e) {
         saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Crear marca';
-        toast('No se pudo guardar: ' + (e.message || e.code), 'error');
+        toast('No se pudo guardar: ' + friendlyError(e), 'error');
       }
     });
 
@@ -143,7 +144,7 @@ export function mountBrands(root) {
         close(); toast('✓ Marca eliminada', 'ok');
       } catch (e) {
         delBtn.disabled = false;
-        toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+        toast('No se pudo eliminar: ' + friendlyError(e), 'error');
       }
     });
     document.body.append(overlay);

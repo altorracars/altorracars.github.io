@@ -10,6 +10,7 @@ import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { friendlyError } from '../../core/errors.js';
 import { initials, timeAgo, waLink, humanizeDuration } from '../../domain/format.js';
 import { RATING_META } from '../../domain/scoring.js';
 import { LEAD_STATUSES, DISCARD_REASONS, statusMeta } from '../../domain/classify.js';
@@ -515,7 +516,7 @@ export function mountInbox(root) {
             const r = await purgeLead(lead.id);
             toast(`🗑 Eliminado: ${r.activities} actividades, ${r.deals} negocios${r.contactDeleted ? ', contacto' : ''}`, 'ok');
           } catch (e) {
-            toast(e.message && e.message.includes('Super Admin') ? 'Solo el Super Admin puede eliminar.' : 'No se pudo eliminar: ' + (e.message || e.code), 'error');
+            toast(e.message && e.message.includes('Super Admin') ? 'Solo el Super Admin puede eliminar.' : 'No se pudo eliminar: ' + friendlyError(e), 'error');
           }
         }
       }, { title: 'Más acciones' });

@@ -14,6 +14,7 @@ import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { writeAudit } from '../../core/audit.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   MOCK_DEPARTMENTS, subscribeDepartments, slugId, createDept, updateDept, deleteDept,
 } from './departamentos.data.js';
@@ -113,7 +114,7 @@ export function mountDepartamentos(root) {
       } catch (e) {
         saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Crear departamento';
         const msg = e.code === 'already-exists' ? 'ya existe un departamento con ese nombre'
-          : e.code === 'permission-denied' ? 'sin permiso (rules)' : (e.message || e.code);
+          : friendlyError(e);
         toast('No se pudo guardar: ' + msg, 'error');
       }
     });
@@ -140,7 +141,7 @@ export function mountDepartamentos(root) {
       writeAudit('dept_delete', 'departamento ' + d.name, '');
       toast('✓ Departamento eliminado', 'ok');
     } catch (e) {
-      toast('No se pudo eliminar: ' + (e.code === 'permission-denied' ? '¿tiene usuarios asignados?' : (e.message || e.code)), 'error');
+      toast('No se pudo eliminar: ' + (e.code === 'permission-denied' ? '¿tiene usuarios asignados?' : friendlyError(e)), 'error');
     }
   }
 

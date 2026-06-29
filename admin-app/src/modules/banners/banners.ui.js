@@ -10,6 +10,7 @@ import { el, clear } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   POSITIONS, MOCK_BANNERS, subscribeBanners, saveBanner, toggleBannerActive,
   deleteBanner, uploadBannerImage,
@@ -174,7 +175,7 @@ export function mountBanners(root) {
         close(); toast(isEdit ? '✓ Banner actualizado' : '✓ Banner creado — ya está en el home', 'ok');
       } catch (e) {
         saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Crear banner';
-        toast('No se pudo guardar: ' + (e.message || e.code), 'error');
+        toast('No se pudo guardar: ' + friendlyError(e), 'error');
       }
     });
 
@@ -208,7 +209,7 @@ export function mountBanners(root) {
         close(); toast('✓ Banner eliminado', 'ok');
       } catch (e) {
         delBtn.disabled = false;
-        toast('No se pudo eliminar: ' + (e.message || e.code), 'error');
+        toast('No se pudo eliminar: ' + friendlyError(e), 'error');
       }
     });
     document.body.append(overlay);
@@ -227,7 +228,7 @@ export function mountBanners(root) {
           return;
         }
         try { await toggleBannerActive(b); toast(b.active ? '✓ Banner pausado' : '✓ Banner visible', 'ok'); }
-        catch (err) { toast('No se pudo cambiar: ' + (err.message || err.code), 'error'); }
+        catch (err) { toast('No se pudo cambiar: ' + friendlyError(err), 'error'); }
       });
       actions.push(e1, e2);
     }

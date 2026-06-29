@@ -15,6 +15,7 @@ import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { writeAudit } from '../../core/audit.js';
 import { PERMISSIONS_CATALOG, CATEGORY_ORDER, permissionsByCategory } from '../../domain/rbac-catalog.js';
+import { friendlyError } from '../../core/errors.js';
 import {
   MOCK_ROLES, subscribeRoles, createRole, updateRole, deleteRole, newRoleId,
 } from './roles.data.js';
@@ -202,7 +203,7 @@ export function mountRoles(root) {
         }
       } catch (e) {
         saveBtn.disabled = false; saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Crear rol';
-        toast('No se pudo guardar: ' + (e.code === 'permission-denied' ? 'sin permiso (rules)' : (e.message || e.code)), 'error');
+        toast('No se pudo guardar: ' + friendlyError(e), 'error');
       }
     });
 
@@ -231,7 +232,7 @@ export function mountRoles(root) {
       writeAudit('role_delete', 'rol ' + role.name, '');
       toast('✓ Rol eliminado', 'ok');
     } catch (e) {
-      toast('No se pudo eliminar: ' + (e.code === 'permission-denied' ? 'sin permiso (rules)' : (e.message || e.code)), 'error');
+      toast('No se pudo eliminar: ' + friendlyError(e), 'error');
     }
   }
 

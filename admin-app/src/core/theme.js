@@ -1,25 +1,14 @@
 // ============================================================
-// Tema claro/oscuro. Persiste en localStorage; respeta el sistema
-// si el usuario no eligió. Aplica data-theme en <html>.
+// Tema del panel = DARK-ONLY (mandato de marca TODO-52 §7: Altorra
+// Cars es oscuro). No hay toggle ni persistencia de modo: se fija
+// data-theme="dark" en <html>. La paleta de ACENTO (oro/etc.) sí es
+// configurable y vive aparte en modules/ajustes (.theme-accent-*).
+// La capability "tema permitido" por-tenant llegará con multi-tenancy.
 // ============================================================
 
 import { store } from './store.js';
 
-const KEY = 'altorra-crm-theme';
-
 export function applyInitialTheme() {
-  let theme = localStorage.getItem(KEY);
-  if (theme !== 'light' && theme !== 'dark') {
-    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  document.documentElement.dataset.theme = theme;
-  store.set({ theme });
-}
-
-export function toggleTheme() {
-  const next = (document.documentElement.dataset.theme === 'dark') ? 'light' : 'dark';
-  document.documentElement.dataset.theme = next;
-  localStorage.setItem(KEY, next);
-  store.set({ theme: next });
-  return next;
+  document.documentElement.dataset.theme = 'dark';
+  store.set({ theme: 'dark' });
 }

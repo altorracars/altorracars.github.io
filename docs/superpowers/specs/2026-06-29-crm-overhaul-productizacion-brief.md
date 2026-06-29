@@ -12,7 +12,10 @@
 
 ## 1. Visión estratégica (lo que realmente se pide)
 
-El CRM de Altorra Cars **NO es solo el panel de Altorra**: es el **producto base** de un negocio futuro — **vender CRMs a grandes empresas**. Por eso el de Altorra debe ser el **referente top global**, no "algo hecho por IA". Cada decisión (arquitectura, diseño, copy, flujo) debe pensarse para ser **multi-tenant / productizable** y de **calidad de las mejores plataformas del mundo**.
+> ⚠️ **CORRECCIÓN DEL DUEÑO (29/06 — reemplaza el encuadre original):** Altorra Cars **NO se va a vender**. Este CRM es **PARA Altorra Cars** (single-tenant). La meta es llevarlo a **nivel TOP mundial** para que sirva de **ESPEJO/referencia**: una vez Altorra esté en el tope, ESE conocimiento permite desarrollar **OTROS CRMs vendibles de clase mundial** (productos SEPARADOS, en otro momento). *"No podría venderlo si todavía no puedo llevar al nivel top a Altorra Cars."*
+> → **Implicación:** NO se construye multi-tenancy en este repo. Se construye con **patrones, modularidad y calidad world-class** (para que sea buen espejo), pero la separación por-tenant, GCIP, metering, etc. son conocimiento para los **futuros productos**, no trabajo de Altorra. La calidad/arquitectura/seguridad/UX de Altorra SÍ debe ser de las mejores del mundo.
+
+El CRM de Altorra Cars debe ser el **referente top global** de calidad, no "algo hecho por IA". Cada decisión (arquitectura, diseño, copy, flujo, seguridad) se piensa como **las mejores plataformas del mundo** (Linear/Stripe/Notion-grade) y con **patrones limpios y reutilizables** — para que mañana sea el molde de productos vendibles.
 
 ## 2. Mandato del dueño (objetivos)
 
@@ -58,11 +61,12 @@ Dark-only premium (oro `#b89658` sobre dark). Cero copy "modo desarrollador". Ca
 
 ## 8. Checklist (evidencia, no dibujito)
 
-- [x] Fase A.1 auditoría de código (workflow, 10 agentes/1.48M tok, 29/06) → findings crudos en `docs/superpowers/2026-06-29-crm-holistic-audit-findings.json` (SÍNTESIS pendiente de leer en sesión fresca)
-- [ ] Fase A.2 auditoría live Chrome (cada sección, POV novato) → findings
-- [ ] Fase B deliberación comité + Gemini (verificada)
-- [ ] Fase C mega-plan + mockups + design-system premium + prompt Gemini
-- [ ] Fase D impl por fases + validación live por fase
+- [x] Fase A.1 auditoría de código (workflow, 10 agentes/1.48M tok, 29/06) → findings crudos en `docs/superpowers/2026-06-29-crm-holistic-audit-findings.json` — SÍNTESIS LEÍDA ✅ (sesión 29/06 b). **81 findings; 6 P0** (2 de SEGURIDAD nuevos no enfatizados en el headline → ver §MEGA-PLAN).
+- [x] Fase A.2 **parcial** — auditoría LOCAL rendered (Vite `?mock=1` + preview, sin dueño) ✅: confirmados LIVE el `null`, copy dev, emoji, toggle de tema, y **medido el layout** (8 módulos flow rotos, no 6: +`resenas`/`contenido`/`perfil`). QUEDA: la live-Chrome con dueño presente (flujos Firestore, confirm() grises, datos reales) → POV novato.
+- [x] **PASE 1 "pulir" (Fase D adelantada, quick-wins seguros) ✅ SHIPPED+verificado** (2026-06-29; `shell.css`+`dom.js`+`theme.js`; commit en `dev`) → ver §PASE-1.
+- [x] Fase B — **Gemini/Antigravity ✅ verificada** (§FASE-B; crudo en bóveda 2026-06-29). La "Decisión Fuerte" de tenancy se DISOLVIÓ con la corrección del dueño (Altorra single-tenant); quedan 2 P0-SEC confirmados. Comité acotado = opcional (no hay fork). El prompt Gemini fue ACOTADO y suficiente.
+- [ ] Fase C mega-plan ✅ redactado (§MEGA-PLAN) — falta **mockups + design-system premium** formal.
+- [ ] Fase D impl por fases + validación live por fase — P0-LAYOUT f1 + DARK-ONLY ya shipped; sigue owner-delete (P0 #1) + seguridad.
 
 > **Nota de continuidad (saturación §G.2):** este brief se redactó al final de una sesión muy larga (validación Aliados + GC). La síntesis/deliberación/mega-plan deben correr con **contexto fresco** para máxima calidad. La Fase A.1 (auditoría de código) ya corrió; su salida alimenta la sesión fresca.
 
@@ -112,3 +116,73 @@ Dark-only premium (oro `#b89658` sobre dark). Cero copy "modo desarrollador". Ca
 ### 🟡 Decisiones / pendientes abiertos del dueño
 - **Limpieza datos de prueba** (irreversible, dueño): `ZZZ PRUEBA` (incl. el **deal ganado $1.25M = el $1.3M falso en Alexander Daza** + `vehiculos/47` vendido + contactos ZZZ). Se resuelve cuando exista el borrado owner-only (P0) → **fast-track ese P0** y con eso el dueño purga.
 - **Merge `dev`→`main` = DUEÑO en web** (el clasificador me lo bloquea; corregir `CLAUDE.md §2` que dice que Claude mergea).
+
+---
+
+## §PASE-1 — primer "pulir" (SHIPPED + verificado en local, sesión 29/06 b ⟦OPUS-4.8⟧)
+
+Quick-wins del synthesis A.1, todos reversibles/aditivos/cero-regresión, verificados ruta-por-ruta en preview (`?mock=1`, 1440/768/375px) + build prod limpio (149 mód, 2.44s). Commit en `dev` (dueño mergea).
+
+1. **DARK-ONLY** — `index.html` `data-theme="dark"` + `color-scheme:dark`; `core/theme.js` fija dark (sin toggle/persistencia de modo); `shell.js` quita el `themeBtn` y su import de `toggleTheme`. La paleta de ACENTO (ajustes) queda intacta. Verificado: 24 rutas en dark, sin botón de tema.
+2. **`null` bajo headers (RCA REAL)** — NO era campo Firestore ausente: era `parent.append(draftsPanel())` con **`append()` nativo** que coacciona `null`→`"null"` (vs `el()` que sí filtra). Fix sistémico: nuevo helper `core/dom.js` `appendAll(parent, children)` (filtra `null/false/''`); aplicado en `vehicles.ui.js render()`. ⚠️ El sweep al resto de `append()` con hijos condicionales (banners `group()`, etc.) = P1 pendiente.
+3. **Copy "modo desarrollador"** — `vehicles.ui.js`: header "…generador corre cada 4h" → "N vehículos en el catálogo"; modal de borrado "muere en la corrida del generador" → copy de negocio. `shell.js`: footer "v0.4.1 · Fase 4" → "v0.4.1"; crumb "tiempo real" → "" (solo "Modo demostración" en mock).
+4. **P0-LAYOUT fase 1 (el "respiro")** — `shell.css` `.outlet`: `overflow:hidden`→`overflow-y:auto; overflow-x:hidden` (el outlet es el viewport de scroll → ninguna ruta se recorta jamás) + `.outlet > *{min-width:100%}` (mata el encogerse→hueco a la derecha) + `padding-inline:var(--s-6)` a los 8 roots flow (`.veh/.brd/.dlr/.rev/.ban/.cms/.lst/.perfil`, alta especificidad `.outlet > X`) → mata el "pegado al sidebar". **Clave anti-regresión:** se mantiene `display:flex` (row) — NO `column` — para que los módulos auto-scroll (`.dash/.inbox/...` con `height:100%`/stretch) conserven su scroll interno (colas/toolbar fijos). Verificado: las 3 quejas verbatim resueltas, scroll interno de inbox/dash intacto, sin overflow-x en mobile/tablet.
+
+**Pendiente layout fase 2 (P1):** clase canónica `.page` + `max-width` para monitores anchos (1920px+, hueco P2) + breakpoints unificados (shell 860/560 vs módulos 480/640/900).
+
+---
+
+## §MEGA-PLAN — priorizado P0→P3 (Fase C; derivado de A.1 verificado + A.2-local)
+
+> Unifica el overhaul con la productización. ✅ = shipped Pase-1. Cada ítem "respira la visión" o no se declara listo (Directiva Permanente).
+
+### P0 — bloqueantes (seguridad/datos/dueño + base premium)
+- **P0-SEC-1 · dataScope NO enforced (fuga PII / Habeas Data Ley 1581) — ✅ VERIFICADO (§FASE-B):** `firestore.rules` read = `hasPermission('crm.read')` SIN `ownerId/departmentId` (L421 leads, L467 contacts, L488 activities, L568 deals); el scope own/dept/all vive solo en el cliente. Era decisión deliberada previa (SEC-01 §187 "Opción A estricto"). Fix = **patrón world-class reusable**: reglas + queries honran el scope del rol. **Decisión menor del dueño:** ¿asesores ven solo lo suyo/su depto, o todo el equipo ve todo? (default recomendado: asesor→own+depto, gerente/CEO→all).
+- **P0-SEC-2 · escalada de privilegios (roles.create) — ✅ VERIFICADO (§FASE-B):** `firestore.rules` L1188 `allow create: if isSuperAdmin() || hasPermission('roles.create')` SIN validar el payload → se crea un rol con `permissions:['*']`. (§212 ya tapó la mutación de roles-sistema, NO el create.) Fix: callable Admin SDK valida subset ⊆ permisos del creador + `isOwner` para perms críticos; UI deshabilita (no oculta); defensa en reglas. + unificar `isOwnerData()` canónico en `crmBackup/crmPurge` (drift R8).
+- **P0-OWNER-DELETE · purga owner-only por sección (P0 #1 del dueño, desbloquea limpieza ZZZ):** backend YA lo permite (rules `isSuperAdmin`/`crm.delete` + `crmPurge.js`) → solo UI. Patrón reusable: bulkbar (`.inbox__bulkbar`) + "Zona peligrosa" + modal typed-confirm + gate server-side. Añadir `deleteDeal`/`deleteDealer` (Pipeline/Aliados HOY imborrables).
+- **P0-CAPTURE · pérdida silenciosa de leads (pierde dinero):** `quick-lead/new-lead` muestran éxito optimista; si el server rechaza, el error es un toast efímero → el asesor cree que capturó y NO. Fix: con señal, esperar ack/confirmar por snapshot; ante rechazo, modal bloqueante con el lead intacto.
+- **P0-LAYOUT fase 1** ✅ Pase-1. **P0-DARK-ONLY** ✅ Pase-1.
+
+### P1 — profesionalismo ("se ve hecho por IA" → premium)
+- `confirm()/prompt()/alert()` nativos (16-18) → `core/confirm.js` (extraer `.rev-modal`, moverlo a `components.css` con shadow/blur/anim) + reemplazos.
+- `core/errors.js` `friendlyError(e)` (replicar mapeo de `auth.js`) → reemplazar ~30 toasts que filtran `e.code`/'rules'/'super_admin'/IDs de permiso.
+- Copy dev restante: **voseo argentino** (bot Cerebro AI público en Cartagena + ajustes "cambiás/Usá") → tú-Colombia (skill `catalogo-voz`); "(demo)" inline; "13 listas" hardcode→derivado.
+- **Emoji→SVG** en filas/acciones/empty-states (la base `nav-icons.js`/`icons.js` existe; sidebar ya migrado).
+- **Gold canónico:** resolver `--gold-500 #D4A85A` vs doctrina `#b89658` + matar `var(--gold)` fantasma (también corrige `CLAUDE.md §1`).
+- **Sweep `null`/`undefined`:** `appendAll` en todo `append()` con hijos condicionales + helper `safe(x,'—')` en interpolaciones de campo opcional.
+- Consentimiento pre-marcado (`new-lead.js checked:true`) → explícito (Habeas Data, 1 línea).
+- Estados vacíos accionables (CTA en vehicles/deals/contacts) + onboarding/checklist del novato + unificar doble captura.
+- Validación de entrada (trim/maxLen/regex) en `*.data.js` + espejada en reglas (mata data sucia `dfsfdfdfs`).
+- **Layout fase 2** (`.page` canónica + max-width ultrawide + breakpoints).
+
+### P2 — escalabilidad / deuda
+- Paginación/cursores en TODOS los `*.data.js`; combobox typeahead para el `<select>` de conversión (inusable a 100+ veh / multi-tenant); agregados server-side (stats aliados).
+- Cerrar cutover F-6 (doble fuente RBAC 71 perms) → test de paridad mientras tanto.
+- Export por sección (reusar `toCsv()/download()`) + red de seguridad (papelera/undo/soft-delete).
+
+### P3 — ~~Multi-tenant~~ → NO para Altorra (conocimiento de FUTUROS productos-espejo)
+> **Corrección del dueño 29/06:** Altorra NO se vende → NO se construye multi-tenancy aquí. Lo de abajo se **archiva como guía para los futuros CRMs vendibles**, NO como trabajo de Altorra. Lo que SÍ aplica de la deliberación Gemini a Altorra son los 2 P0-SEC (ver P0, verificados §FASE-B).
+- **Para los futuros productos** (Gemini verificado): jerarquía `tenants/{tenantId}/{col}` > atributo-por-doc (aislamiento por diseño, offboarding recursivo, evita agotar los 200 índices compuestos; collectionGroup innecesario → BigQuery para analítica del dueño-SaaS); **GCIP** (no Firebase Auth normal) para tenancy nativa en el JWT; **custom claims ≤1000 B** (solo tenantId+roleId; hidratar permisos desde DB — Altorra YA lo hace bien); **metering custom** en CF (Firebase no atribuye consumo por tenant); SSL multi-dominio vía APIs GCP; **dedup por-tenant** (global cruzaría prospectos de clientes rivales).
+- **Lección que SÍ aplica a Altorra hoy:** Gemini confirmó que el enforcement de dataScope es **ortogonal a la tenancy** → fixearlo hoy en single-tenant NO es desechable; si algún día hubiera tenancy, "baja un nivel" en la ruta. Por eso P0-SEC-1 es el patrón world-class correcto + reusable-espejo.
+
+### Defectos del cerebro a corregir (pase enfocado)
+- `CLAUDE.md §1`: dice Firebase "compat" pero `admin-app` usa **modular v11**.
+- Deriva de color: `--gold-500 #D4A85A` vs `CLAUDE.md #b89658` — fijar canónico.
+
+---
+
+## §FASE-B — deliberación (Gemini/Antigravity) VERIFICADA (29/06 ⟦OPUS-4.8⟧)
+
+> Crudo verbatim → bóveda `…/research-archive/2026-06-29-TODO52-tenancy-seguridad-gemini-CRUDO.md`. Gemini = code-aware solo-lectura (§224); **doctrina §3.3: se verificó cada claim, no se acató.**
+
+**Veredicto:** los 3 hechos que Gemini "confirmó" son CIERTOS — lo comprobé leyendo `firestore.rules` directamente (no alucinó; líneas precisas):
+1. **dataScope NO-enforced** ✅ — read = `hasPermission('crm.read')` sin `ownerId/departmentId` (L421/467/488/568). Decisión previa "SEC-01 §187 Opción A estricto" (§169).
+2. **privesc roles.create** ✅ — L1188 sin validar payload → rol con `*`. (§212 ya cubrió la mutación de roles-sistema, no el create.)
+3. **0 tenancy** ✅ — ya conocido; **irrelevante** tras la corrección del dueño (Altorra = single-tenant).
+
+**Qué se ADOPTA para Altorra:** los 2 P0-SEC (arriba). El fix de dataScope es además el patrón world-class reusable (Gemini: es ortogonal a tenancy → "baja un nivel" si algún día hubiera).
+**Qué se ARCHIVA como futuro-espejo (NO Altorra):** toda la estrategia de tenancy/GCIP/metering/dedup-por-tenant (§MEGA-PLAN P3).
+**Gemini fiable de nuevo** (como §224) → reservarlo a R1-R4 (seguridad/dinero/arquitectura).
+
+### Decisión pendiente del dueño (menor, no bloquea el resto)
+- **dataScope:** ¿los asesores deben ver SOLO sus leads / los de su departamento, o todo el equipo ve todo? (default recomendado world-class: asesor→own+depto · gerente/CEO→all). El fix de privesc (P0-SEC-2) procede sin depender de esto.

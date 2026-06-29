@@ -8,7 +8,6 @@ import { el, clear } from '../dom.js';
 import { store } from '../store.js';
 import { openMenu } from '../popover.js';
 import { navigate } from '../router.js';
-import { toggleTheme } from '../theme.js';
 import { signOutUser, displayName, displayRole, hasPermission } from '../auth.js';
 import { initials } from '../../domain/format.js';
 // W-11 F1(b) (rediseño portal §244): "Nuevo lead" siempre visible en el topbar
@@ -163,19 +162,12 @@ export function mountShell(appRoot) {
   });
   const sidebar = el('aside', { class: 'sidebar', id: 'app-sidebar' }, [
     brand, nav,
-    el('div', { class: 'sidebar__foot u-caption u-faint' }, [`v${APP_VERSION} · Fase 4`]),
+    el('div', { class: 'sidebar__foot u-caption u-faint' }, [`v${APP_VERSION}`]),
   ]);
 
   const titleH = el('h1', { class: 'topbar__h', text: TITLES.inicio });
-  const crumb = el('span', { class: 'topbar__crumb u-caption u-faint', text: store.get().mock ? 'modo demo' : 'tiempo real' });
+  const crumb = el('span', { class: 'topbar__crumb u-caption u-faint', text: store.get().mock ? 'Modo demostración' : '' });
   const title = el('div', { class: 'topbar__title' }, [titleH, crumb]);
-
-  const themeBtn = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cambiar tema' },
-    [el('span', { 'aria-hidden': 'true', text: store.get().theme === 'dark' ? '☀️' : '🌙' })]);
-  themeBtn.addEventListener('click', () => {
-    const t = toggleTheme();
-    themeBtn.firstChild.textContent = t === 'dark' ? '☀️' : '🌙';
-  });
 
   const userBtn = el('button', { class: 'usermenu', type: 'button', 'aria-haspopup': 'menu' }, [
     el('span', { class: 'avatar avatar--sm', 'aria-hidden': 'true', text: initials(displayName()) }),
@@ -210,7 +202,7 @@ export function mountShell(appRoot) {
   }, [el('span', { html: ICON_MENU })]);
   const backdrop = el('div', { class: 'drawer-backdrop', 'aria-hidden': 'true' });
 
-  const topbar = el('header', { class: 'topbar' }, [drawerToggle, title, el('div', { class: 'topbar__actions u-row' }, [newLeadBtn, themeBtn, userBtn])]);
+  const topbar = el('header', { class: 'topbar' }, [drawerToggle, title, el('div', { class: 'topbar__actions u-row' }, [newLeadBtn, userBtn])]);
   const outlet = el('main', { class: 'outlet', id: 'outlet' });
   const detailRoot = el('div', { id: 'detail-root' });
 

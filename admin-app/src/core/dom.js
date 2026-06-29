@@ -32,3 +32,16 @@ export function mount(parent, node) {
   if (node) parent.append(node);
   return node;
 }
+
+// Append variádico SEGURO: filtra null/false/'' y coacciona strings — igual
+// que los hijos de el(). El append() nativo NO filtra: parent.append(null)
+// pinta el literal "null" en el DOM (bug TODO-52 visto bajo Inicio/Vehículos).
+// Usar SIEMPRE en vez de parent.append(a, maybeNull, b) cuando un hijo pueda
+// ser condicional.
+export function appendAll(parent, children) {
+  for (const c of [].concat(children)) {
+    if (c == null || c === false || c === '') continue;
+    parent.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return parent;
+}

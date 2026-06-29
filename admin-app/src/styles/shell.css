@@ -104,8 +104,26 @@
 .usermenu__meta { display: flex; flex-direction: column; min-width: 0; text-align: left; }
 .usermenu__name { font-size: var(--t-caption); font-weight: 700; }
 
-/* ─────────── Outlet ─────────── */
-.outlet { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; }
+/* ─────────── Outlet (TODO-52 P0-LAYOUT) ───────────
+   El outlet es el viewport de scroll del contenido. ANTES era flex de altura
+   fija con overflow:hidden y DELEGABA el scroll a cada módulo → los módulos
+   "de flujo" (sin scroll propio) se RECORTABAN sin poder hacer scroll, se
+   encogían al contenido (hueco a la derecha) y quedaban pegados al sidebar
+   (las 3 quejas verbatim del dueño). Ahora el scroll vive AQUÍ (overflow-y:auto)
+   → cualquier módulo, scrollee o no internamente, queda a salvo. Sigue siendo
+   flex (column) para que los módulos auto-scroll (height:100%) conserven su
+   altura y su scroll interno; min-width:100% en el hijo elimina el encogerse. */
+.outlet { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; }
+.outlet > * { min-width: 100%; }
+/* "Pegado al sidebar": los módulos de FLUJO (sin pane interno con padding propio)
+   necesitan respiro lateral; los auto-scroll ya lo tienen en su pane. Selector de
+   alta especificidad (.outlet > X) → gana sin depender del orden de carga de los
+   CSS de módulo. (Deuda P1: unificar todo en una clase canónica .page con
+   max-width para monitores anchos — ver mega-plan TODO-52 P0-LAYOUT fase 2.) */
+.outlet > .veh, .outlet > .brd, .outlet > .dlr, .outlet > .rev,
+.outlet > .ban, .outlet > .cms, .outlet > .lst, .outlet > .perfil {
+  padding-inline: var(--s-6);
+}
 
 /* ─────────── Popover ─────────── */
 .popover {

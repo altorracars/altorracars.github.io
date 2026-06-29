@@ -31,7 +31,9 @@ describe.skipIf(!EMU)('Rules §218 — no sembrar/escalar rol con poder de dueñ
     });
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
-      await db.doc('usuarios/' + MGR).set({ rol: 'custom', roleId: 'r_mgr', permissions: ['roles.create', 'roles.edit', 'roles.read'], estado: 'activo' });
+      // §219: el granter necesita TENER los perms que asigna (subset) → incluye crm.*/reports.read
+      // para que las regresiones de creación/edición "normal" sigan pasando.
+      await db.doc('usuarios/' + MGR).set({ rol: 'custom', roleId: 'r_mgr', permissions: ['roles.create', 'roles.edit', 'roles.read', 'crm.read', 'crm.edit', 'reports.read'], estado: 'activo' });
       // Rol custom existente (no-system) para los tests de update.
       await db.doc('roles/r_custom').set({ name: 'Custom', isSystem: false, permissions: ['crm.read'] });
     });

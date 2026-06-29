@@ -14,13 +14,15 @@ import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { writeAudit } from '../../core/audit.js';
-import { PERMISSIONS_CATALOG, CATEGORY_ORDER, permissionsByCategory } from '../../domain/rbac-catalog.js';
+import { PERMISSIONS_CATALOG, CATEGORY_ORDER, permissionsByCategory, isOwnerOnlyPerm } from '../../domain/rbac-catalog.js';
 import { friendlyError } from '../../core/errors.js';
 import {
   MOCK_ROLES, subscribeRoles, createRole, updateRole, deleteRole, newRoleId,
 } from './roles.data.js';
 
 const TOTAL_PERMS = PERMISSIONS_CATALOG.length;
+// §219: los owner-only no son seleccionables para un rol custom (denominador del resumen).
+const SELECTABLE_TOTAL = PERMISSIONS_CATALOG.filter((p) => !isOwnerOnlyPerm(p.id)).length;
 const isWildcard = (r) => Array.isArray(r.permissions) && r.permissions.includes('*');
 
 export function mountRoles(root) {
@@ -46,51 +48,60 @@ export function mountRoles(root) {
 
   /* ── Matriz de permisos (devuelve nodo + lectura del set) ──── */
   function buildMatrix(initialPerms, readOnly) {
-    const selected = new Set(initialPerms || []);
+    // §219: los owner-only NUNCA entran al set (ni del inicial) ni son seleccionables.
+    const selected = new Set((initialPerms || []).filter((id) => !isOwnerOnlyPerm(id)));
     const byCat = permissionsByCategory();
     const catToggles = {};   // category → input
     const catCounts = {};    // category → span
     const summary = el('span', {});
+    const selectableOf = (perms) => perms.filter((p) => !isOwnerOnlyPerm(p.id));
 
     const refresh = () => {
-      summary.textContent = `${selected.size} de ${TOTAL_PERMS} seleccionados`;
+      summary.textContent = `${selected.size} de ${SELECTABLE_TOTAL} seleccionados`;
       CATEGORY_ORDER.forEach((cat) => {
-        const perms = byCat[cat];
-        const n = perms.filter((p) => selected.has(p.id)).length;
-        if (catCounts[cat]) catCounts[cat].textContent = `${n}/${perms.length}`;
+        const sel = selectableOf(byCat[cat]);
+        const n = sel.filter((p) => selected.has(p.id)).length;
+        if (catCounts[cat]) catCounts[cat].textContent = `${n}/${sel.length}`;
         if (catToggles[cat]) {
-          catToggles[cat].checked = n === perms.length;
-          catToggles[cat].indeterminate = n > 0 && n < perms.length;
+          catToggles[cat].checked = sel.length > 0 && n === sel.length;
+          catToggles[cat].indeterminate = n > 0 && n < sel.length;
         }
       });
     };
 
     const cats = CATEGORY_ORDER.map((cat) => {
       const perms = byCat[cat];
-      const catCb = el('input', { type: 'checkbox', disabled: readOnly });
+      const selPerms = selectableOf(perms);
+      const catCb = el('input', { type: 'checkbox', disabled: readOnly || selPerms.length === 0 });
       catToggles[cat] = catCb;
       const countSpan = el('span', { class: 'rol-cat__count u-caption u-faint' });
       catCounts[cat] = countSpan;
       catCb.addEventListener('change', () => {
-        perms.forEach((p) => { if (catCb.checked) selected.add(p.id); else selected.delete(p.id); });
+        selPerms.forEach((p) => { if (catCb.checked) selected.add(p.id); else selected.delete(p.id); });
         rowsOf(cat).forEach((cb) => { cb.checked = catCb.checked; });
         refresh();
       });
 
       const _rows = {};
       const rows = perms.map((p) => {
-        const cb = el('input', { type: 'checkbox', class: 'rol-perm__cb', disabled: readOnly });
-        cb.checked = selected.has(p.id);
-        _rows[p.id] = cb;
-        cb.addEventListener('change', () => {
-          if (cb.checked) selected.add(p.id); else selected.delete(p.id);
-          refresh();
-        });
-        return el('label', { class: 'rol-perm' + (p.critical ? ' rol-perm--critical' : ''), title: p.description || '' }, [
+        const owner = isOwnerOnlyPerm(p.id); // §219: exclusivo del dueño → deshabilitado
+        const cb = el('input', { type: 'checkbox', class: 'rol-perm__cb', disabled: readOnly || owner });
+        cb.checked = !owner && selected.has(p.id);
+        if (!owner) {
+          _rows[p.id] = cb;
+          cb.addEventListener('change', () => {
+            if (cb.checked) selected.add(p.id); else selected.delete(p.id);
+            refresh();
+          });
+        }
+        return el('label', {
+          class: 'rol-perm' + (p.critical ? ' rol-perm--critical' : '') + (owner ? ' rol-perm--owner' : ''),
+          title: owner ? 'Exclusivo del dueño — no se puede delegar a otro rol' : (p.description || ''),
+        }, [
           cb,
           el('span', { class: 'rol-perm__info' }, [
             el('span', { class: 'rol-perm__name', text: p.name + (p.critical ? ' ⚠' : '') }),
-            el('code', { class: 'rol-perm__id', text: p.id }),
+            el('code', { class: 'rol-perm__id', text: p.id + (owner ? ' · solo dueño' : '') }),
           ]),
         ]);
       });

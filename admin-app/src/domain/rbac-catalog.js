@@ -112,6 +112,17 @@ export const PERMISSIONS_CATALOG = [
   { id: 'departments.manage', name: 'Gestionar departamentos', description: 'Crear, editar, eliminar departamentos y asignar personas', category: 'Departamentos', critical: true },
 ];
 
+// §219 (P0-SEC-2 — decisión del dueño 29/06): permisos OWNER-EXCLUSIVOS. La administración
+// de identidad/seguridad NUNCA se delega a un rol/usuario custom — vive SOLO en el '*' del
+// dueño. La UI los muestra DESHABILITADOS (no ocultos); las firestore.rules lo enforce.
+// Mantener idéntico a ownerOnlyPerms() de firestore.rules.
+export const OWNER_ONLY_PERMS = [
+  'users.create', 'users.edit', 'users.delete',
+  'roles.create', 'roles.edit', 'roles.delete',
+  'settings.backup', 'settings.seo', 'audit.delete',
+];
+export const isOwnerOnlyPerm = (id) => OWNER_ONLY_PERMS.includes(id);
+
 // 1 system role inmutable (§69 R7): CEO = wildcard. ID conservado por retrocompat R4/rules.
 export const SYSTEM_ROLES = [
   { id: 'system_super_admin', name: 'CEO', description: 'Acceso absoluto al sistema. No se puede modificar, editar ni eliminar.', isSystem: true, isDefault: false, color: '#b89658', icon: 'crown', permissions: ['*'], nivel: 100 },

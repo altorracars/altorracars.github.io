@@ -20,4 +20,4 @@
 - cron↔cache = patrón conocido (L-02, hija `31`).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · cerebro autónomo v6 ✅ · CRM canónico (`contacts/leads/activities/deals` + 6 canales) LIVE ✅. **🧭 FOCO MAESTRO = PLAN UNIFICADO (§237)**: portal único `admin-app/` (Vite) absorbe todo + apaga `admin.html`; **F-2 COMPLETO → sigue F-1** (bot v2). Bot LLM (#917) DEPLOYED **DORMIENTE** (saldo Anthropic = al final). F4/F5 §236 en `dev` pend merge+cron-bump. Detalle → `10`.
+`js/` modular ✅ · CRM canónico (`contacts/leads/activities/deals`) LIVE ✅. **🧭 FOCO = TODO-52 CRM Overhaul ⟦OPUS⟧ (EPIC #1)**: PASE-1 (layout `.outlet`/dark/null/copy) + owner-delete (Aliados/Pipeline) + diálogos premium 16/16 + `errors.js` = **LIVE en main 29/06**. Multi-tenancy DESCARTADA (CRM por empresa). Sigue: backend-seguridad (privesc+dataScope) + P1 + Fase C. SSoT → brief `…crm-overhaul…` + `10`. Bot LLM (#917) DORMIENTE (saldo).

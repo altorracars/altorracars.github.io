@@ -3,6 +3,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { MANUAL_CHANNELS, INTEREST_TYPES } from '../../domain/classify.js';
@@ -63,7 +64,7 @@ export function openNewLeadForm() {
 
   const card = el('div', { class: 'modal' }, [
     el('div', { class: 'modal__head' }, [
-      el('h2', { class: 'modal__title', text: '＋ Nuevo lead' }),
+      el('h2', { class: 'modal__title u-ico-text', html: icon('plus') + 'Nuevo lead' }),
       el('span', { class: 'u-caption u-faint', text: 'Captura manual (Meta, WhatsApp, TikTok, llamada, referido…)' }),
     ]),
     form,

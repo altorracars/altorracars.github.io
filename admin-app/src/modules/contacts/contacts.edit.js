@@ -19,10 +19,10 @@ import {
   mergeContacts, suppressContact, cancelSuppression,
 } from './contacts.data.js';
 
-function modal(title, subtitle, bodyNodes) {
+function modal(title, subtitle, bodyNodes, iconId) {
   const card = el('div', { class: 'modal' }, [
     el('div', { class: 'modal__head' }, [
-      el('h2', { class: 'modal__title', text: title }),
+      el('h2', iconId ? { class: 'modal__title u-ico-text', html: icon(iconId) + title } : { class: 'modal__title', text: title }),
       subtitle ? el('span', { class: 'u-caption u-faint', text: subtitle }) : null,
     ]),
     ...bodyNodes,
@@ -44,7 +44,7 @@ export function openContactEdit(contact, { onChanged } = {}) {
   const body = el('div', { class: 'nl-form' });
   const err = el('div', { class: 'login__error', role: 'alert', hidden: true });
   const fail = (m) => { err.textContent = m; err.hidden = false; };
-  const { close } = modal('✏️ Editar contacto', contact.fullName || '', [body]);
+  const { close } = modal('Editar contacto', contact.fullName || '', [body], 'edit');
 
   const pendiente = contact.suppressionStatus === 'pendiente_supresion';
   const nombre = el('input', { class: 'input', type: 'text', value: contact.fullName || '', maxlength: '80' });
@@ -143,7 +143,7 @@ export function openContactEdit(contact, { onChanged } = {}) {
           + String(contact.suppressionExecuteAfter || '').slice(0, 16).replace('T', ' ')
           + '. Hasta entonces es reversible.' }),
       );
-      const cancelBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '↩️ Cancelar supresión' });
+      const cancelBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('arrowLeft') + ' Cancelar supresión' });
       cancelBtn.addEventListener('click', async () => {
         cancelBtn.disabled = true;
         try {

@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon, iconEl } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -33,7 +34,7 @@ export function mountWorkflows(root) {
 
   if (!canRead) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Necesitas workflows.read para ver la automatización.' }),
     ]));
@@ -72,7 +73,7 @@ export function mountWorkflows(root) {
     return el('article', { class: 'wf-card' + (on ? ' is-on' : '') }, [
       el('div', { class: 'wf-card__head' }, [
         el('div', { class: 'wf-card__status' }, [
-          el('span', { class: 'wf-card__dot', 'aria-hidden': 'true', text: on ? '⚡' : '⏸' }),
+          el('span', { class: 'wf-card__dot u-ico', 'aria-hidden': 'true', html: on ? icon('zap') : icon('pause') }),
           el('span', { class: 'u-caption u-faint', text: on ? 'Activa' : 'Pausada' }),
         ]),
         sw,
@@ -80,7 +81,7 @@ export function mountWorkflows(root) {
       el('strong', { class: 'wf-card__name', text: rule.name }),
       el('p', { class: 'wf-card__desc u-caption u-muted', text: rule.description }),
       el('div', { class: 'wf-card__foot' }, [
-        el('span', { class: 'badge', text: '⚡ ' + (TRIGGER_LABELS[rule.trigger] || rule.trigger) }),
+        el('span', { class: 'badge' }, [iconEl('zap'), (TRIGGER_LABELS[rule.trigger] || rule.trigger)]),
       ]),
     ]);
   }
@@ -104,17 +105,17 @@ export function mountWorkflows(root) {
   /* ── Layout ──────────────────────────────────────────────── */
   const rulesHost = el('div', { class: 'wf-rules' });
   const histHost = el('div', { class: 'wf-hist' });
-  const refreshBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '↻ Actualizar' });
+  const refreshBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('refresh') + ' Actualizar' });
   refreshBtn.addEventListener('click', loadHistory);
 
   wrap.append(
     el('div', { class: 'wf-intro' }, [
-      el('h3', { class: 'wf-section-title', text: '⚡ Reglas de automatización' }),
+      el('h3', { class: 'wf-section-title u-ico-text', html: icon('zap') + 'Reglas de automatización' }),
       el('p', { class: 'u-caption u-muted', text: 'Reglas predefinidas que actúan solas ante ciertos eventos. Actívalas o páusalas; el motor las ejecuta en segundo plano.' }),
     ]),
     rulesHost,
     el('div', { class: 'wf-hist-head' }, [
-      el('h3', { class: 'wf-section-title', text: '🕘 Historial de ejecuciones' }), refreshBtn,
+      el('h3', { class: 'wf-section-title u-ico-text', html: icon('clock') + 'Historial de ejecuciones' }), refreshBtn,
     ]),
     histHost,
   );

@@ -7,6 +7,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon, iconEl } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -23,7 +24,7 @@ export function mountAjustes(root) {
 
   if (!canSeo) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Necesitas el permiso settings.seo para ver los Ajustes.' }),
     ]));
@@ -33,12 +34,13 @@ export function mountAjustes(root) {
   /* ── SEO y sitemap — regeneración manual (callable server-side) ───────── */
   function cardSeo() {
     const statusEl = el('div', { class: 'aj-seo__status u-caption u-muted', text: 'La regeneración tarda ~2 minutos en reflejarse en Google y redes.' });
-    const btn = el('button', { class: 'btn btn--gold', type: 'button', text: '⟳ Regenerar páginas SEO + sitemap' });
+    const btnLabel = el('span', { text: 'Regenerar páginas SEO + sitemap' });
+    const btn = el('button', { class: 'btn btn--gold', type: 'button' }, [iconEl('refresh'), btnLabel]);
 
     btn.addEventListener('click', async () => {
       btn.disabled = true;
-      const prev = btn.textContent;
-      btn.textContent = '⏳ Enviando…';
+      const prev = btnLabel.textContent;
+      btnLabel.textContent = 'Enviando…';
       statusEl.className = 'aj-seo__status u-caption u-muted';
       statusEl.textContent = 'Disparando la regeneración…';
       try {
@@ -65,12 +67,12 @@ export function mountAjustes(root) {
         statusEl.textContent = '✗ ' + msg;
       } finally {
         btn.disabled = false;
-        btn.textContent = prev;
+        btnLabel.textContent = prev;
       }
     });
 
     return el('div', { class: 'cfg-card' }, [
-      el('h3', { class: 'cfg-card__title', text: '🗺️ SEO y sitemap' }),
+      el('h3', { class: 'cfg-card__title u-ico-text', html: icon('map') + 'SEO y sitemap' }),
       el('p', { class: 'u-caption u-muted', text: 'Las páginas SEO y el sitemap.xml se regeneran SOLOS cuando cambiás un vehículo, una marca o el contenido del sitio. Usá este botón solo para forzar una regeneración manual.' }),
       el('div', { class: 'aj-seo__row' }, [btn]),
       statusEl,

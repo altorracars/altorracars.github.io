@@ -11,7 +11,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
-import { icon } from '../../core/icons.js';
+import { icon, iconEl } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
@@ -318,9 +318,9 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       return;
     }
     f.imagenes.forEach((url, i) => {
-      const up = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '↑', 'aria-label': 'Subir posición', disabled: i === 0 });
+      const up = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('arrowUp'), 'aria-label': 'Subir posición', disabled: i === 0 });
       up.addEventListener('click', () => { f.imagenes.splice(i - 1, 0, f.imagenes.splice(i, 1)[0]); renderGallery(); });
-      const x = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '✕', 'aria-label': 'Quitar' });
+      const x = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('x'), 'aria-label': 'Quitar' });
       x.addEventListener('click', () => { f.imagenes.splice(i, 1); renderGallery(); }); // solo el array — Storage jamás se toca
       galleryEl.append(el('div', { class: 'veh-wiz__img' }, [
         el('img', { src: url, alt: '', loading: 'lazy' }),
@@ -341,7 +341,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   const fileInput = el('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', multiple: true, class: 'ban-file' });
   const upStatus = el('span', { class: 'u-caption u-muted', text: '' });
   const drop = el('div', { class: 'ban-drop' }, [
-    el('span', { text: '📷' }),
+    el('span', { class: 'u-ico u-muted', html: icon('camera'), style: 'font-size:1.9rem' }),
     el('span', { class: 'u-caption u-muted', text: 'Click para subir fotos (JPG/PNG/WebP → WebP 1200px) · máx 2MB c/u · se ordenan por nombre' }),
   ]);
   drop.addEventListener('click', () => fileInput.click());
@@ -654,7 +654,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
 
   /* ── save (réplica del handler clásico) ── */
   const saveBtn = el('button', { class: 'btn btn--gold', type: 'button', text: isEdit ? 'Guardar cambios' : 'Publicar vehículo' });
-  const draftBtn = el('button', { class: 'btn btn--soft', type: 'button', text: '💾 Borrador' });
+  const draftBtn = el('button', { class: 'btn btn--soft', type: 'button', html: icon('fileText') + ' Borrador' });
   draftBtn.addEventListener('click', saveDraftNow);
   const savedHint = el('span', { class: 'veh-wiz__saved u-caption u-muted', text: '' });
   const cancelBtn = el('button', { class: 'btn btn--soft', type: 'button', text: 'Cancelar' });
@@ -746,7 +746,10 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
   const body = el('div', { class: 'veh-wiz__body' }, SECTIONS);
   const card = el('div', { class: 'modal veh-wiz' }, [
     el('div', { class: 'modal__head' }, [
-      el('h2', { class: 'modal__title', text: isEdit ? 'Editar: ' + (vehicle.modelo || vehicle.id) : (draft && draft.id ? '📝 Borrador' : '🚗 Nuevo vehículo') }),
+      el('h2', { class: 'modal__title u-ico-text' }, [
+        iconEl(isEdit ? 'edit' : (draft && draft.id ? 'fileText' : 'car')),
+        isEdit ? 'Editar: ' + (vehicle.modelo || vehicle.id) : (draft && draft.id ? 'Borrador' : 'Nuevo vehículo'),
+      ]),
       progress,
     ]),
     stepsBar, body,

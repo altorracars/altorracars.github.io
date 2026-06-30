@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el } from '../../core/dom.js';
+import { icon, iconEl } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { frictionTrack } from '../../core/friction.js';
@@ -34,7 +35,8 @@ export function openConvertDialog(lead, { onDone } = {}) {
 
   const err = el('div', { class: 'login__error', role: 'alert', hidden: true });
   const cancel = el('button', { class: 'btn btn--ghost', type: 'button' }, ['Cancelar']);
-  const save = el('button', { class: 'btn btn--gold', type: 'submit' }, ['🎯 Crear negocio']);
+  const saveLabel = el('span', { text: 'Crear negocio' });
+  const save = el('button', { class: 'btn btn--gold', type: 'submit' }, [iconEl('target'), saveLabel]);
 
   const form = el('form', { class: 'nl-form' }, [
     el('p', { class: 'u-caption u-muted', style: { margin: '0' } }, [
@@ -100,7 +102,7 @@ export function openConvertDialog(lead, { onDone } = {}) {
       amount: amt, ownerId, ownerName, nota: nota.value.trim(),
     };
 
-    save.disabled = true; save.textContent = 'Creando…';
+    save.disabled = true; saveLabel.textContent = 'Creando…';
     try {
       if (store.get().mock) {
         addMockDeal(dealFromLead(lead, extras));
@@ -115,7 +117,7 @@ export function openConvertDialog(lead, { onDone } = {}) {
       showUndoSnackbar(dealId, lead);
       if (onDone) onDone({ dealId });
     } catch (e2) {
-      save.disabled = false; save.textContent = '🎯 Crear negocio';
+      save.disabled = false; saveLabel.textContent = 'Crear negocio';
       fail(e2 && e2.code === 'permission-denied'
         ? 'Recarga el portal: tu versión está desactualizada.'
         : 'No se pudo crear el negocio. Intenta de nuevo.');

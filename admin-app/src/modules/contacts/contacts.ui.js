@@ -5,6 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -96,7 +97,7 @@ export function mountDetailPanel(root) {
     if (!lead) {
       aside.append(header(null));
       aside.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🔍' }),
+        el('div', { class: 'state__icon', html: icon('search') }),
         el('div', { class: 'state__title', text: 'Lead no disponible' }),
         el('div', { class: 'state__msg', text: 'Recarga la Bandeja e inténtalo otra vez.' }),
       ]));
@@ -119,7 +120,7 @@ export function mountDetailPanel(root) {
   }
 
   function header(lead) {
-    const close$ = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cerrar' }, ['✕']);
+    const close$ = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cerrar', html: icon('x') });
     close$.addEventListener('click', close);
     if (!lead) return el('div', { class: 'detail__header' }, [el('div', { class: 'u-grow' }), close$]);
 
@@ -138,17 +139,17 @@ export function mountDetailPanel(root) {
 
     const canEdit = hasPermission('crm.edit');
     const convertBtn = (canEdit && lead.status !== 'convertido')
-      ? el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['🎯 Convertir']) : null;
+      ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('target') + ' Convertir' }) : null;
     // F7 §181: el 360 usa el MISMO diálogo canónico de conversión que la Bandeja.
     if (convertBtn) convertBtn.addEventListener('click', () => openConvertDialog(lead, {}));
 
     // F19 §184: la cita manual va por la callable transaccional (nace
     // confirmada con tupla asesor+vehículo) — mismo diálogo que la Agenda.
-    const agendaBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Agendar cita', title: 'Agendar cita' }, ['📅']) : null;
+    const agendaBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Agendar cita', title: 'Agendar cita', html: icon('calendar') }) : null;
     if (agendaBtn) agendaBtn.addEventListener('click', () => openCitaCreate(lead, {}));
 
     // F12 §185: editar contacto (optimistic locking + colisión→fusión + 1581).
-    const editBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Editar contacto', title: 'Editar contacto' }, ['✏️']) : null;
+    const editBtn = canEdit ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Editar contacto', title: 'Editar contacto', html: icon('edit') }) : null;
     if (editBtn) editBtn.addEventListener('click', () => openContactEdit(data.contact, {
       onChanged: () => {
         if (lead.contactId) getContact(lead.contactId).then((c) => { data.contact = c; render(); })
@@ -233,7 +234,7 @@ export function mountDetailPanel(root) {
   function viewComms() {
     if (!data.activities.length) {
       return el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '📭' }),
+        el('div', { class: 'state__icon', html: icon('inbox') }),
         el('div', { class: 'state__title', text: 'Sin comunicaciones' }),
         el('div', { class: 'state__msg', text: 'Aún no hay actividades registradas para este lead.' }),
       ]);

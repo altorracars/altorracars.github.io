@@ -5,6 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { initials, timeAgo, normalizeSearch } from '../../domain/format.js';
 import { channelOf } from '../../domain/classify.js';
@@ -38,7 +39,7 @@ export function mountContactos(root) {
   // ── Toolbar (se construye UNA vez para no perder foco del buscador) ──
   const searchInput = el('input', { type: 'search', placeholder: 'Buscar por nombre, correo o teléfono…', 'aria-label': 'Buscar contactos' });
   searchInput.addEventListener('input', () => { ui.q = searchInput.value; renderList(); });
-  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
+  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', html: icon('search') }), searchInput]);
 
   const chipBtns = {};
   const chipsWrap = el('div', { class: 'contactos__chips', role: 'group', 'aria-label': 'Filtrar por tipo' });
@@ -54,7 +55,7 @@ export function mountContactos(root) {
   });
 
   const countEl = el('span', { class: 'contactos__count u-caption u-faint' });
-  const refreshBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['↻ Actualizar']);
+  const refreshBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('refresh') + ' Actualizar' });
   refreshBtn.addEventListener('click', load);
 
   const toolbar = el('div', { class: 'contactos__toolbar' }, [
@@ -83,10 +84,10 @@ export function mountContactos(root) {
   }
 
   function renderList() {
-    if (ui.loading) return renderState('⏳', 'Cargando contactos…', '');
-    if (ui.error) return renderState('⚠️', 'No se pudieron cargar los contactos', ui.error);
+    if (ui.loading) return renderState('clock', 'Cargando contactos…', '');
+    if (ui.error) return renderState('alertTriangle', 'No se pudieron cargar los contactos', ui.error);
     if (!ui.contacts.length) {
-      return renderState('👥', 'Aún no hay contactos', 'Cuando entren leads, registros de cuenta o suscripciones, las personas aparecerán aquí.');
+      return renderState('users', 'Aún no hay contactos', 'Cuando entren leads, registros de cuenta o suscripciones, las personas aparecerán aquí.');
     }
 
     const idx = leadIndex();
@@ -101,7 +102,7 @@ export function mountContactos(root) {
     clear(list);
     if (!rows.length) {
       list.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🔍' }),
+        el('div', { class: 'state__icon', html: icon('search') }),
         el('div', { class: 'state__title', text: 'Sin resultados' }),
         el('div', { class: 'state__msg', text: 'Prueba con otro término o filtro.' }),
       ]));
@@ -147,11 +148,11 @@ export function mountContactos(root) {
     return el('div', { class: 'contact-row contact-row--nolead' }, children);
   }
 
-  function renderState(icon, title, msg) {
+  function renderState(iconId, title, msg) {
     countEl.textContent = '';
     clear(list);
     list.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: icon }),
+      el('div', { class: 'state__icon', html: icon(iconId) }),
       el('div', { class: 'state__title', text: title }),
       msg ? el('div', { class: 'state__msg', text: msg }) : null,
     ]));

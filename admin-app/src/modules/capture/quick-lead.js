@@ -10,6 +10,7 @@
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { el } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { addMockLead } from '../../core/mock.js';
@@ -55,7 +56,7 @@ export function openQuickLeadForm() {
 
   const err = el('div', { class: 'login__error', role: 'alert', hidden: true });
   const cancel = el('button', { class: 'btn btn--ghost', type: 'button' }, ['Cancelar']);
-  const save = el('button', { class: 'btn btn--gold', type: 'submit' }, ['⚡ Registrar']);
+  const save = el('button', { class: 'btn btn--gold', type: 'submit', html: icon('zap') + ' Registrar' });
 
   const form = el('form', { class: 'nl-form' }, [
     el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Nombre *' }), nombre]),
@@ -75,7 +76,7 @@ export function openQuickLeadForm() {
 
   const card = el('div', { class: 'modal' }, [
     el('div', { class: 'modal__head' }, [
-      el('h2', { class: 'modal__title', text: '⚡ Lead rápido' }),
+      el('h2', { class: 'modal__title u-ico-text', html: icon('zap') + 'Lead rápido' }),
       el('span', { class: 'u-caption u-faint', text: navigator.onLine
         ? 'El WhatsApp entrante o el cliente del patio, registrado en 30 segundos.'
         : '📴 Sin señal: se guardará y sincronizará solo al volver la conexión.' }),

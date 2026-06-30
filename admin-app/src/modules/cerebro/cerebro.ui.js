@@ -45,7 +45,7 @@ export function mountCerebro(root) {
 
   if (!canRead) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Necesitas el permiso kb.read para ver el Cerebro AI.' }),
     ]));
@@ -210,10 +210,10 @@ export function mountCerebro(root) {
   const searchInput = el('input', { type: 'search', placeholder: 'Buscar pregunta, respuesta o keyword…', 'aria-label': 'Buscar FAQs' });
   let searchTimer = null;
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { ui.search = searchInput.value; render(); }, 180); });
-  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
+  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', html: icon('search') }), searchInput]);
   const newBtn = canCreate ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva FAQ' }) : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
-  const seedBtn = canBootstrap ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '🌱 Sembrar 25 base' }) : null;
+  const seedBtn = canBootstrap ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('sprout') + ' Sembrar 25 base' }) : null;
   if (seedBtn) seedBtn.addEventListener('click', doBootstrap);
 
   wrap.append(
@@ -235,13 +235,13 @@ export function mountCerebro(root) {
     clear(host);
     if (!ui.faqs.length) {
       host.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🧠' }),
+        el('div', { class: 'state__icon', html: icon('brain') }),
         el('div', { class: 'state__title', text: 'El Cerebro está vacío' }),
-        el('div', { class: 'state__msg', text: canBootstrap ? 'Siembra las 25 FAQs base con 🌱, o crea la primera con ＋ Nueva FAQ.' : (canCreate ? 'Crea la primera FAQ con ＋ Nueva FAQ.' : 'Aún no hay FAQs.') }),
+        el('div', { class: 'state__msg', text: canBootstrap ? 'Siembra las 25 FAQs base con «Sembrar 25 base», o crea la primera con «Nueva FAQ».' : (canCreate ? 'Crea la primera FAQ con «Nueva FAQ».' : 'Aún no hay FAQs.') }),
       ]));
       return;
     }
-    if (!list.length) { host.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', text: '🔍' }), el('div', { class: 'state__title', text: 'Sin resultados' })])); return; }
+    if (!list.length) { host.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', html: icon('search') }), el('div', { class: 'state__title', text: 'Sin resultados' })])); return; }
     host.append(el('div', { class: 'kb-list' }, list.map(card)));
   }
 

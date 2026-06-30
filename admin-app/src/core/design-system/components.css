@@ -88,6 +88,7 @@
   background: var(--surface-stroke); color: var(--ink-text-muted);
   white-space: nowrap;
 }
+.badge svg { width: 1em; height: 1em; flex: 0 0 auto; }   /* TODO-52 P1: iconos SVG en badges */
 .badge--gold  { background: var(--gold-100); color: var(--gold-800); }
 .badge--ok    { background: rgba(79,190,127,0.16); color: #2f7e54; }
 .badge--warn  { background: rgba(242,181,68,0.18); color: #936708; }

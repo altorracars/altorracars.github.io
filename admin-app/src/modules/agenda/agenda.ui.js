@@ -24,7 +24,8 @@ export function mountAgenda(root) {
   // con link, reprogramar, cancelar, no-show). F-6 §255: retirado el link al
   // "calendario clásico" de respaldo — admin.html se cuarentenó en el cutover.
   const banner = el('p', { class: 'u-muted u-caption', style: { margin: '0', padding: '8px 10px', border: '1px dashed var(--line, #444)', borderRadius: '8px' } }, [
-    '✅ Toca una cita para confirmarla (asignando asesor), pedir confirmación por WhatsApp, reprogramarla o cancelarla. ',
+    el('span', { class: 'u-ico', html: icon('info'), style: 'vertical-align:-3px;margin-right:5px;color:var(--gold-500)' }),
+    'Toca una cita para confirmarla (asignando asesor), pedir confirmación por WhatsApp, reprogramarla o cancelarla. ',
     'Si el cliente no confirma, caduca sola 3h antes y libera el cupo.',
   ]);
   const weekdays = el('div', { class: 'agenda__weekdays' }, WEEKDAYS.map((w) => el('span', { class: 'agenda__wd', text: w })));
@@ -42,9 +43,9 @@ export function mountAgenda(root) {
   function renderHead() {
     clear(head);
     const nav = el('div', { class: 'u-row u-row--tight' }, [
-      iconBtn('‹', 'Mes anterior', () => go(-1)),
+      iconBtn('chevronLeft', 'Mes anterior', () => go(-1)),
       el('button', { class: 'btn btn--soft btn--sm', type: 'button', onclick: goToday }, ['Hoy']),
-      iconBtn('›', 'Mes siguiente', () => go(1)),
+      iconBtn('chevronRight', 'Mes siguiente', () => go(1)),
     ]);
     // Gap 5 (F23-7 §188): crear cita SIN pasar por el 360 — walk-ins incluidos.
     if (hasPermission('crm.edit')) {
@@ -57,8 +58,8 @@ export function mountAgenda(root) {
       nav,
     );
   }
-  function iconBtn(glyph, label, fn) {
-    const b = el('button', { class: 'icon-btn', type: 'button', 'aria-label': label }, [glyph]);
+  function iconBtn(iconId, label, fn) {
+    const b = el('button', { class: 'icon-btn', type: 'button', 'aria-label': label, html: icon(iconId) });
     b.addEventListener('click', fn);
     return b;
   }
@@ -66,7 +67,7 @@ export function mountAgenda(root) {
   function render() {
     renderHead();
     clear(grid);
-    if (ui.error) { grid.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', text: '⚠️' }), el('div', { class: 'state__title', text: 'No se pudo cargar la agenda' }), el('div', { class: 'state__msg', text: ui.error })])); return; }
+    if (ui.error) { grid.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', html: icon('alertTriangle') }), el('div', { class: 'state__title', text: 'No se pudo cargar la agenda' }), el('div', { class: 'state__msg', text: ui.error })])); return; }
 
     const byDay = groupByDay(ui.events);
     const weeks = monthMatrix(ui.year, ui.month);

@@ -5,7 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
-import { icon } from '../../core/icons.js';
+import { icon, iconEl } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
@@ -90,7 +90,7 @@ export function mountInbox(root) {
   const elNewBtn = canEdit ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Completo' }) : null;
   if (elNewBtn) elNewBtn.addEventListener('click', () => openNewLeadForm());
   // P2 §178: Pendientes hoy + vencidos.
-  const elPendBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['📋 Pendientes hoy']);
+  const elPendBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('clipboardList') + ' Pendientes hoy' });
   elPendBtn.addEventListener('click', () => togglePendientes());
   const elPendPanel = el('div', { class: 'inbox__pendientes', hidden: true });
   const elToolbar = el('div', { class: 'inbox__toolbar' }, [elSearch, elFilters, elQuickBtn, elNewBtn, elPendBtn]);
@@ -191,7 +191,7 @@ export function mountInbox(root) {
     catch (e) { clear(elPendPanel); elPendPanel.append(el('div', { class: 'u-muted u-caption', style: { padding: '10px' }, text: 'No se pudieron cargar los pendientes.' })); return; }
     clear(elPendPanel);
     elPendPanel.append(el('div', { class: 'inbox__listhead' }, [
-      el('span', { class: 'u-muted u-caption', text: `📋 ${tasks.length} pendiente${tasks.length === 1 ? '' : 's'} (hoy y vencidos)` }),
+      el('span', { class: 'u-muted u-caption u-ico-text' }, [iconEl('clipboardList'), `${tasks.length} pendiente${tasks.length === 1 ? '' : 's'} (hoy y vencidos)`]),
     ]));
     if (!tasks.length) {
       elPendPanel.append(el('div', { class: 'u-muted u-caption', style: { padding: '0 10px 10px' }, text: '¡Al día! Registra llamadas/WhatsApps y elige “próximo paso” para que aparezcan aquí.' }));
@@ -200,7 +200,7 @@ export function mountInbox(root) {
     const now = Date.now();
     tasks.forEach((t) => {
       const late = new Date(t.dueAt).getTime() < now;
-      const doneBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', title: 'Marcar hecho' }, ['✓ Hecho']);
+      const doneBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', title: 'Marcar hecho', html: icon('check') + ' Hecho' });
       const openBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['Abrir 360']);
       const row = el('div', { class: 'lead-card', style: { alignItems: 'center' } }, [
         el('span', { class: `badge badge--${late ? 'danger' : 'gold'}`, text: late ? 'VENCIDO' : 'HOY' }),
@@ -290,7 +290,7 @@ export function mountInbox(root) {
     });
     // Limpiar filtros
     if (ui.filters.type || ui.filters.channel || ui.filters.status) {
-      const clr = el('button', { class: 'chip', type: 'button' }, ['✕ Limpiar']);
+      const clr = el('button', { class: 'chip', type: 'button', html: icon('x') + ' Limpiar' });
       clr.addEventListener('click', () => { ui.filters = { type: '', channel: '', status: '' }; render(); });
       elFilters.append(clr);
     }
@@ -298,7 +298,7 @@ export function mountInbox(root) {
 
   function renderList() {
     if (ui.loading) return renderSkeletons();
-    if (ui.error) return renderState('⚠️', 'No se pudo cargar', ui.error, true);
+    if (ui.error) return renderState(icon('alertTriangle'), 'No se pudo cargar', ui.error, true);
 
     const { rows, hiddenClosed } = buildView(ui.leads, {
       queue: ui.queue, uid, filters: ui.filters, search: ui.search, showClosed: ui.showClosed,
@@ -307,16 +307,15 @@ export function mountInbox(root) {
 
     if (!rows.length && !hiddenClosed) {
       const empty = ui.search || ui.filters.type || ui.filters.channel || ui.filters.status;
-      elList.append(stateNode('🗂️', empty ? 'Sin resultados' : '¡Bandeja al día!',
+      elList.append(stateNode(icon('folder'), empty ? 'Sin resultados' : '¡Bandeja al día!',
         empty ? 'Ajusta la búsqueda o los filtros.' : 'No hay clientes en esta cola.'));
       return;
     }
 
     // F4-fase1: contador de cerrados ocultos — visible, nunca silencioso.
     const hiddenBtn = hiddenClosed || ui.showClosed
-      ? el('button', { class: 'chip', type: 'button', style: { marginLeft: 'auto' } }, [
-          ui.showClosed ? '✕ Ocultar cerrados' : `${hiddenClosed} ocultos · ver todos`,
-        ])
+      ? el('button', { class: 'chip', type: 'button', style: { marginLeft: 'auto' } },
+          ui.showClosed ? [iconEl('x'), 'Ocultar cerrados'] : [`${hiddenClosed} ocultos · ver todos`])
       : null;
     if (hiddenBtn) hiddenBtn.addEventListener('click', () => { ui.showClosed = !ui.showClosed; renderList(); });
 
@@ -328,7 +327,7 @@ export function mountInbox(root) {
     elList.append(head);
 
     if (!rows.length && hiddenClosed) {
-      elList.append(stateNode('🗂️', '¡Bandeja al día!',
+      elList.append(stateNode(icon('folder'), '¡Bandeja al día!',
         `No hay clientes activos en esta cola (${hiddenClosed} cerrados ocultos).`));
       return;
     }
@@ -402,11 +401,11 @@ export function mountInbox(root) {
                   : `🎯 ${(lead.convertedTo && lead.convertedTo.stageName) || 'Convertido'} → Pipeline`,
               ])
             : el('span', { class: `badge badge--${sm.badge || ''}`.trim(), text: sm.label }),
-          lead.archived ? el('span', { class: 'badge', text: '🗄 Archivado' }) : null,
+          lead.archived ? el('span', { class: 'badge', html: icon('archive') + ' Archivado' }) : null,
           ctChip ? el('span', { class: 'lead-card__dot', text: '·' }) : null,
           ctChip,
           lead.ownerName ? el('span', { class: 'lead-card__dot', text: '·' }) : null,
-          lead.ownerName ? el('span', { class: 'u-faint', text: '👤 ' + lead.ownerName }) : null,
+          lead.ownerName ? el('span', { class: 'u-faint u-ico-text' }, [iconEl('user'), lead.ownerName]) : null,
         ]),
         el('div', { class: 'lead-card__nba' }, [
           el('span', { 'aria-hidden': 'true', text: lead._nba.icon }),
@@ -597,18 +596,18 @@ export function mountInbox(root) {
     elBulkBar.hidden = n === 0;
     clear(elBulkBar);
     if (!n) return;
-    const assignBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['👤 Asignar a…']);
+    const assignBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('user') + ' Asignar a…' });
     assignBtn.addEventListener('click', () => {
       const team = store.get().team || [];
       const items = [{ value: null, label: 'Sin asignar', icon: '⊘' },
         ...team.map((m) => ({ value: m, label: m.nombre, hint: m.cargo, icon: '👤' }))];
       openMenu(assignBtn, items, (it) => bulkAssign(it.value), { title: `Asignar ${n} a` });
     });
-    const contactBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['✓ Marcar contactado']);
+    const contactBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('check') + ' Marcar contactado' });
     contactBtn.addEventListener('click', () => bulkSetStatus('contactado'));
-    const archiveBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['🗄 Archivar']);
+    const archiveBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('archive') + ' Archivar' });
     archiveBtn.addEventListener('click', () => bulkArchive());
-    const clearBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['✕ Limpiar']);
+    const clearBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', html: icon('x') + ' Limpiar' });
     clearBtn.addEventListener('click', () => clearSelection());
     elBulkBar.append(
       el('span', { class: 'inbox__bulkcount', text: `${n} seleccionado${n === 1 ? '' : 's'}` }),
@@ -617,14 +616,14 @@ export function mountInbox(root) {
   }
 
   // ── Estados ──
-  function stateNode(icon, title, msg) {
+  function stateNode(glyph, title, msg) {
     return el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', 'aria-hidden': 'true', text: icon }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: glyph }),
       el('div', { class: 'state__title', text: title }),
       el('div', { class: 'state__msg', text: msg }),
     ]);
   }
-  function renderState(icon, title, msg) { clear(elList); elList.append(stateNode(icon, title, msg)); }
+  function renderState(glyph, title, msg) { clear(elList); elList.append(stateNode(glyph, title, msg)); }
   function renderSkeletons() {
     clear(elList);
     for (let i = 0; i < 6; i++) {

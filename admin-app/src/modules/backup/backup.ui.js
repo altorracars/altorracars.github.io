@@ -9,6 +9,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -31,7 +32,7 @@ export function mountBackup(root) {
 
   if (!hasPermission('settings.backup')) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Solo quien administra los respaldos (permiso settings.backup) puede ver esto. El servidor además exige Super Admin para ejecutarlos.' }),
     ]));
@@ -73,7 +74,7 @@ export function mountBackup(root) {
       }
     });
     return el('div', { class: 'cfg-card' }, [
-      el('h3', { class: 'cfg-card__title', text: '💾 Crear respaldo ahora' }),
+      el('h3', { class: 'cfg-card__title u-ico-text', html: icon('download') + 'Crear respaldo ahora' }),
       el('p', { class: 'u-caption u-muted', text: 'Cada madrugada (5:00 am) el sistema respalda solo el CRM y el inventario (vehículos y marcas incluidos) a almacenamiento privado. Este botón crea uno EXTRA ya mismo — hazlo antes de cualquier operación delicada.' }),
       btn, out,
     ]);
@@ -121,7 +122,7 @@ export function mountBackup(root) {
     }
 
     return el('div', { class: 'cfg-card' }, [
-      el('h3', { class: 'cfg-card__title', text: '♻️ Restaurar desde un respaldo' }),
+      el('h3', { class: 'cfg-card__title u-ico-text', html: icon('refresh') + 'Restaurar desde un respaldo' }),
       el('p', { class: 'u-caption u-muted', text: 'Paso 1: pega el path de un respaldo (o usa el diario por fecha). Paso 2: revisa el plan. Solo entonces puedes restaurar. No borra docs que el respaldo no conozca.' }),
       el('div', { class: 'cfg-row' }, [dateIn, dailyBtn]),
       el('div', { class: 'cfg-row bak-row-path' }, [pathIn, planBtn]),

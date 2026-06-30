@@ -5,6 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { copShort } from '../../domain/format.js';
@@ -29,8 +30,8 @@ export function mountReportes(root) {
 
   // ── Toolbar (período + acciones) ──
   const chipsWrap = el('div', { class: 'reportes__chips', role: 'group', 'aria-label': 'Período' });
-  const refreshBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['↻ Actualizar']);
-  const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['⤓ CSV']);
+  const refreshBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('refresh') + ' Actualizar' });
+  const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV' });
   refreshBtn.addEventListener('click', load);
   csvBtn.addEventListener('click', exportCsv);
   const toolbar = el('div', { class: 'reportes__toolbar' }, [
@@ -79,9 +80,9 @@ export function mountReportes(root) {
   function render() {
     renderChips();
     if (ui.loading) return renderSkeleton();
-    if (ui.error) return renderState('⚠️', 'No se pudieron cargar los reportes', ui.error);
+    if (ui.error) return renderState('alertTriangle', 'No se pudieron cargar los reportes', ui.error);
     if (!ui.leads.length && !ui.deals.length) {
-      return renderState('📊', 'Aún no hay datos para reportar', 'Cuando entren leads y oportunidades, aquí verás tus KPIs, el embudo y el rendimiento por fuente.');
+      return renderState('barChart', 'Aún no hay datos para reportar', 'Cuando entren leads y oportunidades, aquí verás tus KPIs, el embudo y el rendimiento por fuente.');
     }
 
     const m = compute();
@@ -252,10 +253,10 @@ export function mountReportes(root) {
     return el('div', { class: 'reportes__tablewrap' }, [el('table', { class: 'reportes__table' }, kids)]);
   }
 
-  function renderState(icon, title, msg) {
+  function renderState(iconId, title, msg) {
     clear(body);
     body.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: icon }),
+      el('div', { class: 'state__icon', html: icon(iconId) }),
       el('div', { class: 'state__title', text: title }),
       el('div', { class: 'state__msg', text: msg }),
     ]));

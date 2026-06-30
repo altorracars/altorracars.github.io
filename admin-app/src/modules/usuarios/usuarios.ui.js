@@ -44,7 +44,7 @@ export function mountUsuarios(root) {
 
   if (!canRead) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Necesitas el permiso users.read para ver el equipo.' }),
     ]));
@@ -231,7 +231,7 @@ export function mountUsuarios(root) {
 
     const actions = el('div', { class: 'usr-row__actions' });
     if (owner) {
-      actions.append(el('span', { class: 'usr-lock', title: 'El CEO solo se gestiona desde Mi Perfil', text: '🔒' }));
+      actions.append(el('span', { class: 'usr-lock u-ico', title: 'El CEO solo se gestiona desde Mi Perfil', html: icon('lock') }));
     } else {
       if (canEdit) {
         const editBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('edit') + ' Editar' });
@@ -265,7 +265,7 @@ export function mountUsuarios(root) {
   const searchInput = el('input', { type: 'search', placeholder: 'Buscar por nombre o correo…', 'aria-label': 'Buscar usuarios' });
   let searchTimer = null;
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { ui.search = searchInput.value; renderList(); }, 180); });
-  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
+  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', html: icon('search') }), searchInput]);
 
   const roleFilter = el('select', { class: 'select usr-filter', 'aria-label': 'Filtrar por rol' });
   roleFilter.addEventListener('change', () => { ui.filter = roleFilter.value; renderList(); });
@@ -306,7 +306,7 @@ export function mountUsuarios(root) {
     clear(list);
     if (!ui.users.length) {
       list.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '👥' }),
+        el('div', { class: 'state__icon', html: icon('users') }),
         el('div', { class: 'state__title', text: 'Sin usuarios' }),
         el('div', { class: 'state__msg', text: 'Crea el primer miembro del equipo con “Nuevo usuario”.' }),
       ]));
@@ -314,7 +314,7 @@ export function mountUsuarios(root) {
     }
     if (!rows.length) {
       list.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🔍' }),
+        el('div', { class: 'state__icon', html: icon('search') }),
         el('div', { class: 'state__title', text: 'Sin resultados' }),
         el('div', { class: 'state__msg', text: 'Prueba con otro término o filtro.' }),
       ]));

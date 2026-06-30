@@ -11,6 +11,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -61,11 +62,11 @@ export function mountCmsDinamico(root) {
       );
       bannerRemove.style.display = '';
     } else if (ui.bannerUrl === 'data:demo') {
-      bannerBox.append(el('span', { text: '🖼️', style: 'font-size:1.6rem' }), el('span', { class: 'u-caption u-muted', text: 'Imagen simulada (demo)' }));
+      bannerBox.append(el('span', { class: 'u-ico u-muted', html: icon('image'), style: 'font-size:1.9rem' }), el('span', { class: 'u-caption u-muted', text: 'Imagen simulada (demo)' }));
       bannerRemove.style.display = '';
     } else {
       bannerBox.append(
-        el('span', { text: '🖼️', style: 'font-size:1.6rem' }),
+        el('span', { class: 'u-ico u-muted', html: icon('image'), style: 'font-size:1.9rem' }),
         el('span', { class: 'u-caption u-muted', text: ui.currentId
           ? 'Click para subir el banner (JPG/PNG/WebP → se comprime). Panorámico, recomendado 1600×500+.'
           : 'Elige una marca arriba.' }),
@@ -146,7 +147,7 @@ export function mountCmsDinamico(root) {
 
     if (!canEdit) {
       wrap.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🔒' }),
+        el('div', { class: 'state__icon', html: icon('lock') }),
         el('div', { class: 'state__title', text: 'Sin permiso' }),
         el('div', { class: 'state__msg', text: 'No tienes el permiso "Editar contenido del sitio".' }),
       ]));
@@ -159,7 +160,7 @@ export function mountCmsDinamico(root) {
     select.value = ui.currentId || '';
 
     wrap.append(
-      el('h2', { style: 'font-size:1.25rem;margin:0 0 .25rem', text: '📝 Contenido del sitio — por marca' }),
+      el('h2', { class: 'u-ico-text', style: 'font-size:1.25rem;margin:0 0 .25rem', html: icon('fileText') + 'Contenido del sitio — por marca' }),
       el('p', { class: 'u-caption u-muted', style: 'margin:0 0 1rem',
         text: 'Edita el texto y el banner de la página pública de cada marca. ⚠️ Es PÚBLICO y PERMANENTE — no escribas datos personales, teléfonos ni cédulas.' }),
       el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Marca' }), select]),

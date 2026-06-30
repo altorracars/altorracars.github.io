@@ -110,7 +110,7 @@ export function mountVehicles(root) {
           : null,
       ]);
       if (entry.action === 'edited' && isSuper()) {
-        const rv = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: '↩ Revertir' });
+        const rv = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('undo') + ' Revertir' });
         rv.addEventListener('click', async () => {
           if (!await confirmDialog({ title: '¿Revertir estos cambios?', message: 'Se restauran los valores anteriores del vehículo.', confirmText: 'Revertir', danger: true })) return;
           rv.disabled = true;

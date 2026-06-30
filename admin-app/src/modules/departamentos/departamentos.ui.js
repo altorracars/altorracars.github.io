@@ -10,6 +10,7 @@
 
 import { el, clear } from '../../core/dom.js';
 import { icon } from '../../core/icons.js';
+import { navIcon } from '../../core/layout/nav-icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -32,7 +33,7 @@ export function mountDepartamentos(root) {
 
   if (!canRead) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Necesitas departments.read para ver los departamentos.' }),
     ]));
@@ -169,7 +170,7 @@ export function mountDepartamentos(root) {
         el('strong', { class: 'dep-card__name', text: d.name || d._docId }), badges,
       ])]),
       el('p', { class: 'dep-card__desc u-caption u-muted', text: d.description || 'Sin descripción.' }),
-      el('div', { class: 'dep-card__stats u-caption u-faint' }, [el('span', { text: `👤 ${d.userCount || 0} usuario${(d.userCount || 0) === 1 ? '' : 's'}` })]),
+      el('div', { class: 'dep-card__stats u-caption u-faint' }, [el('span', { class: 'u-ico-text', html: icon('user') + ' ' + (d.userCount || 0) + ' usuario' + ((d.userCount || 0) === 1 ? '' : 's') })]),
       actions,
     ]);
   }
@@ -179,7 +180,7 @@ export function mountDepartamentos(root) {
   const searchInput = el('input', { type: 'search', placeholder: 'Buscar departamento…', 'aria-label': 'Buscar departamentos' });
   let searchTimer = null;
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { ui.search = searchInput.value; renderGrid(); }, 180); });
-  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
+  const search = el('div', { class: 'search' }, [el('span', { class: 'search__ico', 'aria-hidden': 'true', html: icon('search') }), searchInput]);
   const newBtn = canManage ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo departamento' }) : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
 
@@ -202,13 +203,13 @@ export function mountDepartamentos(root) {
     clear(gridHost);
     if (!ui.depts.length) {
       gridHost.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🏢' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: navIcon('departamentos') }),
         el('div', { class: 'state__title', text: 'Sin departamentos' }),
         el('div', { class: 'state__msg', text: canManage ? 'Crea el primero con “Nuevo departamento”.' : 'Aún no hay departamentos.' }),
       ]));
       return;
     }
-    if (!list.length) { gridHost.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', text: '🔍' }), el('div', { class: 'state__title', text: 'Sin resultados' })])); return; }
+    if (!list.length) { gridHost.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('search') }), el('div', { class: 'state__title', text: 'Sin resultados' })])); return; }
     gridHost.append(el('div', { class: 'dep-grid' }, list.map(card)));
   }
 

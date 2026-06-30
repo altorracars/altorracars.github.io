@@ -13,6 +13,7 @@
 
 import { el, clear } from '../../core/dom.js';
 import { icon } from '../../core/icons.js';
+import { navIcon } from '../../core/layout/nav-icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
@@ -255,7 +256,7 @@ export function mountDealers(root) {
       : ui.consignantes;
     if (!list.length && !cons.length) {
       gridHost.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🤝' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: navIcon('aliados') }),
         el('div', { class: 'state__title', text: ui.search.trim() ? 'Sin resultados' : 'Sin aliados' }),
       ]));
       return;

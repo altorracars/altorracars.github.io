@@ -9,6 +9,7 @@
 
 import { el, clear } from '../../core/dom.js';
 import { icon } from '../../core/icons.js';
+import { navIcon } from '../../core/layout/nav-icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -74,7 +75,7 @@ export function mountReviews(root) {
         el('div', { class: 'rev-modal__grid' }, [
           el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Fuente' }), f.source]),
           el('label', { class: 'rev-check' }, [f.verified, el('span', { text: 'Verificada (cliente real)' })]),
-          el('label', { class: 'rev-check' }, [f.featured, el('span', { text: '⭐ Destacada en el sitio' })]),
+          el('label', { class: 'rev-check' }, [f.featured, el('span', { class: 'u-ico-text', html: icon('star') + ' Destacada en el sitio' })]),
         ]),
         el('div', { class: 'rev-modal__actions' }, [cancelBtn, saveBtn]),
       ]),
@@ -194,9 +195,9 @@ export function mountReviews(root) {
       ]),
       r.text ? el('p', { class: 'rev-card__text', text: '“' + r.text + '”' }) : null,
       el('div', { class: 'rev-card__meta' }, [
-        r.vehicle ? el('span', { class: 'chip', text: '🚗 ' + r.vehicle }) : null,
+        r.vehicle ? el('span', { class: 'chip u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('car') }), el('span', { text: r.vehicle })]) : null,
         el('span', { class: 'chip', text: SOURCE_LABELS[r.source] || r.source || '—' }),
-        r.featured ? el('span', { class: 'chip chip--gold', text: '⭐ Destacada' }) : null,
+        r.featured ? el('span', { class: 'chip chip--gold u-ico-text', html: icon('star') + ' Destacada' }) : null,
       ]),
       actions.length ? el('div', { class: 'rev-card__actions' }, actions) : null,
     ]);
@@ -211,7 +212,7 @@ export function mountReviews(root) {
     }
     if (!ui.reviews.length) {
       wrap.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '💬' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: navIcon('resenas') }),
         el('div', { class: 'state__title', text: 'Sin reseñas' }),
         el('div', { class: 'state__msg', text: canCreate ? 'Agrega la primera con "＋ Nueva reseña".' : 'Aún no hay reseñas registradas.' }),
       ]));

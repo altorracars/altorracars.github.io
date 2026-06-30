@@ -8,6 +8,7 @@
 
 import { el, clear } from '../../core/dom.js';
 import { icon } from '../../core/icons.js';
+import { navIcon } from '../../core/layout/nav-icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -46,9 +47,9 @@ export function mountBrands(root) {
         drop.append(el('img', { src: url, alt: 'Logo', class: 'brd-drop__img' }),
           el('span', { class: 'u-caption u-muted', text: 'Click para cambiar el logo' }));
       } else if (logoUrl === 'data:demo') {
-        drop.append(el('span', { text: '🏷️ (demo)' }));
+        drop.append(el('span', { class: 'u-caption u-muted', text: '(demo)' }));
       } else {
-        drop.append(el('span', { text: '🏷️' }),
+        drop.append(el('span', { class: 'drop-ph__ico', 'aria-hidden': 'true', html: icon('image') }),
           el('span', { class: 'u-caption u-muted', text: 'Click para subir logo (JPG/PNG/WebP/SVG → WebP 512px)' }));
       }
     }
@@ -125,7 +126,7 @@ export function mountBrands(root) {
       el('div', { class: 'rev-modal rev-modal--sm', role: 'alertdialog', 'aria-modal': 'true' }, [
         el('h3', { class: 'rev-modal__title', text: '¿Eliminar la marca "' + brand.nombre + '"?' }),
         count > 0
-          ? el('p', { class: 'u-caption brd-warn', text: `⚠️ Hay ${count} vehículo(s) con esta marca — sus filtros y página de marca quedarían huérfanos. Reasigna o vende esos vehículos antes de borrar.` })
+          ? el('p', { class: 'u-caption brd-warn warn-row' }, [el('span', { class: 'warn-row__ico', 'aria-hidden': 'true', html: icon('alertTriangle') }), el('span', { text: `Hay ${count} vehículo(s) con esta marca — sus filtros y página de marca quedarían huérfanos. Reasigna o vende esos vehículos antes de borrar.` })])
           : el('p', { class: 'u-caption u-muted', text: 'Sin vehículos asociados. Desaparece de los filtros públicos al instante.' }),
         el('div', { class: 'rev-modal__actions' }, [cancelBtn, delBtn]),
       ]),
@@ -194,7 +195,7 @@ export function mountBrands(root) {
     }
     if (!ui.brands.length) {
       wrap.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🏷️' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: navIcon('marcas') }),
         el('div', { class: 'state__title', text: 'Sin marcas' }),
       ]));
       return;

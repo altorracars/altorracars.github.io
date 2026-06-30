@@ -42,7 +42,7 @@ export function mountUnmatched(root) {
   clear(root); root.append(wrap);
 
   if (!canRead) {
-    wrap.append(stateNode('🔒', 'Sin permiso', 'Necesitas el permiso unmatched.read para ver esta sección.'));
+    wrap.append(stateNode(icon('lock'), 'Sin permiso', 'Necesitas el permiso unmatched.read para ver esta sección.'));
     return function cleanup() {};
   }
 
@@ -97,7 +97,7 @@ export function mountUnmatched(root) {
 
   // ── Toolbar (filtros + acciones) ──
   const chipsWrap = el('div', { class: 'unm__chips', role: 'tablist', 'aria-label': 'Filtro' });
-  const markAllBtn = canPromote ? el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['✓ Marcar todas']) : null;
+  const markAllBtn = canPromote ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('check') + ' Marcar todas' }) : null;
   if (markAllBtn) markAllBtn.addEventListener('click', doMarkAll);
   const toolbar = el('div', { class: 'unm__toolbar' }, [chipsWrap, el('div', { class: 'u-row u-row--tight' }, [markAllBtn])]);
 
@@ -133,27 +133,27 @@ export function mountUnmatched(root) {
 
   function entryRow(e) {
     const status = e.promotedToFAQ
-      ? el('span', { class: 'badge badge--ok', text: '✓ Promovida' })
+      ? el('span', { class: 'badge badge--ok u-ico-text', html: icon('check') + ' Promovida' })
       : e.seen ? el('span', { class: 'badge', text: 'Vista' })
         : el('span', { class: 'badge badge--gold', text: 'Nueva' });
-    const sentiment = e.sentiment === 'negative' ? el('span', { class: 'badge badge--danger', text: '😠 Negativo' })
-      : e.sentiment === 'positive' ? el('span', { class: 'badge badge--ok', text: '😊 Positivo' }) : null;
+    const sentiment = e.sentiment === 'negative' ? el('span', { class: 'badge badge--danger', text: 'Negativo' })
+      : e.sentiment === 'positive' ? el('span', { class: 'badge badge--ok', text: 'Positivo' }) : null;
     const iso = tsISO(e.createdAt);
 
     const actions = [];
     if (canPromote && !e.seen && !e.promotedToFAQ) {
-      const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', title: 'Marcar como vista' }, ['👁 Vista']);
+      const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', title: 'Marcar como vista', html: icon('eye') + ' Vista' });
       b.addEventListener('click', () => doSeen(e)); actions.push(b);
     }
     if (canPromote) {
       const b = e.promotedToFAQ
-        ? el('button', { class: 'btn btn--ghost btn--sm', type: 'button', disabled: true }, ['✓ Ya en KB'])
+        ? el('button', { class: 'btn btn--ghost btn--sm', type: 'button', disabled: true, html: icon('check') + ' Ya en KB' })
         : el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Crear FAQ' });
       if (!e.promotedToFAQ) b.addEventListener('click', () => doPromote(e));
       actions.push(b);
     }
     if (canDelete) {
-      const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', title: 'Eliminar' }, ['🗑']);
+      const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', title: 'Eliminar', 'aria-label': 'Eliminar', html: icon('trash') });
       b.addEventListener('click', () => doDelete(e)); actions.push(b);
     }
 
@@ -166,7 +166,7 @@ export function mountUnmatched(root) {
         el('div', { class: 'unm__entry-meta u-row u-row--tight' }, [
           status, sentiment,
           el('span', { class: 'u-caption u-faint', text: iso ? timeAgo(iso) : '' }),
-          e.sourcePage ? el('span', { class: 'u-caption u-faint', title: e.sourcePage, text: '↗ ' + e.sourcePage }) : null,
+          e.sourcePage ? el('span', { class: 'u-caption u-faint u-ico-text', title: e.sourcePage }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('externalLink') }), el('span', { text: e.sourcePage })]) : null,
         ]),
         el('div', { class: 'unm__entry-actions u-row u-row--tight' }, actions),
       ]),
@@ -180,20 +180,20 @@ export function mountUnmatched(root) {
     clear(list);
     if (!ui.loaded) { list.append(el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando…' })])); return; }
     if (!ui.entries.length) {
-      list.append(stateNode('✅', 'Sin preguntas sin responder', 'El bot está respondiendo bien. Cuando algo no lo entienda, aparecerá aquí como señal de venta a recuperar.'));
+      list.append(stateNode(icon('checkCircle'), 'Sin preguntas sin responder', 'El bot está respondiendo bien. Cuando algo no lo entienda, aparecerá aquí como señal de venta a recuperar.'));
       return;
     }
     const rows = visible();
     if (!rows.length) {
-      list.append(stateNode('🔍', 'Nada en este filtro', ui.filter === 'unseen' ? '¡Bandeja al día! No hay preguntas sin revisar.' : 'Sin registros en este filtro.'));
+      list.append(stateNode(icon('search'), 'Nada en este filtro', ui.filter === 'unseen' ? '¡Bandeja al día! No hay preguntas sin revisar.' : 'Sin registros en este filtro.'));
       return;
     }
     rows.forEach((e) => list.append(entryRow(e)));
   }
 
-  function stateNode(icon, title, msg) {
+  function stateNode(glyph, title, msg) {
     return el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', 'aria-hidden': 'true', text: icon }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: glyph }),
       el('div', { class: 'state__title', text: title }),
       el('div', { class: 'state__msg', text: msg }),
     ]);

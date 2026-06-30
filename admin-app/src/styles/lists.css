@@ -32,8 +32,10 @@
 .lst-row__use { white-space: nowrap; }
 .lst-row__x {
   border: 0; background: none; cursor: pointer; color: inherit;
-  opacity: 0.55; font-size: 0.8rem; padding: 0 4px;
+  opacity: 0.55; padding: 0 4px;
+  display: inline-flex; align-items: center;
 }
+.lst-row__x svg { width: 14px; height: 14px; }
 .lst-row__x:hover { opacity: 1; color: var(--danger, #E85D5D); }
 
 .lst-warn { color: var(--danger, #E85D5D); }

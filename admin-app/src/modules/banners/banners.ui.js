@@ -60,7 +60,7 @@ export function mountBanners(root) {
         );
       } else {
         preview.append(
-          el('span', { text: '🖼️' }),
+          el('span', { class: 'drop-ph__ico', 'aria-hidden': 'true', html: icon('image') }),
           el('span', { class: 'u-caption u-muted', text: 'Click para subir (JPG/PNG/WebP → se comprime a WebP). Recomendado 1200×400+.' }),
         );
       }
@@ -242,7 +242,7 @@ export function mountBanners(root) {
       el('div', { class: 'ban-card__thumb' }, [
         b.image && b.image !== 'data:demo'
           ? el('img', { src: b.image, alt: b.title || '', loading: 'lazy' })
-          : el('span', { class: 'u-caption u-faint', text: b.image === 'data:demo' ? '🖼️ (demo)' : 'Sin imagen' }),
+          : el('span', { class: 'u-caption u-faint', text: b.image === 'data:demo' ? '(demo)' : 'Sin imagen' }),
       ]),
       el('div', { class: 'ban-card__body' }, [
         el('div', { class: 'ban-card__head' }, [

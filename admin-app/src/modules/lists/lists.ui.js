@@ -27,7 +27,7 @@ export function mountLists(root) {
 
   if (!canEdit) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Solo quien administra el sitio (permisos settings.*) puede editar los atributos del inventario.' }),
     ]));
@@ -40,7 +40,7 @@ export function mountLists(root) {
     const labIn = el('input', { class: 'input', type: 'text', value: item ? item.label : '', placeholder: 'Etiqueta (ej: Híbrido)' });
     const n = item ? usageOf(def, ui.counts, item.value) : 0;
     const use = n > 0 ? el('span', { class: 'lst-row__use u-caption u-faint', text: n + ' veh.' }) : null;
-    const x = el('button', { class: 'lst-row__x', type: 'button', 'aria-label': 'Quitar opción', text: '✕' });
+    const x = el('button', { class: 'lst-row__x', type: 'button', 'aria-label': 'Quitar opción', html: icon('x') });
     const node = el('div', { class: 'lst-row' }, [valIn, labIn, use, x]);
     valIn.addEventListener('input', markDirty);
     labIn.addEventListener('input', markDirty);
@@ -55,7 +55,7 @@ export function mountLists(root) {
     const overlay = el('div', { class: 'rev-modal__overlay' }, [
       el('div', { class: 'rev-modal rev-modal--sm', role: 'alertdialog', 'aria-modal': 'true' }, [
         el('h3', { class: 'rev-modal__title', text: '¿Quitar opciones que el inventario usa?' }),
-        el('p', { class: 'u-caption lst-warn', text: '⚠️ Estas opciones siguen asignadas a vehículos publicados — al quitarlas, esos vehículos quedan con un valor que ya no existe en los filtros de la web:' }),
+        el('p', { class: 'u-caption lst-warn warn-row' }, [el('span', { class: 'warn-row__ico', 'aria-hidden': 'true', html: icon('alertTriangle') }), el('span', { text: 'Estas opciones siguen asignadas a vehículos publicados — al quitarlas, esos vehículos quedan con un valor que ya no existe en los filtros de la web:' })]),
         el('ul', { class: 'lst-warn__list' }, removedInUse.map((r) =>
           el('li', { class: 'u-caption', text: `${r.label || r.value} — ${r.n} vehículo(s)` }))),
         el('div', { class: 'rev-modal__actions' }, [cancelBtn, okBtn]),

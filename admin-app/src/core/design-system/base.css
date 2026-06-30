@@ -93,6 +93,13 @@ ul, ol { list-style: none; padding: 0; }
 .u-ico { display: inline-flex; align-items: center; flex: 0 0 auto; }
 .u-ico-text > svg, .u-ico-text > .u-ico > svg, .u-ico > svg { width: 1em; height: 1em; flex: 0 0 auto; }
 .chip__ico svg { flex: 0 0 auto; }
+/* Aviso/warning con icono que NO se encoge y texto que envuelve. TODO-52 P1. */
+.warn-row { display: flex; align-items: flex-start; gap: var(--s-2); }
+.warn-row__ico { flex: 0 0 auto; display: inline-flex; color: var(--warning); margin-top: 1px; }
+.warn-row__ico svg { width: 1.05em; height: 1.05em; max-width: none; }
+/* Placeholder grande de dropzone de imagen (subir foto/logo). TODO-52 P1. */
+.drop-ph__ico { display: inline-flex; color: var(--ink-text-faint); }
+.drop-ph__ico svg { width: 34px; height: 34px; }
 .u-sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;

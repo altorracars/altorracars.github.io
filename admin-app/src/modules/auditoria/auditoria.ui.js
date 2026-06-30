@@ -7,6 +7,8 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
+import { navIcon } from '../../core/layout/nav-icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -29,7 +31,7 @@ export function mountAuditoria(root) {
 
   if (!canRead) {
     wrap.append(el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', text: '🔒' }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
       el('div', { class: 'state__msg', text: 'Necesitas el permiso audit.read para ver la auditoría.' }),
     ]));
@@ -58,7 +60,7 @@ export function mountAuditoria(root) {
   const searchInput = el('input', { type: 'search', placeholder: 'Buscar por usuario, objetivo o detalle…', 'aria-label': 'Buscar en auditoría' });
   let searchTimer = null;
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { ui.search = searchInput.value; renderList(); }, 180); });
-  const search = el('div', { class: 'search' }, [el('span', { 'aria-hidden': 'true', text: '🔎' }), searchInput]);
+  const search = el('div', { class: 'search' }, [el('span', { class: 'search__ico', 'aria-hidden': 'true', html: icon('search') }), searchInput]);
 
   const actionSel = el('select', { class: 'select aud-filter', 'aria-label': 'Filtrar por acción' });
   actionSel.addEventListener('change', () => { ui.fAction = actionSel.value; renderList(); });
@@ -104,14 +106,14 @@ export function mountAuditoria(root) {
     clear(list);
     if (!ui.entries.length) {
       list.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', text: '🗂️' }),
+        el('div', { class: 'state__icon', 'aria-hidden': 'true', html: navIcon('auditoria') }),
         el('div', { class: 'state__title', text: 'Sin actividad registrada' }),
         el('div', { class: 'state__msg', text: 'Las acciones administrativas aparecerán aquí.' }),
       ]));
       return;
     }
     if (!rows.length) {
-      list.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', text: '🔍' }), el('div', { class: 'state__title', text: 'Sin resultados' })]));
+      list.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('search') }), el('div', { class: 'state__title', text: 'Sin resultados' })]));
       return;
     }
     rows.forEach((e) => list.append(row(e)));

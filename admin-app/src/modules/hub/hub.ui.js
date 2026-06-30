@@ -14,6 +14,7 @@
 
 import { el, clear } from '../../core/dom.js';
 import { confirmDialog } from '../../core/confirm.js';
+import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -32,7 +33,7 @@ const FILTERS = [
   { id: 'pinned', label: 'Fijados' },
   { id: 'archived', label: 'Archivados' },
 ];
-const MODE_ICON = { wa_handed_over: '📲', live: '👨', bot: '🤖' };
+const MODE_ICON = { wa_handed_over: 'smartphone', live: 'user', bot: 'bot' };
 const MODE_LABEL = { wa_handed_over: 'WhatsApp', live: 'En vivo', bot: 'Bot AI' };
 const CLOSED_REASON = {
   client_finalized: 'Cliente finalizó la conversación',
@@ -50,7 +51,7 @@ export function mountHub(root) {
   clear(root); root.append(wrap);
 
   if (!canRead) {
-    wrap.append(stateNode('🔒', 'Sin permiso', 'Necesitas el permiso concierge.read para ver el Hub de conversaciones.'));
+    wrap.append(stateNode(icon('lock'), 'Sin permiso', 'Necesitas el permiso concierge.read para ver el Hub de conversaciones.'));
     return function cleanup() {};
   }
 
@@ -136,9 +137,9 @@ export function mountHub(root) {
     const unread = (c.unreadByAdmin || 0) || (c.forceUnreadByAdmin ? 1 : 0);
     const att = ui.attending[c._docId];
     const badges = [];
-    if (c.isPinned) badges.push(el('span', { class: 'hub__row-tag', title: 'Fijado', text: '📌' }));
-    if (c.isArchived) badges.push(el('span', { class: 'hub__row-tag', title: 'Archivado', text: '🗄️' }));
-    if (c.status === 'closed') badges.push(el('span', { class: 'hub__row-tag', title: 'Cerrado', text: '✓' }));
+    if (c.isPinned) badges.push(el('span', { class: 'hub__row-tag', title: 'Fijado', 'aria-hidden': 'true', html: icon('pin') }));
+    if (c.isArchived) badges.push(el('span', { class: 'hub__row-tag', title: 'Archivado', 'aria-hidden': 'true', html: icon('archive') }));
+    if (c.status === 'closed') badges.push(el('span', { class: 'hub__row-tag', title: 'Cerrado', 'aria-hidden': 'true', html: icon('check') }));
     const row = el('button', {
       class: 'hub__row' + (c._docId === ui.activeId ? ' is-active' : '') + (unread ? ' has-unread' : ''), type: 'button',
     }, [
@@ -149,12 +150,12 @@ export function mountHub(root) {
           el('span', { class: 'hub__row-time u-caption u-faint', text: timeAgo(c.lastMessageAt) }),
         ]),
         el('span', { class: 'hub__row-snip' }, [
-          el('span', { class: 'hub__row-mode', 'aria-hidden': 'true', text: MODE_ICON[c.mode] || MODE_ICON.bot }),
+          el('span', { class: 'hub__row-mode', 'aria-hidden': 'true', html: icon(MODE_ICON[c.mode] || MODE_ICON.bot) }),
           el('span', { class: 'u-truncate', text: (c.lastMessage || '').slice(0, 64) || 'Sin mensajes' }),
         ]),
         badges.length ? el('span', { class: 'hub__row-tags' }, badges) : null,
       ]),
-      att ? el('span', { class: 'hub__row-att', title: att.nombre + ' está mirando este chat', text: '👀' }) : null,
+      att ? el('span', { class: 'hub__row-att', title: att.nombre + ' está mirando este chat', 'aria-hidden': 'true', html: icon('eye') }) : null,
       unread ? el('span', { class: 'hub__row-unread', text: String(unread) }) : null,
     ]);
     row.addEventListener('click', () => openChat(c._docId));
@@ -169,7 +170,7 @@ export function mountHub(root) {
       const msg = ui.filter === 'pinned' ? 'No hay chats fijados.'
         : ui.filter === 'archived' ? 'Sin chats archivados.'
           : 'Sin conversaciones activas. Cuando un cliente escriba al bot, aparecerá aquí.';
-      listEl.append(stateNode(ui.filter === 'active' ? '💬' : '🔍', 'Nada por aquí', msg));
+      listEl.append(stateNode(icon(ui.filter === 'active' ? 'messageCircle' : 'search'), 'Nada por aquí', msg));
       return;
     }
     rows.forEach((c) => listEl.append(chatRow(c)));
@@ -283,7 +284,7 @@ export function mountHub(root) {
     chat.status = 'closed'; chat.closedAt = ts; chat.closedBy = a.uid; chat.closedByName = a.nombre; chat.closedReason = 'admin_resolved';
     chat.lastMessage = '✓ Conversación cerrada por ' + a.nombre; chat.lastMessageAt = ts;
     ui.forceScroll = true; renderList(); renderDetail();
-    if (isMock) { ui.messages.push({ _id: 's_' + Date.now(), from: 'system', text: '✓ ' + a.nombre + ' cerró esta conversación. Iniciá una nueva cuando quieras.', timestamp: ts }); renderDetail(); toast('Conversación cerrada', 'ok'); return; }
+    if (isMock) { ui.messages.push({ _id: 's_' + Date.now(), from: 'system', text: '✓ ' + a.nombre + ' cerró esta conversación. Inicia una nueva cuando quieras.', timestamp: ts }); renderDetail(); toast('Conversación cerrada', 'ok'); return; }
     closeChatDoc(chat._docId, a).then(() => toast('Conversación cerrada', 'ok'))
       .catch(() => { Object.assign(chat, snap); renderList(); renderDetail(); toast('No se pudo cerrar.', 'error'); });
   }
@@ -293,7 +294,7 @@ export function mountHub(root) {
     const snap = { status: chat.status, lastMessage: chat.lastMessage, lastMessageAt: chat.lastMessageAt };
     chat.status = 'active'; chat.lastMessage = '↻ Conversación reabierta por ' + a.nombre; chat.lastMessageAt = ts;
     ui.forceScroll = true; renderList(); renderDetail();
-    if (isMock) { ui.messages.push({ _id: 's_' + Date.now(), from: 'system', text: '↻ ' + a.nombre + ' reabrió la conversación. Podés seguir escribiendo.', timestamp: ts }); renderDetail(); toast('Conversación reabierta', 'ok'); return; }
+    if (isMock) { ui.messages.push({ _id: 's_' + Date.now(), from: 'system', text: '↻ ' + a.nombre + ' reabrió la conversación. Puedes seguir escribiendo.', timestamp: ts }); renderDetail(); toast('Conversación reabierta', 'ok'); return; }
     reopenChatDoc(chat._docId, a).then(() => toast('Conversación reabierta', 'ok'))
       .catch(() => { Object.assign(chat, snap); renderList(); renderDetail(); toast('No se pudo reabrir.', 'error'); });
   }
@@ -340,7 +341,7 @@ export function mountHub(root) {
     if (!ui.transfer.open) return;
     const list = el('div', { class: 'hub__tr-list' });
     if (ui.transfer.loading) list.append(el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando asesores…' })]));
-    else if (!ui.transfer.advisors || !ui.transfer.advisors.length) list.append(stateNode('👥', 'Nadie disponible', 'No hay otros asesores online ahora. Solo se transfiere a asesores con sesión activa.'));
+    else if (!ui.transfer.advisors || !ui.transfer.advisors.length) list.append(stateNode(icon('users'), 'Nadie disponible', 'No hay otros asesores online ahora. Solo se transfiere a asesores con sesión activa.'));
     else ui.transfer.advisors.forEach((adv) => {
       const item = el('button', { class: 'hub__tr-item', type: 'button' }, [
         el('span', { class: 'avatar avatar--sm hub__tr-status hub__tr-status--' + (adv.status === 'away' ? 'away' : 'online'), 'aria-hidden': 'true', text: initials(adv.nombre) }),
@@ -353,10 +354,10 @@ export function mountHub(root) {
       item.addEventListener('click', () => doTransfer(adv));
       list.append(item);
     });
-    const closeBtn = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cerrar' }, [el('span', { 'aria-hidden': 'true', text: '✕' })]);
+    const closeBtn = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cerrar' }, [el('span', { 'aria-hidden': 'true', html: icon('x') })]);
     closeBtn.addEventListener('click', closeTransfer);
     const panel = el('div', { class: 'hub__tr-panel', role: 'dialog', 'aria-label': 'Transferir conversación' }, [
-      el('div', { class: 'hub__tr-head' }, [el('strong', { text: '🔁 Transferir conversación' }), closeBtn]),
+      el('div', { class: 'hub__tr-head' }, [el('strong', { class: 'u-ico-text', html: icon('repeat') + ' Transferir conversación' }), closeBtn]),
       list,
     ]);
     transferEl = el('div', { class: 'hub__tr-backdrop' }, [panel]);
@@ -410,7 +411,7 @@ export function mountHub(root) {
     if (m._isNote) {
       return el('div', { class: 'hub-msg hub-msg--note' }, [
         el('div', { class: 'hub-msg__note-head u-caption' }, [
-          el('span', { class: 'hub-msg__note-badge', text: '🔒 Nota privada' }),
+          el('span', { class: 'hub-msg__note-badge u-ico-text', html: icon('lock') + ' Nota privada' }),
           el('span', { class: 'u-faint', text: m.authorName || 'Asesor' }),
         ]),
         el('div', { class: 'hub-msg__note-body', text: m.text || '' }),
@@ -428,16 +429,16 @@ export function mountHub(root) {
     let statusEl = null;
     if (m.from === 'asesor') {
       const st = effectiveStatus(m, chat);
-      if (st === 'pending') statusEl = el('span', { class: 'hub-msg__st', title: 'Enviando', text: '⏱' });
-      else if (st === 'read') statusEl = el('span', { class: 'hub-msg__st hub-msg__st--read', title: 'Leído', text: '✓✓' });
+      if (st === 'pending') statusEl = el('span', { class: 'hub-msg__st', title: 'Enviando', 'aria-hidden': 'true', html: icon('clock') });
+      else if (st === 'read') statusEl = el('span', { class: 'hub-msg__st hub-msg__st--read', title: 'Leído', 'aria-hidden': 'true', html: icon('checkCheck') });
       else if (st === 'failed') {
-        statusEl = el('button', { class: 'hub-msg__retry', type: 'button', title: 'Reintentar envío' }, ['↻ Reintentar']);
+        statusEl = el('button', { class: 'hub-msg__retry', type: 'button', title: 'Reintentar envío', html: icon('refresh') + ' Reintentar' });
         statusEl.addEventListener('click', () => retrySend(m));
-      } else statusEl = el('span', { class: 'hub-msg__st', title: 'Enviado', text: '✓' });
+      } else statusEl = el('span', { class: 'hub-msg__st', title: 'Enviado', 'aria-hidden': 'true', html: icon('check') });
     }
     return el('div', { class: `hub-msg hub-msg--${side} hub-msg--${kind}` + (m._status === 'failed' ? ' hub-msg--failed' : '') }, [
       el('div', { class: 'hub-msg__bubble' }, [
-        kind === 'bot' ? el('span', { class: 'hub-msg__who u-caption', text: '🤖 Bot' }) : null,
+        kind === 'bot' ? el('span', { class: 'hub-msg__who u-caption u-ico-text', html: icon('bot') + ' Bot' }) : null,
         el('span', { class: 'hub-msg__text', text: m.text || '' }),
       ]),
       el('div', { class: 'hub-msg__time u-caption u-faint' }, [el('span', { text: timeAgo(m.timestamp) }), statusEl]),
@@ -455,7 +456,7 @@ export function mountHub(root) {
     clear(detailEl);
     const chat = activeChat();
     if (!chat) {
-      detailEl.append(stateNode('💬', 'Selecciona una conversación', 'Elige un chat de la lista para verlo y gestionarlo.'));
+      detailEl.append(stateNode(icon('messageCircle'), 'Selecciona una conversación', 'Elige un chat de la lista para verlo y gestionarlo.'));
       return;
     }
 
@@ -469,18 +470,18 @@ export function mountHub(root) {
     const att = ui.attending[chat._docId];
 
     // Header + acciones
-    const back = el('button', { class: 'hub__back icon-btn', type: 'button', 'aria-label': 'Volver a la lista' }, [el('span', { 'aria-hidden': 'true', text: '←' })]);
+    const back = el('button', { class: 'hub__back icon-btn', type: 'button', 'aria-label': 'Volver a la lista' }, [el('span', { 'aria-hidden': 'true', html: icon('arrowLeft') })]);
     back.addEventListener('click', () => { wrap.setAttribute('data-pane', 'list'); });
     const metaBits = [el('span', { class: 'hub__detail-mode', text: MODE_LABEL[chat.mode] || MODE_LABEL.bot })];
     if (chat.userEmail) metaBits.push(el('span', { class: 'u-faint', text: '· ' + chat.userEmail }));
     if (chat.telefono) metaBits.push(el('span', { class: 'u-faint', text: '· ' + chat.telefono }));
     if (chat.sourceVehicleId) metaBits.push(el('span', { class: 'u-faint', text: '· vehículo #' + chat.sourceVehicleId }));
     const headActions = [];
-    const sumBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['📄 Resumen']);
+    const sumBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', html: icon('fileText') + ' Resumen' });
     sumBtn.addEventListener('click', () => openSummary(chat));
     headActions.push(sumBtn);
     if (!isClosed && canClose && (!claimedByOther || isSuper)) {
-      const closeBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, ['✓ Cerrar chat']);
+      const closeBtn = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', html: icon('check') + ' Cerrar chat' });
       closeBtn.addEventListener('click', () => doClose(chat));
       headActions.push(closeBtn);
     }
@@ -500,27 +501,27 @@ export function mountHub(root) {
     if (isClosed) {
       const reason = CLOSED_REASON[chat.closedReason] || 'Conversación finalizada';
       const by = chat.closedByName || (chat.closedByRole === 'client' ? 'el cliente' : 'un asesor');
-      const reopenBtn = canReopen ? actionBtn('↻ Reabrir', () => doReopen(chat)) : null;
-      detailEl.append(banner('🔒', reason, 'Por ' + by + (chat.closedAt ? ' · ' + timeAgo(chat.closedAt) : ''), 'closed', reopenBtn ? [reopenBtn] : null));
+      const reopenBtn = canReopen ? actionBtn(icon('refresh') + ' Reabrir', () => doReopen(chat)) : null;
+      detailEl.append(banner(icon('lock'), reason, 'Por ' + by + (chat.closedAt ? ' · ' + timeAgo(chat.closedAt) : ''), 'closed', reopenBtn ? [reopenBtn] : null));
     }
     if (claimedByOther) {
-      const relBtn = isSuper ? actionBtn('🔓 Liberar', () => doRelease(chat)) : null;
-      detailEl.append(banner(isSuper ? '⚠️' : '🔒',
+      const relBtn = isSuper ? actionBtn(icon('unlock') + ' Liberar', () => doRelease(chat)) : null;
+      detailEl.append(banner(isSuper ? icon('alertTriangle') : icon('lock'),
         (chat.claimedByName || 'Otro asesor') + ' está atendiendo este chat',
         isSuper ? 'Si escribes acá interrumpís su atención.' : (chat.claimedAt ? 'Tomado ' + timeAgo(chat.claimedAt) : 'Solo quien lo tomó puede responder.'),
         'claimed', relBtn ? [relBtn] : null));
     }
-    if (att) detailEl.append(banner('👀', att.nombre + ' está mirando este chat ahora mismo', 'Presencia en tiempo real.', 'attending'));
+    if (att) detailEl.append(banner(icon('eye'), att.nombre + ' está mirando este chat ahora mismo', 'Presencia en tiempo real.', 'attending'));
     if (claimedByMe && !isClosed) {
       const acts = [];
-      if (canTransfer) acts.push(actionBtn('🔁 Transferir', openTransfer));
-      if (isSuper) acts.push(actionBtn('🔓 Liberar', () => doRelease(chat)));
-      detailEl.append(banner('✅', 'Estás atendiendo este chat', 'Otros asesores no pueden responder.', 'mine', acts.length ? acts : null));
+      if (canTransfer) acts.push(actionBtn(icon('repeat') + ' Transferir', openTransfer));
+      if (isSuper) acts.push(actionBtn(icon('unlock') + ' Liberar', () => doRelease(chat)));
+      detailEl.append(banner(icon('checkCircle'), 'Estás atendiendo este chat', 'Otros asesores no pueden responder.', 'mine', acts.length ? acts : null));
     }
 
     // Banner CLAIM
     if (unclaimed && canClaim) {
-      const claimBtn = el('button', { class: 'btn btn--gold', type: 'button' }, ['✋ Tomar conversación']);
+      const claimBtn = el('button', { class: 'btn btn--gold', type: 'button', html: icon('hand') + ' Tomar conversación' });
       claimBtn.addEventListener('click', () => doClaim(chat));
       detailEl.append(el('div', { class: 'hub__claim' }, [
         el('div', { class: 'hub__claim-info' }, [
@@ -557,16 +558,16 @@ export function mountHub(root) {
           chip.addEventListener('click', () => { const inp = detailEl.querySelector('.hub__composer-input'); if (inp) { inp.value = s.text; inp.focus(); } });
           return chip;
         });
-        detailEl.append(el('div', { class: 'hub__suggest' }, [el('span', { class: 'hub__suggest-label u-caption u-faint', text: '✨ Sugerencias' })].concat(chips)));
+        detailEl.append(el('div', { class: 'hub__suggest' }, [el('span', { class: 'hub__suggest-label u-caption u-faint u-ico-text', html: icon('sparkles') + ' Sugerencias' })].concat(chips)));
       }
     }
 
     // Composer (con toggle de nota interna)
     if (canWrite) {
-      const noteToggle = el('button', { class: 'btn btn--ghost btn--sm hub__note-toggle' + (ui.noteMode ? ' is-active' : ''), type: 'button', 'aria-pressed': String(ui.noteMode), title: 'Nota interna — el cliente NO la verá' }, ['🔒']);
+      const noteToggle = el('button', { class: 'btn btn--ghost btn--sm hub__note-toggle' + (ui.noteMode ? ' is-active' : ''), type: 'button', 'aria-pressed': String(ui.noteMode), title: 'Nota interna — el cliente NO la verá', 'aria-label': 'Nota interna', html: icon('lock') });
       noteToggle.addEventListener('click', toggleNoteMode);
       const input = el('input', { class: 'form-input hub__composer-input', type: 'text', autocomplete: 'off',
-        placeholder: ui.noteMode ? '🔒 Nota privada del asesor (el cliente NO la verá)…' : 'Responder como asesor…' });
+        placeholder: ui.noteMode ? 'Nota privada del asesor (el cliente NO la verá)…' : 'Responder como asesor…' });
       input.addEventListener('input', onComposerInput);
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ui.noteMode ? doNote() : doSend(); } });
       const sendBtn = el('button', { class: 'btn btn--gold', type: 'button' }, [ui.noteMode ? 'Guardar nota' : 'Enviar']);
@@ -575,10 +576,10 @@ export function mountHub(root) {
     } else if (!unclaimed) {
       detailEl.append(el('div', { class: 'hub__composer hub__composer--disabled' }, [
         el('input', { class: 'form-input', type: 'text', disabled: true,
-          placeholder: isClosed ? '🔒 Conversación cerrada — solo lectura' : '🔒 Atendido por ' + (chat.claimedByName || 'otro asesor') }),
+          placeholder: isClosed ? 'Conversación cerrada — solo lectura' : 'Atendido por ' + (chat.claimedByName || 'otro asesor') }),
       ]));
     } else if (unclaimed && !canClaim) {
-      detailEl.append(el('div', { class: 'hub__ro-note u-caption u-faint' }, [el('span', { text: '👁 Solo lectura — necesitas permiso para tomar y responder conversaciones.' })]));
+      detailEl.append(el('div', { class: 'hub__ro-note u-caption u-faint u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('eye') }), el('span', { text: 'Solo lectura — necesitas permiso para tomar y responder conversaciones.' })]));
     }
 
     if (wasNearBottom || ui.forceScroll) { requestAnimationFrame(() => { msgsBox.scrollTop = msgsBox.scrollHeight; }); ui.forceScroll = false; }
@@ -590,13 +591,13 @@ export function mountHub(root) {
 
   /* ── Helpers de nodos ───────────────────────────────────── */
   function actionBtn(label, onClick) {
-    const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, [label]);
+    const b = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', html: label });
     b.addEventListener('click', onClick);
     return b;
   }
-  function banner(icon, title, sub, variant, actions) {
+  function banner(glyph, title, sub, variant, actions) {
     return el('div', { class: 'hub__banner hub__banner--' + variant }, [
-      el('span', { class: 'hub__banner-icon', 'aria-hidden': 'true', text: icon }),
+      el('span', { class: 'hub__banner-icon', 'aria-hidden': 'true', html: glyph }),
       el('div', { class: 'hub__banner-info' }, [
         el('div', { class: 'hub__banner-title', text: title }),
         sub ? el('div', { class: 'hub__banner-sub u-caption u-faint', text: sub }) : null,
@@ -604,9 +605,9 @@ export function mountHub(root) {
       actions && actions.length ? el('div', { class: 'hub__banner-actions u-row u-row--tight' }, actions) : null,
     ]);
   }
-  function stateNode(icon, title, msg) {
+  function stateNode(glyph, title, msg) {
     return el('div', { class: 'state' }, [
-      el('div', { class: 'state__icon', 'aria-hidden': 'true', text: icon }),
+      el('div', { class: 'state__icon', 'aria-hidden': 'true', html: glyph }),
       el('div', { class: 'state__title', text: title }),
       el('div', { class: 'state__msg', text: msg }),
     ]);
@@ -658,9 +659,9 @@ export function mountHub(root) {
     const body = el('div', { class: 'hub__sum-body' }, [
       sumSection('Cliente', [
         el('div', { text: chat.userNombre || chat.userEmail || ('Cliente ' + chat._docId.slice(-6)) }),
-        chat.userEmail ? el('div', { class: 'u-caption u-faint', text: '📧 ' + chat.userEmail }) : null,
-        chat.telefono ? el('div', { class: 'u-caption u-faint', text: '📲 ' + chat.telefono }) : null,
-        chat.sourceVehicleId ? el('div', { class: 'u-caption u-faint', text: '🚗 Vehículo #' + chat.sourceVehicleId }) : null,
+        chat.userEmail ? el('div', { class: 'u-caption u-faint u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('mail') }), el('span', { text: chat.userEmail })]) : null,
+        chat.telefono ? el('div', { class: 'u-caption u-faint u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('smartphone') }), el('span', { text: chat.telefono })]) : null,
+        chat.sourceVehicleId ? el('div', { class: 'u-caption u-faint u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('car') }), el('span', { text: 'Vehículo #' + chat.sourceVehicleId })]) : null,
       ]),
       sumSection('Conversación', [
         el('div', { class: 'u-caption', text: items.length + ' mensajes · ' + userMsgs.length + ' del cliente · ' + asesorMsgs.length + ' del asesor' }),
@@ -670,14 +671,14 @@ export function mountHub(root) {
         ? lastUsers.map((m) => el('div', { class: 'hub__sum-msg', text: '“' + (m.text || '') + '”' }))
         : [el('div', { class: 'u-faint u-caption', text: 'Sin mensajes del cliente todavía.' })]),
     ]);
-    const copyBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button' }, ['📋 Copiar']);
+    const copyBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('copy') + ' Copiar' });
     copyBtn.addEventListener('click', () => { try { navigator.clipboard.writeText(txt); toast('Resumen copiado', 'ok'); } catch (_) { toast('No se pudo copiar', 'error'); } });
-    const closeBtn = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cerrar' }, [el('span', { 'aria-hidden': 'true', text: '✕' })]);
+    const closeBtn = el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cerrar' }, [el('span', { 'aria-hidden': 'true', html: icon('x') })]);
     closeBtn.addEventListener('click', closeSummary);
     const panel = el('div', { class: 'hub__sum-panel', role: 'dialog', 'aria-label': 'Resumen de la conversación' }, [
-      el('div', { class: 'hub__sum-head' }, [el('strong', { text: '📄 Resumen para handover' }), closeBtn]),
+      el('div', { class: 'hub__sum-head' }, [el('strong', { class: 'u-ico-text', html: icon('fileText') + ' Resumen para handover' }), closeBtn]),
       body,
-      el('div', { class: 'hub__sum-ia u-caption' }, [el('span', { text: '✨ Resumen con IA — disponible cuando se active el asistente LLM (saldo Anthropic).' })]),
+      el('div', { class: 'hub__sum-ia u-caption u-ico-text' }, [el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('sparkles') }), el('span', { text: 'Resumen con IA — disponible cuando se active el asistente LLM (saldo Anthropic).' })]),
       el('div', { class: 'hub__sum-foot' }, [copyBtn]),
     ]);
     summaryEl = el('div', { class: 'hub__sum-backdrop' }, [panel]);

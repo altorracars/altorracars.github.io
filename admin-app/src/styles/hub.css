@@ -49,10 +49,13 @@
 .hub__row-name { flex: 1 1 auto; min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--t-body); }
 .hub__row-time { flex: 0 0 auto; }
 .hub__row-snip { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--ink-text-muted); font-size: var(--t-caption); }
-.hub__row-mode { flex: 0 0 auto; }
-.hub__row-tags { display: flex; gap: 4px; }
-.hub__row-tag { font-size: 11px; opacity: 0.7; }
-.hub__row-att { flex: 0 0 auto; font-size: 14px; }
+.hub__row-mode { flex: 0 0 auto; display: inline-flex; }
+.hub__row-mode svg { width: 15px; height: 15px; flex: 0 0 auto; max-width: none; }
+.hub__row-tags { display: flex; gap: 4px; flex: 0 0 auto; }
+.hub__row-tag { font-size: 11px; opacity: 0.7; display: inline-flex; align-items: center; flex: 0 0 auto; }
+.hub__row-tag svg { width: 13px; height: 13px; flex: 0 0 auto; max-width: none; }
+.hub__row-att { flex: 0 0 auto; display: inline-flex; }
+.hub__row-att svg { width: 14px; height: 14px; flex: 0 0 auto; max-width: none; }
 .hub__row-unread {
   flex: 0 0 auto; min-width: 18px; height: 18px; padding: 0 5px;
   display: inline-grid; place-content: center;
@@ -81,7 +84,8 @@
   border-radius: var(--r-md); border: 1px solid var(--surface-stroke);
   background: var(--surface-card);
 }
-.hub__banner-icon { flex: 0 0 auto; font-size: 16px; }
+.hub__banner-icon { flex: 0 0 auto; display: inline-flex; }
+.hub__banner-icon svg { width: 19px; height: 19px; flex: 0 0 auto; }
 .hub__banner-info { min-width: 0; flex: 1 1 auto; }
 .hub__banner-actions { flex: 0 0 auto; }
 .hub__banner-title { font-weight: 600; font-size: var(--t-body); }
@@ -148,7 +152,8 @@
 .hub__composer--disabled .form-input { cursor: not-allowed; }
 
 /* Estado de los mensajes del asesor (✓/✓✓/⏱/reintentar) */
-.hub-msg__st { font-size: var(--t-caption); opacity: 0.7; }
+.hub-msg__st { font-size: var(--t-caption); opacity: 0.7; display: inline-flex; align-items: center; }
+.hub-msg__st svg { width: 14px; height: 14px; flex: 0 0 auto; }
 .hub-msg__st--read { color: #2e9d5b; opacity: 1; }
 .hub-msg__retry {
   border: 0; background: transparent; cursor: pointer; padding: 0;

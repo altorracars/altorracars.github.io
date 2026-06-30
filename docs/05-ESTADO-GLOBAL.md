@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-29**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev`: PLAN UNIFICADO COMPLETO (§238-256) — portal único `admin-app/` LIVE; F-6 cutover ✅. Aliados TODO-25/§259 VALIDADO LIVE ✅ 29/06. **Queda (dueño)**: `ZZZ PRUEBA` (deal+veh.47) · FCM · dead-code (~3-jul). **EN CURSO (29/06h-k)**: TODO-52 PULIDO — 8 módulos emoji→SVG ✅ (Bandeja·veh·deals·dashboard·perfil·roles·config·hub)+voseo; resta resto-módulos(dealers/…)+iconos-dominio+Fase C. Bot=saldo. |
+| **Build** | 🟢 `main`==`dev`: PLAN UNIFICADO COMPLETO (§238-256) — portal único `admin-app/` LIVE; F-6 cutover ✅. Aliados TODO-25/§259 VALIDADO LIVE ✅ 29/06. **Queda (dueño)**: `ZZZ PRUEBA` (deal+veh.47) · FCM · dead-code (~3-jul). **EN CURSO (29/06h-l)**: TODO-52 PULIDO — **16 módulos** emoji→SVG ✅ +voseo; resta restantes(cms/backup/capture/agenda/contacts…)+iconos-dominio+Fase C. Bot=saldo. |
 | **Cache version vigente** | **`v20260629154551`** (cron-CI 29/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
@@ -20,4 +20,4 @@
 - cron↔cache = patrón conocido (L-02, hija `31`).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · CRM canónico (`contacts/leads/activities/deals`) LIVE ✅. **🧭 FOCO = TODO-52 CRM Overhaul ⟦OPUS⟧ (EPIC #1)**: SEGURIDAD + funcionalidad COMPLETA y DEPLOYED 29/06 (PASE-1·§219·dataScope·owner-delete·errors·accent-OUT·Telegram·emoji-botones). Multi-tenancy DESCARTADA. **Sigue (PULIDO):** emoji→SVG resto módulos (dealers/departamentos/banners/…) + iconos-dominio (rating/nba/channel) + **Fase C**. [8 módulos+voseo ✅ 29/06h-k]. SSoT → brief + `10`. Bot (#917) DORMIENTE.
+`js/` modular ✅ · CRM canónico (`contacts/leads/activities/deals`) LIVE ✅. **🧭 FOCO = TODO-52 CRM Overhaul ⟦OPUS⟧ (EPIC #1)**: SEGURIDAD + funcionalidad COMPLETA y DEPLOYED 29/06 (PASE-1·§219·dataScope·owner-delete·errors·accent-OUT·Telegram·emoji-botones). Multi-tenancy DESCARTADA. **Sigue (PULIDO):** emoji→SVG módulos restantes (cms/backup/capture/agenda/contacts…) + iconos-dominio (rating/nba/channel/audit) + **Fase C**. [16 módulos+voseo ✅ 29/06h-l]. SSoT → brief + `10`. Bot (#917) DORMIENTE.

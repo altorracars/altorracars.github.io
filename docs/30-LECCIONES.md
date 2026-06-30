@@ -64,8 +64,10 @@
 - **SA en GitHub Actions ≠ ADC (L-43)**: secret → env var (`cert(JSON.parse(env))`), NO la ADC local (ligada a bersaglio). **GOTCHA `npm ci`**: aborta si `package.json`↔`package-lock.json` desync (rompe el CI en silencio) → SIEMPRE `npm install <dep> --save` (sincroniza el lock) y commitear AMBOS.
 
 ### L-50 · Workflow de subagentes en background: se CUELGA en herramientas gateadas por permiso; ultracode lo agrava ⟦OPUS-4.8 · rev-Fable⟧
-- **Causa raíz (§226, transcripts)**: un subagente DETACHED que llama una tool con prompt de permiso (`Bash git`, `Read` fuera del cwd como el vault `../brain-private`) se bloquea esperando una aprobación que nadie da → cuelgue infinito. Ultracode (fan-out sin tope) + MCP densos lo agravan (Bersaglio: ~4.7M tok, 2h30).
-- **Receta**: subagentes read-only DENTRO del cwd (`Grep`/`Read` del repo), SIN `Bash git`/lecturas fuera-cwd (gatean → cuelgan) o pre-allow; o comité ACOTADO (pocos, sin tools, sobre diagnóstico YA verificado). Si cuelga: `TaskStop` + extraer los `StructuredOutput` completados (parsear `.jsonl`, no leerlo entero). **Doctrina operativa SSoT = skill global `comité-expertos §ACOTADO`** (byte-idéntica ×5, sha `5651c53b`); esta L-50 = registro del incidente. TODO-31 ✅. (Validado de nuevo 28/06: revisión adversarial 4 lentes corrió limpia con este perfil — L-57.)
+- **Causa+receta**: subagente DETACHED que llama tool con prompt de permiso (`Bash git`, `Read` fuera-cwd como vault `../brain-private`) → cuelgue infinito esperando aprobación; ultracode+MCP densos lo agravan (§226; Bersaglio ~4.7M tok/2h30). Perfil seguro = read-only IN-cwd (`Grep`/`Read`), SIN git/fuera-cwd, o comité ACOTADO (pocos, sin tools, sobre diagnóstico verificado). Si cuelga: `TaskStop` + cosechar `StructuredOutput` del `.jsonl` (L-61). **SSoT = skill global `comité-expertos §ACOTADO`** (×5 sha `5651c53b`); TODO-31 ✅; revalidado 28/06 (L-57).
+
+### L-61 · Workflow read-only puede colgar 1 agente en el structured-output (sin tool gateada) → bloquea `parallel()`; cosechar del `journal.jsonl` + `TaskStop` + straggler a mano. → ADR §261.5. ⟦OPUS-4.8⟧
+### L-62 · Audit que clasifica código = FALSOS POSITIVOS (infiere emoji desde `icon('id')` ya presente) → ground-truth = `Grep` content-mode, no el JSON. Hermana §3.3. → ADR §261.5. ⟦OPUS-4.8⟧
 
 ---
 

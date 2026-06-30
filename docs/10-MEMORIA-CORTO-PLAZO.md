@@ -12,9 +12,9 @@
 
 > 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
 >
-> 🟢 **RELEVO (sesión 29-30/06 ·l CERRADA → arranca en SIGUE↓) ⟦OPUS-4.8⟧** — **🟣 EPIC #1: TODO-52 CRM Overhaul** (P1 EN CURSO). SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B) + **ADR §260** (barrido P1). 🌟 **VISIÓN = nivel TOP MUNDIAL** — ya escrita, NO re-preguntar; **YO decido+ejecuto+mergeo, el dueño NO opera git ni delibera código** (M-12/M-25). Multi-tenancy DESCARTADA.
-> **HECHO P1·d-l (consolidado → ADR §260; DEPLOYED, `main`==`dev`):** d-g = PASE-1·§219 RBAC·accent-OUT(oro `#D4A85A`)·dataScope P0-SEC-1·Telegram (detalle→brief §PASE-1/§FASE-B) · h-l = **emoji→SVG en 16 módulos** (sistema `icons.js`+`navIcon`; empty→icono de sección) + **voseo→tú**. FIX **L-60 ×3** (flex/grid/max-width). `'department'`→`'own'` latente; MFA→TODO-43.
-> **SIGUE P1:** módulos restantes (cms·backup·capture·agenda·contacts·wizard…) + **iconos de DOMINIO** (rating 🔥🌤️❄️·nba·channel·audit-actions 🛡👤🏢 en `classify/nba/scoring/auditoria.data` = **color/categoría semántica** → bloque propio que preserve `temp--hot/warm/cold`) + **Fase C** (mockups+design-system). **🎨 Doctrina (qué se DEJA):** saludo 👋·bandera 🇨🇴·toasts 🎉·ausencia 🏖·chips-sugerencia·rating ★☆·verificado ✔ — cálidos/culturales/convención/contenido, NO UI genérica. ⚠️ Re-sync FAQ→bot (TODO-34/46). Owner-delete NO bloquea.
+> 🟢 **RELEVO (sesión 29-30/06 ·l CERRADA → arranca en SIGUE↓) ⟦OPUS-4.8⟧** — **🟣 EPIC #1: TODO-52 CRM Overhaul** (P1 EN CURSO). SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B) + **ADR §260** (barrido P1). 🌟 **VISIÓN = nivel TOP MUNDIAL** — ya escrita, NO re-preguntar; **YO decido+ejecuto+mergeo, el dueño NO opera git ni delibera código** (M-12/M-25).
+> **HECHO P1 (consolidado → ADR §260+§261; `main`==`dev`):** PASE-1·§219 RBAC·accent-OUT(oro)·dataScope P0-SEC-1·Telegram + **emoji→SVG CHROME COMPLETO** (16+19 módulos: empty-states/headers/toolbars/acciones/badges/nav-mes) + voseo→tú. Patrón `icon()/iconEl()`+`.u-ico-text`; loading-btns=label-span (no innerHTML). Verificado build 152 + preview (0 emoji-chrome/0 errores ×8 vistas). `'department'`→`'own'` latente; MFA→TODO-43. Detalle → §260/§261.
+> **SIGUE P1 — Fase 2 = iconos de DOMINIO** (rating/channel/type/nba/`actionEmoji`/`ACTION_LABELS`/menús `openMenu`: meta `icon:'…'` interpolada `${m.icon}` → refactor dato+consumidores, preservar `temp--hot/warm/cold`). **Mapa VERIFICADO + canal-monocromo → handoff `2026-06-30-todo52-fase2-domain-icons.md`** (NO re-auditar). Luego **Fase C** (mockups+design-system). **🎨 Doctrina (qué se DEJA) = §260.5/§261.7.** ⚠️ FAQ→bot (TODO-34/46). 🩹 **TODO-29 shard 00/30 urge** (en su techo). Owner-delete NO bloquea.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
@@ -30,6 +30,8 @@
 > (h) **Auditoría verifica CÓDIGO, no DEPLOY** — claim "LIVE" se chequea live (Firebase MCP), no por inferencia; verificadores SIN Bash (cuelgue gateado L-50). Panel ≠ journal.
 > (i) **Validación live SIN screenshot = cobertura fingida (M-23)** — el DOM caza texto/lógica, NO diseño → screenshot del render (extensión `computer`; preview cuelga L-28).
 > (j) **`confirm()` nativo BLOQUEA la extensión Chrome** (val.live 29/06): con el diálogo abierto la página no llega a `document_idle` → screenshots/clicks expiran 45s (parece colgado, NO lo está). Reparto: yo lleno/navego/verifico-Firestore, el DUEÑO da Aceptar; tab atascado → `tabs_create_mcp` (write server-side persiste → verificar por Firestore, no inferir).
+> (k) **Workflow read-only PUEDE colgar 1 agente** (structured-output, sin tool gateada) → bloquea `parallel()`; cosechar del `journal.jsonl` + `TaskStop` + straggler a mano (**L-61**).
+> (l) **Audit que clasifica código = FALSOS POSITIVOS** (infiere emoji desde `icon('id')` ya presente) → verificar cada hallazgo con grep real, no a ciegas (**L-62**).
 
 ---
 

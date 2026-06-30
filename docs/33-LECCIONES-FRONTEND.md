@@ -180,8 +180,9 @@
 
 ### L-60 · SVG inline **hijo-flex directo** colapsa a `width:0` sin `flex:0 0 auto` (TODO-52 P1) ⟦OPUS-4.8⟧
 - **Síntoma**: icono SVG (botón ★→`star`) con `height` correcta (19px) pero `width:0px` (botón colapsa) aunque la regla dice `width:19px` — confirmado midiendo `getComputedStyle`/`getBoundingClientRect` en vivo.
-- **Causa**: un `<svg>` (viewBox, sin attr `width/height`) que es flex-item directo de un `(inline-)flex`, sin `flex:0 0 auto`, lo encoge `flex-shrink:1` en el **eje principal** (width en row) a 0; el cruzado (height) sí respeta la regla → de ahí "height OK, width 0". Los que ya funcionaban (`.btn svg`, `.chip__ico`) traían `flex:0 0 auto`; los nuevos (`.veh-star`/`.veh-thumb-ph`/`.state__icon`/`.u-ico-text>svg`) no.
-- **Receta**: todo `<svg>` inline hijo-flex directo lleva `flex:0 0 auto` con su `width/height` (o envuélvelo en un `<span>` que sea el flex-item). Mídelo vivo (`eval`), no confíes en que la regla esté en el CSS. **Familia**: L-23 · L-28 · L-53.
+- **Causa**: un `<svg>` (viewBox, sin attr `width/height`) flex-item directo de un `(inline-)flex`, sin `flex:0 0 auto`, lo encoge `flex-shrink:1` en el **eje principal** (width en row) a 0; el cruzado (height) sí respeta → "height OK, width 0". Los que funcionaban (`.btn svg`/`.chip__ico`) ya traían `flex:0 0 auto`; los nuevos no.
+- **Receta**: todo `<svg>` inline hijo-flex directo lleva `flex:0 0 auto` con su `width/height` (o envuélvelo en un `<span>` flex-item). Mídelo vivo (`eval`). **Familia**: L-23 · L-28 · L-53.
+- **v2 (hub, ×3)**: en flex APRETADO el global `svg{max-width:100%}` (L-23) clampa el svg a ancho-0 → suma **`max-width:none`** al `flex:0 0 auto`. Al medir: svg bajo ancestro `display:none` (lista oculta en mobile) = `0×0` artefacto, mide a ancho desktop (L-28).
 
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

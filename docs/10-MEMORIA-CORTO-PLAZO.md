@@ -14,7 +14,7 @@
 >
 > 🟢 **RELEVO (sesión 29-30/06 ·l CERRADA → arranca en SIGUE↓) ⟦OPUS-4.8⟧** — **🟣 EPIC #1: TODO-52 CRM Overhaul** (P1 EN CURSO). SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B) + **ADR §260** (barrido P1). 🌟 **VISIÓN = nivel TOP MUNDIAL** — ya escrita, NO re-preguntar; **YO decido+ejecuto+mergeo, el dueño NO opera git ni delibera código** (M-12/M-25).
 > **HECHO P1 (consolidado → ADR §260+§261+§262; `main`==`dev`):** PASE-1·§219 RBAC·accent-OUT(oro)·dataScope P0-SEC-1·Telegram + **emoji→SVG COMPLETO** — chrome 16+19 mód (§260/§261) + **DOMINIO** rating/canal/type/nba/auditoría (§262: meta `icon`→`iconId`+`uIco`, canal monocromo brand-glyphs, preserva `temp--*`) + voseo→tú. Verificado build 152 + preview live 5 vistas + 360 (0 emoji, 0 errores). `'department'`→`'own'` latente; MFA→TODO-43.
-> **SIGUE P1 = SOLO Fase C** (mockups premium + design-system dark-only formal). Menús `openMenu` (presets/asignar) = mejora futura. **🎨 Doctrina (qué se DEJA) = §260.5.** ⚠️ FAQ→bot (TODO-34/46). 🩹 **TODO-29 shard 00/30 urge** (en su techo). Owner-delete NO bloquea.
+> **SIGUE P1 = SOLO Fase C** (mockups premium + design-system dark-only formal). Menús `openMenu` (presets/asignar) = mejora futura. **🎨 Doctrina (qué se DEJA) = §260.5.** ⚠️ FAQ→bot (TODO-34/46). Owner-delete NO bloquea.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
@@ -51,7 +51,7 @@
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
 | **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
 | **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — git-state hook; índice range-shard ✅ (§258). Resta: 99a/99b · `ignoreDirs` · shardear `00-INDICE` + `30-LECCIONES` + `33-FRONTEND` (exceden). | 🔄 | — |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); **`00`→`00a-INDICE` (§1–159) + `30`→`32-LECCIONES-META` (M-NN) SHARDEADOS ✅ 03/07** (38k/43k, holgura). Resta menor: 99a/99b · `ignoreDirs` · `33-FRONTEND` (headroom, baja prioridad). | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |

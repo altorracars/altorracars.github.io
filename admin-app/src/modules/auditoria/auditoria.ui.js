@@ -13,7 +13,7 @@ import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { timeAgo } from '../../domain/format.js';
-import { ACTION_LABELS, actionLabel, actionEmoji, subscribeAuditLog, MOCK_AUDIT } from './auditoria.data.js';
+import { ACTION_LABELS, actionLabel, actionIcon, subscribeAuditLog, MOCK_AUDIT } from './auditoria.data.js';
 
 function tsDate(ts) {
   if (!ts) return null;
@@ -42,7 +42,7 @@ export function mountAuditoria(root) {
   function row(e) {
     const when = tsDate(e.timestamp);
     return el('div', { class: 'aud-row' }, [
-      el('span', { class: 'aud-row__icon', 'aria-hidden': 'true', text: actionEmoji(e.action) }),
+      el('span', { class: 'aud-row__icon', 'aria-hidden': 'true', html: icon(actionIcon(e.action)) }),
       el('div', { class: 'aud-row__main' }, [
         el('span', { class: 'aud-row__line u-truncate' }, [
           el('strong', { text: (e.user || 'sistema').split('@')[0] }),

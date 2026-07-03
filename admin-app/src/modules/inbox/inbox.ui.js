@@ -5,7 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
-import { icon, iconEl } from '../../core/icons.js';
+import { icon, iconEl, uIco } from '../../core/icons.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
@@ -360,7 +360,7 @@ export function mountInbox(root) {
       : sla.state === 'late' ? `SLA vencido hace ${humanizeDuration(sla.remainingMs)}`
       : `Responder en ${humanizeDuration(sla.remainingMs)}`;
 
-    const what = [lead._type.icon + ' ' + lead._type.label, lead.sourceDetail, lead.vehicleOfInterestId ? '🚗 ' + lead.vehicleOfInterestId : '']
+    const what = [lead._type.label, lead.sourceDetail, lead.vehicleOfInterestId ? 'Interés: ' + lead.vehicleOfInterestId : '']
       .filter(Boolean).join(' · ');
 
     const isSel = ui.selected.has(lead.id);
@@ -379,11 +379,11 @@ export function mountInbox(root) {
       el('div', { class: 'lead-card__main u-grow' }, [
         el('div', { class: 'lead-card__top' }, [
           el('span', { class: 'lead-card__name u-truncate', text: lead.fullName }),
-          el('span', { class: `temp ${rm.cls}`, title: `Score ${lead._score}/100` }, [`${rm.icon} ${lead._score}`]),
+          el('span', { class: `temp ${rm.cls}`, title: `Score ${lead._score}/100` }, [uIco(rm.iconId), String(lead._score)]),
         ]),
-        el('div', { class: 'lead-card__what u-truncate u-muted', text: what }),
+        el('div', { class: 'lead-card__what u-muted u-ico-text' }, [uIco(lead._type.iconId), el('span', { class: 'u-truncate', text: what })]),
         el('div', { class: 'lead-card__meta u-caption' }, [
-          el('span', { class: 'lead-card__chan', text: `${lead._channel.icon} ${lead._channel.label}` }),
+          el('span', { class: 'lead-card__chan u-ico-text' }, [uIco(lead._channel.iconId), lead._channel.label]),
           el('span', { class: 'lead-card__dot', text: '·' }),
           el('span', { text: timeAgo(lead.createdAt) }),
           el('span', { class: 'lead-card__dot', text: '·' }),
@@ -408,7 +408,7 @@ export function mountInbox(root) {
           lead.ownerName ? el('span', { class: 'u-faint u-ico-text' }, [iconEl('user'), lead.ownerName]) : null,
         ]),
         el('div', { class: 'lead-card__nba' }, [
-          el('span', { 'aria-hidden': 'true', text: lead._nba.icon }),
+          uIco(lead._nba.iconId),
           el('span', { class: 'u-muted', text: 'Próx: ' }),
           el('strong', { text: lead._nba.label }),
         ]),

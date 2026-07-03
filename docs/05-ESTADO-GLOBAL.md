@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-06-29**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev`: PLAN UNIFICADO COMPLETO (§238-256) — portal único `admin-app/` LIVE; F-6 cutover ✅. Aliados TODO-25/§259 VALIDADO LIVE ✅ 29/06. **Queda (dueño)**: `ZZZ PRUEBA` (deal+veh.47) · FCM · dead-code (~3-jul). **EN CURSO (30/06)**: TODO-52 PULIDO — emoji→SVG **CHROME COMPLETO** (19 módulos más, en `dev`+merge) ✅; **SIGUE = Fase 2 iconos DOMINIO** (rating/channel/type/nba; mapa→`docs/superpowers/2026-06-30-todo52-fase2-domain-icons.md`) + Fase C. Bot=saldo. |
+| **Build** | 🟢 `main`==`dev`: PLAN UNIFICADO COMPLETO (§238-256) — portal único `admin-app/` LIVE; F-6 cutover ✅. Aliados TODO-25/§259 VALIDADO LIVE ✅ 29/06. **Queda (dueño)**: `ZZZ PRUEBA` (deal+veh.47) · FCM · dead-code (~3-jul). **EN CURSO (30/06)**: TODO-52 PULIDO — emoji→SVG **COMPLETO** ✅ (chrome §260/§261 + DOMINIO §262: rating/canal/type/nba/auditoría, canal monocromo, preserva `temp--*`) en `dev`+merge; **SIGUE = solo Fase C** (mockups+design-system). Bot=saldo. |
 | **Cache version vigente** | **`v20260630005858`** (cron-CI 30/06; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

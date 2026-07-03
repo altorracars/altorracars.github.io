@@ -5,7 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
-import { icon } from '../../core/icons.js';
+import { icon, uIco } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { initials, timeAgo, normalizeSearch } from '../../domain/format.js';
 import { channelOf } from '../../domain/classify.js';
@@ -119,8 +119,8 @@ export function mountContactos(root) {
 
     const badges = el('div', { class: 'contact-row__badges' }, [
       el('span', { class: `badge badge--${lm.badge}`, text: lm.label }),
-      el('span', { class: 'badge', text: `${ch.icon} ${ch.label}` }),
-      showTemp ? el('span', { class: `temp ${RATING_META[c.rating].cls}`, text: `${RATING_META[c.rating].icon} ${c.score}` }) : null,
+      el('span', { class: 'badge' }, [uIco(ch.iconId), ch.label]),
+      showTemp ? el('span', { class: `temp ${RATING_META[c.rating].cls}` }, [uIco(RATING_META[c.rating].iconId), String(c.score)]) : null,
     ]);
 
     const contactInfo = [c.email, c.phone].filter(Boolean).join(' · ') || 'Sin datos de contacto';

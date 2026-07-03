@@ -14,10 +14,10 @@ const REQUEST = ['financiacion', 'financiación', 'consignacion', 'consignación
 const COMPLAINT = ['pqr', 'reclamo', 'queja', 'peticion', 'petición', 'garantia', 'garantía', 'soporte'];
 
 const TYPE_META = {
-  cita:      { label: 'Cita',      icon: '📅', badge: 'info' },
-  solicitud: { label: 'Solicitud', icon: '📝', badge: 'gold' },
-  pqr:       { label: 'PQR',       icon: '⚠️', badge: 'danger' },
-  lead:      { label: 'Lead',      icon: '✨', badge: '' },
+  cita:      { label: 'Cita',      iconId: 'calendar',      badge: 'info' },
+  solicitud: { label: 'Solicitud', iconId: 'fileText',      badge: 'gold' },
+  pqr:       { label: 'PQR',       iconId: 'alertTriangle', badge: 'danger' },
+  lead:      { label: 'Lead',      iconId: 'sparkles',      badge: '' },
 };
 
 export function classifyType(lead) {
@@ -37,19 +37,19 @@ export function isHighIntent(lead) {
 
 // ── Canal de captura (web + externos manuales) ──
 const CHANNEL_META = {
-  whatsapp:    { label: 'WhatsApp',    icon: '🟢' },
-  facebook:    { label: 'Facebook',    icon: '📘' },
-  instagram:   { label: 'Instagram',   icon: '📸' },
-  tiktok:      { label: 'TikTok',      icon: '🎵' },
-  marketplace: { label: 'Marketplace', icon: '🛒' },
-  llamada:     { label: 'Llamada',     icon: '📞' },
-  presencial:  { label: 'Presencial',  icon: '🏬' },
-  referido:    { label: 'Referido',    icon: '🤝' },
-  bot:         { label: 'ALTOR Bot',   icon: '🤖' },
-  cuenta:      { label: 'Cuenta',      icon: '👤' },
-  newsletter:  { label: 'Newsletter',  icon: '✉️' },
-  cita:        { label: 'Cita web',    icon: '📅' },
-  web:         { label: 'Web',         icon: '🌐' },
+  whatsapp:    { label: 'WhatsApp',    iconId: 'whatsapp' },
+  facebook:    { label: 'Facebook',    iconId: 'facebook' },
+  instagram:   { label: 'Instagram',   iconId: 'instagram' },
+  tiktok:      { label: 'TikTok',      iconId: 'tiktok' },
+  marketplace: { label: 'Marketplace', iconId: 'shoppingCart' },
+  llamada:     { label: 'Llamada',     iconId: 'phone' },
+  presencial:  { label: 'Presencial',  iconId: 'store' },
+  referido:    { label: 'Referido',    iconId: 'users' },
+  bot:         { label: 'ALTOR Bot',   iconId: 'bot' },
+  cuenta:      { label: 'Cuenta',      iconId: 'user' },
+  newsletter:  { label: 'Newsletter',  iconId: 'mail' },
+  cita:        { label: 'Cita web',    iconId: 'calendar' },
+  web:         { label: 'Web',         iconId: 'globe' },
 };
 
 export function channelOf(lead) {

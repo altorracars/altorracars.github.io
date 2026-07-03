@@ -14,7 +14,7 @@
 // ============================================================
 
 import { el, clear, appendAll } from '../../core/dom.js';
-import { icon } from '../../core/icons.js';
+import { icon, uIco } from '../../core/icons.js';
 import { navIcon } from '../../core/layout/nav-icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
@@ -170,16 +170,16 @@ export function mountDashboard(root) {
 
   function actionRow(lead) {
     const rm = RATING_META[lead._rating] || RATING_META.cold;
-    const what = [lead._channel.icon + ' ' + lead._channel.label, timeAgo(lead.createdAt)].filter(Boolean).join(' · ');
+    const what = [lead._channel.label, timeAgo(lead.createdAt)].filter(Boolean).join(' · ');
     const row = el('article', {
       class: 'dash__action', role: 'listitem', tabindex: '0', 'data-id': lead.id,
       'aria-label': `${lead._nba.label}: ${lead.fullName}`,
     }, [
-      el('span', { class: 'dash__action-icon', 'aria-hidden': 'true', text: lead._nba.icon }),
+      el('span', { class: 'dash__action-icon u-ico', 'aria-hidden': 'true', html: icon(lead._nba.iconId) }),
       el('div', { class: 'dash__action-main u-grow' }, [
         el('div', { class: 'dash__action-top' }, [
           el('strong', { class: 'dash__action-label', text: lead._nba.label }),
-          el('span', { class: `temp ${rm.cls}`, title: `Score ${lead._score}/100` }, [`${rm.icon} ${lead._score}`]),
+          el('span', { class: `temp ${rm.cls}`, title: `Score ${lead._score}/100` }, [uIco(rm.iconId), String(lead._score)]),
         ]),
         el('div', { class: 'dash__action-who u-truncate' }, [
           el('span', { class: 'avatar avatar--xs', 'aria-hidden': 'true', text: initials(lead.fullName) }),
@@ -191,7 +191,7 @@ export function mountDashboard(root) {
           el('span', { text: what }),
         ]),
       ]),
-      el('span', { class: 'dash__action-go', 'aria-hidden': 'true', text: '›' }),
+      el('span', { class: 'dash__action-go u-ico', 'aria-hidden': 'true', html: icon('chevronRight') }),
     ]);
     const open = () => openDetail(lead.id);
     row.addEventListener('click', open);

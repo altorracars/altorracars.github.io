@@ -92,9 +92,9 @@ export function ratingFor(score) {
 }
 
 export const RATING_META = {
-  hot:  { label: 'Caliente', icon: '🔥', cls: 'temp--hot' },
-  warm: { label: 'Tibio',    icon: '🌤️', cls: 'temp--warm' },
-  cold: { label: 'Frío',     icon: '❄️', cls: 'temp--cold' },
+  hot:  { label: 'Caliente', iconId: 'flame',     cls: 'temp--hot' },
+  warm: { label: 'Tibio',    iconId: 'sun',       cls: 'temp--warm' },
+  cold: { label: 'Frío',     iconId: 'snowflake', cls: 'temp--cold' },
 };
 
 export const FACTOR_LABELS = {

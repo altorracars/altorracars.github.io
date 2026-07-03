@@ -50,11 +50,11 @@ function nextStepPresets() {
   };
   const in2h = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
   return [
-    { value: { subject: 'Llamar al cliente', dueAt: at(1, 9) }, label: 'Llamar mañana 9 am', icon: '📞' },
-    { value: { subject: 'Escribir por WhatsApp', dueAt: in2h }, label: 'WhatsApp en 2 horas', icon: '💬' },
-    { value: { subject: 'Hacer seguimiento', dueAt: at(3, 9) }, label: 'Seguimiento en 3 días', icon: '🔁' },
-    { value: 'abrir360', label: 'Agendar cita (abrir 360)', icon: '📅' },
-    { value: null, label: 'Sin próximo paso', icon: '⊘' },
+    { value: { subject: 'Llamar al cliente', dueAt: at(1, 9) }, label: 'Llamar mañana 9 am', iconId: 'phone' },
+    { value: { subject: 'Escribir por WhatsApp', dueAt: in2h }, label: 'WhatsApp en 2 horas', iconId: 'whatsapp' },
+    { value: { subject: 'Hacer seguimiento', dueAt: at(3, 9) }, label: 'Seguimiento en 3 días', iconId: 'repeat' },
+    { value: 'abrir360', label: 'Agendar cita (abrir 360)', iconId: 'calendar' },
+    { value: null, label: 'Sin próximo paso', iconId: 'ban' },
   ];
 }
 
@@ -205,7 +205,10 @@ export function mountInbox(root) {
       const row = el('div', { class: 'lead-card', style: { alignItems: 'center' } }, [
         el('span', { class: `badge badge--${late ? 'danger' : 'gold'}`, text: late ? 'VENCIDO' : 'HOY' }),
         el('div', { class: 'u-grow' }, [
-          el('div', { class: 'lead-card__name', text: (t.type === 'cita' ? '📅 ' : '') + t.subject }),
+          el('div', { class: 'lead-card__name u-ico-text' }, [
+            t.type === 'cita' ? el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('calendar') }) : null,
+            t.subject,
+          ]),
           el('div', { class: 'u-caption u-muted', text: `${t.relatedTo && t.relatedTo.name ? t.relatedTo.name + ' · ' : ''}${timeAgo(t.dueAt)}` }),
         ]),
         el('div', { class: 'u-row u-row--tight' }, [openBtn, canEdit ? doneBtn : null]),
@@ -396,9 +399,13 @@ export function mountInbox(root) {
                 title: 'Este lead ya es un negocio: gestiónalo en el Pipeline',
                 style: { cursor: 'pointer', border: 'none' },
               }, [
-                lead.convertedTo && lead.convertedTo.outcome === 'perdido' ? '✖ Negocio perdido → Pipeline'
-                  : lead.convertedTo && lead.convertedTo.outcome === 'vendido' ? '🏆 VENDIDO'
-                  : `🎯 ${(lead.convertedTo && lead.convertedTo.stageName) || 'Convertido'} → Pipeline`,
+                el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon(
+                  lead.convertedTo && lead.convertedTo.outcome === 'perdido' ? 'x'
+                    : lead.convertedTo && lead.convertedTo.outcome === 'vendido' ? 'crown' : 'target'
+                ) }),
+                lead.convertedTo && lead.convertedTo.outcome === 'perdido' ? ' Negocio perdido → Pipeline'
+                  : lead.convertedTo && lead.convertedTo.outcome === 'vendido' ? ' VENDIDO'
+                  : ` ${(lead.convertedTo && lead.convertedTo.stageName) || 'Convertido'} → Pipeline`,
               ])
             : el('span', { class: `badge badge--${sm.badge || ''}`.trim(), text: sm.label }),
           lead.archived ? el('span', { class: 'badge', html: icon('archive') + ' Archivado' }) : null,
@@ -460,8 +467,8 @@ export function mountInbox(root) {
     if (action === 'pipeline') { window.location.hash = '#/pipeline'; return; }
     if (action === 'assign') {
       const team = store.get().team || [];
-      const items = [{ value: null, label: 'Sin asignar', icon: '⊘', active: !lead.ownerId },
-        ...team.map((m) => ({ value: m, label: m.nombre, hint: m.cargo, icon: '👤', active: lead.ownerId === m.uid }))];
+      const items = [{ value: null, label: 'Sin asignar', iconId: 'ban', active: !lead.ownerId },
+        ...team.map((m) => ({ value: m, label: m.nombre, hint: m.cargo, iconId: 'user', active: lead.ownerId === m.uid }))];
       return openMenu(anchor, items, (it) => doAssign(lead, it.value), { title: 'Asignar a' });
     }
     if (action === 'status') {
@@ -489,18 +496,18 @@ export function mountInbox(root) {
       // super admin, solo prueba/spam — lo real se ARCHIVA, no se borra).
       const items = [
         lead.archived
-          ? { value: 'unarchive', label: 'Restaurar de archivados', icon: '↩️' }
-          : { value: 'archive', label: 'Archivar', icon: '🗄', hint: 'Sale de las vistas; reversible' },
+          ? { value: 'unarchive', label: 'Restaurar de archivados', iconId: 'undo' }
+          : { value: 'archive', label: 'Archivar', iconId: 'archive', hint: 'Sale de las vistas; reversible' },
         hasPermission('crm.delete')
-          ? { value: 'purge', label: 'Eliminar definitivo', icon: '🗑', hint: 'Solo pruebas/spam — borra TODO su rastro' }
+          ? { value: 'purge', label: 'Eliminar definitivo', iconId: 'trash', hint: 'Solo pruebas/spam — borra TODO su rastro' }
           : null,
       ].filter(Boolean);
       return openMenu(anchor, items, async (it) => {
         if (it.value === 'archive' || it.value === 'unarchive') {
           const archived = it.value === 'archive';
           patchLead(lead.id, { archived });
-          if (store.get().mock) { toast(archived ? '🗄 Archivado' : '↩️ Restaurado', 'ok'); return; }
-          try { await archiveLead(lead.id, archived); toast(archived ? '🗄 Archivado' : '↩️ Restaurado', 'ok'); }
+          if (store.get().mock) { toast(archived ? 'Archivado' : 'Restaurado', 'ok'); return; }
+          try { await archiveLead(lead.id, archived); toast(archived ? 'Archivado' : 'Restaurado', 'ok'); }
           catch (e) { patchLead(lead.id, { archived: !archived }); toast('No se pudo archivar', 'error'); }
           return;
         }
@@ -514,7 +521,7 @@ export function mountInbox(root) {
           if (store.get().mock) { toast('Eliminado (mock)', 'ok'); return; }
           try {
             const r = await purgeLead(lead.id);
-            toast(`🗑 Eliminado: ${r.activities} actividades, ${r.deals} negocios${r.contactDeleted ? ', contacto' : ''}`, 'ok');
+            toast(`Eliminado: ${r.activities} actividades, ${r.deals} negocios${r.contactDeleted ? ', contacto' : ''}`, 'ok');
           } catch (e) {
             toast(e.message && e.message.includes('Super Admin') ? 'Solo el Super Admin puede eliminar.' : 'No se pudo eliminar: ' + friendlyError(e), 'error');
           }
@@ -599,8 +606,8 @@ export function mountInbox(root) {
     const assignBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('user') + ' Asignar a…' });
     assignBtn.addEventListener('click', () => {
       const team = store.get().team || [];
-      const items = [{ value: null, label: 'Sin asignar', icon: '⊘' },
-        ...team.map((m) => ({ value: m, label: m.nombre, hint: m.cargo, icon: '👤' }))];
+      const items = [{ value: null, label: 'Sin asignar', iconId: 'ban' },
+        ...team.map((m) => ({ value: m, label: m.nombre, hint: m.cargo, iconId: 'user' }))];
       openMenu(assignBtn, items, (it) => bulkAssign(it.value), { title: `Asignar ${n} a` });
     });
     const contactBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('check') + ' Marcar contactado' });

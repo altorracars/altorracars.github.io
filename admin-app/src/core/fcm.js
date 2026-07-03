@@ -25,6 +25,7 @@ import { app, db } from './firebase.js';
 import { store } from './store.js';
 import { toast } from './toast.js';
 import { el } from './dom.js';
+import { icon } from './icons.js';
 
 // VAPID public key (idéntica al admin viejo — Firebase Console → Cloud Messaging
 // → Web Push certificates). Es PÚBLICA: identifica al servidor emisor, no es
@@ -64,7 +65,7 @@ function bindForeground() {
       const n = (payload && payload.notification) || {};
       const title = n.title || 'Cliente esperando';
       const body = n.body || 'Hay un cliente en cola en el ALTOR Hub.';
-      toast(`🚨 ${title} — ${body}`, 'info', 9000);
+      toast(`${title} — ${body}`, 'info', 9000);
     });
   } catch (e) {
     _foregroundBound = false;
@@ -96,7 +97,7 @@ async function persistToken(token) {
 // el SW de FCM → obtiene y persiste el token. Devuelve el token o null.
 async function enableAndGetToken() {
   if (Notification.permission === 'denied') {
-    toast('🔒 Notificaciones bloqueadas. Activalas desde el candado de la barra de direcciones y recargá.', 'error', 8000);
+    toast('Notificaciones bloqueadas. Actívalas desde el candado de la barra de direcciones y recarga.', 'error', 8000);
     return null;
   }
   let reg;
@@ -143,13 +144,13 @@ function showPromptCard() {
     b.disabled = true; b.textContent = 'Activando…';
     const tok = await enableAndGetToken();
     dismissCard(card);
-    if (tok) toast('✅ Notificaciones activadas', 'ok', 4000);
+    if (tok) toast('Notificaciones activadas', 'ok', 4000);
   };
   card = el('div', { id: 'fcm-prompt', class: 'fcm-prompt', role: 'dialog', 'aria-label': 'Activar notificaciones' }, [
-    el('div', { class: 'fcm-prompt__icon', 'aria-hidden': 'true', text: '🔔' }),
+    el('div', { class: 'fcm-prompt__icon', 'aria-hidden': 'true', html: icon('bell') }),
     el('div', { class: 'fcm-prompt__body' }, [
       el('p', { class: 'fcm-prompt__title', text: 'Avisos de clientes en cola' }),
-      el('p', { class: 'fcm-prompt__text u-muted', text: 'Recibí una alerta cuando un cliente esté esperando, aunque tengas el portal cerrado.' }),
+      el('p', { class: 'fcm-prompt__text u-muted', text: 'Recibe una alerta cuando un cliente esté esperando, aunque tengas el portal cerrado.' }),
       el('div', { class: 'fcm-prompt__actions' }, [
         el('button', { type: 'button', class: 'btn btn--gold btn--sm', onclick: onEnable }, ['Activar']),
         el('button', { type: 'button', class: 'btn btn--ghost btn--sm', onclick: () => dismissCard(card) }, ['Ahora no']),

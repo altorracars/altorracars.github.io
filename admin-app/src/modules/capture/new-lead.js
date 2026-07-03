@@ -24,7 +24,9 @@ export function openNewLeadForm() {
   f.telefono = el('input', { class: 'input', type: 'tel', placeholder: '300 123 4567', autocomplete: 'off' });
   f.email = el('input', { class: 'input', type: 'email', placeholder: 'correo@ejemplo.com (opcional)', autocomplete: 'off' });
 
-  f.canal = el('select', { class: 'select' }, MANUAL_CHANNELS.map((c) => el('option', { value: c.id }, [`${c.icon} ${c.label}`])));
+  // OLA-1.6: sin emoji en el <option> nativo (el SO los pinta inconsistentes y
+  // un <option> no admite SVG) — el canal se identifica por su label limpio.
+  f.canal = el('select', { class: 'select' }, MANUAL_CHANNELS.map((c) => el('option', { value: c.id }, [c.label])));
   f.interes = el('select', { class: 'select' }, INTEREST_TYPES.map((t) => el('option', { value: t.id }, [t.label])));
 
   f.trafico = el('select', { class: 'select' }, [

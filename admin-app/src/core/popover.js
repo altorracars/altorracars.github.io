@@ -4,6 +4,7 @@
 // ============================================================
 
 import { el } from './dom.js';
+import { icon } from './icons.js';
 
 let active = null;
 
@@ -32,7 +33,9 @@ export function openMenu(anchor, items, onPick, opts = {}) {
       class: 'popover__item' + (it.active ? ' is-active' : ''),
       type: 'button', role: 'menuitem',
     }, [
-      it.icon ? el('span', { class: 'popover__icon', text: it.icon }) : null,
+      // OLA-1.6: iconId = SVG del set (icons.js); `icon` texto/emoji queda como fallback legacy.
+      it.iconId ? el('span', { class: 'popover__icon u-ico', 'aria-hidden': 'true', html: icon(it.iconId) })
+        : (it.icon ? el('span', { class: 'popover__icon', text: it.icon }) : null),
       el('span', { class: 'u-grow u-truncate', text: it.label }),
       it.hint ? el('span', { class: 'popover__hint u-caption', text: it.hint }) : null,
     ]);

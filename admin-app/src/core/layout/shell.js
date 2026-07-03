@@ -196,9 +196,9 @@ export function mountShell(appRoot) {
   ]);
   userBtn.addEventListener('click', () => {
     openMenu(userBtn, [
-      { value: 'perfil', label: 'Mi perfil', icon: '👤' },
+      { value: 'perfil', label: 'Mi perfil', iconId: 'user' },
       { divider: true },
-      { value: 'logout', label: 'Cerrar sesión', icon: '🚪' },
+      { value: 'logout', label: 'Cerrar sesión', iconId: 'logOut' },
     ], (it) => {
       if (it.value === 'perfil') navigate('perfil');
       else if (it.value === 'logout') signOutUser();

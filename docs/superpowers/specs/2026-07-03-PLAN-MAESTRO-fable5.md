@@ -156,12 +156,14 @@ cerrar (o reabrir con evidencia) el residuo "portar FCM".
 - Ritmo vertical: padding-top de página unificado a `--s-5` (vehicles/reviews hoy abren a 4px).
 - Panel 360 en ≥1400px: modo split (empuja contenido) o `--detail-w` responsivo 440→640px; overlay solo en pantallas chicas.
 
-**1.4 · friendlyError DE VERDAD + fugas de copy**
+**1.4 · friendlyError DE VERDAD + fugas de copy — ✅ HECHO (Fable 03/07 noche):** 15/15 callsites crudos → `friendlyError`/`friendlyCallable` (helper NUEVO que preserva mensajes de negocio de callables propias) · 11 empty-states sin IDs de permiso · "13 listas"→derivado · copy marcas/listas a negocio. Nota: los "(demo)" son ramas mock-only = falso hallazgo del audit, sin acción.
+*(Especificación original — referencia)*
 - Envolver los 13+ callsites de §2 con `friendlyError(e, fallback)`.
 - Empty-states "Necesitas el permiso `users.read`…" (`usuarios.ui.js:46`, `workflows.ui.js:37`, roles/departamentos/auditoría) → copy sin IDs de permiso.
 - Copy dev residual: `brands.ui.js:186`, `lists.ui.js:156` ("13 listas" hardcode→derivado), `dealers.ui.js:185`; "(demo)" inline en toasts (`ajustes.ui.js:89-90`, `config.ui.js:45,213`) → badge global de modo demo, no sufijos.
 
-**1.5 · Voseo→tú-Colombia (CRÍTICO en superficie pública)**
+**1.5 · Voseo→tú-Colombia — ✅ CÓDIGO HECHO · ⏳ DATA PROD 11/14 (Fable 03/07 noche):** código limpio (grep cero: hub system-msgs al cliente, seeds, ajustes, perfil). **PRODUCCIÓN `knowledgeBase`: 14 FAQs con voseo detectadas vivas; 3 corregidas vía MCP, 11 DENEGADAS por el clasificador de permisos** → rutas: (a) OK explícito del dueño en chat y reintento, (b) el dueño edita en Base de conocimiento, o (c) corregirlas en la próxima validación live (yo, vía extensión). IDs pendientes: VaGAkmMzvx8GXoYoN8yZ · 5GukLoAhEzGua3GRY6kf · 2U2MRhl6psACGod2tK48 · 3vinI0JbObI5peOZWYmS · cWV9UhULq6753bX3Y2qe · 3Zn7QX793lL3j6ClvvHm · 5AR7mXw3YiwtOSC3b4Me · SYwMPpWwn8l8NsrmCdRg · xy0o2MHCpsKJ3UVUONCr · 8Gxqxmgpb36q989GFn6z · WImpP2JIqczl6omH4e8H.
+*(Especificación original — referencia)*
 - `cerebro.data.js:72-95` (respuestas del bot PÚBLICO: "decime que andás buscando"…) — barrido completo; `hub.ui.js:285,295,527`; `login.js:34`; `perfil.ui.js:208`. Skill `catalogo-voz`. Añadir regla de voz al cerebro para no reincidir.
 
 **1.6 · Emoji→SVG fase 3 (chrome funcional restante — con criterio, no sweep ciego)**

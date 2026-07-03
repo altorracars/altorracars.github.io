@@ -12,11 +12,10 @@
 
 > 🤖 **Impl = Opus 4.8** (tag `⟦OPUS-4.8⟧`); **revisión Fable 5 ✅ HECHA 03/07** (plan maestro). Bot LLM = saldo (#917 dormido).
 >
-> 🟢 **RELEVO (sesión 03/07 FABLE 5 — auditoría holística + plan único) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4 por urgencia; Opus ejecuta TAL CUAL, reglas en su §0). **🟣 TODO-52 sigue EPIC #1** bajo ese plan (visión/brief intactos, mandato permanente; §260-265 shipped, ADR §266 = esta revisión). **YO decido+ejecuto+mergeo** (M-12/M-25).
-> **⚠️ Claims ✅ REFUTADOS por Fable (grep antes de confiar — detalle plan §2):** friendlyError (13+ crudos) · emoji→SVG (solo nav) · RBAC 71→**82** ×3 catálogos sin paridad · FCM-pendiente probablemente stale (`main.js:103`).
-> **✅ OLA 0 EJECUTADA (→ ADR §267; suite 340/340 + deploys):** storage staff-only · dataScope integral · ACK-FIRST · TODO-41 · fail-closed.
-> **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus retoma después). ✅ **0.6 + OLA 1.1/1.2/1.3 HECHOS** (03/07 tarde: docs stale · tokens fantasma · menú 5 grupos+guard+breadcrumb · layout f2 core — verificado live 1920px, consola limpia).
-> **▶️ SIGUE (orden plan §Ola 1):** 1.4 friendlyError real (13+ callsites) + copy sin IDs de permiso → 1.5 voseo→tú (bot público CRÍTICO) → 1.6 emoji→SVG chrome funcional (popover iconId) → 1.7 appendAll/validate → 1.8 superficies (z-tokens · .modal canónico · hub colores · skeletons · empty CTAs) → 1.9/1.9b.
+> 🟢 **RELEVO FABLE 5 (03/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; ADR §266 revisión · §267 OLA 0 ejecutada+deployed). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale del cerebro → plan §2 (grep antes de confiar; L-62).
+> **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus retoma después). ✅ **0.6 + OLA 1.1-1.5 HECHOS** (03/07: docs stale · tokens fantasma · menú 5 grupos+guard+breadcrumb · layout f2 core · friendlyError 15/15+IDs-permiso · voseo código cero — verificado live+build, `main`==`dev` bf27d75e).
+> **🔔 DUEÑO: 11 FAQs del bot PÚBLICO con voseo VIVAS en prod** (clasificador denegó mi write MCP; 3/14 sí pasaron) — IDs y 3 rutas → plan §1.5. Un "OK, corrígelas" tuyo en chat y las termino.
+> **▶️ SIGUE (plan §Ola 1):** 1.6 emoji→SVG chrome funcional (popover iconId · usermenu · canal · FCM) → 1.7 appendAll/safe + domain/validate (dealers 1º) → 1.8 superficies (z-tokens · .modal canónico · hub colores · contraste oro · skeletons · empty CTAs · drag) → 1.9 onboarding+combobox → 1.9b cola offline.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo · saldo Anthropic (flip bot) · estado GSC sitemap.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).

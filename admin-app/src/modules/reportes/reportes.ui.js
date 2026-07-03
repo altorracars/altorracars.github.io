@@ -146,7 +146,7 @@ export function mountReportes(root) {
   function sectionSource(src) {
     const head = ['Canal', 'Leads', 'Conv.', 'Oport.', 'Ganados', 'Ingresos'];
     const rows = src.map((r) => [
-      `${r.icon || ''} ${r.label}`.trim(),
+      r.label,
       String(r.leads),
       pct(r.convRate),
       String(r.deals),

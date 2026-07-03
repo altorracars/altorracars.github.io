@@ -10,17 +10,17 @@
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { el } from '../../core/dom.js';
-import { icon } from '../../core/icons.js';
+import { icon, uIco } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { addMockLead } from '../../core/mock.js';
 import { frictionTrack } from '../../core/friction.js';
 
 const FUENTES = [
-  { id: 'whatsapp', label: 'WhatsApp', icon: '💬' },
-  { id: 'walkin', label: 'Walk-in', icon: '🚶' },
-  { id: 'llamada', label: 'Llamada', icon: '📞' },
-  { id: 'referido', label: 'Referido', icon: '🤝' },
+  { id: 'whatsapp', label: 'WhatsApp', iconId: 'whatsapp' },
+  { id: 'walkin', label: 'Walk-in', iconId: 'user' },
+  { id: 'llamada', label: 'Llamada', iconId: 'phone' },
+  { id: 'referido', label: 'Referido', iconId: 'users' },
 ];
 
 // Guion de consentimiento verbal (UNA frase — el texto final lo valida P4/abogado).
@@ -40,8 +40,8 @@ export function openQuickLeadForm() {
   function renderFuentes() {
     fuenteChips.replaceChildren(...FUENTES.map((fu) => {
       const b = el('button', {
-        class: 'chip' + (state.fuente === fu.id ? ' chip--active' : ''), type: 'button',
-      }, [`${fu.icon} ${fu.label}`]);
+        class: 'chip u-ico-text' + (state.fuente === fu.id ? ' chip--active' : ''), type: 'button',
+      }, [uIco(fu.iconId), fu.label]);
       b.addEventListener('click', () => { state.fuente = fu.id; renderFuentes(); });
       return b;
     }));

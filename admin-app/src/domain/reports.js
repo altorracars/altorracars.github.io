@@ -89,7 +89,7 @@ export function funnel(leads, allDeals) {
 export function bySource(leads, deals) {
   const map = {};
   const ensure = (ch) => (map[ch.key] || (map[ch.key] = {
-    key: ch.key, label: ch.label, icon: ch.icon,
+    key: ch.key, label: ch.label, iconId: ch.iconId,
     leads: 0, convertidos: 0, deals: 0, won: 0, revenue: 0,
   }));
   leads.forEach((l) => {

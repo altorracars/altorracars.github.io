@@ -23,51 +23,51 @@ export function computeNBA(lead, ctx = {}) {
     {
       id: 'confirm_appointment', priority: 95,
       when: type === 'cita' && !closed && uncontacted,
-      label: 'Confirmar cita', reason: 'Cita pendiente de confirmación', icon: '📅',
+      label: 'Confirmar cita', reason: 'Cita pendiente de confirmación', iconId: 'calendar',
     },
     {
       id: 'reach_hot_lead', priority: 90,
       when: score >= 70 && uncontacted && !closed,
-      label: 'Contactar ya', reason: 'Lead caliente sin respuesta', icon: '🔥',
+      label: 'Contactar ya', reason: 'Lead caliente sin respuesta', iconId: 'flame',
     },
     {
       id: 'send_quote', priority: 88,
       when: isHighIntent(lead) && score >= 55 && !closed,
-      label: 'Enviar cotización', reason: 'Interés de compra/financiación', icon: '🧾',
+      label: 'Enviar cotización', reason: 'Interés de compra/financiación', iconId: 'receipt',
     },
     {
       id: 'assign_asesor', priority: 85,
       when: !lead.ownerId && !closed,
-      label: 'Asignar asesor', reason: 'Sin asesor asignado', icon: '🙋',
+      label: 'Asignar asesor', reason: 'Sin asesor asignado', iconId: 'userPlus',
     },
     {
       id: 'first_touch', priority: 70,
       when: uncontacted && sinceCreated < 2 && !closed,
-      label: 'Primer contacto', reason: 'Lead nuevo sin trabajar', icon: '👋',
+      label: 'Primer contacto', reason: 'Lead nuevo sin trabajar', iconId: 'hand',
     },
     {
       id: 'whatsapp_followup', priority: 60,
       when: score >= 40 && score < 70 && sinceActivity >= 2 && sinceActivity < 30 && !closed,
-      label: 'Seguimiento WhatsApp', reason: 'Lead tibio enfriándose', icon: '💬',
+      label: 'Seguimiento WhatsApp', reason: 'Lead tibio enfriándose', iconId: 'messageCircle',
     },
     {
       id: 'reactivate', priority: 50,
       when: sinceActivity >= 30 && sinceActivity !== Infinity && !closed,
-      label: 'Reactivar con oferta', reason: 'Inactivo +30 días', icon: '🎯',
+      label: 'Reactivar con oferta', reason: 'Inactivo +30 días', iconId: 'target',
     },
     {
       id: 'nurture', priority: 15,
       when: !closed,
-      label: 'Nutrir relación', reason: 'Sin acción urgente', icon: '🌱',
+      label: 'Nutrir relación', reason: 'Sin acción urgente', iconId: 'sprout',
     },
     {
       id: 'archived', priority: 5,
       when: closed,
-      label: 'Cerrado', reason: 'Lead cerrado', icon: '✅',
+      label: 'Cerrado', reason: 'Lead cerrado', iconId: 'checkCircle',
     },
   ];
 
   const matched = rules.filter((r) => r.when).sort((a, b) => b.priority - a.priority);
   const best = matched[0] || rules[rules.length - 1];
-  return { id: best.id, label: best.label, reason: best.reason, icon: best.icon, priority: best.priority };
+  return { id: best.id, label: best.label, reason: best.reason, iconId: best.iconId, priority: best.priority };
 }

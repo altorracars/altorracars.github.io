@@ -97,12 +97,13 @@ export function mountVehicles(root) {
     catch (e) { body.replaceChildren(el('span', { class: 'u-caption lst-warn', text: 'No se pudo cargar el historial.' })); return; }
     clear(body);
     if (!entries.length) { body.append(el('span', { class: 'u-caption u-muted', text: 'Sin movimientos registrados.' })); return; }
-    const ACTION_LABELS = { created: '✨ Creado', edited: '✏️ Editado', deleted: '🗑 Eliminado', featured: '★ Destacado', sold: '💰 Vendido', reverted: '↩ Revertido' };
+    const ACTION_LABELS = { created: { iconId: 'sparkles', label: 'Creado' }, edited: { iconId: 'edit', label: 'Editado' }, deleted: { iconId: 'trash', label: 'Eliminado' }, featured: { iconId: 'star', label: 'Destacado' }, sold: { iconId: 'dollar', label: 'Vendido' }, reverted: { iconId: 'undo', label: 'Revertido' } };
     entries.forEach((entry) => {
       const when = entry.timestamp ? new Date(entry.timestamp).toLocaleString('es-CO') : '';
+      const al = ACTION_LABELS[entry.action];
       const row = el('div', { class: 'veh-audit__row' }, [
         el('div', {}, [
-          el('strong', { text: ACTION_LABELS[entry.action] || entry.action }),
+          al ? el('strong', { class: 'u-ico-text', html: icon(al.iconId) + al.label }) : el('strong', { text: entry.action }),
           el('span', { class: 'u-caption u-muted', text: ' · ' + (entry.userName || entry.user || '') + ' · ' + when }),
         ]),
         (entry.changes || []).length

@@ -5,7 +5,7 @@
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
-import { icon } from '../../core/icons.js';
+import { icon, uIco } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
@@ -22,7 +22,7 @@ import { openContactEdit } from './contacts.edit.js';
 import { dealFromLead } from '../../domain/pipeline.js';
 import { getMockContact, getMockActivities, getMockNotes, addMockNote, addMockDeal } from '../../core/mock.js';
 
-const TYPE_ICON = { solicitud_inbound: '📥', whatsapp: '💬', status_change: '🔁', nota: '🗒️', email: '✉️', llamada: '📞' };
+const TYPE_ICON = { solicitud_inbound: 'inbox', whatsapp: 'messageCircle', status_change: 'repeat', nota: 'fileText', email: 'mail', llamada: 'phone' };
 
 export function mountDetailPanel(root) {
   let currentId = null;
@@ -163,10 +163,10 @@ export function mountDetailPanel(root) {
         el('div', { class: 'u-grow', style: { minWidth: '0' } }, [
           el('h2', { class: 'detail__name u-truncate', text: lead.fullName }),
           el('div', { class: 'u-row u-row--tight', style: { flexWrap: 'wrap' } }, [
-            el('span', { class: `temp ${rm.cls}`, text: `${rm.icon} ${rm.label} · ${score.score}` }),
+            el('span', { class: `temp ${rm.cls}` }, [uIco(rm.iconId), `${rm.label} · ${score.score}`]),
             el('span', { class: `badge badge--${sm.badge || ''}`.trim(), text: sm.label }),
-            el('span', { class: 'badge', text: `${type.icon} ${type.label}` }),
-            el('span', { class: 'badge', text: `${ch.icon} ${ch.label}` }),
+            el('span', { class: 'badge' }, [uIco(type.iconId), type.label]),
+            el('span', { class: 'badge' }, [uIco(ch.iconId), ch.label]),
           ]),
         ]),
       ]),
@@ -204,7 +204,7 @@ export function mountDetailPanel(root) {
     const nba = computeNBA(lead, { score: computedScore(lead).score });
     return el('div', { class: 'u-stack' }, [
       el('div', { class: 'detail-card detail-card--nba' }, [
-        el('span', { class: 'detail-card__icon', 'aria-hidden': 'true', text: nba.icon }),
+        el('span', { class: 'detail-card__icon u-ico', 'aria-hidden': 'true', html: icon(nba.iconId) }),
         el('div', { class: 'u-grow' }, [
           el('div', { class: 'u-caption u-muted', text: 'Próxima mejor acción' }),
           el('strong', { text: nba.label }),
@@ -242,7 +242,7 @@ export function mountDetailPanel(root) {
     const list = el('ol', { class: 'timeline' });
     data.activities.forEach((a) => {
       list.append(el('li', { class: 'timeline__item timeline__item--' + (a.direction || 'inbound') }, [
-        el('span', { class: 'timeline__icon', 'aria-hidden': 'true', text: TYPE_ICON[a.type] || '•' }),
+        el('span', { class: 'timeline__icon', 'aria-hidden': 'true', html: icon(TYPE_ICON[a.type] || 'messageCircle') }),
         el('div', { class: 'u-grow' }, [
           el('div', { class: 'u-spread' }, [
             el('strong', { class: 'u-truncate', text: a.subject || a.type || 'Actividad' }),
@@ -272,7 +272,7 @@ export function mountDetailPanel(root) {
       el('div', { class: 'scorehero' }, [
         el('div', { class: `scorehero__num ${rm.cls}`, text: String(s.score) }),
         el('div', { class: 'u-stack', style: { gap: '2px' } }, [
-          el('strong', { text: `${rm.icon} ${rm.label}` }),
+          el('strong', { class: 'u-ico-text' }, [uIco(rm.iconId), rm.label]),
           el('span', { class: 'u-caption u-faint', text: 'Heurística determinista (7 factores, sin IA)' }),
         ]),
       ]),

@@ -74,6 +74,7 @@
   width: 28px; height: 28px; flex: 0 0 auto; display: grid; place-content: center;
   border-radius: 50%; background: var(--surface-stroke); font-size: 14px; z-index: 1;
 }
+.timeline__icon svg { width: 1em; height: 1em; }
 .timeline__item--outbound .timeline__icon { background: var(--gold-100); }
 :root[data-theme="dark"] .timeline__item--outbound .timeline__icon { background: rgba(184,146,74,0.22); }
 

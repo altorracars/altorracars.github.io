@@ -39,28 +39,28 @@ export function actionLabel(action) {
   return ACTION_LABELS[action] || action || 'realizó acción';
 }
 
-/** Emoji por acción (resuelto por prefijo — admin-app es emoji, no lucide). */
-export function actionEmoji(action) {
+/** Id de ícono SVG (core/icons.js) por acción, resuelto por prefijo. TODO-52 P1 Fase 2. */
+export function actionIcon(action) {
   const a = String(action || '');
-  if (a === 'login') return '🔑';
-  if (a === 'user_block') return '🚫';
-  if (a === 'user_unlock') return '🔓';
-  if (a.startsWith('user_')) return '👤';
-  if (a.startsWith('role_')) return '🛡️';
-  if (a.startsWith('dept_')) return '🏢';
-  if (a.startsWith('workflow_enable')) return '⚡';
-  if (a.startsWith('workflow_')) return '⏸';
-  if (a.startsWith('kb_')) return '🧠';
-  if (a.startsWith('vehicle_')) return '🚗';
-  if (a.startsWith('brand_')) return '🏷️';
-  if (a.startsWith('dealer_')) return '🤝';
-  if (a.startsWith('banner_')) return '🖼️';
-  if (a.startsWith('review_')) return '⭐';
-  if (a.startsWith('appointment_')) return '📅';
-  if (a.startsWith('backup_')) return '💾';
-  if (a.indexOf('seo') !== -1 || a.indexOf('sitemap') !== -1) return '🗺️';
-  if (a.indexOf('content') !== -1 || a.indexOf('cms') !== -1) return '📝';
-  return '📝';
+  if (a === 'login') return 'key';
+  if (a === 'user_block') return 'ban';
+  if (a === 'user_unlock') return 'unlock';
+  if (a.startsWith('user_')) return 'user';
+  if (a.startsWith('role_')) return 'shield';
+  if (a.startsWith('dept_')) return 'building';
+  if (a.startsWith('workflow_enable')) return 'zap';
+  if (a.startsWith('workflow_')) return 'pause';
+  if (a.startsWith('kb_')) return 'brain';
+  if (a.startsWith('vehicle_')) return 'car';
+  if (a.startsWith('brand_')) return 'tag';
+  if (a.startsWith('dealer_')) return 'users';
+  if (a.startsWith('banner_')) return 'image';
+  if (a.startsWith('review_')) return 'star';
+  if (a.startsWith('appointment_')) return 'calendar';
+  if (a.startsWith('backup_')) return 'archive';
+  if (a.indexOf('seo') !== -1 || a.indexOf('sitemap') !== -1) return 'map';
+  if (a.indexOf('content') !== -1 || a.indexOf('cms') !== -1) return 'fileText';
+  return 'fileText';
 }
 
 /** Suscripción al log (últimas 200, real-time). */

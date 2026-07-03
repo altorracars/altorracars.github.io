@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-07-03**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev`: portal único LIVE; TODO-52 §260-265. **03/07 FABLE 5: PLAN MAESTRO (`specs/2026-07-03-…fable5.md`) = SSoT ejecución + OLA 0 ✅ EJECUTADA+DEPLOYED (§267: storage staff-only · dataScope integral · ACK-FIRST · TODO-41 resuelto; suite 340/340)**. **SIGUE (Opus): 0.6-docs + OLA 1** (tokens fantasma → menú 5 grupos → layout f2). Queda (dueño): `ZZZ PRUEBA` · saldo bot. |
+| **Build** | 🟢 `main`==`dev` `ca72a384`: **PLAN MAESTRO Fable = SSoT** (`specs/2026-07-03-…fable5.md`). **OLA 0 ✅ (§267) + OLA 1.1-1.8core ✅ (§268)** — seguridad deployed · menú 5 grupos · layout 1360 · voseo cero (código+PROD) · chrome SVG · validate+rules-shape (suite 347/347). **SIGUE: 1.8b skeletons → 1.9 onboarding+combobox → 1.9b → OLA 2.** Fable disponible ≤07-jul (luego Opus). Queda (dueño): `ZZZ PRUEBA` · saldo bot. |
 | **Cache version vigente** | **`v20260703025624`** (cron-CI 03/07; el cron es DUEÑO del bump → NO bump manual en rama, evita L-02/L-03; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

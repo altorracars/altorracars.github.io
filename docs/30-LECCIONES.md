@@ -68,6 +68,8 @@
 
 ### L-61 · Workflow read-only puede colgar 1 agente en el structured-output (sin tool gateada) → bloquea `parallel()`; cosechar del `journal.jsonl` + `TaskStop` + straggler a mano. → ADR §261.5. ⟦OPUS-4.8⟧
 ### L-62 · Audit que clasifica código = FALSOS POSITIVOS (infiere emoji desde `icon('id')` ya presente) → ground-truth = `Grep` content-mode, no el JSON. Hermana §3.3. → ADR §261.5. ⟦OPUS-4.8⟧
+### L-63 · Emulador Firestore ZOMBI en Windows: tras `emulators:exec` interrumpido, el java queda escuchando en 8081 → la corrida siguiente muere con "port taken". Receta: `Get-NetTCPConnection -LocalPort 8081 -State Listen` → `Stop-Process -Id <pid> -Force` y re-correr. → ADR §268. ⟦FABLE-5⟧
+### L-64 · En firestore.rules, `resource.data.<campo>` sobre clave AUSENTE = evaluation-error (≠ null): `x == null` NUNCA matchea un campo que no existe → usar `resource.data.get('campo', default)`. Así el `validVersion()` F4.5 tuvo ROTA la migración null→1 por meses sin que nadie lo viera (los tests siempre sembraban el campo). Sembrar docs LEGACY sin el campo en los tests de rules. → ADR §268. ⟦FABLE-5⟧
 
 ---
 

@@ -36,7 +36,7 @@ export function mountWorkflows(root) {
     wrap.append(el('div', { class: 'state' }, [
       el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
-      el('div', { class: 'state__msg', text: 'Necesitas workflows.read para ver la automatización.' }),
+      el('div', { class: 'state__msg', text: 'No tienes acceso a esta sección. Pide a un administrador que te la habilite.' }),
     ]));
     return function cleanup() {};
   }

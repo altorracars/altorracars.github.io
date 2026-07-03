@@ -47,7 +47,7 @@ export function mountCerebro(root) {
     wrap.append(el('div', { class: 'state' }, [
       el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
-      el('div', { class: 'state__msg', text: 'Necesitas el permiso kb.read para ver el Cerebro AI.' }),
+      el('div', { class: 'state__msg', text: 'No tienes acceso a esta sección. Pide a un administrador que te la habilite.' }),
     ]));
     return function cleanup() {};
   }
@@ -138,7 +138,7 @@ export function mountCerebro(root) {
 
   /* ── Acciones ────────────────────────────────────────────── */
   async function doDelete(f) {
-    if (!canDelete) { toast('Necesitas kb.delete para eliminar.', 'error'); return; }
+    if (!canDelete) { toast('No tienes permiso para eliminar.', 'error'); return; }
     if (!await confirmDialog({
       title: '¿Eliminar esta FAQ?',
       message: `El bot dejará de usarla.\n\n"${(f.question || '').slice(0, 120)}"`,
@@ -150,7 +150,7 @@ export function mountCerebro(root) {
   }
 
   async function doToggle(f, enabled) {
-    if (!canEdit) { toast('Necesitas kb.edit para esto.', 'error'); return; }
+    if (!canEdit) { toast('No tienes permiso para editar.', 'error'); return; }
     if (store.get().mock) { const i = ui.faqs.findIndex((x) => x._docId === f._docId); if (i >= 0) ui.faqs[i] = { ...ui.faqs[i], enabled }; render(); return; }
     try { await toggleFaq(f._docId, enabled); }
     catch (err) { toast('No se pudo cambiar el estado', 'error'); render(); }

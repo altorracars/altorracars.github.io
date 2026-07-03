@@ -186,7 +186,7 @@ export function mountBrands(root) {
       : null;
     if (newBtn) newBtn.addEventListener('click', () => openModal(null));
     wrap.append(el('div', { class: 'rev-head' }, [
-      el('span', { class: 'u-caption u-muted', text: ui.brands.length + ' marcas — alimentan los filtros y páginas de marca del sitio.' }),
+      el('span', { class: 'u-caption u-muted', text: ui.brands.length + ' marcas en el catálogo.' }),
       newBtn,
     ]));
     if (!ui.loaded) {

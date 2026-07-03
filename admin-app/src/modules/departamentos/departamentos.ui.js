@@ -35,7 +35,7 @@ export function mountDepartamentos(root) {
     wrap.append(el('div', { class: 'state' }, [
       el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
-      el('div', { class: 'state__msg', text: 'Necesitas departments.read para ver los departamentos.' }),
+      el('div', { class: 'state__msg', text: 'No tienes acceso a esta sección. Pide a un administrador que te la habilite.' }),
     ]));
     return function cleanup() {};
   }
@@ -43,7 +43,7 @@ export function mountDepartamentos(root) {
   /* ── Modal crear/editar ──────────────────────────────────── */
   function openModal(dept) {
     const isEdit = !!dept;
-    if (!canManage) { toast('Necesitas departments.manage para gestionar departamentos.', 'error'); return; }
+    if (!canManage) { toast('No tienes permiso para gestionar departamentos.', 'error'); return; }
 
     const nameIn = el('input', { class: 'input', type: 'text', maxlength: '60', placeholder: 'Ej: Ventas, Mercadeo, Postventa', value: isEdit ? (dept.name || '') : '' });
     const colorIn = el('input', { class: 'input dep-color', type: 'color', value: (isEdit && dept.color) || '#b89658' });

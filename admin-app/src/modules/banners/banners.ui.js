@@ -79,7 +79,7 @@ export function mountBanners(root) {
         renderPreview();
       } catch (e) {
         status.textContent = '';
-        toast(e.message || 'No se pudo subir la imagen.', 'error');
+        toast(friendlyError(e, 'No se pudo subir la imagen.'), 'error');
       }
     });
 

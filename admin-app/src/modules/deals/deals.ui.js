@@ -9,7 +9,7 @@ import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
-import { friendlyError } from '../../core/errors.js';
+import { friendlyError, friendlyCallable } from '../../core/errors.js';
 import { icon } from '../../core/icons.js';
 import { hasPermission } from '../../core/auth.js';
 import { initials, copShort, timeAgo } from '../../domain/format.js';
@@ -562,7 +562,7 @@ export function mountPipeline(root) {
       toast('Borrador #' + res.vehicleId + ' creado en inventario', 'ok');
     } catch (e) {
       btn.disabled = false; btn.textContent = 'Crear borrador en inventario';
-      toast(e && e.message ? e.message : 'No se pudo crear el borrador', 'error');
+      toast(friendlyCallable(e, 'No se pudo crear el borrador.'), 'error');
     }
   }
 

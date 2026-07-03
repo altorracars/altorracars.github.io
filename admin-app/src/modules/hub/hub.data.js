@@ -208,7 +208,7 @@ export async function closeChatDoc(sessionId, asesor) {
   try {
     await addDoc(collection(db, 'conciergeChats', sessionId, 'messages'), {
       from: 'system', systemType: 'closed',
-      text: '✓ ' + asesor.nombre + ' cerró esta conversación. Iniciá una nueva cuando quieras.',
+      text: '✓ ' + asesor.nombre + ' cerró esta conversación. Inicia una nueva cuando quieras.',
       timestamp: ts, asesorNombre: asesor.nombre, asesorUid: asesor.uid,
     });
   } catch (_) { /* best-effort: la UI ya refleja el cierre optimista */ }
@@ -229,7 +229,7 @@ export async function reopenChatDoc(sessionId, asesor) {
   try {
     await addDoc(collection(db, 'conciergeChats', sessionId, 'messages'), {
       from: 'system', systemType: 'reopened',
-      text: '↻ ' + asesor.nombre + ' reabrió la conversación. Podés seguir escribiendo.',
+      text: '↻ ' + asesor.nombre + ' reabrió la conversación. Puedes seguir escribiendo.',
       timestamp: ts, asesorNombre: asesor.nombre, asesorUid: asesor.uid,
     });
   } catch (_) { /* best-effort */ }

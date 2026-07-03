@@ -49,3 +49,20 @@ export function friendlyError(e, fallback = 'No se pudo completar la acción. In
   if (short && MAP[short]) return MAP[short];
   return fallback;
 }
+
+// OLA-1.4 — para CALLABLES propias: nuestras Cloud Functions redactan mensajes de
+// NEGOCIO en español (HttpsError('failed-precondition', 'La cita ya fue confirmada…'))
+// que SÍ deben llegar al usuario. Solo los códigos de SISTEMA (internal/unknown/etc.)
+// se traducen con friendlyError — así ni se filtran internals ni se pierden los hints.
+const SYS_CODES = ['internal', 'unknown', 'unauthenticated', 'permission-denied',
+  'unavailable', 'deadline-exceeded', 'resource-exhausted', 'cancelled', 'data-loss'];
+export function friendlyCallable(e, fallback) {
+  const code = (e && e.code) ? String(e.code) : '';
+  const short = code.includes('/') ? code.split('/').pop() : code;
+  const msg = (e && e.message) ? String(e.message) : '';
+  if (code.startsWith('functions/') && !SYS_CODES.includes(short) && msg && msg !== short) {
+    try { console.warn('[callable]', code, msg); } catch (_) { /* noop */ }
+    return msg;
+  }
+  return friendlyError(e, fallback);
+}

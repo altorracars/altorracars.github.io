@@ -33,7 +33,7 @@ export function mountAuditoria(root) {
     wrap.append(el('div', { class: 'state' }, [
       el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
-      el('div', { class: 'state__msg', text: 'Necesitas el permiso audit.read para ver la auditoría.' }),
+      el('div', { class: 'state__msg', text: 'No tienes acceso a esta sección. Pide a un administrador que te la habilite.' }),
     ]));
     return function cleanup() {};
   }

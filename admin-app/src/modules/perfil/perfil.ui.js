@@ -12,6 +12,7 @@ import { toast } from '../../core/toast.js';
 import { initials } from '../../domain/format.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { icon } from '../../core/icons.js';
+import { friendlyError, friendlyCallable } from '../../core/errors.js';
 import {
   fmtDate, compressImageToWebp, uploadAvatar, saveProfile, requestCedulaChange,
   PW_RULES, passwordScore, changePassword,
@@ -133,7 +134,7 @@ export function mountPerfil(root) {
       requestBtn.textContent = '✓ Solicitud enviada';
     } catch (e) {
       requestBtn.disabled = false;
-      toast('No se pudo enviar: ' + (e.message || 'error'), 'error');
+      toast(friendlyCallable(e, 'No se pudo enviar la solicitud.'), 'error');
     }
   });
 
@@ -205,7 +206,7 @@ export function mountPerfil(root) {
       tgState = { chatId: null, userName: '' };
       renderTelegram();
       toast('Telegram desvinculado.', 'ok');
-    } catch (e) { toast('No se pudo desvincular: ' + (e.message || 'error'), 'error'); }
+    } catch (e) { toast(friendlyError(e, 'No se pudo desvincular.'), 'error'); }
   }
   renderTelegram();
   if (!mock && uid) {
@@ -275,7 +276,7 @@ export function mountPerfil(root) {
       heroName.textContent = updates.nombre || '(Sin nombre)';
       toast('✅ Perfil actualizado.', 'ok');
     } catch (e) {
-      toast('Error al guardar: ' + ((e && e.message) || 'intentá de nuevo'), 'error');
+      toast(friendlyError(e, 'No se pudo guardar el perfil. Intenta de nuevo.'), 'error');
     } finally {
       refreshSaveBar();
     }
@@ -290,7 +291,7 @@ export function mountPerfil(root) {
   fileInput.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast('Usá JPG, PNG o WebP.', 'error'); return; }
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast('Usa JPG, PNG o WebP.', 'error'); return; }
     if (file.size > 5 * 1024 * 1024) { toast('Imagen muy grande (máx 5 MB).', 'error'); return; }
     try {
       const out = await compressImageToWebp(file);
@@ -407,10 +408,10 @@ function buildSecurityCard(mock) {
 function pwError(err) {
   const code = (err && err.code) || '';
   if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') return 'La contraseña actual es incorrecta.';
-  if (code === 'auth/too-many-requests') return 'Demasiados intentos. Esperá unos minutos.';
+  if (code === 'auth/too-many-requests') return 'Demasiados intentos. Espera unos minutos.';
   if (code === 'auth/weak-password' || code === 'weak-password-policy') return 'La contraseña no cumple los requisitos.';
-  if (code === 'auth/requires-recent-login') return 'Por seguridad, cerrá sesión e ingresá de nuevo antes de cambiarla.';
-  return 'No se pudo actualizar: ' + ((err && err.message) || 'error');
+  if (code === 'auth/requires-recent-login') return 'Por seguridad, cierra sesión y entra de nuevo antes de cambiarla.';
+  return friendlyError(err, 'No se pudo actualizar la contraseña.');
 }
 
 function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }

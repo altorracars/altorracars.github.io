@@ -46,7 +46,7 @@ export function mountUsuarios(root) {
     wrap.append(el('div', { class: 'state' }, [
       el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
-      el('div', { class: 'state__msg', text: 'Necesitas el permiso users.read para ver el equipo.' }),
+      el('div', { class: 'state__msg', text: 'No tienes acceso a esta sección. Pide a un administrador que te la habilite.' }),
     ]));
     return function cleanup() {};
   }

@@ -411,7 +411,7 @@ export async function openVehicleWizard({ vehicle, draft, vehicles, brandNames, 
       try {
         const { saveList } = await import('../lists/lists.data.js');
         await saveList(key, lists[key], who.email); // merge por clave (§194) — no pisa otras listas
-      } catch (e) { toast('No se pudo guardar la lista: ' + (e.message || ''), 'error'); return; }
+      } catch (e) { toast(friendlyError(e, 'No se pudo guardar la lista.'), 'error'); return; }
     }
     renderFeats();
     featBoxes[v].checked = true;

@@ -12,6 +12,7 @@ import { el } from '../../core/dom.js';
 import { icon, iconEl } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { friendlyCallable } from '../../core/errors.js';
 import { frictionTrack } from '../../core/friction.js';
 import { createDealFromLead, anularConversion, fetchAvailableVehicles } from '../deals/deals.data.js';
 import { dealFromLead } from '../../domain/pipeline.js';
@@ -152,7 +153,7 @@ function showUndoSnackbar(dealId, lead) {
       await anularConversion(dealId);
       toast('↩ Conversión anulada — el lead volvió a la Bandeja', 'ok');
     } catch (e) {
-      toast('No se pudo anular: ' + ((e && e.message) || ''), 'error');
+      toast(friendlyCallable(e, 'No se pudo anular la conversión.'), 'error');
     }
     bar.remove();
   });

@@ -42,7 +42,7 @@ export function mountUnmatched(root) {
   clear(root); root.append(wrap);
 
   if (!canRead) {
-    wrap.append(stateNode(icon('lock'), 'Sin permiso', 'Necesitas el permiso unmatched.read para ver esta sección.'));
+    wrap.append(stateNode(icon('lock'), 'Sin permiso', 'No tienes acceso a esta sección. Pide a un administrador que te la habilite.'));
     return function cleanup() {};
   }
 

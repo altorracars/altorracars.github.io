@@ -51,7 +51,7 @@ export function mountHub(root) {
   clear(root); root.append(wrap);
 
   if (!canRead) {
-    wrap.append(stateNode(icon('lock'), 'Sin permiso', 'Necesitas el permiso concierge.read para ver el Hub de conversaciones.'));
+    wrap.append(stateNode(icon('lock'), 'Sin permiso', 'No tienes acceso a esta sección. Pide a un administrador que te la habilite.'));
     return function cleanup() {};
   }
 
@@ -526,7 +526,7 @@ export function mountHub(root) {
       detailEl.append(el('div', { class: 'hub__claim' }, [
         el('div', { class: 'hub__claim-info' }, [
           el('div', { class: 'hub__claim-title', text: 'Conversación sin asignar' }),
-          el('div', { class: 'hub__claim-sub u-caption u-faint', text: 'Tomala para responderle al cliente. Mientras la atendés, otros asesores no podrán escribir.' }),
+          el('div', { class: 'hub__claim-sub u-caption u-faint', text: 'Tómala para responderle al cliente. Mientras la atiendes, otros asesores no podrán escribir.' }),
         ]),
         claimBtn,
       ]));

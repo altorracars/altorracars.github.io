@@ -155,7 +155,7 @@ export function mountLists(root) {
   function render() {
     clear(wrap);
     wrap.append(el('div', { class: 'rev-head' }, [
-      el('span', { class: 'u-caption u-muted', text: '13 listas alimentan el formulario de vehículos, los filtros públicos de la web y el CRM. Cada lista se guarda por separado; la web recoge el cambio en ≤5 min sin tocar nada.' }),
+      el('span', { class: 'u-caption u-muted', text: LIST_DEFS.length + ' listas de atributos para vehículos, filtros del sitio y CRM. Los cambios se publican solos en pocos minutos.' }),
     ]));
     if (!ui.loaded) {
       wrap.append(el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando atributos…' })]));

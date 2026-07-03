@@ -92,7 +92,7 @@ export function mountCmsDinamico(root) {
       renderBanner();
     } catch (e) {
       bannerStatus.textContent = '';
-      toast(e.message || 'No se pudo subir la imagen.', 'error');
+      toast(friendlyError(e, 'No se pudo subir la imagen.'), 'error');
     }
   });
 

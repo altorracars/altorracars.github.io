@@ -12,6 +12,7 @@ import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { writeAudit } from '../../core/audit.js';
+import { friendlyError } from '../../core/errors.js';
 import { triggerSeoRegen } from './ajustes.data.js';
 
 export function mountAjustes(root) {
@@ -26,7 +27,7 @@ export function mountAjustes(root) {
     wrap.append(el('div', { class: 'state' }, [
       el('div', { class: 'state__icon', html: icon('lock') }),
       el('div', { class: 'state__title', text: 'Sin permiso' }),
-      el('div', { class: 'state__msg', text: 'Necesitas el permiso settings.seo para ver los Ajustes.' }),
+      el('div', { class: 'state__msg', text: 'No tienes acceso a esta sección. Pide a un administrador que te la habilite.' }),
     ]));
     return function cleanup() {};
   }
@@ -61,7 +62,7 @@ export function mountAjustes(root) {
           ? 'Solo un Super Admin puede regenerar las páginas SEO.'
           : code === 'failed-precondition'
             ? 'Falta configurar el token de GitHub en el servidor (GITHUB_PAT).'
-            : ('No se pudo iniciar: ' + ((e && e.message) || code || 'error'));
+            : friendlyError(e, 'No se pudo iniciar la regeneración.');
         toast(msg, 'error');
         statusEl.className = 'aj-seo__status u-caption aj-seo__status--err';
         statusEl.textContent = '✗ ' + msg;
@@ -73,7 +74,7 @@ export function mountAjustes(root) {
 
     return el('div', { class: 'cfg-card' }, [
       el('h3', { class: 'cfg-card__title u-ico-text', html: icon('map') + 'SEO y sitemap' }),
-      el('p', { class: 'u-caption u-muted', text: 'Las páginas SEO y el sitemap.xml se regeneran SOLOS cuando cambiás un vehículo, una marca o el contenido del sitio. Usá este botón solo para forzar una regeneración manual.' }),
+      el('p', { class: 'u-caption u-muted', text: 'Las páginas del sitio y el sitemap se actualizan solos cuando cambias un vehículo, una marca o el contenido. Usa este botón solo para forzar una actualización manual.' }),
       el('div', { class: 'aj-seo__row' }, [btn]),
       statusEl,
     ]);

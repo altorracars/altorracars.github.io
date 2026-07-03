@@ -14,6 +14,7 @@ import { confirmDialog } from '../../core/confirm.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { friendlyError, friendlyCallable } from '../../core/errors.js';
 import {
   updateContact, checkDedupCollision, getContact,
   mergeContacts, suppressContact, cancelSuppression,
@@ -91,7 +92,7 @@ export function openContactEdit(contact, { onChanged } = {}) {
         save.onclick = () => doSave(e.fresh); // segundo intento explícito = decisión humana
         return;
       }
-      fail((e && e.message) || 'No se pudo guardar.');
+      fail(friendlyError(e, 'No se pudo guardar.'));
     }
   }
   save.addEventListener('click', () => doSave(null));
@@ -121,7 +122,7 @@ export function openContactEdit(contact, { onChanged } = {}) {
           toast(`🔗 Fusionados: ${r.counts ? r.counts.leads : 0} lead(s), ${r.counts ? r.counts.deals : 0} negocio(s)`, 'ok');
           close();
           if (onChanged) onChanged();
-        } catch (e) { b.disabled = false; fail((e && e.message) || 'No se pudo fusionar.'); }
+        } catch (e) { b.disabled = false; fail(friendlyCallable(e, 'No se pudo fusionar.')); }
       });
       return b;
     };
@@ -152,7 +153,7 @@ export function openContactEdit(contact, { onChanged } = {}) {
             ? '↩️ Supresión cancelada — OJO: nació un duplicado durante la espera, fusiónalos.'
             : '↩️ Supresión cancelada', 'ok');
           close(); if (onChanged) onChanged();
-        } catch (e) { cancelBtn.disabled = false; fail((e && e.message) || 'No se pudo cancelar.'); }
+        } catch (e) { cancelBtn.disabled = false; fail(friendlyCallable(e, 'No se pudo cancelar.')); }
       });
       zone.append(cancelBtn);
     } else {
@@ -170,7 +171,7 @@ export function openContactEdit(contact, { onChanged } = {}) {
           const r = await suppressContact(contact.id);
           toast('🛡 Supresión programada para ' + String(r.executeAfter || '').slice(0, 16).replace('T', ' '), 'ok');
           close(); if (onChanged) onChanged();
-        } catch (e) { supBtn.disabled = false; fail((e && e.message) || 'No se pudo programar.'); }
+        } catch (e) { supBtn.disabled = false; fail(friendlyCallable(e, 'No se pudo programar.')); }
       });
       zone.append(supBtn);
     }

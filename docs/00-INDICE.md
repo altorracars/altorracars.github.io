@@ -351,10 +351,11 @@
 | §256 | **Hub: 3 bugs de ciclo-de-vida (live por dueño) ⟦OPUS⟧** — (A) `markChatClosedInFirestore` no-op tras RELOAD (`_chatDocCreated` no se restaura) → fix en `open()` (`mode!='bot'`⇒true). (B) "Activos" mostraba cerrados → excluir `status:'closed'`→Archivados. (C) mensaje doble = carrera dedup optimista → `reconcilePending()` en el resolve. NO toqué rules. Verif (A)+(C) live post-merge ✅. | 44226 |
 | §257 | **Auditoría FIABILIDAD del cerebro (doc ≠ ejecutado) ⟦OPUS⟧** — canary aliados; `brain-check` no valida realidad externa. Veredicto BALANCEADO (mayoría "✅" reales; 59 functions=exacto). Brechas: aliados/TODO-25 · motor automatización no corre/TODO-41↑ · huérfanas+menores/TODO-45. Cura→M-22 (estados explícitos) + check kernel×3/TODO-44. | 44238 |
 | §258 | **Kernel shard-aware ⟦OPUS⟧** — `brain-check.mjs` lee el índice como SET (00+00[a-z]-INDICE*) → habilita range-shard. ×4 byte-idéntico (L-31). | 44251 |
-| §259 | **Aliados: MVP comisiones DESPLEGADO ⟦OPUS⟧** — §9 vehículo (tenencia+método)→venta→reporte (comisión real por aliado, mata $0). rules+functions+UI en prod. | 44263 |
-| §260 | **TODO-52 P1: emoji→SVG (16 mód) ⟦OPUS⟧** — `icons.js`+`navIcon`+doctrina iconografía (deja cálidos); voseo→tú; L-60 ×3 (§261 completa). | 44275 |
-| §261 | **TODO-52 P1: chrome emoji→SVG COMPLETO (19 mód) ⟦OPUS⟧** — cierra §260 (+8 iconos·label-span); L-61/L-62; Fase 2 mapeada. | 44287 |
-| §243 | **F-2 (5/6) `auditoria` (visor) en admin-app ⟦OPUS⟧** — LECTOR read-only de `auditLog` (el portal escribía vía audit.js, no leía): lista cronológica (onSnapshot 200) + buscador + filtro acción/usuario; inmutable (no borra). dist gateado. | 44069 |
+| §259 | **Aliados: MVP comisiones DESPLEGADO ⟦OPUS⟧** — §9 vehículo→venta→reporte (comisión por aliado). rules+functions+UI en prod. | 44263 |
+| §260 | **TODO-52 P1: emoji→SVG chrome-16 ⟦OPUS⟧** — `icons.js`+`navIcon`; doctrina iconografía; voseo; L-60 ×3. | 44275 |
+| §261 | **TODO-52 P1: emoji→SVG chrome-19 ⟦OPUS⟧** — cierra §260 (+8 iconos); L-61/L-62. | 44287 |
+| §262 | **TODO-52 P1: emoji→SVG DOMINIO ⟦OPUS⟧** — rating/canal/type/nba/audit (`icon`→`iconId`+`uIco`; canal monocromo). Cierra emoji→SVG; RESTA P1=Fase C. | 44299 |
+| §243 | **F-2 (5/6) `auditoria` visor en admin-app ⟦OPUS⟧** — LECTOR read-only de `auditLog`: lista cronológica (onSnapshot 200) + buscador + filtro; inmutable. | 44069 |
 | §242 | **F-2 (4/6) `workflows`/Automatización en admin-app ⟦OPUS⟧** — port admin-automation: NO CRUD (verificar-no-asumir) sino 4 reglas FIJAS toggle + visor `automationLog`; motor sigue legacy client-side (→TODO-41) + gap RBAC `workflows.edit`. dist gateado. | 44057 |
 | §241 | **F-2 (3/6) `departamentos` en admin-app ⟦OPUS⟧** — catálogo ④a `departments/{id}` (grid+modal, id slug `dept_<slug>`). Guard §66 (no borrar con userCount>0, UI+rules). Port admin-departments. dist gateado. | 44045 |
 | §240 | **F-2 (2/6) `roles` en admin-app ⟦OPUS⟧** — CRUD `roles/{id}` + matriz 82 permisos (9 cats, toggle+indeterminate+críticos); port admin-roles + `domain/rbac-catalog.js` (SSoT ESM, aviso sincronía). CEO read-only; guard userCount al borrar. dist gateado. | 44033 |

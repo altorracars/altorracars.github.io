@@ -27,7 +27,7 @@
 
 .dlr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-2); text-align: center; }
 .dlr-stat { padding: var(--s-2) var(--s-1); border-radius: var(--r-md, 8px); background: var(--surface-sunken, rgba(127, 127, 127, 0.08)); }
-.dlr-stat__val { font-size: 1.15rem; font-weight: 800; line-height: 1.1; }
+.dlr-stat__val { font-size: 1.15rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .dlr-stat__lbl { font-size: 0.65rem; color: var(--text-muted, var(--muted)); margin-top: 2px; }
 .dlr-stat--ok .dlr-stat__val { color: var(--success, #3fb950); }
 .dlr-stat--gold .dlr-stat__val { color: var(--gold-500); }

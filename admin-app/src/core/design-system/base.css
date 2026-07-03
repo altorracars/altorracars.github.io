@@ -49,15 +49,15 @@ ul, ol { list-style: none; padding: 0; }
 :focus:not(:focus-visible) { outline: none; }
 
 /* Scrollbars sutiles */
-* { scrollbar-width: thin; scrollbar-color: var(--ink-300) transparent; }
-*::-webkit-scrollbar { width: 10px; height: 10px; }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.16) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb {
-  background: var(--ink-300);
+  background: rgba(255,255,255,0.13);
   border-radius: var(--r-pill);
-  border: 3px solid transparent;
+  border: 2px solid transparent;
   background-clip: content-box;
 }
-*::-webkit-scrollbar-thumb:hover { background: var(--ink-400); background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.24); background-clip: content-box; }
 
 /* Boot splash (antes de que monte el JS) */
 .boot-splash {

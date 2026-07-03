@@ -37,6 +37,21 @@
      en silencio (badges/chips/steps sin borde). Los usos desnudos ya migraron a
      --surface-stroke; este alias es la red de seguridad. NO usar en código nuevo. */
   --line: var(--surface-stroke);
+
+  /* OLA-1.8 — ESCALA z-index ÚNICA (antes convivían 2 escalas ad-hoc y el modal
+     genérico quedaba bajo todo el stack alto). Capa nueva → token nuevo AQUÍ. */
+  --z-topbar:    5;
+  --z-drawer:    60;
+  --z-panel:     8000;   /* Customer 360 */
+  --z-modal:     8500;   /* modales (captura, rev-modal genérico) */
+  --z-panel-hub: 8600;   /* paneles del hub (transfer/resumen) — bajo popover */
+  --z-popover:   9000;
+  --z-confirm:   9500;
+  --z-toast:     9999;
+
+  /* OLA-1.8 — tinta danger de KPIs (dashboard los llevaba en hex sueltos) */
+  --danger-strong:   #B33B3B;
+  --danger-soft-ink: #F0A0A0;
 }
 
 :root[data-theme="dark"] {

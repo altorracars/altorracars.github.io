@@ -470,6 +470,13 @@ export function mountVehicles(root) {
       listRoot.append(el('div', { class: 'state' }, [
         el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('car') }),
         el('div', { class: 'state__title', text: ui.vehicles.length ? 'Nada coincide con el filtro' : 'Inventario vacío' }),
+        // OLA-1.8: empty-state ACCIONABLE — el novato con inventario en cero ve la salida.
+        !ui.vehicles.length ? el('div', { class: 'state__msg', text: 'Publica tu primer vehículo: aparece en el sitio y en el catálogo en minutos.' }) : null,
+        (!ui.vehicles.length && canCreate) ? (() => {
+          const b = el('button', { class: 'btn btn--gold', type: 'button', html: icon('plus') + ' Publicar el primer vehículo' });
+          b.addEventListener('click', () => openWizard(null));
+          return b;
+        })() : null,
       ]));
       return;
     }

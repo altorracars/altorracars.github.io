@@ -178,7 +178,8 @@ cerrar (o reabrir con evidencia) el residuo "portar FCM".
 - Sweep `appendAll` en todo `append()` con hijos condicionales + helper `safe(x,'—')` en interpolaciones `${}` de campos opcionales (`deals.ui.js:380`, `dashboard.ui.js:220`).
 - `domain/validate.js` reutilizable (required/trim/maxLen/regex) aplicado en cada `*.data.js` de escritura — empezar por `saveDealer` (`dealers.data.js:95-117`, por donde entró `dfsfdfdfs`) — espejado en rules (`validVersion` + shape en concesionarios y reseñas: `firestore.rules:124-129,322-327`).
 
-**1.8 · Superficies y estados (el "respira premium")**
+**1.8 · Superficies y estados — ✅ CORE HECHO (Fable 04/07 madrugada):** escala z-index 100% tokenizada (`--z-*` en crm-tokens; rev-modal 80→8500, hub-panels 9000→8600 bajo popover, 9 archivos) · modal genérico `.rev-modal` premium IN-PLACE sin renombrar (§3.2: blur + shadow-32 + pop-in + título a la rampa 20px) · hub a tokens (`--success`/`--warning`) · contraste oro `#fff`→`ink-950` (hub ×2, inbox sel) · KPIs danger tokenizados · empty-states ACCIONABLES (vehículos CTA wizard · pipeline CTA Bandeja · contactos estado-cero explicado). **RESTA 1.8b:** skeletons top-5 (contactos/vehículos/agenda/hub/usuarios). Drag §265 se CONSERVA (decisión deliberada reciente > audit; se re-evalúa en la validación live final). Verificado preview (z/blur/sombra/título, 0 errores).
+*(Especificación original — referencia)*
 - Tokenizar z-index (`--z-topbar:5 … --z-toast:9999` en crm-tokens) y resolver: `.rev-modal` z:80 bajo el stack alto (`reviews.css:40`), hub-panels empatados con popover en 9000.
 - Extraer `.rev-modal` → `.modal` canónico en `components.css` (shadow-32 + blur + animación + type ramp) — hoy 7+ módulos acoplados al CSS de reseñas con título 16.3px vs 24px del modal de captura.
 - Tipografía: mapear los rem ad-hoc de reviews/vehicles/config a la rampa.

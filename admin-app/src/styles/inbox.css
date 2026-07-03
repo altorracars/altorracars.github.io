@@ -77,7 +77,7 @@
 .lead-card__sel svg { width: 13px; height: 13px; }
 .lead-card:hover .lead-card__sel { border-color: var(--gold-500); }
 .lead-card.is-selected { border-color: var(--gold-500); box-shadow: inset 0 0 0 1px var(--gold-500), var(--shadow-8); }
-.lead-card.is-selected .lead-card__sel { background: var(--gold-500); border-color: var(--gold-500); color: #fff; }
+.lead-card.is-selected .lead-card__sel { background: var(--gold-500); border-color: var(--gold-500); color: var(--ink-950); } /* OLA-1.8: contraste sobre oro */
 
 .inbox__bulkbar {
   display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; flex: 0 0 auto;

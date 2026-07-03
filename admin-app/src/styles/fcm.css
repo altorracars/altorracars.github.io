@@ -4,7 +4,7 @@
    ============================================================ */
 .fcm-prompt {
   position: fixed;
-  z-index: 60;
+  z-index: var(--z-drawer);
   right: var(--s-5);
   bottom: var(--s-5);
   /* width explícito: anclada solo a right/bottom (sin left), un flex fixed sin

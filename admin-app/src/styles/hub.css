@@ -59,7 +59,7 @@
 .hub__row-unread {
   flex: 0 0 auto; min-width: 18px; height: 18px; padding: 0 5px;
   display: inline-grid; place-content: center;
-  background: var(--gold-500); color: #fff;
+  background: var(--gold-500); color: var(--ink-950); /* OLA-1.8: #fff sobre oro ≈ 2:1 (WCAG) */
   font-size: 11px; font-weight: 700; border-radius: var(--r-pill);
 }
 
@@ -91,7 +91,7 @@
 .hub__banner-title { font-weight: 600; font-size: var(--t-body); }
 .hub__banner--closed { border-color: var(--surface-stroke-hi); }
 .hub__banner--claimed { border-color: color-mix(in srgb, var(--gold-500) 40%, var(--surface-stroke)); }
-.hub__banner--attending { border-color: color-mix(in srgb, #2e9d5b 40%, var(--surface-stroke)); }
+.hub__banner--attending { border-color: color-mix(in srgb, var(--success) 40%, var(--surface-stroke)); }
 
 /* Mensajes */
 .hub__msgs {
@@ -112,7 +112,7 @@
 }
 .hub-msg--user .hub-msg__bubble { background: var(--surface-card); border: 1px solid var(--surface-stroke); border-bottom-left-radius: var(--r-xs, 4px); }
 .hub-msg--bot .hub-msg__bubble { background: var(--surface-stroke); border-bottom-left-radius: var(--r-xs, 4px); }
-.hub-msg--asesor .hub-msg__bubble { background: var(--gold-500); color: #fff; border-bottom-right-radius: var(--r-xs, 4px); }
+.hub-msg--asesor .hub-msg__bubble { background: var(--gold-500); color: var(--ink-950); border-bottom-right-radius: var(--r-xs, 4px); } /* OLA-1.8: convención del DS (btn--gold usa tinta oscura sobre oro) */
 .hub-msg__who { display: block; font-weight: 700; opacity: 0.6; margin-bottom: 2px; }
 .hub-msg__sys {
   padding: 4px var(--s-3); border-radius: var(--r-pill);
@@ -129,7 +129,7 @@
 }
 
 /* ─────────── 3b: claim · composer · estados de mensaje · typing ─────────── */
-.hub__banner--mine { border-color: color-mix(in srgb, #2e9d5b 40%, var(--surface-stroke)); }
+.hub__banner--mine { border-color: color-mix(in srgb, var(--success) 40%, var(--surface-stroke)); }
 
 .hub__claim {
   flex: 0 0 auto; display: flex; align-items: center; gap: var(--s-3);
@@ -154,7 +154,7 @@
 /* Estado de los mensajes del asesor (✓/✓✓/⏱/reintentar) */
 .hub-msg__st { font-size: var(--t-caption); opacity: 0.7; display: inline-flex; align-items: center; }
 .hub-msg__st svg { width: 14px; height: 14px; flex: 0 0 auto; }
-.hub-msg__st--read { color: #2e9d5b; opacity: 1; }
+.hub-msg__st--read { color: var(--success); opacity: 1; }
 .hub-msg__retry {
   border: 0; background: transparent; cursor: pointer; padding: 0;
   color: var(--danger); font-size: var(--t-caption); font-weight: 700;
@@ -195,7 +195,7 @@
 .hub__composer--note .form-input { border-color: var(--gold-500); }
 
 .hub__tr-backdrop {
-  position: fixed; inset: 0; z-index: 9000;
+  position: fixed; inset: 0; z-index: var(--z-panel-hub); /* OLA-1.8: bajo el popover (antes empataban en 9000) */
   display: grid; place-items: center; padding: var(--s-4);
   background: rgba(0, 0, 0, 0.4);
 }
@@ -226,8 +226,8 @@
   content: ''; position: absolute; right: -1px; bottom: -1px;
   width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--surface-card);
 }
-.hub__tr-status--online::after { background: #2e9d5b; }
-.hub__tr-status--away::after { background: #d8a23b; }
+.hub__tr-status--online::after { background: var(--success); }
+.hub__tr-status--away::after { background: var(--warning); }
 
 /* ─────────── 3d: smart suggestions · resumen handover ─────────── */
 .hub__suggest {
@@ -246,7 +246,7 @@
 .hub__suggest-tag { flex: 0 0 auto; font-weight: 700; }
 
 .hub__sum-backdrop {
-  position: fixed; inset: 0; z-index: 9000;
+  position: fixed; inset: 0; z-index: var(--z-panel-hub); /* OLA-1.8: bajo el popover (antes empataban en 9000) */
   display: grid; place-items: center; padding: var(--s-4); background: rgba(0, 0, 0, 0.4);
 }
 .hub__sum-panel {

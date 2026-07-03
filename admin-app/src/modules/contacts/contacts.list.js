@@ -101,10 +101,15 @@ export function mountContactos(root) {
     countEl.textContent = `${rows.length} de ${ui.contacts.length}`;
     clear(list);
     if (!rows.length) {
+      // OLA-1.8: distinguir directorio VACÍO (estado-cero del novato, con explicación
+      // de negocio) de búsqueda sin resultados (estado transitorio).
+      const emptyDir = ui.contacts.length === 0;
       list.append(el('div', { class: 'state' }, [
-        el('div', { class: 'state__icon', html: icon('search') }),
-        el('div', { class: 'state__title', text: 'Sin resultados' }),
-        el('div', { class: 'state__msg', text: 'Prueba con otro término o filtro.' }),
+        el('div', { class: 'state__icon', html: icon(emptyDir ? 'users' : 'search') }),
+        el('div', { class: 'state__title', text: emptyDir ? 'Aún no hay contactos' : 'Sin resultados' }),
+        el('div', { class: 'state__msg', text: emptyDir
+          ? 'Los contactos se crean solos cuando entra un lead (web, WhatsApp o captura manual). Registra tu primer lead y aparecerá aquí.'
+          : 'Prueba con otro término o filtro.' }),
       ]));
       return;
     }

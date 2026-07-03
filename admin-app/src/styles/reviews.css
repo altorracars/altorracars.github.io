@@ -35,11 +35,15 @@
 
 .chip--gold { color: var(--gold-600, #B8924A); border-color: currentColor; }
 
-/* Modal propio (overlay liviano; el portal no tiene componente modal genérico aún) */
+/* Modal genérico del portal (lo reusan reviews, wizard de vehículos, cerebro…).
+   OLA-1.8 (§266): upgrade premium IN-PLACE sin renombrar clases (§3.2) — antes
+   vivía en z:80 (bajo TODO el stack alto), sin sombra/blur/animación, y con
+   título 1.02rem fuera de la rampa (vs 24px del modal de captura). */
 .rev-modal__overlay {
-  position: fixed; inset: 0; z-index: 80;
+  position: fixed; inset: 0; z-index: var(--z-modal);
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(8, 7, 10, 0.55);
+  -webkit-backdrop-filter: var(--blur-base); backdrop-filter: var(--blur-base);
   padding: var(--s-4);
 }
 .rev-modal {
@@ -50,9 +54,11 @@
   border-radius: var(--r-xl);
   padding: var(--s-5);
   display: flex; flex-direction: column; gap: var(--s-3);
+  box-shadow: var(--shadow-32);
+  animation: pop-in var(--dur-2) var(--ease-spring);
 }
 .rev-modal--sm { width: min(420px, 100%); }
-.rev-modal__title { margin: 0; font-size: 1.02rem; }
+.rev-modal__title { margin: 0; font-size: var(--t-subtitle); line-height: var(--t-subtitle-lh); }
 .rev-modal__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
 .rev-modal__text { resize: vertical; min-height: 90px; }
 .rev-modal__actions { display: flex; gap: var(--s-3); justify-content: flex-end; }

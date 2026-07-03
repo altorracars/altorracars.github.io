@@ -87,7 +87,7 @@
   background: var(--surface-mica);
   -webkit-backdrop-filter: var(--blur-base); backdrop-filter: var(--blur-base);
   border-bottom: 1px solid var(--surface-stroke);
-  z-index: 5;
+  z-index: var(--z-topbar);
 }
 .topbar__title { display: flex; flex-direction: column; gap: 0; min-width: 0; }
 .topbar__h { font-size: var(--t-subtitle); line-height: 1.1; }
@@ -133,7 +133,7 @@
 
 /* ─────────── Popover ─────────── */
 .popover {
-  position: fixed; z-index: 9000; min-width: 200px; max-width: 280px;
+  position: fixed; z-index: var(--z-popover); min-width: 200px; max-width: 280px;
   padding: var(--s-2); display: flex; flex-direction: column; gap: 1px;
   background: var(--surface-acrylic-hi);
   -webkit-backdrop-filter: var(--blur-thick); backdrop-filter: var(--blur-thick);
@@ -188,7 +188,7 @@
 
   .sidebar {
     position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); max-width: 86vw;
-    z-index: 60; transform: translateX(-100%);
+    z-index: var(--z-drawer); transform: translateX(-100%);
     /* visibility:hidden saca el nav off-canvas del tab-order (a11y) SIN depender de JS;
        se transiciona junto al transform → sigue visible durante el deslizado de cierre. */
     visibility: hidden;
@@ -209,7 +209,7 @@
   .app-shell.is-drawer-open .sidebar { transform: translateX(0); visibility: visible; box-shadow: var(--shadow-32); }
 
   .drawer-backdrop {
-    display: block; position: fixed; inset: 0; z-index: 50;
+    display: block; position: fixed; inset: 0; z-index: calc(var(--z-drawer) - 10);
     background: rgba(8, 10, 14, 0.5);
     opacity: 0; visibility: hidden;
     transition: opacity var(--dur-2) var(--ease-fluent), visibility var(--dur-2);

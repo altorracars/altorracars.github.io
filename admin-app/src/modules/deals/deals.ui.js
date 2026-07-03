@@ -341,6 +341,12 @@ export function mountPipeline(root) {
         el('div', { class: 'state__icon', 'aria-hidden': 'true', html: icon('target') }),
         el('div', { class: 'state__title', text: 'Embudo vacío' }),
         el('div', { class: 'state__msg', text: 'Convierte un lead en oportunidad desde la Bandeja para empezar.' }),
+        // OLA-1.8: CTA directo — un empty-state sin salida es fricción de novato.
+        (() => {
+          const b = el('button', { class: 'btn btn--gold', type: 'button', html: icon('inbox') + ' Ir a la Bandeja' });
+          b.addEventListener('click', () => { window.location.hash = '#/bandeja'; });
+          return b;
+        })(),
       ]));
       return;
     }

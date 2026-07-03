@@ -10,12 +10,12 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **Opus 4.8** (Fable caído): tag `⟦OPUS-4.8 · rev-Fable⟧`. Bot LLM = saldo (#917 dormido).
+> 🤖 **Impl = Opus 4.8** (tag `⟦OPUS-4.8⟧`); **revisión Fable 5 ✅ HECHA 03/07** (plan maestro). Bot LLM = saldo (#917 dormido).
 >
-> 🟢 **RELEVO (sesión 29-30/06 ·l CERRADA → arranca en SIGUE↓) ⟦OPUS-4.8⟧** — **🟣 EPIC #1: TODO-52 CRM Overhaul** (P1 EN CURSO). SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B) + **ADR §260** (barrido P1). 🌟 **VISIÓN = nivel TOP MUNDIAL** — ya escrita, NO re-preguntar; **YO decido+ejecuto+mergeo, el dueño NO opera git ni delibera código** (M-12/M-25).
-> **HECHO P1 (consolidado → ADR §260+§261+§262; `main`==`dev`):** PASE-1·§219 RBAC·accent-OUT(oro)·dataScope P0-SEC-1·Telegram + **emoji→SVG COMPLETO** — chrome 16+19 mód (§260/§261) + **DOMINIO** rating/canal/type/nba/auditoría (§262: meta `icon`→`iconId`+`uIco`, canal monocromo brand-glyphs, preserva `temp--*`) + voseo→tú. Verificado build 152 + preview live 5 vistas + 360 (0 emoji, 0 errores). `'department'`→`'own'` latente; MFA→TODO-43.
-> **Fase C + pulido Gemini ENTREGADOS ✅ (§264/§265):** ref `docs/design/crm-design-reference.html`+Artifact; **3 artefactos W-11 cerrados** (mockup·prompt·live). Pulido premium (elevación/tabs-pill/drag/tabular/scrollbar) — crítica Gemini VERIFICADA (L-34: refutados falsos-positivos). **EPIC = mandato PERMANENTE** → seguir puliendo LIVE vs la referencia; `openMenu`=futuro. **🎨 Doctrina §260.5.** ⚠️ FAQ→bot (TODO-34/46).
-> **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo.
+> 🟢 **RELEVO (sesión 03/07 FABLE 5 — auditoría holística + plan único) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4 por urgencia; Opus ejecuta TAL CUAL, reglas en su §0). **🟣 TODO-52 sigue EPIC #1** bajo ese plan (visión/brief intactos, mandato permanente; §260-265 shipped, ADR §266 = esta revisión). **YO decido+ejecuto+mergeo** (M-12/M-25).
+> **⚠️ CLAIMS DEL CEREBRO REFUTADOS por Fable (NO confiar sin grep — plan §2):** friendlyError NO completo (13+ toasts crudos) · emoji→SVG solo nav/sidebar (214 líneas/43 arch en UI) · RBAC = **82** perms ×3 catálogos SIN test de paridad · SITEMAP-FIX/PLAN-MIGRACION stale (HubSpot muerto) · "portar FCM" probablemente stale (`main.js:103 initFcm` ya existe — verificar live).
+> **▶️ PRÓXIMO PASO = OLA 0 (P0):** 0.1 `storage.rules` público-escribible 🔴 (anónimo sobrescribe cars/brands/banners/avatars) · 0.2 dataScope-integridad (scopeCons falta en agenda/reportes/contacts/dealers → módulos ROTOS p/asesor scoped; `solicitudes` read sin scope; write-scope; backfill `'all'`→`'own'`) · 0.3 P0-CAPTURE (ack-first) · 0.4 TODO-41 motor→`crmHourlyJob` + `workflows.edit` en rules · 0.5 quick-fixes (consent checked:false · fail-open sesión · fallback inicio) · 0.6 pase de cerebro (tabla §2 del plan).
+> **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo · saldo Anthropic (flip bot) · estado GSC sitemap.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -41,7 +41,7 @@
 
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
-| **TODO-52** | **🟣 EPIC #1 — CRM Overhaul + Productización ⟦OPUS⟧ (29/06)** — rediseño premium dark-only + reorg + owner-delete P0 + 2 P0-SEC. Detalle VIVO → foco ↑ + brief SSoT. | 🔄 impl | backend P0-SEC + P1 + Fase C |
+| **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — ejecución ordenada → **PLAN MAESTRO 03/07** (olas 0-4); visión → brief 29/06. | 🔄 impl | OLA 0 primero |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
@@ -57,7 +57,7 @@
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |
 | **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧** — `deadcode:check`✅ + skill✅. Huérfanos cutover→`_legacy/`. DIFERIDO ~03/07 (M-19). | 🔄 | ~03/07 |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS⟧ (§244)** — 7 skills + agente `seo-auditor` ✅ (25/06). RESTA: Core JS `visibility-core/` + `tenant_config`. | 🔄 | por-proyecto |
-| **TODO-41** | **🔴 Motor automatización NO corre post-cutover ⟦OPUS⟧** (§242.5/§257/barrido) — `admin-automation.js` era client-side SOLO en `admin.html` (retirado) → reglas "Activas" pero NO ejecutan (SLA/cita core SÍ por cron). Migrar a Cloud Function + gap RBAC `workflows.edit`. | 🔴 sube | dueño/escala |
+| **TODO-41** | **🔴 Motor automatización NO corre post-cutover ⟦OPUS⟧** — confirmado 03/07 (0 consumers en functions). **→ PLAN MAESTRO Ola 0.4** (portar a `crmHourlyJob` + `workflows.edit` en rules). | 🔴 Ola 0 | — |
 | **TODO-45** | **Cleanups §257 ⟦OPUS⟧** — (a) functions residuales clásico (sin uso); (b) `brands.saveBrand` desc=nombre; (c) `kb.edit` sin editor `_brain`; (d/e) coment stale+NBA. | 🔮 | bajo |
 | **TODO-43** | **MFA portal nuevo ⟦OPUS⟧ (§253)** — nuevo=email+pass only; SMS-MFA viejo (2FA/trusted/backup/TG) NO portado. Reimplementar TOTP+recovery si el dueño quiere. | 🔮 | dueño |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS⟧** — (a) freno boot-budget linter (M-10); (b) gate drift source↔dist (AUD-04). | 🔮 | bajo |

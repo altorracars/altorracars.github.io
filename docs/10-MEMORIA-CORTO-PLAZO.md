@@ -14,7 +14,7 @@
 >
 > 🟢 **RELEVO FABLE 5 (03/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; ADR §266 revisión · §267 OLA 0 ejecutada+deployed). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale del cerebro → plan §2 (grep antes de confiar; L-62).
 > **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus retoma después). ✅ **0.6 + OLA 1.1-1.5 HECHOS** (03/07: docs stale · tokens fantasma · menú 5 grupos+guard+breadcrumb · layout f2 core · friendlyError 15/15+IDs-permiso · voseo código cero — verificado live+build, `main`==`dev` bf27d75e).
-> **🔔 DUEÑO: 11 FAQs del bot PÚBLICO con voseo VIVAS en prod** (clasificador denegó mi write MCP; 3/14 sí pasaron) — IDs y 3 rutas → plan §1.5. Un "OK, corrígelas" tuyo en chat y las termino.
+> ✅ **FAQs bot público: 15/15 corregidas EN PROD** (dueño autorizó 03/07; colección re-verificada, cero voseo).
 > **▶️ SIGUE (plan §Ola 1):** 1.6 emoji→SVG chrome funcional (popover iconId · usermenu · canal · FCM) → 1.7 appendAll/safe + domain/validate (dealers 1º) → 1.8 superficies (z-tokens · .modal canónico · hub colores · contraste oro · skeletons · empty CTAs · drag) → 1.9 onboarding+combobox → 1.9b cola offline.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo · saldo Anthropic (flip bot) · estado GSC sitemap.
 >

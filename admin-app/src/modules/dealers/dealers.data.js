@@ -11,14 +11,16 @@
 // NO normaliza tildes — a diferencia de brands.slugify() (NFD). Replicarlo
 // mantiene el docId idéntico entre el admin clásico y el portal durante el
 // doble-admin → cero divergencia / cero migración de `vehiculos.concesionario`.
-// Las rules de `concesionarios` NO exigen validVersion() → NO se escribe _version.
+// OLA-1.7 (§266): validación de entrada (assertValid) + _version optimistic
+// locking — espejados en las rules de `concesionarios` (shape + caps + versión).
 // ============================================================
 
 import {
-  collection, query, where, orderBy, onSnapshot, getDocs, setDoc, updateDoc, deleteDoc, doc,
+  collection, query, where, orderBy, onSnapshot, getDocs, setDoc, updateDoc, deleteDoc, doc, increment,
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { writeAudit } from '../../core/audit.js';
+import { assertValid } from '../../domain/validate.js';
 import { latestCommissionSnapshot, altorraRevenueOf, tenancyGroupKey } from '../../domain/pipeline.js';
 
 /** §TODO-50: ¿la groupKey es de un consignante particular (contact) o el cubo anónimo? */
@@ -91,27 +93,43 @@ export async function fetchDealerStats() {
   return { byDealer, consignantes };
 }
 
+// OLA-1.7 (§266): validación en el ORIGEN (por aquí entró "dfsfdfdfs") + espejo
+// en firestore.rules (shape whitelist + caps + _version). El nombre exige al
+// menos una letra — un slug de puros símbolos colapsaba a "-".
+const DEALER_FIELDS = {
+  nombre: { label: 'El nombre', required: true, maxLen: 80, pattern: /[a-záéíóúüñ]/i, patternMsg: 'El nombre debe tener al menos una letra.' },
+  direccion: { label: 'La dirección', maxLen: 160 },
+  telefono: { label: 'El teléfono', maxLen: 25, pattern: /^[\d\s+().-]{7,25}$/, patternMsg: 'El teléfono debe tener entre 7 y 25 dígitos.' },
+  ciudad: { label: 'La ciudad', maxLen: 60, default: 'Cartagena' },
+  horario: { label: 'El horario', maxLen: 120 },
+  responsable: { label: 'El responsable', maxLen: 80 },
+};
+
 /** Crea (docId = slug) o actualiza. Escribe los 8 campos verbatim del clásico. */
 export async function saveDealer(docId, fields) {
+  const v = assertValid(DEALER_FIELDS, fields);
+  if (!v.ciudad) v.ciudad = 'Cartagena';
   const isEdit = !!docId;
-  const id = isEdit ? docId : slugifyDealer(fields.nombre);
-  if (!id) throw new Error('Nombre inválido.');
+  const id = isEdit ? docId : slugifyDealer(v.nombre);
+  if (!id || id === '-') { const e = new Error('Nombre inválido.'); e.friendly = true; throw e; }
   const data = {
-    nombre: fields.nombre,
-    direccion: fields.direccion,
-    telefono: fields.telefono,
-    ciudad: fields.ciudad || 'Cartagena',
-    horario: fields.horario,
-    responsable: fields.responsable,
+    nombre: v.nombre,
+    direccion: v.direccion,
+    telefono: v.telefono,
+    ciudad: v.ciudad,
+    horario: v.horario,
+    responsable: v.responsable,
     updatedAt: new Date().toISOString(),
     updatedBy: fields._userEmail || 'unknown',
   };
   if (isEdit) {
-    await updateDoc(doc(db, 'concesionarios', id), data);
-    writeAudit('dealer_update', 'aliado ' + fields.nombre, '');
+    // _version: optimistic locking (OLA-1.7) — increment funciona también sobre
+    // docs legacy sin el campo (queda 1; rules aceptan la migración null→1).
+    await updateDoc(doc(db, 'concesionarios', id), { ...data, _version: increment(1) });
+    writeAudit('dealer_update', 'aliado ' + v.nombre, '');
   } else {
-    await setDoc(doc(db, 'concesionarios', id), data);
-    writeAudit('dealer_create', 'aliado ' + fields.nombre, '');
+    await setDoc(doc(db, 'concesionarios', id), { ...data, _version: 1 });
+    writeAudit('dealer_create', 'aliado ' + v.nombre, '');
   }
   return id;
 }

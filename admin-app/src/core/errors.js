@@ -41,6 +41,9 @@ const MAP = {
  * @returns {string}
  */
 export function friendlyError(e, fallback = 'No se pudo completar la acción. Intenta de nuevo.') {
+  // OLA-1.7: los errores de VALIDACIÓN propios (domain/validate.js) traen mensaje
+  // de negocio listo para el usuario — se muestran tal cual, sin traducir.
+  if (e && e.friendly && e.message) return e.message;
   const code = (e && e.code) ? String(e.code) : '';
   const short = code.includes('/') ? code.split('/').pop() : code; // 'functions/permission-denied' → 'permission-denied'
   // Log crudo SOLO a consola (debug), nunca a la UI.

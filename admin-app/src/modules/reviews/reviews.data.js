@@ -9,10 +9,11 @@
 // ============================================================
 
 import {
-  collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
+  collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, increment,
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { writeAudit } from '../../core/audit.js';
+import { assertValid } from '../../domain/validate.js';
 
 export const SOURCE_LABELS = {
   google_maps: 'Google Maps',
@@ -32,27 +33,38 @@ export function subscribeReviews(onData, onError) {
   }, (err) => onError && onError(err));
 }
 
-/** Crea o actualiza preservando el shape público. */
+// OLA-1.7 (§266): validación en el origen + espejo en rules (shape + caps + _version).
+const REVIEW_FIELDS = {
+  name: { label: 'El nombre', required: true, maxLen: 80 },
+  location: { label: 'La ubicación', maxLen: 60, default: 'Cartagena' },
+  rating: { label: 'La calificación', required: true, min: 1, max: 5 },
+  vehicle: { label: 'El vehículo', maxLen: 80 },
+  text: { label: 'La reseña', required: true, maxLen: 600 },
+};
+
+/** Crea o actualiza preservando el shape público (los campos nuevos son aditivos). */
 export async function saveReview(docId, fields) {
+  const v = assertValid(REVIEW_FIELDS, fields);
   const now = new Date().toISOString();
   const data = {
-    name: fields.name,
-    location: fields.location || 'Cartagena',
-    rating: fields.rating,
-    vehicle: fields.vehicle || '',
-    text: fields.text,
+    name: v.name,
+    location: v.location || 'Cartagena',
+    rating: Number(v.rating),
+    vehicle: v.vehicle,
+    text: v.text,
     source: fields.source || 'sitio_web',
     verified: !!fields.verified,
     featured: !!fields.featured,
-    avatar: initialsOf(fields.name),
+    avatar: initialsOf(v.name),
     updatedAt: now,
   };
   if (docId) {
-    await updateDoc(doc(db, 'resenas', docId), data);
+    // _version: optimistic locking (docs legacy sin el campo → migración null→1 en rules)
+    await updateDoc(doc(db, 'resenas', docId), { ...data, _version: increment(1) });
     writeAudit('review_update', 'resena ' + data.name, data.name);
   } else {
     data.createdAt = now;
-    await addDoc(collection(db, 'resenas'), data);
+    await addDoc(collection(db, 'resenas'), { ...data, _version: 1 });
     writeAudit('review_create', 'resena ' + data.name, data.name);
   }
 }

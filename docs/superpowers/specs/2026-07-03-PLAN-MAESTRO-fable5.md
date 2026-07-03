@@ -166,13 +166,15 @@ cerrar (o reabrir con evidencia) el residuo "portar FCM".
 *(Especificación original — referencia)*
 - `cerebro.data.js:72-95` (respuestas del bot PÚBLICO: "decime que andás buscando"…) — barrido completo; `hub.ui.js:285,295,527`; `login.js:34`; `perfil.ui.js:208`. Skill `catalogo-voz`. Añadir regla de voz al cerebro para no reincidir.
 
-**1.6 · Emoji→SVG fase 3 (chrome funcional restante — con criterio, no sweep ciego)**
+**1.6 · Emoji→SVG chrome funcional — ✅ HECHO (Fable 03/07 noche):** popover con `iconId` SVG · usermenu · menús inbox (snooze/asignar/archivar/eliminar) · badges convertido (crown/target/x) · campana FCM SVG + copy · canal sin emoji en `<option>` nativo · +voseo escondido en FCM cazado. Verificado preview (menús con SVG, 0 errores).
+*(Especificación original — referencia)*
 - `popover.js:35`: aceptar `iconId` (html SVG) además de texto → migrar menús de inbox (`inbox.ui.js:53-56,493-517`) y usermenu (`shell.js:181-183`).
 - Canal en captura: `classify.js:75-83` renderizado como texto en `new-lead.js:26` → usar los brand-glyphs SVG monocromo que §262 ya creó.
 - FCM 🔔→`icon('bell')` (`fcm.js:67,99,146,149`); empty-states con emoji → `state__icon`+navIcon.
 - **Política**: emoji como ICONO funcional = SVG obligatorio; emoji en copy celebratorio (🎉 en un toast de venta) = permitido si el diseño lo avala. Documentar en la doctrina §260.5.
 
-**1.7 · Robustez de render + validación de entrada**
+**1.7 · Robustez + validación de entrada — ✅ HECHO (Fable 03/07 noche):** (a) sweep appendAll/safe = YA CUBIERTO por §PASE-1/§262 (verificado con grep — los 2 puntos citados por el audit no existen ya; falso-pendiente); (b) **`domain/validate.js`** (assertValid, errores `friendly`) cableado en `saveDealer` + `saveReview` · `_version` optimistic-locking en ambos · **espejo en rules** (shape whitelist + caps + validVersion en `concesionarios`/`resenas`) · `validVersion()` endurecido con `.get()` (docs legacy sin el campo migran null→1 — antes evaluation-error) · suite **347/347** (+7 §268) · rules DEPLOYED.
+*(Especificación original — referencia)*
 - Sweep `appendAll` en todo `append()` con hijos condicionales + helper `safe(x,'—')` en interpolaciones `${}` de campos opcionales (`deals.ui.js:380`, `dashboard.ui.js:220`).
 - `domain/validate.js` reutilizable (required/trim/maxLen/regex) aplicado en cada `*.data.js` de escritura — empezar por `saveDealer` (`dealers.data.js:95-117`, por donde entró `dfsfdfdfs`) — espejado en rules (`validVersion` + shape en concesionarios y reseñas: `firestore.rules:124-129,322-327`).
 

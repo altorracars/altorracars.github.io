@@ -15,7 +15,8 @@
 > 🟢 **RELEVO FABLE 5 (03/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; ADR §266 revisión · §267 OLA 0 ejecutada+deployed). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale del cerebro → plan §2 (grep antes de confiar; L-62).
 > **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus retoma después). ✅ **0.6 + OLA 1.1-1.5 HECHOS** (03/07: docs stale · tokens fantasma · menú 5 grupos+guard+breadcrumb · layout f2 core · friendlyError 15/15+IDs-permiso · voseo código cero — verificado live+build, `main`==`dev` bf27d75e).
 > ✅ **FAQs bot público: 15/15 corregidas EN PROD** (dueño autorizó 03/07; colección re-verificada, cero voseo).
-> **▶️ SIGUE (plan §Ola 1):** 1.6 emoji→SVG chrome funcional (popover iconId · usermenu · canal · FCM) → 1.7 appendAll/safe + domain/validate (dealers 1º) → 1.8 superficies (z-tokens · .modal canónico · hub colores · contraste oro · skeletons · empty CTAs · drag) → 1.9 onboarding+combobox → 1.9b cola offline.
+> ✅ **1.6+1.7 HECHOS** (03/07 noche: chrome SVG completo · validate.js+_version+rules-shape dealers/reviews · suite 347/347 · rules deployed).
+> **▶️ SIGUE (plan §Ola 1):** 1.8 superficies (z-tokens · `.modal` canónico ex-rev-modal · hub colores/contraste oro · skeletons top-5 · empty CTAs · drag placeholder) → 1.9 onboarding+combobox conversión → 1.9b cola offline-rechazos.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo · saldo Anthropic (flip bot) · estado GSC sitemap.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).

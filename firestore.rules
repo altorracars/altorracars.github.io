@@ -110,10 +110,13 @@ service cloud.firestore {
     }
 
     // F4.5: Optimistic locking — validate _version increment
-    // Allows: new docs with _version=1, updates with _version+1, or migration from null→1
+    // Allows: new docs with _version=1, updates with _version+1, or migration from null→1.
+    // OLA-1.7 (§266): `.get()` — sobre un doc LEGACY sin el campo, `resource.data._version`
+    // era evaluation-error (≠ null) y la migración null→1 jamás pasaba. Con get(,0) el
+    // ausente migra por la 1ª rama (0+1); el null EXPLÍCITO sigue cubierto por la 2ª.
     function validVersion() {
-      return request.resource.data._version == resource.data._version + 1
-          || (resource.data._version == null && request.resource.data._version == 1);
+      return request.resource.data._version == resource.data.get('_version', 0) + 1
+          || (resource.data.get('_version', null) == null && request.resource.data._version == 1);
     }
 
     function validCreateVersion() {
@@ -161,13 +164,29 @@ service cloud.firestore {
 
     // ========== CONCESIONARIOS ==========
     // §61.R6 — granularidad: dealers.read/create/edit/delete.
+    // OLA-1.7 (§266): shape whitelist + caps + _version — espejo de
+    // domain/validate.js en saveDealer (por aquí entró "dfsfdfdfs").
     match /concesionarios/{concesionarioId} {
+      function dealerShapeOk() {
+        return request.resource.data.keys().hasOnly([
+            'nombre', 'direccion', 'telefono', 'ciudad', 'horario',
+            'responsable', 'updatedAt', 'updatedBy', '_version'
+          ])
+          && request.resource.data.nombre is string
+          && request.resource.data.nombre.size() > 0
+          && request.resource.data.nombre.size() <= 80
+          && (!('direccion' in request.resource.data) || (request.resource.data.direccion is string && request.resource.data.direccion.size() <= 160))
+          && (!('telefono' in request.resource.data) || (request.resource.data.telefono is string && request.resource.data.telefono.size() <= 25))
+          && (!('ciudad' in request.resource.data) || (request.resource.data.ciudad is string && request.resource.data.ciudad.size() <= 60))
+          && (!('horario' in request.resource.data) || (request.resource.data.horario is string && request.resource.data.horario.size() <= 120))
+          && (!('responsable' in request.resource.data) || (request.resource.data.responsable is string && request.resource.data.responsable.size() <= 80));
+      }
       allow read: if isAuthenticated()
         || hasPermission('dealers.read');
-      allow create: if isSuperAdmin()
-        || hasPermission('dealers.create');
-      allow update: if isSuperAdmin()
-        || hasPermission('dealers.edit');
+      allow create: if (isSuperAdmin() || hasPermission('dealers.create'))
+        && dealerShapeOk() && validCreateVersion();
+      allow update: if (isSuperAdmin() || hasPermission('dealers.edit'))
+        && dealerShapeOk() && validVersion();
       allow delete: if isSuperAdmin()
         || hasPermission('dealers.delete');
     }
@@ -368,11 +387,30 @@ service cloud.firestore {
     // ========== RESENAS ==========
     // §61.R6 — granularidad: reviews.create/edit/delete.
     match /resenas/{resenaId} {
+      // OLA-1.7 (§266): shape whitelist + caps + _version — espejo de
+      // domain/validate.js en saveReview (superficie PÚBLICA del sitio).
+      function reviewShapeOk() {
+        return request.resource.data.keys().hasOnly([
+            'name', 'location', 'rating', 'vehicle', 'text', 'source',
+            'verified', 'featured', 'avatar', 'createdAt', 'updatedAt', '_version'
+          ])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80
+          && request.resource.data.rating is number
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 600
+          && (!('location' in request.resource.data) || (request.resource.data.location is string && request.resource.data.location.size() <= 60))
+          && (!('vehicle' in request.resource.data) || (request.resource.data.vehicle is string && request.resource.data.vehicle.size() <= 80));
+      }
       allow read: if true;
-      allow create: if isEditorOrAbove()
-        || hasPermission('reviews.create');
-      allow update: if isEditorOrAbove()
-        || hasPermission('reviews.edit');
+      allow create: if (isEditorOrAbove() || hasPermission('reviews.create'))
+        && reviewShapeOk() && validCreateVersion();
+      allow update: if (isEditorOrAbove() || hasPermission('reviews.edit'))
+        && reviewShapeOk() && validVersion();
       allow delete: if isSuperAdmin()
         || hasPermission('reviews.delete');
     }

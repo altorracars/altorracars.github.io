@@ -1,11 +1,11 @@
 // ============================================================
 // Workflows / Automatización (PLAN-UNIFICADO F-2 §242, gap §2.A) — UI.
-// Gestión de las reglas predefinidas: lista con toggle activar/desactivar +
-// visor de historial (automationLog). RBAC: workflows.read para ver; el toggle
-// escribe config/automationRules (rules: super_admin/settings.* — un user
-// workflows.edit sin eso recibe permission-denied, manejado con mensaje claro).
-// El MOTOR de reglas NO vive aquí (sigue en el legacy, super_admin client-side).
-// ⟦OPUS-4.8 · rev-Fable⟧
+// Gestión de las reglas predefinidas: toggle (solo exec:'toggle') + visor de
+// historial (automationLog). RBAC: workflows.read para ver; workflows.edit ya
+// está mapeado al doc en rules (OLA-0.4). El MOTOR corre en el SERVIDOR
+// (crmHourlyJob: runCrmSlaSweep honra el toggle + citaSweep siempre activa).
+// exec:'server' se pinta como "Siempre activa · servidor" (sin switch).
+// ⟦FABLE-5 OLA-0.4⟧
 // ============================================================
 
 import { el, clear } from '../../core/dom.js';
@@ -44,7 +44,10 @@ export function mountWorkflows(root) {
   /* ── Toggle de una regla ─────────────────────────────────── */
   async function toggle(rule, nextOn, inputEl) {
     const nextMap = {};
-    BUILT_IN_RULES.forEach((r) => { nextMap[r.id] = (r.id === rule.id) ? nextOn : effectiveEnabled(r, ui.enabled); });
+    // Solo las reglas con interruptor REAL escriben su entry (las 'server' son
+    // siempre-activas: guardarles false sería otro toggle-mentira).
+    BUILT_IN_RULES.filter((r) => r.exec === 'toggle')
+      .forEach((r) => { nextMap[r.id] = (r.id === rule.id) ? nextOn : effectiveEnabled(r, ui.enabled); });
     if (store.get().mock) {
       ui.enabled = nextMap; renderRules(); toast((nextOn ? 'Regla activada' : 'Regla pausada') + ' (demo)', 'ok'); return;
     }
@@ -63,20 +66,28 @@ export function mountWorkflows(root) {
 
   /* ── Tarjeta de regla ────────────────────────────────────── */
   function card(rule) {
-    const on = effectiveEnabled(rule, ui.enabled);
-    const input = el('input', { type: 'checkbox', class: 'wf-switch__cb' });
-    input.checked = on;
-    input.disabled = !canEdit;
-    input.addEventListener('change', () => toggle(rule, input.checked, input));
-    const sw = el('label', { class: 'wf-switch', title: canEdit ? 'Activar/Pausar' : 'Solo lectura' }, [input, el('span', { class: 'wf-switch__slider' })]);
+    const isServer = rule.exec === 'server';
+    const on = isServer || effectiveEnabled(rule, ui.enabled);
+    let control = null;
+    if (isServer) {
+      // Siempre activa server-side: sin switch — mostrar un toggle inoperante
+      // sería la mentira que TODO-41 mata.
+      control = el('span', { class: 'badge badge--ok', title: 'La ejecuta el servidor — siempre activa' }, ['Siempre activa']);
+    } else {
+      const input = el('input', { type: 'checkbox', class: 'wf-switch__cb' });
+      input.checked = on;
+      input.disabled = !canEdit;
+      input.addEventListener('change', () => toggle(rule, input.checked, input));
+      control = el('label', { class: 'wf-switch', title: canEdit ? 'Activar/Pausar' : 'Solo lectura' }, [input, el('span', { class: 'wf-switch__slider' })]);
+    }
 
     return el('article', { class: 'wf-card' + (on ? ' is-on' : '') }, [
       el('div', { class: 'wf-card__head' }, [
         el('div', { class: 'wf-card__status' }, [
           el('span', { class: 'wf-card__dot u-ico', 'aria-hidden': 'true', html: on ? icon('zap') : icon('pause') }),
-          el('span', { class: 'u-caption u-faint', text: on ? 'Activa' : 'Pausada' }),
+          el('span', { class: 'u-caption u-faint', text: isServer ? 'Servidor' : (on ? 'Activa' : 'Pausada') }),
         ]),
-        sw,
+        control,
       ]),
       el('strong', { class: 'wf-card__name', text: rule.name }),
       el('p', { class: 'wf-card__desc u-caption u-muted', text: rule.description }),
@@ -111,7 +122,7 @@ export function mountWorkflows(root) {
   wrap.append(
     el('div', { class: 'wf-intro' }, [
       el('h3', { class: 'wf-section-title u-ico-text', html: icon('zap') + 'Reglas de automatización' }),
-      el('p', { class: 'u-caption u-muted', text: 'Reglas predefinidas que actúan solas ante ciertos eventos. Actívalas o páusalas; el motor las ejecuta en segundo plano.' }),
+      el('p', { class: 'u-caption u-muted', text: 'Reglas que el servidor ejecuta solo, cada hora. Las que tienen interruptor se pueden pausar; las demás son parte del motor y siempre corren.' }),
     ]),
     rulesHost,
     el('div', { class: 'wf-hist-head' }, [

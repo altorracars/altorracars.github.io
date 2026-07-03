@@ -23,11 +23,13 @@ describe.skipIf(!EMU)('Rules — F1 lead convertido inmutable', () => {
       projectId: 'altorra-rules-test',
       firestore: { rules: readFileSync(join(__dir, '../../../firestore.rules'), 'utf8') },
     });
-    // Seed con rules apagadas: perfil admin con crm.edit + 2 leads
+    // Seed con rules apagadas: perfil admin con crm.edit + 2 leads.
+    // OLA-0.2 (§266): el write-scope exige scopeAllowsOwn también en update —
+    // este personaje es el EDITOR/GERENTE (opera leads sin ownerId) → dataScope 'all'.
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
       await db.doc('usuarios/' + ADMIN_UID).set({
-        rol: 'custom', permissions: ['crm.read', 'crm.edit'], estado: 'activo',
+        rol: 'custom', permissions: ['crm.read', 'crm.edit'], dataScope: 'all', estado: 'activo',
       });
       await db.doc('leads/libre').set({
         status: 'contactado', convertedTo: null, fullName: 'Lead Libre', _version: 1,
@@ -144,7 +146,8 @@ describe.skipIf(!EMU)('Rules — F8/F35b deals v3 (gates + matriz) y leads v3', 
     });
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
-      await db.doc('usuarios/' + ADMIN).set({ rol: 'custom', permissions: ['crm.read', 'crm.edit'], estado: 'activo' });
+      // OLA-0.2 (§266): write-scope — este ADMIN opera `leads/l_libre` SIN ownerId → 'all'.
+      await db.doc('usuarios/' + ADMIN).set({ rol: 'custom', permissions: ['crm.read', 'crm.edit'], dataScope: 'all', estado: 'activo' });
       await db.doc('deals/d_cuadrando').set({ stageId: 'cuadrando_cita', status: 'open', amount: 50, ownerId: ADMIN });
       await db.doc('deals/d_visita').set({ stageId: 'visita_test_drive', status: 'open', amount: 50, ownerId: ADMIN });
       await db.doc('deals/d_apartado').set({ stageId: 'apartado', status: 'open', amount: 50, ownerId: ADMIN });
@@ -205,7 +208,8 @@ describe.skipIf(!EMU)('Rules — E4 §186 deals: vendido cerrado + server-only +
     });
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
-      await db.doc('usuarios/' + ADMIN).set({ rol: 'custom', permissions: ['crm.read', 'crm.edit'], estado: 'activo' });
+      // OLA-0.2 (§266): write-scope — el ADMIN de esta suite opera leads/deals ajenos → 'all'.
+      await db.doc('usuarios/' + ADMIN).set({ rol: 'custom', permissions: ['crm.read', 'crm.edit'], dataScope: 'all', estado: 'activo' });
       await db.doc('usuarios/' + SUPER).set({ rol: 'super_admin', permissions: ['*'], estado: 'activo' });
       await db.doc('deals/d_won').set({
         stageId: 'vendido', status: 'won', amount: 50, ownerId: ADMIN, tipoPago: 'contado',

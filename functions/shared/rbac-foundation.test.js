@@ -4,9 +4,9 @@ import { computeRbacFoundationUpdate, computeNivelSeedOnAssign } from './rbac-fo
 // §193.4 ④a PASO 2 — decisión PURA del backfill de fundación RBAC (ADR §215).
 
 describe('computeRbacFoundationUpdate — no-dueño (isOwner=false)', () => {
-  it('doc fresco sin campos → siembra los 4 (nivel 10)', () => {
+  it('doc fresco sin campos → siembra los 4 (nivel 10, dataScope OWN = default seguro OLA-0.2)', () => {
     const { updates, anomaly } = computeRbacFoundationUpdate({ rol: 'asesor' }, false);
-    expect(updates).toEqual({ nivel: 10, departmentId: null, departmentName: '', dataScope: 'all' });
+    expect(updates).toEqual({ nivel: 10, departmentId: null, departmentName: '', dataScope: 'own' });
     expect(anomaly).toBeNull();
   });
 
@@ -20,7 +20,7 @@ describe('computeRbacFoundationUpdate — no-dueño (isOwner=false)', () => {
     const { updates } = computeRbacFoundationUpdate(
       { rol: 'asesor', nivel: 10, departmentId: 'dept_ventas' }, false);
     // departmentId presente → no se toca; faltan departmentName + dataScope
-    expect(updates).toEqual({ departmentName: '', dataScope: 'all' });
+    expect(updates).toEqual({ departmentName: '', dataScope: 'own' });
   });
 
   it('null / "" son valores legítimos ya seteados (no se re-escriben)', () => {
@@ -38,7 +38,7 @@ describe('computeRbacFoundationUpdate — no-dueño (isOwner=false)', () => {
 });
 
 describe('computeRbacFoundationUpdate — dueño (isOwner=true, INAMOVIBLE)', () => {
-  it('doc fresco de dueño → nivel 100 + defaults', () => {
+  it('doc fresco de dueño → nivel 100 + defaults (dataScope ALL: su scope real)', () => {
     const { updates } = computeRbacFoundationUpdate({ permissions: ['*'] }, true);
     expect(updates).toEqual({ nivel: 100, departmentId: null, departmentName: '', dataScope: 'all' });
   });
@@ -59,7 +59,7 @@ describe('computeRbacFoundationUpdate — dueño (isOwner=true, INAMOVIBLE)', ()
 describe('computeRbacFoundationUpdate — robustez de entrada', () => {
   it('data null/undefined no rompe (trata como doc vacío)', () => {
     expect(computeRbacFoundationUpdate(null, false).updates)
-      .toEqual({ nivel: 10, departmentId: null, departmentName: '', dataScope: 'all' });
+      .toEqual({ nivel: 10, departmentId: null, departmentName: '', dataScope: 'own' });
     expect(computeRbacFoundationUpdate(undefined, true).updates)
       .toEqual({ nivel: 100, departmentId: null, departmentName: '', dataScope: 'all' });
   });

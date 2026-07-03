@@ -10,9 +10,13 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, fns } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
+import { isAllScope } from '../../core/auth.js';
 
 const withId = (d) => ({ id: d.id, ...d.data() });
 const currentUid = () => (store.get().user ? store.get().user.uid : null);
+// §dataScope OLA-0.2: espejo del filtro de inbox/deals — sin él, las rules RECHAZAN la
+// list query de un asesor scoped y "Nueva cita" moría con permission-denied.
+const scopeCons = () => (isAllScope() ? [] : [where('ownerId', '==', currentUid())]);
 
 /** Suscripción a las citas/eventos con dueAt dentro de [startISO, endISO). */
 export function subscribeRange(startISO, endISO, onData, onError) {
@@ -56,7 +60,7 @@ export async function fetchBookedSlots() {
  *  getDocs por mount del chooser (orderBy un campo = índice automático);
  *  el filtrado por nombre/teléfono es client-side sobre ≤300 docs. */
 export async function fetchLeadsForCita() {
-  const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(300));
+  const q = query(collection(db, 'leads'), ...scopeCons(), orderBy('createdAt', 'desc'), limit(300));
   const snap = await getDocs(q);
   return snap.docs.map(withId);
 }

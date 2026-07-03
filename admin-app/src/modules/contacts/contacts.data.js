@@ -10,10 +10,17 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, fns } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
+import { isAllScope } from '../../core/auth.js';
 import { getMockContacts, getMockLeads } from '../../core/mock.js';
 import { normalizePhone, dedupKeysOf } from '../../domain/phone.js';
 
 const withId = (d) => ({ id: d.id, ...d.data() });
+// §dataScope OLA-0.2: los CONTACTOS son directorio compartido (opción A), pero el join a
+// `leads` sí se scopea — las rules rechazan la list query sin filtro para un asesor 'own'.
+const scopeCons = () => {
+  const u = store.get().user;
+  return isAllScope() || !u ? [] : [where('ownerId', '==', u.uid)];
+};
 
 /**
  * Directorio de contactos (lista). Snapshot puntual acotado — `contacts` por
@@ -27,7 +34,7 @@ export async function loadContactsList({ pageSize = 500 } = {}) {
   if (store.get().mock) return { contacts: getMockContacts(), leads: getMockLeads() };
   const [contacts, leads] = await Promise.all([
     getDocs(query(collection(db, 'contacts'), orderBy('createdAt', 'desc'), limit(pageSize))).then((s) => s.docs.map(withId)),
-    getDocs(query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(pageSize))).then((s) => s.docs.map(withId)),
+    getDocs(query(collection(db, 'leads'), ...scopeCons(), orderBy('createdAt', 'desc'), limit(pageSize))).then((s) => s.docs.map(withId)),
   ]);
   // §185: los fusionados (históricos) y suprimidos (stubs 1581) no son
   // directorio — viven solo como rastro del grafo.

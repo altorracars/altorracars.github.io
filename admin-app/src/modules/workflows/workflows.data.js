@@ -1,34 +1,52 @@
 // ============================================================
-// Workflows / Automatización (PLAN-UNIFICADO F-2 §242, gap §2.A) — datos.
-// El clásico (admin-automation.js, MF6.1/K.1) NO es CRUD de reglas arbitrarias:
-// es una BIBLIOTECA FIJA de 4 reglas predefinidas (lógica en JS) que el admin
-// solo ACTIVA/DESACTIVA. El estado vive en `config/automationRules.enabled[id]`;
-// el historial en `automationLog`. Este módulo es la UI DE GESTIÓN (toggle +
-// historial); el MOTOR (EventBus + SLA loop, solo super_admin client-side) se
-// queda en el legacy — su migración a server-side (Cloud Function) es aparte.
+// Workflows / Automatización (PLAN-UNIFICADO F-2 §242 · TODO-41 OLA-0.4) — datos.
+// La automatización REAL corre en el SERVIDOR (Cloud Functions, job horario):
+//  - SLA de leads: runCrmSlaSweep (functions/index.js) — Telegram al asesor +
+//    escalera al dueño; desde OLA-0.4 HONRA el toggle
+//    `config/automationRules.enabled.sla_breach_notify_super` y deja rastro en
+//    `automationLog` (bySource 'automation-server').
+//  - Citas: citaSweep (recordatorio 24h + confirmación del día + hold-expiry),
+//    siempre activa — sin toggle (apagarla = citas sin recordatorio, no-opción).
+//  - La asignación de leads entrantes la hace la INGESTIÓN (rotación) — lo que
+//    la vieja regla "financiación alto-valor" intentaba, hoy es del motor base.
+//  - "Etiquetar visitantes repetidos" (legacy) NUNCA tuvo implementación
+//    (evaluate → null): se retira la mentira, no una capacidad.
+// exec: 'toggle' = interruptor real · 'server' = siempre activa server-side.
 //
-// Rules (verificado firestore.rules):
-//  - config/automationRules: read público · write super_admin / settings.*
-//    (⚠️ workflows.edit NO está mapeado al doc — gap catálogo↔rules, follow-up).
-//  - automationLog: read auth/workflows.read/audit.read · inmutable.
+// Rules: config/automationRules write = super_admin / settings.* / workflows.edit
+// (mapeado en OLA-0.4) · automationLog: read workflows.read/audit.read · inmutable.
 // ============================================================
 
 import { doc, onSnapshot, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
 
-// Metadata de las 4 reglas (port de BUILT_IN_RULES; SIN las funciones evaluate
-// — el motor no se porta). defaultEnabled = el `enabled` del clásico.
 export const BUILT_IN_RULES = [
-  { id: 'route_high_value_financiacion', name: 'Asignar financiación alto-valor a super_admin', description: 'Si llega una financiación con cuota inicial ≥ $50M, se auto-asigna al super_admin.', trigger: 'comm_created', defaultEnabled: true },
-  { id: 'sla_breach_notify_super', name: 'Notificar al super_admin si SLA vencido sin asignar', description: 'Si una solicitud lleva más del SLA sin respuesta y no está asignada, notifica al super_admin.', trigger: 'sla_check', defaultEnabled: true },
-  { id: 'auto_tag_repeat_visitor', name: 'Etiquetar visitantes repetidos', description: 'Si un cliente registrado ya envió 3+ solicitudes, agregar tag "cliente-recurrente".', trigger: 'comm_created', defaultEnabled: true },
-  { id: 'cita_24h_reminder', name: 'Recordatorio 24h antes de cita', description: 'Crea un follow-up 24h antes de cada cita confirmada (MF6.2).', trigger: 'comm_status_change', defaultEnabled: false },
+  {
+    id: 'sla_breach_notify_super',
+    name: 'Alerta de SLA: lead sin primer contacto',
+    description: 'Si un lead nuevo lleva más del SLA (horas hábiles) sin primer contacto, avisa por Telegram al asesor responsable y escala al dueño.',
+    trigger: 'sla_check', defaultEnabled: true, exec: 'toggle',
+  },
+  {
+    id: 'cita_24h_reminder',
+    name: 'Recordatorios de cita (24h + mismo día)',
+    description: 'El servidor envía el recordatorio 24h antes, la confirmación del mismo día, y libera el cupo de las citas no confirmadas.',
+    trigger: 'cita_sweep', defaultEnabled: true, exec: 'server',
+  },
+  {
+    id: 'route_high_value_financiacion',
+    name: 'Asignación automática de leads entrantes',
+    description: 'Cada lead que entra se asigna automáticamente a un asesor (rotación configurable). Parte del motor de ingestión.',
+    trigger: 'ingestion', defaultEnabled: true, exec: 'server',
+  },
 ];
 
 export const TRIGGER_LABELS = {
+  sla_check: 'Cada hora (servidor)',
+  cita_sweep: 'Cada hora (servidor)',
+  ingestion: 'Al entrar el lead',
   comm_created: 'Nueva comunicación',
-  sla_check: 'Cada minuto (SLA)',
   comm_status_change: 'Cambio de estado',
   vehicle_updated: 'Vehículo actualizado',
 };
@@ -63,7 +81,7 @@ export async function fetchHistory(n = 50) {
 }
 
 /* ── Mock (?mock=1) ─────────────────────────────────────────── */
-export const MOCK_ENABLED = { route_high_value_financiacion: true, sla_breach_notify_super: true, auto_tag_repeat_visitor: true, cita_24h_reminder: false };
+export const MOCK_ENABLED = { sla_breach_notify_super: true };
 export const MOCK_HISTORY = [
   { _docId: 'h1', ruleName: 'Asignar financiación alto-valor a super_admin', docTitle: 'Carlos M. — Mazda CX-5', action: 'assign_to_super_admin', outcome: 'applied', timestamp: '2026-06-25T14:20:00Z' },
   { _docId: 'h2', ruleName: 'Notificar al super_admin si SLA vencido', docTitle: 'Laura P.', action: 'notify_super_admin', outcome: 'applied', timestamp: '2026-06-25T11:05:00Z' },

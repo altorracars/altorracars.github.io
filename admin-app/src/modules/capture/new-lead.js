@@ -6,6 +6,7 @@ import { el, clear } from '../../core/dom.js';
 import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { friendlyError } from '../../core/errors.js';
 import { MANUAL_CHANNELS, INTEREST_TYPES } from '../../domain/classify.js';
 import { createManualLead } from './capture.data.js';
 import { addMockLead } from '../../core/mock.js';
@@ -34,7 +35,9 @@ export function openNewLeadForm() {
   f.campana = el('input', { class: 'input', type: 'text', placeholder: 'Campaña (opcional)', autocomplete: 'off' });
   f.vehiculo = el('input', { class: 'input', type: 'text', placeholder: 'Vehículo de interés (opcional)', autocomplete: 'off' });
   f.notas = el('textarea', { class: 'textarea', placeholder: 'Notas / contexto del lead', rows: '2' });
-  f.consent = el('input', { type: 'checkbox', checked: true });
+  // OLA-0.5 (Habeas Data): el consentimiento es una ACCIÓN explícita del asesor,
+  // nunca pre-asumido (Ley 1581 — un checkbox pre-marcado no evidencia nada).
+  f.consent = el('input', { type: 'checkbox' });
 
   const err = el('div', { class: 'login__error', role: 'alert', hidden: true });
   const cancel = el('button', { class: 'btn btn--ghost', type: 'button' }, ['Cancelar']);
@@ -105,16 +108,30 @@ export function openNewLeadForm() {
       close();
       return;
     }
-    // OPTIMISTA (igual que ⚡ Lead rápido): NO esperamos el ack del servidor —
-    // la persistencia local encola y sincroniza sola. Si el server RECHAZA, lo
-    // decimos con su code (ya NO enmascaramos el error como un genérico).
+    // OLA-0.3 P0-CAPTURE: con señal, ACK-FIRST — se espera la confirmación del server
+    // con el modal ABIERTO. Si el server rechaza, el asesor lo VE aquí mismo con el
+    // formulario INTACTO (cero pérdida silenciosa de leads = cero dinero perdido).
+    // El camino optimista queda SOLO para offline (la persistencia local encola).
+    if (navigator.onLine) {
+      save.disabled = true;
+      save.textContent = 'Guardando…';
+      try {
+        await createManualLead(data);
+        toast('✓ Lead agregado — aparecerá en la Bandeja en segundos', 'ok');
+        close();
+      } catch (e2) {
+        console.error('[new-lead] rechazo del servidor:', e2);
+        save.disabled = false;
+        save.textContent = 'Agregar lead';
+        fail(friendlyError(e2, 'No se pudo guardar el lead.') + ' Tus datos siguen aquí — corrige y vuelve a intentar.');
+      }
+      return;
+    }
     createManualLead(data).catch((e2) => {
-      console.error('[new-lead] rechazo del servidor:', e2);
-      toast('El lead "' + data.nombre + '" fue RECHAZADO al guardar: ' + (e2.code || e2.message), 'error');
+      console.error('[new-lead] rechazo del servidor (offline-sync):', e2);
+      toast('El lead "' + data.nombre + '" no se pudo sincronizar. ' + friendlyError(e2, ''), 'error');
     });
-    toast(navigator.onLine
-      ? '✓ Lead agregado — aparecerá en la Bandeja en segundos'
-      : '📴 Guardado local — se enviará al volver la señal', 'ok');
+    toast('Sin señal: guardado local — se enviará al volver la conexión', 'ok');
     close();
   });
 

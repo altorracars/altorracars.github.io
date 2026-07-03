@@ -85,7 +85,19 @@ construir sobre ellos:
 
 ## §3 — EL PLAN (olas por urgencia/prioridad)
 
-### 🌊 OLA 0 — SEGURIDAD + INTEGRIDAD (P0 · primera(s) sesión(es) · nada la antecede)
+### 🌊 OLA 0 — SEGURIDAD + INTEGRIDAD (P0) — ✅ EJECUTADA POR FABLE 5 (03/07, ADR §267)
+
+> **Estado real post-ejecución:** 0.1–0.5 ✅ implementados + suite 340/340 verde + deploys
+> (rules+índices+storage; functions crmHourlyJob+backfillNivelesRBAC). Corrección de la
+> realidad en 0.4: el motor SLA **ya existía** server-side (`runCrmSlaSweep`, horario) — el
+> claim del verificador era falso-negativo (L-62); lo hecho fue cablear el toggle
+> (`enabled.sla_breach_notify_super`), escribir `automationLog` desde el server, mapear
+> `workflows.edit` en rules y volver HONESTO el módulo (reglas muertas fuera, "Siempre
+> activa · Servidor" en las del motor). **0.6 (pase de cerebro) queda PARCIAL** → primer
+> ítem de Opus: docs stale (SITEMAP-FIX tabla · PLAN-MIGRACION marca obsoleto · theme.js:4
+> comentario · CLAUDE.md §1 matiz compat/modular · rbac-catalog headers "71→82").
+> **Residual nuevo → Ola 1.9b:** cola persistente para capturas rechazadas en el camino
+> offline-tardío (el ack-first online ya elimina la pérdida principal).
 
 **0.1 · STORAGE-PÚBLICO (P0-SEC nuevo)** — `storage.rules`
 - `cars/`, `brands/`, `banners/`: write solo staff → `firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)) != null` (mismo criterio `hasProfile()` de las Firestore rules; opcional: exigir permiso `vehicles.edit`/`brands.edit`/`banners.edit` leyendo `permissions`).
@@ -167,6 +179,11 @@ cerrar (o reabrir con evidencia) el residuo "portar FCM".
 - Colores hub: `#2e9d5b`→`var(--success)`, `#d8a23b`→`var(--warning)`; contraste oro: `color:#fff` sobre `--gold-500` (~2:1, `hub.css:62,115`, `inbox.css:80`) → `var(--ink-950)` (convención del DS).
 - Skeletons en módulos de datos top: contactos, vehículos, agenda, hub, usuarios (patrón de components.css:178).
 - Estados vacíos con CTA (vehicles.ui.js:462, deals.ui.js:302, contacts.list.js:104) + drag del kanban: `is-dragging` original → `opacity:.4` sin scale/rotate (la deformación pertenece a la drag image).
+
+**1.9b · Cola de capturas offline-rechazadas (residual de 0.3)** — si un lead encolado
+offline es rechazado por rules al volver la señal y el asesor cerró la pestaña, hoy solo
+queda un console.error. Persistir el rechazo (localStorage) + banner en Bandeja "N capturas
+sin confirmar" con reintento.
 
 **1.9 · Onboarding + captura única**
 - Checklist/mini-tour de primeros pasos en Inicio con tenant vacío (Bandeja→calificar→convertir→vender).

@@ -9,12 +9,18 @@
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { store } from '../../core/store.js';
+import { isAllScope } from '../../core/auth.js';
 import { getMockLeads, getMockDeals } from '../../core/mock.js';
 
 const withId = (d) => ({ id: d.id, ...d.data() });
+const currentUid = () => (store.get().user ? store.get().user.uid : null);
+// §dataScope OLA-0.2: el asesor scoped reporta SOBRE LO SUYO (y las rules rechazan la
+// query sin filtro). Índices: leads(ownerId,createdAt) · deals(ownerId,createdAt) NUEVO ·
+// deals(ownerId,status,lastActivityAt) para wons.
+const scopeCons = () => (isAllScope() ? [] : [where('ownerId', '==', currentUid())]);
 
 async function fetchAll(name, pageSize) {
-  const snap = await getDocs(query(collection(db, name), orderBy('createdAt', 'desc'), limit(pageSize)));
+  const snap = await getDocs(query(collection(db, name), ...scopeCons(), orderBy('createdAt', 'desc'), limit(pageSize)));
   return snap.docs.map(withId);
 }
 
@@ -39,6 +45,7 @@ export async function loadReports({ pageSize = 500 } = {}) {
     fetchAll('deals', pageSize),
     getDocs(query(
       collection(db, 'deals'),
+      ...scopeCons(),
       where('status', '==', 'won'),
       orderBy('lastActivityAt', 'desc'),
       limit(300),

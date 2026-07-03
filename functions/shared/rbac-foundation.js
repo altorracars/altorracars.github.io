@@ -14,7 +14,8 @@
  * para no duplicar la fuente canónica (functions/index.js:710, §213).
  */
 
-// dataScope válidos. En ④a el campo se ESCRIBE pero NO se enforce (eso es ④b).
+// dataScope válidos. (Desde P0-SEC-1 29/06 el scope SÍ se enforce en rules+queries —
+// el comentario histórico "no se enforce" quedó obsoleto; OLA-0.2 alineó el default.)
 const DATA_SCOPES = ['all', 'dept', 'own'];
 
 const CEO_NIVEL = 100;     // dueño — autoridad máxima INAMOVIBLE (§193.4)
@@ -50,9 +51,12 @@ function computeRbacFoundationUpdate(data, isOwner) {
     if (d.departmentId === undefined) updates.departmentId = null;
     if (d.departmentName === undefined) updates.departmentName = '';
 
-    // dataScope
+    // dataScope — OLA-0.2 (plan maestro 03/07): default 'own' = espejo del default seguro
+    // de las rules (`data.get('dataScope','own')`); el DUEÑO siembra 'all' (su scope real).
+    // El seed original 'all'-para-todos se escribió cuando el scope NO se enforceaba (④a);
+    // tras P0-SEC-1 sembrarlo invertía el default y regalaba visibilidad total.
     if (d.dataScope === undefined) {
-        updates.dataScope = 'all';
+        updates.dataScope = isOwner ? 'all' : 'own';
     } else if (!DATA_SCOPES.includes(d.dataScope)) {
         anomaly = 'dataScope:' + d.dataScope;
     }

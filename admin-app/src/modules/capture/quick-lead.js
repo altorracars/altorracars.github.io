@@ -13,6 +13,7 @@ import { el } from '../../core/dom.js';
 import { icon, uIco } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { friendlyError } from '../../core/errors.js';
 import { addMockLead } from '../../core/mock.js';
 import { frictionTrack } from '../../core/friction.js';
 
@@ -93,7 +94,7 @@ export function openQuickLeadForm() {
   overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
   cancel.addEventListener('click', close);
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.hidden = true;
     const data = {
@@ -119,16 +120,31 @@ export function openQuickLeadForm() {
       return;
     }
 
-    // OPTIMISTA + offline-ready: NO esperamos el ack del servidor (sin señal
-    // jamás llegaría) — la persistencia local encola y sincroniza sola.
+    // OLA-0.3 P0-CAPTURE: con señal, ACK-FIRST — se espera la confirmación del server
+    // con el modal ABIERTO; si rechaza, el asesor lo VE con el form INTACTO (cero
+    // pérdida silenciosa). Optimista SOLO offline (la persistencia local encola).
+    if (navigator.onLine) {
+      save.disabled = true;
+      save.textContent = 'Guardando…';
+      try {
+        await addDoc(collection(db, 'lead_intake'), data);
+        toast('⚡ Lead registrado — aparecerá en la Bandeja en segundos', 'ok');
+        frictionTrack('lead_rapido', t0, { fuente: state.fuente, online: true });
+        close();
+      } catch (e2) {
+        console.error('[quick-lead] rechazo del servidor:', e2);
+        save.disabled = false;
+        save.replaceChildren(el('span', { class: 'u-ico-text', html: icon('zap') + ' Registrar' }));
+        fail(friendlyError(e2, 'No se pudo registrar el lead.') + ' Tus datos siguen aquí — corrige y vuelve a intentar.');
+      }
+      return;
+    }
     addDoc(collection(db, 'lead_intake'), data).catch((e2) => {
-      console.error('[quick-lead] rechazo del servidor:', e2);
-      toast('El lead "' + data.nombre + '" fue RECHAZADO al sincronizar: ' + (e2.code || e2.message), 'error');
+      console.error('[quick-lead] rechazo del servidor (offline-sync):', e2);
+      toast('El lead "' + data.nombre + '" no se pudo sincronizar. ' + friendlyError(e2, ''), 'error');
     });
-    toast(navigator.onLine
-      ? '⚡ Lead registrado — aparecerá en la Bandeja en segundos'
-      : '📴 Guardado local — se enviará al volver la señal', 'ok');
-    frictionTrack('lead_rapido', t0, { fuente: state.fuente, online: navigator.onLine });
+    toast('Sin señal: guardado local — se enviará al volver la conexión', 'ok');
+    frictionTrack('lead_rapido', t0, { fuente: state.fuente, online: false });
     close();
   });
 

@@ -47,11 +47,13 @@ function rbacFromProfile(profile) {
     nivel: (profile && Number.isFinite(profile.nivel)) ? profile.nivel : 10,
     departmentId: (profile && profile.departmentId) || null,
     departmentName: (profile && profile.departmentName) || '',
-    dataScope: (profile && profile.dataScope) || 'all',
+    // OLA-0.2: default 'own' = espejo del default seguro de las rules (el enforcement
+    // real lo hace isAllScope() sobre el profile; esto es el valor que muestra la UI).
+    dataScope: (profile && profile.dataScope) || 'own',
   };
 }
 
-async function hydrateProfile(user) {
+async function hydrateProfile(user, attempt = 0) {
   try {
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
     const profile = snap.exists() ? snap.data() : null;
@@ -64,10 +66,16 @@ async function hydrateProfile(user) {
     }
     store.set({ user, profile, permissions: permissionsFromProfile(profile), ...rbacFromProfile(profile), ready: true, authError: null });
   } catch (err) {
-    // Lookup falló (red/permiso) — deja la sesión activa con permisos vacíos;
-    // la UI degradará a solo-lectura y mostrará el aviso.
-    console.warn('[auth] no se pudo hidratar el perfil:', err);
-    store.set({ user, profile: null, permissions: [], ...rbacFromProfile(null), ready: true });
+    // OLA-0.5 (fail-CLOSED, antes fail-open): si el lookup falla no se evaluó el
+    // estado 'bloqueado' → dejar la sesión viva era una degradación insegura.
+    // 1 reintento (fallo transitorio de red) y, si persiste, signOut limpio.
+    if (attempt < 1) {
+      await new Promise((r) => setTimeout(r, 1200));
+      return hydrateProfile(user, attempt + 1);
+    }
+    console.warn('[auth] no se pudo hidratar el perfil (2 intentos):', err);
+    await signOut(auth).catch(() => {});
+    store.set({ user: null, profile: null, permissions: [], ...rbacFromProfile(null), ready: true, authError: 'No se pudo verificar tu perfil (¿sin conexión?). Vuelve a iniciar sesión.' });
   }
 }
 

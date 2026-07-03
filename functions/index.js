@@ -4295,6 +4295,16 @@ async function runCrmSlaSweep() {
     const slaHours = typeof cfg.slaHours === 'number' ? cfg.slaHours : 2;
     const ceoUid = cfg.alertUid || null;
 
+    // TODO-41 OLA-0.4: el toggle del módulo Automatización (config/automationRules
+    // .enabled.sla_breach_notify_super) ahora ES el interruptor real de esta regla
+    // (default ON si el doc/flag no existe — igual que el defaultEnabled del módulo).
+    const rulesSnap = await db.collection('config').doc('automationRules').get();
+    const rulesEnabled = (rulesSnap.exists && rulesSnap.data().enabled) || {};
+    if (rulesEnabled.sla_breach_notify_super === false) {
+        console.log('[crmSlaSweep] regla sla_breach_notify_super desactivada por el admin — skip');
+        return { checked: 0, alerted: 0, slaHours, skipped: 'rule-disabled' };
+    }
+
     const snap = await db.collection('leads').where('status', '==', 'nuevo').limit(200).get();
     const now = new Date();
     const result = { checked: snap.size, alerted: 0, slaHours };
@@ -4330,8 +4340,26 @@ async function runCrmSlaSweep() {
             });
         }
         await docSnap.ref.update({ _slaAlertedAt: now.toISOString() });
+        // TODO-41 OLA-0.4: rastro en automationLog → el historial del módulo
+        // Automatización del portal deja de estar vacío (antes solo escribía el
+        // motor client-side del admin viejo, retirado en F-6). `new Date()` =
+        // Timestamp (Admin SDK), mismo tipo que las filas legacy (orderBy sano).
+        try {
+            await db.collection('automationLog').add({
+                ruleId: 'sla_breach_notify_super',
+                ruleName: 'Notificar si SLA vencido sin primer contacto',
+                trigger: 'sla_check',
+                action: 'notify_telegram',
+                reason: 'lead sin primer contacto ' + hours.toFixed(1) + 'h hábiles',
+                docId: docSnap.id,
+                docTitle: lead.fullName || 'Sin nombre',
+                outcome: sent ? 'applied' : 'failed:notify',
+                timestamp: new Date(),
+                by: null,
+                bySource: 'automation-server',
+            });
+        } catch (e) { console.error('[crmSlaSweep] automationLog:', e.message); }
         result.alerted++;
-        void sent;
     }
     console.log('[crmSlaSweep] ' + JSON.stringify(result));
     return result;

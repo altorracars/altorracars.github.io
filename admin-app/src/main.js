@@ -87,7 +87,9 @@ function mountRoute(name) {
   if (!shell || name === mountedRoute) return;
   if (cleanupModule) { cleanupModule(); cleanupModule = null; }
   if (store.get().detailLeadId) store.set({ detailLeadId: null });
-  const fn = MODULES[name] || mountInbox;
+  // OLA-0.5: fallback alineado a la doctrina "el portal aterriza en Inicio" (§237/§246)
+  // — antes caía a la Bandeja, divergencia latente con currentRoute() → 'inicio'.
+  const fn = MODULES[name] || mountDashboard;
   cleanupModule = fn(shell.outlet) || null;
   shell.setActive(name);
   mountedRoute = name;

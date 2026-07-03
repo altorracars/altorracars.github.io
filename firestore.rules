@@ -470,8 +470,10 @@ service cloud.firestore {
       }
       allow read:   if hasPermission('crm.read') && scopeAllowsOwn(resource.data); // §dataScope: asesor solo SUS leads; all/dueño todo
       allow create: if isSuperAdmin() || hasPermission('crm.edit');
-      allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && leadStatusUnlocked() && leadStatusV3Ok();
-      allow delete: if isSuperAdmin() || hasPermission('crm.delete');
+      // §dataScope OLA-0.2: el scope aplica también a ESCRITURA — sin esto el asesor 'own'
+      // no podía LISTAR leads ajenos pero sí editarlos/descartarlos a ciegas por id.
+      allow update: if (isSuperAdmin() || hasPermission('crm.edit')) && scopeAllowsOwn(resource.data) && leadStatusUnlocked() && leadStatusV3Ok();
+      allow delete: if (isSuperAdmin() || hasPermission('crm.delete')) && scopeAllowsOwn(resource.data);
     }
 
     // ========== LEAD_INTAKE (F36 §178 — lead rápido del asesor) ==========
@@ -629,12 +631,15 @@ service cloud.firestore {
         && !request.resource.data.keys()
           .hasAny(['wonAt', 'commissionSnapshot', 'commissionSnapshots', 'retomaVehicleId',
                    '_colisionAlertedAt', '_apartadoVencidoAlertedAt']);
+      // §dataScope OLA-0.2: scope también en escritura (espejo de leads — cierra el
+      // "mover la etapa del deal de un colega a ciegas").
       allow update: if (isSuperAdmin() || hasPermission('crm.edit'))
+        && scopeAllowsOwn(resource.data)
         && dealStageChangeOk()
         && dealStatusCoherent()
         && dealServerFieldsUntouched()
         && (isSuperAdmin() || vendidoEditOk());
-      allow delete: if isSuperAdmin() || hasPermission('crm.delete');
+      allow delete: if (isSuperAdmin() || hasPermission('crm.delete')) && scopeAllowsOwn(resource.data);
     }
 
     // ========== SUBSCRIPTIONS (newsletter público — §164) ==========
@@ -665,7 +670,9 @@ service cloud.firestore {
     // Cero pérdida: si la ingestión falla, el lead cae aquí. SOLO el Admin
     // SDK escribe (bypassa rules); los admins leen para resolver.
     match /failedIngestions/{failId} {
-      allow read:  if hasPermission('crm.read'); // SEC-01 §187: estricto (Opción A — Gemini §169); super pasa por '*'
+      // §dataScope OLA-0.2: payloads completos de leads → scoped (los docs no traen ownerId
+      // → en la práctica solo all-scope/dueño; es la vista de diagnóstico correcta).
+      allow read:  if hasPermission('crm.read') && scopeAllowsOwn(resource.data);
       allow write: if false; // solo Admin SDK (ingestión)
     }
 
@@ -713,9 +720,16 @@ service cloud.firestore {
     // ========== SOLICITUDES (unified communications system) ==========
     // §61.R6 — granularidad: crm.edit/delete + appointments.edit.
     match /solicitudes/{solicitudId} {
-      allow read: if isAuthenticated()
-        || hasPermission('crm.read')
-        || hasPermission('appointments.read');
+      // §dataScope OLA-0.2 (plan maestro 03/07): `solicitudes` es la colección FUENTE con la
+      // misma PII que los leads → mismo scope. appointments.read queda SIN scope (flujo de
+      // citas lee la solicitud de la cita); crm.read se scopea (los docs no traen ownerId →
+      // el asesor scoped trabaja el canónico `leads`, no el puente). La rama isAuthenticated()
+      // a secas se ELIMINA (staff sin permisos leía toda la PII). NUEVO: el cliente del sitio
+      // lee SUS PROPIAS solicitudes (userId == uid — el create ya fuerza anti-impersonación
+      // MF1.1), restaura el watcher público que hasProfile() bloqueaba.
+      allow read: if hasPermission('appointments.read')
+        || (hasPermission('crm.read') && scopeAllowsOwn(resource.data))
+        || (request.auth != null && resource.data.get('userId', '') == request.auth.uid);
       // MF1.1 — Anti-impersonation: if userId is set, it must match the
       // requester's auth uid (allowing anonymous). Otherwise the doc is a
       // guest submission and userId stays null. clientCategory must match.
@@ -1128,6 +1142,9 @@ service cloud.firestore {
           || (docId == 'availability' && hasPermission('calendar.config'))
           || (docId == 'followups' && hasPermission('templates.edit'))
           || (docId == 'messageTemplates' && hasPermission('templates.edit'))
+          // TODO-41 OLA-0.4: el toggle de Automatización del portal usa workflows.edit —
+          // sin esta rama recibía permission-denied (gap catálogo↔rules).
+          || (docId == 'automationRules' && hasPermission('workflows.edit'))
           || hasPermission('settings.theme')
           || hasPermission('settings.seo')
           || hasPermission('settings.backup');

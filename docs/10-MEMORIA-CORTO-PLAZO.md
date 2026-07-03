@@ -14,7 +14,8 @@
 >
 > 🟢 **RELEVO (sesión 03/07 FABLE 5 — auditoría holística + plan único) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4 por urgencia; Opus ejecuta TAL CUAL, reglas en su §0). **🟣 TODO-52 sigue EPIC #1** bajo ese plan (visión/brief intactos, mandato permanente; §260-265 shipped, ADR §266 = esta revisión). **YO decido+ejecuto+mergeo** (M-12/M-25).
 > **⚠️ CLAIMS DEL CEREBRO REFUTADOS por Fable (NO confiar sin grep — plan §2):** friendlyError NO completo (13+ toasts crudos) · emoji→SVG solo nav/sidebar (214 líneas/43 arch en UI) · RBAC = **82** perms ×3 catálogos SIN test de paridad · SITEMAP-FIX/PLAN-MIGRACION stale (HubSpot muerto) · "portar FCM" probablemente stale (`main.js:103 initFcm` ya existe — verificar live).
-> **▶️ PRÓXIMO PASO = OLA 0 (P0):** 0.1 `storage.rules` público-escribible 🔴 (anónimo sobrescribe cars/brands/banners/avatars) · 0.2 dataScope-integridad (scopeCons falta en agenda/reportes/contacts/dealers → módulos ROTOS p/asesor scoped; `solicitudes` read sin scope; write-scope; backfill `'all'`→`'own'`) · 0.3 P0-CAPTURE (ack-first) · 0.4 TODO-41 motor→`crmHourlyJob` + `workflows.edit` en rules · 0.5 quick-fixes (consent checked:false · fail-open sesión · fallback inicio) · 0.6 pase de cerebro (tabla §2 del plan).
+> **✅ OLA 0 EJECUTADA (Fable 03/07 → detalle ADR §267; suite 340/340 + deploys):** storage staff-only · dataScope integral · captura ACK-FIRST · TODO-41 ✅ (`runCrmSlaSweep` ya existía — falso-negativo L-62; toggle+log cableados) · fail-closed sesión.
+> **▶️ PRÓXIMO PASO (Opus 4.8):** (1) **0.6 restante** — docs stale: tabla SITEMAP-FIX · marca-obsoleto en PLAN-MIGRACION · `theme.js:4` comment · `CLAUDE.md §1` matiz compat/modular · headers rbac-catalog "71→82"; (2) **OLA 1** en orden (1.1 tokens fantasma `--line`/`--warn` → 1.2 reorg menú 5 grupos → 1.3 layout f2 `.page`/`.cfg` → …). Todo especificado en el plan §Ola 1.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo · saldo Anthropic (flip bot) · estado GSC sitemap.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
@@ -57,7 +58,6 @@
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |
 | **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧** — `deadcode:check`✅ + skill✅. Huérfanos cutover→`_legacy/`. DIFERIDO ~03/07 (M-19). | 🔄 | ~03/07 |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS⟧ (§244)** — 7 skills + agente `seo-auditor` ✅ (25/06). RESTA: Core JS `visibility-core/` + `tenant_config`. | 🔄 | por-proyecto |
-| **TODO-41** | **🔴 Motor automatización NO corre post-cutover ⟦OPUS⟧** — confirmado 03/07 (0 consumers en functions). **→ PLAN MAESTRO Ola 0.4** (portar a `crmHourlyJob` + `workflows.edit` en rules). | 🔴 Ola 0 | — |
 | **TODO-45** | **Cleanups §257 ⟦OPUS⟧** — (a) functions residuales clásico (sin uso); (b) `brands.saveBrand` desc=nombre; (c) `kb.edit` sin editor `_brain`; (d/e) coment stale+NBA. | 🔮 | bajo |
 | **TODO-43** | **MFA portal nuevo ⟦OPUS⟧ (§253)** — nuevo=email+pass only; SMS-MFA viejo (2FA/trusted/backup/TG) NO portado. Reimplementar TOTP+recovery si el dueño quiere. | 🔮 | dueño |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS⟧** — (a) freno boot-budget linter (M-10); (b) gate drift source↔dist (AUD-04). | 🔮 | bajo |

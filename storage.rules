@@ -7,6 +7,15 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    // OLA-0.1 (plan maestro 03/07, P0-SEC): el sitio público firma sesiones ANÓNIMAS
+    // (js/core/auth.js signInAnonymously) → `request.auth != null` incluía a CUALQUIER
+    // visitante, que podía sobrescribir el catálogo/marcas/banners. Staff = tiene doc en
+    // usuarios/ (espejo del hasProfile() de las Firestore rules, cross-service lookup).
+    function isStaff() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/usuarios/$(request.auth.uid));
+    }
+
     // CMS FASE 0.2 (Decisión Fuerte comité v4 + 2ª opinión Gemini, ambos "WRONG" al `image/.*`):
     // contentType pasa de `image/.*` a `image/(png|jpeg|webp)` → RECHAZA `image/svg+xml`
     // (un SVG puede ejecutar JS; GitHub Pages single-origin → tocaría la sesión admin + siteContent).
@@ -21,8 +30,8 @@ service firebase.storage {
     match /cars/{allPaths=**} {
       // Anyone can read (public catalog images)
       allow read: if true;
-      // Authenticated users can upload (max 5MB, images only)
-      allow write: if isAuthenticated()
+      // OLA-0.1: solo STAFF sube (antes: cualquier autenticado, incl. anónimos del sitio)
+      allow write: if isStaff()
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(png|jpeg|webp)');
     }
@@ -30,7 +39,7 @@ service firebase.storage {
     // brands/ — brand logo uploads
     match /brands/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated()
+      allow write: if isStaff()
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(png|jpeg|webp)');
     }
@@ -38,16 +47,21 @@ service firebase.storage {
     // banners/ — promotional banner uploads
     match /banners/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated()
+      allow write: if isStaff()
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(png|jpeg|webp)');
     }
 
     // avatars/ — user profile photos (max 500KB, images only)
-    // Filename is always {uid}.webp — uid ownership enforced client-side
+    // OLA-0.1: ownership ENFORCED server-side — el nombre es SIEMPRE {uid}.webp
+    // (js/core/perfil.js:167 público + perfil del portal); antes cualquier autenticado
+    // podía pisar el avatar de OTRO uid. Anónimos fuera (un avatar de sesión anónima
+    // no tiene sentido y era vector de basura).
     match /avatars/{fileName} {
       allow read: if true;
-      allow write: if isAuthenticated()
+      allow write: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && fileName == request.auth.uid + '.webp'
         && request.resource.size < 512 * 1024
         && request.resource.contentType.matches('image/(png|jpeg|webp)');
     }

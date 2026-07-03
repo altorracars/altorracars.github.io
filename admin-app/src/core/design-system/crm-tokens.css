@@ -31,10 +31,22 @@
   --sidebar-w-sm: 72px;
   --topbar-h:     60px;
   --detail-w:     440px;
+  --content-max:  1360px;  /* OLA-1.3: ancho máximo del contenido en monitores anchos */
+
+  /* OLA-1.1 — alias de COMPAT: `--line` nunca existió y 17 bordes se invalidaban
+     en silencio (badges/chips/steps sin borde). Los usos desnudos ya migraron a
+     --surface-stroke; este alias es la red de seguridad. NO usar en código nuevo. */
+  --line: var(--surface-stroke);
 }
 
 :root[data-theme="dark"] {
   --temp-hot-soft:  rgba(232, 100, 60, 0.20);
   --temp-warm-soft: rgba(242, 181, 68, 0.18);
   --temp-cold-soft: rgba(91, 168, 229, 0.18);
+}
+
+/* OLA-1.3: en pantallas grandes el panel 360 respira más (patrón Linear/Attio) —
+   el overlay de 440px en 1920px+ desperdiciaba el 76% de la pantalla. */
+@media (min-width: 1440px) {
+  :root { --detail-w: 560px; }
 }

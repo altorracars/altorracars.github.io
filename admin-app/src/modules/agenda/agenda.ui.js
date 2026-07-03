@@ -11,6 +11,7 @@ import {
   WEEKDAYS, MONTHS, monthMatrix, gridRange, groupByDay, dayKey, timeOf, isSameDay,
 } from '../../domain/agenda.js';
 import { hasPermission } from '../../core/auth.js';
+import { navigate } from '../../core/router.js';
 import { subscribeRange } from './agenda.data.js';
 import { openCitaDetail, openCitaChooser } from './cita-dialog.js';
 import { getMockAgenda } from '../../core/mock.js';
@@ -47,6 +48,13 @@ export function mountAgenda(root) {
       el('button', { class: 'btn btn--soft btn--sm', type: 'button', onclick: goToday }, ['Hoy']),
       iconBtn('chevronRight', 'Mes siguiente', () => go(1)),
     ]);
+    // OLA-1.2: la config de disponibilidad vive en SU dominio (la Agenda), no
+    // enterrada en Administración — la ruta #/config sigue siendo la misma.
+    if (hasPermission('calendar.config')) {
+      const cfg = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('clock') + ' Disponibilidad', title: 'Días, horarios y cupos de citas' });
+      cfg.addEventListener('click', () => navigate('config'));
+      nav.append(cfg);
+    }
     // Gap 5 (F23-7 §188): crear cita SIN pasar por el 360 — walk-ins incluidos.
     if (hasPermission('crm.edit')) {
       const nueva = el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva cita' });

@@ -118,11 +118,17 @@
 /* "Pegado al sidebar": los módulos de FLUJO (sin pane interno con padding propio)
    necesitan respiro lateral; los auto-scroll ya lo tienen en su pane. Selector de
    alta especificidad (.outlet > X) → gana sin depender del orden de carga de los
-   CSS de módulo. (Deuda P1: unificar todo en una clase canónica .page con
-   max-width para monitores anchos — ver mega-plan TODO-52 P0-LAYOUT fase 2.) */
+   CSS de módulo.
+   OLA-1.3 (layout fase 2, §266): (a) whitelist COMPLETO — faltaban .cfg/.bak/.aj
+   (Disponibilidad/Respaldos/Apariencia seguían pegados al sidebar); (b) cap
+   ultrawide: max-width + centrado → en 1920px+ el contenido no se estira
+   kilométrico ni deja banda muerta. min-width:0 neutraliza el min-width:100%
+   genérico del hijo (min GANA a max en CSS); width:100% conserva el llenado. */
 .outlet > .veh, .outlet > .brd, .outlet > .dlr, .outlet > .rev,
-.outlet > .ban, .outlet > .cms, .outlet > .lst, .outlet > .perfil {
+.outlet > .ban, .outlet > .cms, .outlet > .lst, .outlet > .perfil,
+.outlet > .cfg, .outlet > .bak, .outlet > .aj {
   padding-inline: var(--s-6);
+  min-width: 0; width: 100%; max-width: var(--content-max); margin-inline: auto;
 }
 
 /* ─────────── Popover ─────────── */

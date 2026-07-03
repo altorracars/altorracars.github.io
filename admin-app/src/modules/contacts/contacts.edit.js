@@ -135,7 +135,7 @@ export function openContactEdit(contact, { onChanged } = {}) {
   /* ── 🛡 Privacidad (Ley 1581) — fuera del menú normal ── */
   function privacyZone() {
     if (!hasPermission('crm.delete')) return null;
-    const zone = el('div', { class: 'cfg-card', style: { borderColor: 'var(--danger, #e5484d)' } });
+    const zone = el('div', { class: 'cfg-card', style: { borderColor: 'var(--danger, #E85D5D)' } });
     zone.append(el('h3', { class: 'cfg-card__title', text: '🛡 Privacidad (Ley 1581)' }));
     if (pendiente) {
       zone.append(

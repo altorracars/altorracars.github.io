@@ -113,13 +113,19 @@ Bersaglio usa un **dominio personalizado** (`bersagliojewelry.co`) mediante un a
 | **Sitemap generación** | Auto-generado por `generate-vehicles.mjs` | Manual/estático, 24 URLs curadas |
 | **Sitemap prioridades** | Todas iguales (0.8) | Jerarquía: homepage 1.0, colecciones 0.85-0.9, productos 0.8, legales 0.3 |
 | **robots.txt** | Simple: Allow + Sitemap | Estratégico: bloquea admin, carrito, wishlist, dist/ |
-| **URL canónica** | No tiene `<link rel="canonical">` | Sí: `<link rel="canonical" href="https://bersagliojewelry.co/">` |
-| **Meta robots** | No tiene | `<meta name="robots" content="index, follow">` |
-| **Open Graph** | No tiene / parcial | Completo: og:type, og:url, og:title, og:description, og:image (1200x630) |
-| **Twitter Cards** | No tiene | `summary_large_image` con todos los tags |
-| **Structured Data (JSON-LD)** | No tiene | 2 schemas: `JewelryStore` + `WebSite` con SearchAction |
+| **URL canónica** | ✅ YA IMPLEMENTADA (`index.html:39` + páginas generadas; corregido OLA-0.6 — la fila decía "No tiene", stale) | Sí: `<link rel="canonical" href="https://bersagliojewelry.co/">` |
+| **Meta robots** | ✅ YA IMPLEMENTADO (`index.html:12`) | `<meta name="robots" content="index, follow">` |
+| **Open Graph** | ✅ COMPLETO (`index.html:22-36` + Twitter) | Completo: og:type, og:url, og:title, og:description, og:image (1200x630) |
+| **Twitter Cards** | ✅ YA IMPLEMENTADAS | `summary_large_image` con todos los tags |
+| **Structured Data (JSON-LD)** | ✅ 4 bloques (`index.html:99-223`: AutoDealer+WebSite+…; Car+Breadcrumb en `/vehiculos/*`) | 2 schemas: `JewelryStore` + `WebSite` con SearchAction |
 | **PWA** | No | Sí: manifest.json, service worker, offline.html |
 | **Performance hints** | No | preconnect, dns-prefetch, preload con fetchpriority="high" |
+
+> ⚠️ **ESTADO 2026-07-03 (OLA-0.6 §266):** de esta lista, los puntos 2-4 (canonical / OG / JSON-LD)
+> **YA ESTÁN IMPLEMENTADOS** en el sitio (ver tabla corregida arriba). Los pendientes REALES:
+> **(1) dominio propio** (bloqueado por compra ~$10, decisión del dueño — hereda de TODO-01) y
+> **(2) confirmar en Search Console** el re-envío del sitemap (acción del dueño, no verificable
+> desde el repo). No re-implementar lo ya hecho.
 
 ### Lo que Bersaglio hace que Altorra Cars debería implementar
 

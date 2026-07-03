@@ -62,7 +62,7 @@ por contexto). En su lugar:
 ## §1 — Identidad y arquitectura (exprés)
 
 - **Negocio**: ALTORRA Company SAS — compra/venta de carros usados, Cartagena, Colombia. Brand dorado `#b89658`.
-- **Stack**: HTML/CSS/JS vanilla (sin framework, sin bundler) + Firebase Compat SDK **v11.3.0** desde CDN (NO modular). Firebase: Auth, Firestore, RTDB, Storage, Cloud Functions V2 (59 al 22/06 — reconciliar TODO-33), FCM, Analytics.
+- **Stack**: sitio público = HTML/CSS/JS vanilla + Firebase **Compat** v11.3.0 CDN; **panel `admin-app/` = Vite + Firebase MODULAR v11** (matiz §266). Firebase: Auth, Firestore, RTDB, Storage, Cloud Functions V2 (57, TODO-33), FCM, Analytics.
 - **Hosting**: GitHub Pages (`altorracars.github.io`). Deploy: push a `main` → auto-deploy. CI genera páginas de vehículos cada 4h desde Firestore (`scripts/generate-vehicles.mjs`).
 - **Project ID**: `altorra-cars`. Auth domain `altorra-cars.firebaseapp.com`.
 - **Apps namespaced** (§23.10 + §25.12): `altorra-admin` vs `altorra-public` aíslan sesiones; + una default app alias para internals del SDK.

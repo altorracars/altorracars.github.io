@@ -64,6 +64,7 @@
 
   /* W11 Type Ramp + Harmony scale fusion */
   --t-caption:   12px;   --t-caption-lh:   16px;
+  --t-body-sm:   13px;   --t-body-sm-lh:   18px;  /* OLA-1.1: paso oficial (dashboard lo usaba como token fantasma) */
   --t-body:      14px;   --t-body-lh:      20px;
   --t-body-lg:   16px;   --t-body-lg-lh:   22px;
   --t-subtitle:  20px;   --t-subtitle-lh:  28px;

@@ -55,7 +55,7 @@
 }
 .agenda__more:hover { color: var(--gold-700); }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) { /* OLA-1.3: breakpoint canónico */
   .agenda__head, .agenda__weekdays { padding-left: var(--s-3); padding-right: var(--s-3); }
   .agenda__grid { margin-left: var(--s-3); margin-right: var(--s-3); grid-auto-rows: minmax(72px, 1fr); }
   .agenda__chip span:not(.agenda__chip-time) { display: none; }
@@ -85,7 +85,7 @@
 .cita-pick__row {
   display: flex; align-items: baseline; gap: var(--s-2);
   padding: 6px 8px;
-  border: 0; border-bottom: 1px solid var(--line);
+  border: 0; border-bottom: 1px solid var(--surface-stroke);
   background: none; color: inherit;
   text-align: left; cursor: pointer;
   border-radius: var(--r-md);

@@ -135,19 +135,21 @@ cerrar (o reabrir con evidencia) el residuo "portar FCM".
 
 ### 🌊 OLA 1 — PANEL PREMIUM/CORPORATIVO (P1 · el corazón de TODO-52)
 
-**1.1 · Tokens fantasma (bug visual REAL, barato, alto impacto)**
+**1.1 · Tokens fantasma — ✅ HECHO (Fable 03/07 tarde):** 17 `var(--line)` desnudos → `--surface-stroke` (+alias compat en crm-tokens) · `--warn`→`--warning` · `--t-body-sm` entró a la rampa OFICIAL (13px) · fallbacks GitHub normalizados a los hex reales (perfil/dealers/brands/config/vehicles/contacts.edit). Verificado live: bordes de badges/chips visibles.
 - `var(--line)` (26 usos / 9 CSS, 0 definiciones) → `var(--surface-stroke)` (o `-hi` en separadores fuertes). Archivos: vehicles(10) reviews(2) dealers(1) banners(3) config(4) brands(1) lists(1) agenda(1) backup(3).
 - `--warn` (`perfil.css:86,102`) → `--warning`; `--t-body-sm` (`dashboard.css:71,81`) → decidir 13px a la rampa o subir a `--t-body`.
 - Fallbacks con paleta ajena GitHub (`#3fb950/#58a6ff/#e5484d` en dealers/brands/config) → hex de los tokens reales.
 
-**1.2 · Reorganización del menú (IA corporativa)** — solo `NAV_GROUPS`/labels (`shell.js:83-89`), rutas intactas
+**1.2 · Reorganización del menú — ✅ HECHO (Fable 03/07 tarde):** 5 grupos (Inventario/Sitio web/Comunicaciones/Equipo/Administración) con SVG propios · renombres (Apariencia y SEO · Base de conocimiento · Consultas sin respuesta) · `config`→botón "Disponibilidad" en Agenda (ruta viva) · **guard central RBAC** en mountRoute (canAccessRoute reusa perm de NAV) · breadcrumb de grupo en topbar. Verificado live (snapshot 5 grupos + agenda). Resta: fusión unmatched→tab (P2 2.12).
+*(Especificación original — referencia)*
 - **5 grupos**: `Inventario` (vehiculos, marcas, aliados, atributos) · `Sitio web` (banners, contenido, resenas) · `Comunicaciones` (hub, cerebro, unmatched) · `Equipo` (usuarios, roles, departamentos) · `Administración` (workflows, auditoria, respaldos, ajustes).
 - Renombrar: grupo "Ajustes"→**Administración**; ítem `ajustes`→**"Apariencia y SEO"**; `cerebro` "Cerebro AI"→**"Base de conocimiento"**; `unmatched` "No entendí"→**"Consultas sin respuesta"** (fusionarlas como tabs de un solo módulo = P2, no ahora).
 - `config` (Disponibilidad): sacarla de Administración → botón/acción "Configurar disponibilidad" DENTRO de Agenda (gate `calendar.config`), con la ruta `#/config` viva para deep-links.
 - Guard central de rutas: en `mountRoute` (`main.js:86-94`) reusar la metadata `perm` de `NAV[]` → sin permiso = redirect a inicio + toast (mata los 24 guards artesanales).
 - Breadcrumb: en `setActive`, poblar `topbar__crumb` con el grupo ("Administración › Auditoría") — ~5 líneas.
 
-**1.3 · Layout fase 2 (cierra la queja "espacio desaprovechado")**
+**1.3 · Layout fase 2 — ✅ CORE HECHO (Fable 03/07 tarde):** whitelist COMPLETO (faltaban `.cfg/.bak/.aj`, no solo .cfg) · cap ultrawide `--content-max:1360px` en flow + dash/reportes (padding dinámico, scrollbar en el borde) · ritmo vertical --s-5 (veh/rev/bak) · breakpoints canónicos 860/720/560 (8 archivos) · `--detail-w` 560px @≥1440. Verificado live 1920px (1360 centrado). **RESTA (menor, P2):** caps internos contactos/usuarios · split-mode real del 360.
+*(Especificación original — referencia)*
 - Añadir `.outlet > .cfg` al whitelist de padding (`shell.css:123` — Disponibilidad sigue pegada al sidebar HOY: quick-fix inmediato).
 - Clase canónica **`.page`** en el design-system: `max-width: 1280-1440px; margin-inline:auto; width:100%` + padding estándar; migrar los roots de flujo y los cuerpos scrolleables (dashboard/reportes/contactos/usuarios…); full-bleed SOLO donde aporta (kanban, hub 2-panes, agenda).
 - Breakpoints canónicos **860/720/560** (hoy hay 7 valores distintos: 480/560/640/720/760/860/900) — consolidar módulo por módulo, documentar en tokens.

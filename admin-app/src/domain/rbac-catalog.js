@@ -1,7 +1,8 @@
 // ============================================================
 // Catálogo RBAC (PLAN-UNIFICADO F-2, §239) — port ESM del SSoT
-// `js/admin/rbac-catalog.js` (§61.R1). 71 permisos atómicos en 8
+// `js/admin/rbac-catalog.js` (§61.R1). 82 permisos atómicos en 9
 // categorías + 1 system role (CEO). Naming `<resource>.<action>`.
+// (Conteo corregido en OLA-0.6 §266 — el "71 en 8" era stale.)
 //
 // ⚠️ SINCRONÍA (transición strangler): el SSoT del BACKEND sigue siendo
 // `js/admin/rbac-catalog.js` (la CF seedSystemRoles lo fetchea). Esta copia

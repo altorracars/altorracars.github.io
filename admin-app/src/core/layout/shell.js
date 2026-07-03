@@ -68,25 +68,43 @@ const NAV = [
   { id: 'workflows', label: 'Automatización', icon: '⚡', ready: true, perm: 'workflows.read' },
   // PLAN-UNIFICADO F-2 (5/6) §243: visor de auditoría — el LECTOR de auditLog (audit.js ya escribe).
   { id: 'auditoria', label: 'Auditoría', icon: '🗂️', ready: true, perm: 'audit.read' },
-  // PLAN-UNIFICADO F-2 (6/6): Ajustes — apariencia (tema) + SEO/sitemap. Cierra el GAP Config.
-  { id: 'ajustes', label: 'Ajustes', icon: '🎛️', ready: true, perm: ['settings.theme', 'settings.seo'] },
+  // PLAN-UNIFICADO F-2 (6/6) · OLA-1.2: renombrado — el grupo ya se llama
+  // "Administración"; "Ajustes>Ajustes" era colisión de nombres (antipatrón IA).
+  { id: 'ajustes', label: 'Apariencia y SEO', icon: '🎛️', ready: true, perm: ['settings.theme', 'settings.seo'] },
   // PLAN-UNIFICADO F-4 (gap §2.B Comunicaciones): ALTOR Hub (consola de chat) + Cerebro AI (FAQs del bot) + "Lo que no entendí" (unmatchedQueries = fugas).
   { id: 'hub', label: 'ALTOR Hub', icon: '💬', ready: true, perm: 'concierge.read' },
-  { id: 'cerebro', label: 'Cerebro AI', icon: '🧠', ready: true, perm: 'kb.read' },
-  { id: 'unmatched', label: 'No entendí', icon: '🤔', ready: true, perm: 'unmatched.read' },
+  // OLA-1.2: labels corporativos — "Cerebro AI"/"No entendí" eran jerga interna.
+  { id: 'cerebro', label: 'Base de conocimiento', icon: '🧠', ready: true, perm: 'kb.read' },
+  { id: 'unmatched', label: 'Consultas sin respuesta', icon: '🤔', ready: true, perm: 'unmatched.read' },
 ];
 
 // W-11 F2 (comité pt.3): layout de nav en 2 ZONAS. PRIMARIA = el día a día, siempre
 // plana y visible. SECUNDARIA = grupos colapsables (<details>) por dominio. Las
 // definiciones de cada ítem siguen en NAV[] (label/icon/perm = SSoT); aquí solo se
 // referencian por id, así router/rutas/módulos quedan INTACTOS (cambio aditivo §3.2).
+// OLA-1.2 (plan maestro §266): 5 grupos por DOMINIO DE NEGOCIO — mata el cajón de
+// sastre "Ajustes>Ajustes" de 9 ítems: Inventario (lo que la empresa VENDE — incluye
+// sus atributos), Sitio web (contenido público), Comunicaciones, Equipo (personas/
+// permisos), Administración (gobernanza). `config` (Disponibilidad) sale del sidebar:
+// vive como acción DENTRO de Agenda (su dominio real); la ruta #/config sigue viva.
 const NAV_PRIMARY = ['inicio', 'bandeja', 'pipeline', 'agenda', 'contactos', 'reportes'];
 const NAV_GROUPS = [
-  { id: 'g-sitio', label: 'Sitio web', icon: '🌐', items: ['vehiculos', 'marcas', 'aliados', 'resenas', 'banners', 'contenido'] },
+  { id: 'g-inventario', label: 'Inventario', icon: '🚗', items: ['vehiculos', 'marcas', 'aliados', 'atributos'] },
+  { id: 'g-sitio', label: 'Sitio web', icon: '🌐', items: ['banners', 'contenido', 'resenas'] },
   { id: 'g-comms', label: 'Comunicaciones', icon: '📣', items: ['hub', 'cerebro', 'unmatched'] },
-  { id: 'g-ajustes', label: 'Ajustes', icon: '🛠️', items: ['usuarios', 'roles', 'departamentos', 'config', 'workflows', 'auditoria', 'respaldos', 'atributos', 'ajustes'] },
+  { id: 'g-equipo', label: 'Equipo', icon: '👥', items: ['usuarios', 'roles', 'departamentos'] },
+  { id: 'g-admin', label: 'Administración', icon: '🛠️', items: ['workflows', 'auditoria', 'respaldos', 'ajustes'] },
 ];
 const NAV_GROUP_KEY = 'altorra:navgroup:'; // + group id → '1'(abierto) | '0'(cerrado)
+
+// OLA-1.2: guard CENTRAL de rutas — main.mountRoute reusa la metadata `perm` de NAV[]
+// (un solo punto de verdad declarativo; antes dependía de que cada uno de los 24+
+// módulos recordara auto-guardarse). Rutas fuera del NAV (perfil) → su propio guard.
+export function canAccessRoute(id) {
+  const item = NAV.find((i) => i.id === id);
+  if (!item) return true;
+  return !item.perm || [].concat(item.perm).some(hasPermission);
+}
 
 const TITLES = {
   inicio: 'Inicio',
@@ -109,10 +127,10 @@ const TITLES = {
   departamentos: 'Departamentos',
   workflows: 'Automatización',
   auditoria: 'Auditoría',
-  ajustes: 'Ajustes',
+  ajustes: 'Apariencia y SEO',
   hub: 'ALTOR Hub',
-  cerebro: 'Cerebro AI',
-  unmatched: 'Lo que no entendí',
+  cerebro: 'Base de conocimiento',
+  unmatched: 'Consultas sin respuesta',
   // F-6 (gap §3 sec-profile): accesible desde el menú de usuario, no del sidebar.
   perfil: 'Mi perfil',
 };
@@ -271,6 +289,12 @@ export function mountShell(appRoot) {
     const activeBtn = navButtons[route];
     if (activeBtn) { const grp = activeBtn.closest('details.navgroup'); if (grp) grp.open = true; }
     titleH.textContent = TITLES[route] || TITLES.inicio;
+    // OLA-1.2: breadcrumb de contexto — "Grupo" bajo el título cuando la ruta vive en
+    // la zona secundaria ("Administración" bajo "Auditoría"). En mock manda el aviso demo.
+    if (!store.get().mock) {
+      const g = NAV_GROUPS.find((x) => x.items.includes(route));
+      crumb.textContent = g ? g.label : '';
+    }
   }
 
   return { outlet, detailRoot, setActive };

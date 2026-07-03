@@ -40,8 +40,9 @@ import './styles/perfil.css';
 import { store } from './core/store.js';
 import { applyInitialTheme } from './core/theme.js';
 import { initAuth } from './core/auth.js';
-import { currentRoute, onRouteChange } from './core/router.js';
-import { mountShell } from './core/layout/shell.js';
+import { currentRoute, onRouteChange, navigate } from './core/router.js';
+import { mountShell, canAccessRoute } from './core/layout/shell.js';
+import { toast } from './core/toast.js';
 import { mountLogin } from './core/layout/login.js';
 import { mountDashboard } from './modules/dashboard/dashboard.ui.js';
 import { mountInbox } from './modules/inbox/inbox.ui.js';
@@ -85,6 +86,14 @@ let offRoute = null;
 
 function mountRoute(name) {
   if (!shell || name === mountedRoute) return;
+  // OLA-1.2: guard central RBAC — un deep-link (#/usuarios) sin permiso redirige a
+  // Inicio con aviso; la metadata perm vive en NAV[] (shell), un solo punto de verdad.
+  // Los datos ya estaban protegidos por rules; esto cierra la capa UI sin 24 guards.
+  if (!canAccessRoute(name)) {
+    toast('No tienes acceso a esa sección.', 'error');
+    navigate('inicio');
+    return;
+  }
   if (cleanupModule) { cleanupModule(); cleanupModule = null; }
   if (store.get().detailLeadId) store.set({ detailLeadId: null });
   // OLA-0.5: fallback alineado a la doctrina "el portal aterriza en Inicio" (§237/§246)

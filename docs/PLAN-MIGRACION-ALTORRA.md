@@ -1,10 +1,18 @@
 # 🚀 PLAN MAESTRO ALTORRA — Migración + Crecimiento Web
 
+> ⚠️⚠️ **PARCIALMENTE OBSOLETO (marcado OLA-0.6, 2026-07-03 — §266). NO ejecutar literal.**
+> Vigente SOLO el core: **dominio propio → Cloudflare DNS/email → Pages+Vite** (bloqueado por
+> la compra del dominio, decisión del dueño). LO MUERTO: **F8.2 HubSpot CONTRADICE TODO-52**
+> (el CRM es bespoke propio, multi-tenancy descartada — jamás migrar a un CRM externo); el
+> snapshot final cita branch/cache/sprints que ya no existen; las fases SEO/fotos están
+> parcialmente cubiertas por otras vías. **Antes de ejecutar la migración: REESCRIBIR este
+> plan** (tarea previa en el PLAN MAESTRO 2026-07-03, Ola 4.2).
+
 > **Cliente**: ALTORRA Company SAS (Cartagena, Colombia)
 > **Web actual**: altorracars.github.io
 > **Empezamos**: Jueves <!-- el cliente confirma fecha exacta -->
 > **Documentado por**: Claude (agente de desarrollo + marketing)
-> **Última actualización**: 2026-05-11
+> **Última actualización**: 2026-05-11 (banner de obsolescencia: 2026-07-03)
 
 ---
 

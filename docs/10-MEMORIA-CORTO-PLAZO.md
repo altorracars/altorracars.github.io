@@ -13,9 +13,10 @@
 > 🤖 **Impl = Opus 4.8** (tag `⟦OPUS-4.8⟧`); **revisión Fable 5 ✅ HECHA 03/07** (plan maestro). Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **RELEVO (sesión 03/07 FABLE 5 — auditoría holística + plan único) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4 por urgencia; Opus ejecuta TAL CUAL, reglas en su §0). **🟣 TODO-52 sigue EPIC #1** bajo ese plan (visión/brief intactos, mandato permanente; §260-265 shipped, ADR §266 = esta revisión). **YO decido+ejecuto+mergeo** (M-12/M-25).
-> **⚠️ CLAIMS DEL CEREBRO REFUTADOS por Fable (NO confiar sin grep — plan §2):** friendlyError NO completo (13+ toasts crudos) · emoji→SVG solo nav/sidebar (214 líneas/43 arch en UI) · RBAC = **82** perms ×3 catálogos SIN test de paridad · SITEMAP-FIX/PLAN-MIGRACION stale (HubSpot muerto) · "portar FCM" probablemente stale (`main.js:103 initFcm` ya existe — verificar live).
-> **✅ OLA 0 EJECUTADA (Fable 03/07 → detalle ADR §267; suite 340/340 + deploys):** storage staff-only · dataScope integral · captura ACK-FIRST · TODO-41 ✅ (`runCrmSlaSweep` ya existía — falso-negativo L-62; toggle+log cableados) · fail-closed sesión.
-> **▶️ PRÓXIMO PASO (Opus 4.8):** (1) **0.6 restante** — docs stale: tabla SITEMAP-FIX · marca-obsoleto en PLAN-MIGRACION · `theme.js:4` comment · `CLAUDE.md §1` matiz compat/modular · headers rbac-catalog "71→82"; (2) **OLA 1** en orden (1.1 tokens fantasma `--line`/`--warn` → 1.2 reorg menú 5 grupos → 1.3 layout f2 `.page`/`.cfg` → …). Todo especificado en el plan §Ola 1.
+> **⚠️ Claims ✅ REFUTADOS por Fable (grep antes de confiar — detalle plan §2):** friendlyError (13+ crudos) · emoji→SVG (solo nav) · RBAC 71→**82** ×3 catálogos sin paridad · FCM-pendiente probablemente stale (`main.js:103`).
+> **✅ OLA 0 EJECUTADA (→ ADR §267; suite 340/340 + deploys):** storage staff-only · dataScope integral · ACK-FIRST · TODO-41 · fail-closed.
+> **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus retoma después). ✅ **0.6 + OLA 1.1/1.2/1.3 HECHOS** (03/07 tarde: docs stale · tokens fantasma · menú 5 grupos+guard+breadcrumb · layout f2 core — verificado live 1920px, consola limpia).
+> **▶️ SIGUE (orden plan §Ola 1):** 1.4 friendlyError real (13+ callsites) + copy sin IDs de permiso → 1.5 voseo→tú (bot público CRÍTICO) → 1.6 emoji→SVG chrome funcional (popover iconId) → 1.7 appendAll/validate → 1.8 superficies (z-tokens · .modal canónico · hub colores · skeletons · empty CTAs) → 1.9/1.9b.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo · saldo Anthropic (flip bot) · estado GSC sitemap.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).

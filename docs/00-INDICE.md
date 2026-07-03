@@ -170,6 +170,7 @@
 | §261 | **TODO-52 P1: emoji→SVG chrome-19 ⟦OPUS⟧** — cierra §260 (+8 iconos); L-61/L-62. | 44287 |
 | §262 | **TODO-52 P1: emoji→SVG DOMINIO ⟦OPUS⟧** — rating/canal/type/nba/audit (`icon`→`iconId`+`uIco`; canal monocromo). Cierra emoji→SVG; RESTA P1=Fase C. | 44299 |
 | §263 | **TODO-29: shard `00`→`00a-INDICE` (§1–159) + `30`→`32-LECCIONES-META` (M-NN) ⟦OPUS⟧** — range-shard (§258) + stubs `### M-NN` (ref-resolution intacta); el cerebro deja de bloquear en cada ADR (00:38k/30:43k holgura). Trinquete: shardear, no subir cap. | 44311 |
+| §264 | **TODO-52 P1 Fase C: referencia de diseño premium ⟦OPUS⟧** — `docs/design/crm-design-reference.html` + Artifact: design-system (oro/tinta/tipo/componentes) + mockups Inicio/Bandeja sobre tokens REALES. Info-design; overflow 0. EPIC sigue mandato permanente. | 44321 |
 | §243 | **F-2 (5/6) `auditoria` visor en admin-app ⟦OPUS⟧** — LECTOR read-only de `auditLog`: lista cronológica (onSnapshot 200) + buscador + filtro; inmutable. | 44069 |
 | §242 | **F-2 (4/6) `workflows`/Automatización en admin-app ⟦OPUS⟧** — port admin-automation: NO CRUD (verificar-no-asumir) sino 4 reglas FIJAS toggle + visor `automationLog`; motor sigue legacy client-side (→TODO-41) + gap RBAC `workflows.edit`. dist gateado. | 44057 |
 | §241 | **F-2 (3/6) `departamentos` en admin-app ⟦OPUS⟧** — catálogo ④a `departments/{id}` (grid+modal, id slug `dept_<slug>`). Guard §66 (no borrar con userCount>0, UI+rules). Port admin-departments. dist gateado. | 44045 |

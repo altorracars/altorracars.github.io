@@ -14,7 +14,7 @@
 >
 > 🟢 **RELEVO (sesión 29-30/06 ·l CERRADA → arranca en SIGUE↓) ⟦OPUS-4.8⟧** — **🟣 EPIC #1: TODO-52 CRM Overhaul** (P1 EN CURSO). SSoT = brief `…crm-overhaul…` (§MEGA-PLAN/§PASE-1/§FASE-B) + **ADR §260** (barrido P1). 🌟 **VISIÓN = nivel TOP MUNDIAL** — ya escrita, NO re-preguntar; **YO decido+ejecuto+mergeo, el dueño NO opera git ni delibera código** (M-12/M-25).
 > **HECHO P1 (consolidado → ADR §260+§261+§262; `main`==`dev`):** PASE-1·§219 RBAC·accent-OUT(oro)·dataScope P0-SEC-1·Telegram + **emoji→SVG COMPLETO** — chrome 16+19 mód (§260/§261) + **DOMINIO** rating/canal/type/nba/auditoría (§262: meta `icon`→`iconId`+`uIco`, canal monocromo brand-glyphs, preserva `temp--*`) + voseo→tú. Verificado build 152 + preview live 5 vistas + 360 (0 emoji, 0 errores). `'department'`→`'own'` latente; MFA→TODO-43.
-> **SIGUE P1 = SOLO Fase C** (mockups premium + design-system dark-only formal). Menús `openMenu` (presets/asignar) = mejora futura. **🎨 Doctrina (qué se DEJA) = §260.5.** ⚠️ FAQ→bot (TODO-34/46). Owner-delete NO bloquea.
+> **Fase C ENTREGADA ✅ (§264):** referencia de diseño premium `docs/design/crm-design-reference.html` + Artifact (design-system + mockups Inicio/Bandeja sobre tokens reales). **EPIC = mandato PERMANENTE** → SIGUE = pulir el panel LIVE vs la referencia (spacing, micro-interacción, estados-cero) donde no "respire"; menús `openMenu` = mejora futura; Gemini design-critique = opcional. **🎨 Doctrina §260.5.** ⚠️ FAQ→bot (TODO-34/46). Owner-delete NO bloquea.
 > **🧹 Owner-pending:** purgar `ZZZ` (deal falso $1.3M en Alexander Daza) con el borrado nuevo.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).

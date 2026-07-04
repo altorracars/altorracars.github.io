@@ -2,6 +2,7 @@
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
+const { isOwnerData } = require('../../shared/rbac-foundation');
 
 /**
  * anularConversion — F7 (ADR §181): el "Deshacer" de la acción más importante
@@ -28,7 +29,9 @@ exports.anularConversion = onCall(callableOptions, async (request) => {
   const callerSnap = await db.collection('usuarios').doc(auth.uid).get();
   if (!callerSnap.exists) throw new HttpsError('permission-denied', 'Sin perfil de administrador.');
   const caller = callerSnap.data();
-  const isSuper = caller.rol === 'super_admin' || (Array.isArray(caller.permissions) && caller.permissions.includes('*'));
+  // §2.6: detección canónica compartida (antes copia parcial sin roleId —
+  // un dueño canónico por roleId sin '*' NO era isSuper aquí).
+  const isSuper = isOwnerData(caller);
 
   const dealRef = db.collection('deals').doc(dealId);
   const dealSnap = await dealRef.get();

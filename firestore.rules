@@ -63,7 +63,18 @@ service cloud.firestore {
     // solo el Admin SDK (seed/CF) crea dueños. Cierra la escalada users.edit/users.create.
     function isOwnerDoc(d) {
       return d.get('roleId', '') == 'system_super_admin'
+          // §2.6 — 3ª forma: rol LEGACY. Sin ella, un users.edit podía escribir
+          // rol:'super_admin' a un doc (isSuperAdmin() lo honra en la línea 18)
+          // y mintar un dueño legacy saltándose el guard §217. Ahora las 3
+          // formas igualan el isOwnerData de functions (shared/rbac-foundation).
+          || d.get('rol', '') == 'super_admin'
           || ('*' in d.get('permissions', []));
+    }
+
+    // §2.6 — el CALLER es el dueño real (espejo de isOwnerDoc sobre el propio
+    // perfil). isSuperAdmin() cubre el rol legacy; '*' cubre al dueño canónico.
+    function isOwnerCaller() {
+      return isSuperAdmin() || ('*' in getUserPermissions());
     }
 
     // §219 (P0-SEC-2 — decisión del dueño 29/06): permisos OWNER-EXCLUSIVOS. La
@@ -246,7 +257,21 @@ service cloud.firestore {
       // owner-only ni perms fuera del alcance del creador (grantablePerms).
       allow create: if (isSuperAdmin() || hasPermission('users.create'))
         && !isOwnerDoc(request.resource.data)
-        && grantablePerms(request.resource.data.get('permissions', []));
+        && grantablePerms(request.resource.data.get('permissions', []))
+        // §2.6 diff-guard: `rol` legacy con valor PRIVILEGIADO (super_admin/editor —
+        // los que isSuperAdmin/isEditorOrAbove honran) solo lo siembra el dueño;
+        // valores sin poder ('custom', 'viewer'…) pasan. dataScope en whitelist
+        // canónica (shared/rbac-foundation DATA_SCOPES). roleId exige registrar al
+        // asignador (roleAssignedBy == uid real, anti-spoof) para que
+        // onUserRoleAssigned valide el SUBSET — el dueño queda exento.
+        && ( !('rol' in request.resource.data)
+             || !(request.resource.data.rol in ['super_admin', 'editor'])
+             || isOwnerCaller() )
+        && ( !('dataScope' in request.resource.data)
+             || request.resource.data.dataScope in ['all', 'dept', 'own'] )
+        && ( !('roleId' in request.resource.data)
+             || isOwnerCaller()
+             || request.resource.data.get('roleAssignedBy', '') == request.auth.uid );
       allow delete: if isSuperAdmin()
         || hasPermission('users.delete');
 
@@ -305,7 +330,18 @@ service cloud.firestore {
           // §219 — si la escritura TOCA permissions, deben ser otorgables (no owner-only,
           // subset del editor). Edits que NO tocan permissions (bloquear, depto, etc.) pasan.
           && ( !request.resource.data.diff(resource.data).affectedKeys().hasAny(['permissions'])
-               || grantablePerms(request.resource.data.get('permissions', [])) ) )
+               || grantablePerms(request.resource.data.get('permissions', [])) )
+          // §2.6 diff-guard ampliado (espejo del create): `rol` legacy privilegiado =
+          // solo dueño; dataScope = whitelist canónica; roleId = registrar asignador
+          // (anti-spoof) para la validación de SUBSET en onUserRoleAssigned. Dueño exento.
+          && ( !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol'])
+               || !(request.resource.data.get('rol', '') in ['super_admin', 'editor'])
+               || isOwnerCaller() )
+          && ( !request.resource.data.diff(resource.data).affectedKeys().hasAny(['dataScope'])
+               || request.resource.data.get('dataScope', 'own') in ['all', 'dept', 'own'] )
+          && ( !request.resource.data.diff(resource.data).affectedKeys().hasAny(['roleId'])
+               || isOwnerCaller()
+               || request.resource.data.get('roleAssignedBy', '') == request.auth.uid ) )
         || (request.auth.uid == userId &&
             request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly([
@@ -691,6 +727,9 @@ service cloud.firestore {
         ])
         && request.resource.data.email is string
         && request.resource.data.email.size() <= 254
+        // §2.6: shape real de email (matches = match COMPLETO en rules) — sin
+        // esto la colección aceptaba cualquier string como "suscripción".
+        && request.resource.data.email.matches('[^@]+@[^@]+\\.[^@]+')
         // review #10: el campo EXISTE para evidenciar consentimiento (1581) —
         // un registro con false es contradictorio e inútil.
         && request.resource.data.consentGiven == true
@@ -739,12 +778,11 @@ service cloud.firestore {
         hasPermission('concierge.read') ||
         (request.auth.uid == resource.data.userId)
       );
-      // Anyone authenticated can create a thread (guests via anonymous auth)
-      allow create: if request.auth != null && (
-        !('userId' in request.resource.data)
-        || request.resource.data.userId == null
-        || request.resource.data.userId == request.auth.uid
-      );
+      // §2.6 (patrón citas E5): colección MF2.5 SIN escritor vivo — grep js/ +
+      // admin-app + functions = 0 creates (el chat real vive en conciergeChats).
+      // El create público era inyección anónima de threads falsos. Cerrado;
+      // read/update se conservan para los threads históricos.
+      allow create: if false;
       // Updates: admin always; user only on their own thread
       allow update: if isAuthenticated() && (
         isEditorOrAbove() ||
@@ -921,8 +959,23 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         || hasPermission('workflows.read')
         || hasPermission('audit.read');
-      // Anyone authenticated can create — automation runs in client
-      allow create: if request.auth != null;
+      // §2.6 SEC-06: el único escritor cliente es logExecution del motor legacy
+      // (admin-automation.js:148 — 11 claves fijas). Whitelist + caps + `by` atado
+      // al uid real (anti-suplantación del actor). El motor server (CF) bypasea.
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly([
+            'ruleId', 'ruleName', 'trigger', 'action', 'reason',
+            'docId', 'docTitle', 'outcome', 'timestamp', 'by', 'bySource'
+          ])
+        && request.resource.data.get('by', '') == request.auth.uid
+        && request.resource.data.get('ruleName', '') is string
+        && request.resource.data.get('ruleName', '').size() <= 120
+        && request.resource.data.get('reason', '') is string
+        && request.resource.data.get('reason', '').size() <= 500
+        && request.resource.data.get('docTitle', '') is string
+        && request.resource.data.get('docTitle', '').size() <= 200
+        && request.resource.data.get('bySource', '') is string
+        && request.resource.data.get('bySource', '').size() <= 40;
       // Immutable: rule executions are historical facts
       allow delete: if isSuperAdmin()
         || hasPermission('audit.delete');
@@ -984,9 +1037,17 @@ service cloud.firestore {
       // que el bot reporta — no requiere kb.edit explícito).
       allow update: if isEditorOrAbove()
         || hasPermission('kb.edit')
+        // §2.6: la rama pública de analytics aceptaba CUALQUIER valor (un
+        // anónimo podía poner usageCount:999999 o un string). Ahora: int
+        // ESTRICTAMENTE +1 sobre el valor actual + lastUsedAt string acotado.
         || (request.auth != null
             && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['usageCount', 'lastUsedAt']));
+                .hasOnly(['usageCount', 'lastUsedAt'])
+            && request.resource.data.get('usageCount', 0) is int
+            && request.resource.data.get('usageCount', 0) == resource.data.get('usageCount', 0) + 1
+            && ( !('lastUsedAt' in request.resource.data)
+                 || (request.resource.data.lastUsedAt is string
+                     && request.resource.data.lastUsedAt.size() <= 40) ));
       allow delete: if isSuperAdmin()
         || hasPermission('kb.delete');
     }
@@ -1024,9 +1085,20 @@ service cloud.firestore {
       // Authenticated users can read (Activity Feed shows them)
       allow read: if isAuthenticated()
         || hasPermission('audit.read');
-      // Anyone authenticated can create — events are produced by both
-      // admin and registered clients. The bySource field tracks origin.
-      allow create: if request.auth != null;
+      // §2.6 SEC-06: shape del único escritor cliente (event-bus.js:215 — 6 claves
+      // fijas, docId == payload.id). `by` = uid real o null (anti-suplantación).
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly([
+            'id', 'type', 'payload', 'timestamp', 'by', 'bySource'
+          ])
+        && request.resource.data.get('id', '') == eventId
+        && request.resource.data.get('type', '') is string
+        && request.resource.data.get('type', '').size() > 0
+        && request.resource.data.get('type', '').size() <= 80
+        && ( request.resource.data.get('by', null) == null
+             || request.resource.data.by == request.auth.uid )
+        && request.resource.data.get('bySource', '') is string
+        && request.resource.data.get('bySource', '').size() <= 40;
       // Immutable like auditLog — no updates allowed
       allow delete: if isSuperAdmin()
         || hasPermission('audit.delete');
@@ -1045,11 +1117,40 @@ service cloud.firestore {
           resource.data.userId == request.auth.uid ||
           resource.data.userId == null
         ));
+      // §2.6 SEC-06: whitelist del censo REAL de claves que el widget escribe al
+      // crear/mergear (lead-flow.js:85 startFirestoreDoc + escalateToQueue +
+      // botFallback de concierge.js — hasOnly acepta subconjuntos, cubre los 3).
+      // El cliente JAMÁS crea con claims (claimedBy* fuera de la lista) ni con
+      // status distinto de 'active'. Caps en los strings de texto libre.
       allow create: if request.auth != null && (
         !('userId' in request.resource.data) ||
         request.resource.data.userId == null ||
         request.resource.data.userId == request.auth.uid
-      );
+      )
+        && request.resource.data.keys().hasOnly([
+            'sessionId', 'userId', 'userEmail', 'userNombre', 'telefono',
+            'sourcePage', 'sourceVehicleId', 'status', 'mode',
+            'unreadByAdmin', 'unreadByUser', 'createdAt', 'lastMessageAt',
+            'lastMessage', 'queueEnteredAt', 'escalationReason',
+            'botFallbackCount', 'botFallbackAt'
+          ])
+        && ( !('status' in request.resource.data)
+             || request.resource.data.status == 'active' )
+        && ( request.resource.data.get('userNombre', null) == null
+             || (request.resource.data.userNombre is string
+                 && request.resource.data.userNombre.size() <= 120) )
+        && ( request.resource.data.get('userEmail', null) == null
+             || (request.resource.data.userEmail is string
+                 && request.resource.data.userEmail.size() <= 254) )
+        && ( request.resource.data.get('telefono', null) == null
+             || (request.resource.data.telefono is string
+                 && request.resource.data.telefono.size() <= 40) )
+        && ( request.resource.data.get('lastMessage', null) == null
+             || (request.resource.data.lastMessage is string
+                 && request.resource.data.lastMessage.size() <= 4000) )
+        && ( request.resource.data.get('sourcePage', null) == null
+             || (request.resource.data.sourcePage is string
+                 && request.resource.data.sourcePage.size() <= 200) );
       // §23 FASE 3 — Locks (Claiming).
       // Update permitido si:
       //   1. Es super_admin (override total: liberación de lock, reasignación)
@@ -1072,10 +1173,19 @@ service cloud.firestore {
             resource.data.claimedBy == null
             || resource.data.claimedBy == request.auth.uid
         ))
+        // §2.6: la rama del CLIENTE era "permisiva" documentada — podía pisar
+        // claimedBy* (romper el lock del asesor) o re-apropiarse el thread.
+        // Blocklist (no whitelist: el censo de claves legítimas del widget es
+        // amplio y romperlo = matar el bot): claims intocables + userId solo
+        // puede setearse al uid propio (adopción del thread anónimo).
         || (request.auth != null && (
             resource.data.userId == request.auth.uid
             || resource.data.userId == null
-        ));
+        )
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['claimedBy', 'claimedByName', 'claimedAt'])
+            && ( !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId'])
+                 || request.resource.data.userId == request.auth.uid ));
       allow delete: if isSuperAdmin()
         || hasPermission('concierge.delete');
 
@@ -1183,9 +1293,14 @@ service cloud.firestore {
           // TODO-41 OLA-0.4: el toggle de Automatización del portal usa workflows.edit —
           // sin esta rama recibía permission-denied (gap catálogo↔rules).
           || (docId == 'automationRules' && hasPermission('workflows.edit'))
-          || hasPermission('settings.theme')
-          || hasPermission('settings.seo')
-          || hasPermission('settings.backup');
+          // §2.6 least-privilege por docId: las 3 ramas settings.* estaban SUELTAS —
+          // un usuario con solo settings.theme podía escribir TODO config/ (incl.
+          // calendarConfig/availability/automationRules). El único doc que los
+          // clientes escriben con settings.* es `listas` (Atributos, LIST_PERMS).
+          || (docId == 'listas'
+              && (hasPermission('settings.theme')
+                  || hasPermission('settings.seo')
+                  || hasPermission('settings.backup')));
       }
       // SEC-08 §187 — la reserva atómica del form público (citas.js:515) sigue
       // viva pero ACOTADA: antes `(docId == 'bookedSlots')` a secas permitía
@@ -1322,8 +1437,14 @@ service cloud.firestore {
       allow read: if isSuperAdmin()
         || hasPermission('departments.read')
         || hasPermission('departments.manage');
-      allow create: if isSuperAdmin() || hasPermission('departments.manage');
-      allow update: if isSuperAdmin() || hasPermission('departments.manage');
+      // §2.6: userCount es SERVER-ONLY (denormalizado por la CF al asignar/mover
+      // usuarios — departamentos.data.js:7). Sin el guard, un departments.manage
+      // podía poner userCount=0 y burlar el candado de borrado §66. El create
+      // solo lo siembra en 0 (departamentos.ui.js:112).
+      allow create: if (isSuperAdmin() || hasPermission('departments.manage'))
+        && request.resource.data.get('userCount', 0) == 0;
+      allow update: if (isSuperAdmin() || hasPermission('departments.manage'))
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userCount']);
       // §66 — no borrar un departamento con usuarios asignados (userCount>0).
       allow delete: if (isSuperAdmin() || hasPermission('departments.manage'))
         && resource.data.get('userCount', 0) == 0;

@@ -27,12 +27,16 @@ const {
 const nowISO = () => new Date().toISOString();
 const GRACE_MS = 72 * 3600e3;
 
+const { isOwnerData } = require('../../shared/rbac-foundation');
+
 async function assertPerm(db, auth, perm) {
   if (!auth || !auth.uid) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
   const snap = await db.collection('usuarios').doc(auth.uid).get();
   if (!snap.exists) throw new HttpsError('permission-denied', 'Usuario sin perfil de staff.');
   const u = snap.data();
-  const isSuper = u.rol === 'super_admin' || u.roleId === 'system_super_admin';
+  // §2.6: detección canónica compartida (antes copia parcial de 2 formas —
+  // un dueño canónico solo-'*' NO era isSuper aquí).
+  const isSuper = isOwnerData(u);
   if (perm === 'super') {
     if (!isSuper) throw new HttpsError('permission-denied', 'Solo el Super Admin puede hacer esto.');
   } else {

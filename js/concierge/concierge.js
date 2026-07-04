@@ -1714,7 +1714,11 @@
         try {
             ref = window.rtdb.ref('/typing/' + session.sessionId + '/user');
         } catch (e) { return; }
-        var payload = { typing: !!isTyping, ts: Date.now() };
+        // §2.6 — RTDB exige `uid == auth.uid` en el payload: el nodo user queda
+        // RECLAMADO por el primer cliente de la sesión (nadie escribe typing
+        // en la sesión de otro). Sin auth el set falla silencioso (best-effort).
+        var uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+        var payload = { typing: !!isTyping, ts: Date.now(), uid: uid };
         ref.set(payload).catch(function () {});
         if (isTyping) {
             // onDisconnect cleanup (si cliente cierra tab mid-escribiendo,

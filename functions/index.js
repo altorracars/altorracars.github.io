@@ -718,13 +718,13 @@ exports.triggerSeoRegeneration = onCall({
         throw new HttpsError('permission-denied', 'Solo Super Admin puede regenerar paginas SEO.');
     }
 
-    // Token: primero desde el parámetro enviado por el admin panel (localStorage),
-    // luego desde Firebase Secret Manager como fallback.
-    const token = (request.data && request.data.githubPat) || githubPat.value();
+    // §2.6: SOLO Secret Manager. La rama que aceptaba un PAT enviado por el
+    // cliente convertía la callable en un proxy de la GitHub API con token
+    // arbitrario (y normalizaba guardar un PAT en localStorage del navegador).
+    const token = githubPat.value();
     if (!token) {
         throw new HttpsError('failed-precondition',
-            'GITHUB_PAT no configurado. Agrega el Token GitHub en el panel admin (seccion SEO) ' +
-            'o ejecuta: firebase functions:secrets:set GITHUB_PAT');
+            'GITHUB_PAT no configurado. Ejecuta: firebase functions:secrets:set GITHUB_PAT');
     }
 
     try {
@@ -793,17 +793,10 @@ function mapAuthError(error, fallbackAction) {
         { code: code || 'unknown', originalMessage: message });
 }
 
-// §213 (④a PASO 0) — detección CANÓNICA del dueño/super-admin. Reconoce las 3
-// formas (legacy `rol` + `roleId` del system role + wildcard '*' en permissions)
-// para que la capa CF iguale el owner-guard de rules §212 y NO se rompa el día que
-// se limpie el campo legacy `rol` (R8). El dueño es INAMOVIBLE (§193.4).
-function isOwnerData(d) {
-    return !!d && (
-        d.rol === 'super_admin'
-        || d.roleId === 'system_super_admin'
-        || (Array.isArray(d.permissions) && d.permissions.includes('*'))
-    );
-}
+// §213 (④a PASO 0) + §2.6 — detección CANÓNICA del dueño/super-admin, ahora
+// COMPARTIDA en shared/rbac-foundation (contactAdmin y anularConversion tenían
+// copias parciales de 2 formas). El dueño es INAMOVIBLE (§193.4).
+const { isOwnerData } = require('./shared/rbac-foundation');
 
 async function verifySuperAdmin(auth) {
     if (!auth || !auth.uid) {
@@ -3842,6 +3835,57 @@ exports.onUserRoleAssigned = onDocumentUpdated('usuarios/{uid}', async (event) =
     }
 
     const role = roleSnap.data();
+
+    // §2.6 — SUBSET DEL ASIGNADOR: rules solo dejan escribir roleId a un
+    // NO-dueño si registra roleAssignedBy == su propio uid (anti-spoof). Esta
+    // CF es la que COPIA los permisos del rol al usuario — sin este check, un
+    // users.edit delegado podía asignar un rol con permisos que él mismo no
+    // tiene (escalada indirecta que grantablePerms de rules no ve, porque el
+    // campo escrito es roleId, no permissions). Sin roleAssignedBy = escritura
+    // del dueño / consola / Admin SDK (rules lo garantizan) → pasa.
+    const assignerUid = after.roleAssignedBy;
+    if (assignerUid && assignerUid !== 'system:rollback') {
+        let assigner = null;
+        try {
+            const aSnap = await db.collection('usuarios').doc(String(assignerUid)).get();
+            assigner = aSnap.exists ? aSnap.data() : null;
+        } catch (err) {
+            console.error('[onUserRoleAssigned] §2.6 error al leer asignador:', err.message);
+        }
+        const rolePerms = Array.isArray(role.permissions) ? role.permissions : [];
+        const assignerPerms = (assigner && Array.isArray(assigner.permissions)) ? assigner.permissions : [];
+        const subsetOk = !!assigner && (
+            require('./shared/rbac-foundation').isOwnerData(assigner)
+            || rolePerms.every((p) => assignerPerms.includes(p))
+        );
+        if (!subsetOk) {
+            console.warn(`[onUserRoleAssigned] §2.6 uid=${uid} rol ${after.roleId} RECHAZADO: `
+                + `asignador ${assignerUid} sin subset — rollback a ${before.roleId || 'null'}`);
+            try {
+                await event.data.after.ref.update({
+                    roleId: before.roleId || null,
+                    // marca de sistema: el re-trigger del rollback salta esta validación
+                    roleAssignedBy: 'system:rollback',
+                    _resyncedAt: new Date().toISOString(),
+                    _resyncedBy: 'onUserRoleAssigned (subset-del-asignador rechazado)'
+                });
+                await db.collection('auditLog').add({
+                    type: 'user.role-assignment-rejected',
+                    uid: uid,
+                    rejectedRoleId: after.roleId,
+                    restoredRoleId: before.roleId || null,
+                    assignedBy: assignerUid,
+                    reason: assigner ? 'rol con permisos fuera del alcance del asignador' : 'asignador inexistente',
+                    timestamp: new Date().toISOString(),
+                    actor: 'system',
+                    actorName: 'Cloud Function (§2.6 subset del asignador)'
+                });
+            } catch (err) {
+                console.error('[onUserRoleAssigned] §2.6 rollback falló:', err.message);
+            }
+            return;
+        }
+    }
 
     // Verificar si necesita sync (drift entre user.roleName/permissions/cargo y role.*)
     const nameDrift = after.roleName !== role.name;

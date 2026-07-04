@@ -74,6 +74,35 @@ describe.skipIf(!EMU)('Rules §217 — no MINTAR dueño (users.edit/users.create
   });
   it('REGRESIÓN: users.create SÍ crea un usuario NORMAL', async () => {
     const db = testEnv.authenticatedContext(CREATOR).firestore();
-    await rut.assertSucceeds(db.doc('usuarios/nuevo_normal').set({ rol: 'custom', roleId: 'r_n', permissions: ['vehicles.read'], estado: 'activo', nombre: 'Nuevo' }));
+    // §2.6: roleId desde un no-dueño exige registrar al asignador (roleAssignedBy
+    // == uid real, anti-spoof) para que onUserRoleAssigned valide su subset.
+    await rut.assertSucceeds(db.doc('usuarios/nuevo_normal').set({ rol: 'custom', roleId: 'r_n', roleAssignedBy: CREATOR, permissions: ['vehicles.read'], estado: 'activo', nombre: 'Nuevo' }));
+  });
+
+  // ── §2.6 diff-guard ampliado: rol legacy privilegiado / roleAssignedBy / dataScope ──
+  it('§2.6: users.edit NO puede mintar rol legacy "super_admin" (3ª forma de dueño)', async () => {
+    const db = testEnv.authenticatedContext(EDITOR).firestore();
+    await rut.assertFails(db.doc('usuarios/' + STAFF).update({ rol: 'super_admin' }));
+  });
+  it('§2.6: users.edit NO puede dar rol legacy "editor" (poder isEditorOrAbove)', async () => {
+    const db = testEnv.authenticatedContext(EDITOR).firestore();
+    await rut.assertFails(db.doc('usuarios/' + STAFF).update({ rol: 'editor' }));
+  });
+  it('§2.6: asignar roleId SIN registrar roleAssignedBy muere (no-dueño)', async () => {
+    const db = testEnv.authenticatedContext(EDITOR).firestore();
+    await rut.assertFails(db.doc('usuarios/' + STAFF).update({ roleId: 'r_gerente' }));
+  });
+  it('§2.6: roleAssignedBy SPOOFEADO (uid ajeno) muere', async () => {
+    const db = testEnv.authenticatedContext(EDITOR).firestore();
+    await rut.assertFails(db.doc('usuarios/' + STAFF).update({ roleId: 'r_gerente', roleAssignedBy: 'otro_uid' }));
+  });
+  it('§2.6: asignar roleId CON roleAssignedBy == uid real pasa', async () => {
+    const db = testEnv.authenticatedContext(EDITOR).firestore();
+    await rut.assertSucceeds(db.doc('usuarios/' + STAFF).update({ roleId: 'r_gerente', roleAssignedBy: EDITOR }));
+  });
+  it('§2.6: dataScope fuera de la whitelist canónica muere; canónico pasa', async () => {
+    const db = testEnv.authenticatedContext(EDITOR).firestore();
+    await rut.assertFails(db.doc('usuarios/' + STAFF).update({ dataScope: 'todo-el-mundo' }));
+    await rut.assertSucceeds(db.doc('usuarios/' + STAFF).update({ dataScope: 'own' }));
   });
 });

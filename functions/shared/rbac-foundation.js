@@ -93,4 +93,17 @@ function computeNivelSeedOnAssign(userData, roleData) {
     return { nivel: Number.isFinite(roleNivel) ? roleNivel : DEFAULT_NIVEL };
 }
 
-module.exports = { computeRbacFoundationUpdate, computeNivelSeedOnAssign, DATA_SCOPES, CEO_NIVEL, DEFAULT_NIVEL };
+// §213 + §2.6 — detección CANÓNICA del dueño/super-admin (las 3 formas: legacy
+// `rol` + `roleId` del system role + wildcard '*'). Antes vivía SOLO en
+// functions/index.js mientras contactAdmin y anularConversion llevaban copias
+// PARCIALES (2 formas cada una, distintas entre sí) — un dueño legacy o
+// canónico podía pasar en una capa y fallar en otra. Un hecho = un dueño.
+function isOwnerData(d) {
+    return !!d && (
+        d.rol === 'super_admin'
+        || d.roleId === 'system_super_admin'
+        || (Array.isArray(d.permissions) && d.permissions.includes('*'))
+    );
+}
+
+module.exports = { computeRbacFoundationUpdate, computeNivelSeedOnAssign, isOwnerData, DATA_SCOPES, CEO_NIVEL, DEFAULT_NIVEL };

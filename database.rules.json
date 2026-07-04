@@ -1,7 +1,7 @@
 {
   "rules": {
     "presence": {
-      ".read": "auth != null",
+      ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous'",
       ".indexOn": ["online"],
       "$sessionId": {
         ".write": "!newData.exists() || (!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid)",
@@ -9,11 +9,11 @@
       }
     },
     "typing": {
-      ".read": "auth != null",
       "$sessionId": {
+        ".read": "auth != null",
         "user": {
-          ".write": "auth != null",
-          ".validate": "!newData.exists() || (newData.hasChild('typing') && newData.hasChild('ts') && newData.child('typing').isBoolean() && newData.child('ts').isNumber())"
+          ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid)",
+          ".validate": "!newData.exists() || (newData.hasChild('uid') && newData.child('uid').val() === auth.uid && newData.hasChild('typing') && newData.hasChild('ts') && newData.child('typing').isBoolean() && newData.child('ts').isNumber())"
         },
         "$asesorKey": {
           ".write": "auth != null && $asesorKey == 'asesor_' + auth.uid",

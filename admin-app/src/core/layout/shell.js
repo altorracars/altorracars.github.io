@@ -14,6 +14,10 @@ import { initials } from '../../domain/format.js';
 // GLOBAL (antes solo vivía dentro de la Bandeja, inbox.ui.js). Reusa el form
 // rápido (camino primario <30s, ADR §178) — modal auto-contenido, sin acoplar al inbox.
 import { openQuickLeadForm } from '../../modules/capture/quick-lead.js';
+// OLA-2.2: quick-create polimórfico (＋ Crear) + campana de notificaciones in-app.
+import { openNewLeadForm } from '../../modules/capture/new-lead.js';
+import { openCitaChooser } from '../../modules/agenda/cita-dialog.js';
+import { createNotificationBell } from '../notifications.js';
 // W-11 F2 (comité pt.8): iconos SVG inline (currentColor) del sidebar.
 import { navIcon } from './nav-icons.js';
 import { initCommandPalette } from '../command-palette.js';
@@ -217,13 +221,24 @@ export function mountShell(appRoot) {
     }, { title: displayName() });
   });
 
-  // W-11 F1(b): CTA primario global de captura, gateado con el MISMO permiso que
-  // la Bandeja (`crm.edit`, ver inbox.ui.js) — sin permiso de edición no se renderiza
-  // (evita el CTA que viola RBAC: comité pt.4 "RBAC degenerado"). `el()` ignora null.
-  const newLeadBtn = hasPermission('crm.edit')
-    ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', 'aria-label': 'Registrar nuevo lead' }, ['＋ Nuevo lead'])
+  // W-11 F1(b) → OLA-2.2: el CTA global evoluciona a QUICK-CREATE POLIMÓRFICO
+  // (＋ Crear → Lead rápido/completo · Cita · Vehículo), cada acción gateada por
+  // SU permiso; sin ninguno, no se renderiza (RBAC no degenerado, comité pt.4).
+  // Vehículo NAVEGA a su sección (el wizard exige contexto de marcas/inventario
+  // que solo ese módulo carga — no se acopla el shell al wizard).
+  const createActions = [
+    hasPermission('crm.edit') ? { iconId: 'zap', label: 'Lead rápido', hint: '30 seg', run: () => openQuickLeadForm() } : null,
+    hasPermission('crm.edit') ? { iconId: 'plus', label: 'Lead completo', hint: 'canal + campaña', run: () => openNewLeadForm() } : null,
+    hasPermission('crm.edit') ? { iconId: 'calendar', label: 'Cita', hint: 'agenda', run: () => openCitaChooser({}) } : null,
+    hasPermission('vehicles.create') ? { iconId: 'car', label: 'Vehículo', hint: 'inventario', run: () => navigate('vehiculos') } : null,
+  ].filter(Boolean);
+  const newLeadBtn = createActions.length
+    ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', 'aria-label': 'Crear registro', 'aria-haspopup': 'menu' }, ['＋ Crear'])
     : null;
-  if (newLeadBtn) newLeadBtn.addEventListener('click', () => openQuickLeadForm());
+  if (newLeadBtn) newLeadBtn.addEventListener('click', () => {
+    if (createActions.length === 1) { createActions[0].run(); return; }
+    openMenu(newLeadBtn, createActions.map((a) => ({ value: a, iconId: a.iconId, label: a.label, hint: a.hint })), (it) => it.value.run(), { title: 'Crear' });
+  });
 
   // W-11 F1(c): hamburguesa del drawer móvil (visible SOLO ≤560px vía CSS) + backdrop.
   const drawerToggle = el('button', {
@@ -232,7 +247,7 @@ export function mountShell(appRoot) {
   }, [el('span', { html: ICON_MENU })]);
   const backdrop = el('div', { class: 'drawer-backdrop', 'aria-hidden': 'true' });
 
-  const topbar = el('header', { class: 'topbar' }, [drawerToggle, title, el('div', { class: 'topbar__actions u-row' }, [newLeadBtn, userBtn])]);
+  const topbar = el('header', { class: 'topbar' }, [drawerToggle, title, el('div', { class: 'topbar__actions u-row' }, [newLeadBtn, createNotificationBell(), userBtn])]);
   const outlet = el('main', { class: 'outlet', id: 'outlet' });
   const detailRoot = el('div', { id: 'detail-root' });
 

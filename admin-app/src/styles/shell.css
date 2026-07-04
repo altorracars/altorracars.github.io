@@ -222,3 +222,14 @@
   .sidebar { transition: none; }
   .drawer-backdrop { transition: none; }
 }
+
+/* OLA-2.2: campana de notificaciones in-app (badge oro+tinta, convención del DS) */
+.bell { position: relative; }
+.bell__badge {
+  position: absolute; top: 1px; right: 1px;
+  min-width: 15px; height: 15px; padding: 0 3px;
+  display: grid; place-content: center;
+  border-radius: var(--r-pill);
+  background: var(--gold-500); color: var(--ink-950);
+  font-size: 10px; font-weight: 800; line-height: 1;
+}

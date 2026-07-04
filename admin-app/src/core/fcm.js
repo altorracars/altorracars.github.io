@@ -26,6 +26,7 @@ import { store } from './store.js';
 import { toast } from './toast.js';
 import { el } from './dom.js';
 import { icon } from './icons.js';
+import { pushNotification } from './notifications.js';
 
 // VAPID public key (idéntica al admin viejo — Firebase Console → Cloud Messaging
 // → Web Push certificates). Es PÚBLICA: identifica al servidor emisor, no es
@@ -66,6 +67,8 @@ function bindForeground() {
       const title = n.title || 'Cliente esperando';
       const body = n.body || 'Hay un cliente en cola en el ALTOR Hub.';
       toast(`${title} — ${body}`, 'info', 9000);
+      // OLA-2.2: el toast se pierde a los 9s — la campana lo conserva con deep-link.
+      pushNotification({ title, body, route: 'hub' });
     });
   } catch (e) {
     _foregroundBound = false;

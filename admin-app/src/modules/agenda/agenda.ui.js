@@ -10,11 +10,12 @@ import { store } from '../../core/store.js';
 import {
   WEEKDAYS, MONTHS, monthMatrix, gridRange, groupByDay, dayKey, timeOf, isSameDay,
 } from '../../domain/agenda.js';
-import { hasPermission } from '../../core/auth.js';
+import { hasPermission, isSuper } from '../../core/auth.js';
 import { navigate } from '../../core/router.js';
 import { toast } from '../../core/toast.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { exportCsv, fmtFechaCsv } from '../../core/csv.js';
-import { subscribeRange } from './agenda.data.js';
+import { subscribeRange, citaAction, deleteActivity } from './agenda.data.js';
 import { openCitaDetail, openCitaChooser } from './cita-dialog.js';
 import { getMockAgenda } from '../../core/mock.js';
 
@@ -70,6 +71,27 @@ export function mountAgenda(root) {
       ]);
     });
     nav.append(csvBtn);
+    // OLA-2.5: limpieza masiva owner-only — canceladas/caducadas (ya sin cupo).
+    if (isSuper() && !store.get().mock) {
+      const purge = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('trash') + ' Purgar canceladas', title: 'Borra definitivamente las citas canceladas y caducadas (completadas y no-show se conservan)' });
+      purge.addEventListener('click', async () => {
+        const ok = await confirmDialog({
+          title: 'Purgar citas canceladas',
+          message: 'Se borran DEFINITIVAMENTE todas las citas canceladas y caducadas (y sus recordatorios de Agenda). Las completadas y los no-show se conservan como historial. Esta acción no se puede deshacer.',
+          confirmText: 'Purgar', danger: true,
+        });
+        if (!ok) return;
+        purge.disabled = true;
+        try {
+          const r = await citaAction('purgeCancelled', null);
+          toast(r.deleted ? `🗑 ${r.deleted} cita(s) purgada(s)` + (r.more ? ' — vuelve a pulsar para el resto' : '') : 'No había citas canceladas.', 'ok');
+        } catch (e) {
+          toast('No se pudo purgar: ' + ((e && e.message) || ''), 'error');
+        }
+        purge.disabled = false;
+      });
+      nav.append(purge);
+    }
     // Gap 5 (F23-7 §188): crear cita SIN pasar por el 360 — walk-ins incluidos.
     if (hasPermission('crm.edit')) {
       const nueva = el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva cita' });
@@ -116,7 +138,7 @@ export function mountAgenda(root) {
           evs.slice(0, 3).forEach((ev) => list.append(eventChip(ev)));
           if (evs.length > 3) {
             const more = el('button', { class: 'agenda__more', type: 'button' }, [`+${evs.length - 3} más`]);
-            more.addEventListener('click', () => openMenu(more, evs.map((ev) => ({ value: ev, label: `${timeOf(ev.dueAt)} · ${ev.relatedTo?.name || ev.subject || 'Cita'}` })), (it) => openEvent(it.value), { title: `${cell.date.getDate()} ${MONTHS[ui.month]}` }));
+            more.addEventListener('click', () => openMenu(more, evs.map((ev) => ({ value: ev, label: `${timeOf(ev.dueAt)} · ${ev.relatedTo?.name || ev.subject || 'Cita'}` })), (it) => openEvent(it.value, more), { title: `${cell.date.getDate()} ${MONTHS[ui.month]}` }));
             list.append(more);
           }
         }
@@ -137,17 +159,37 @@ export function mountAgenda(root) {
       el('span', { class: 'agenda__chip-time', text: timeOf(ev.dueAt) }),
       el('span', { class: 'u-truncate', text: ev.relatedTo?.name || ev.subject || 'Cita' }),
     ]);
-    chip.addEventListener('click', () => openEvent(ev));
+    chip.addEventListener('click', () => openEvent(ev, chip));
     return chip;
   }
 
-  function openEvent(ev) {
+  function openEvent(ev, anchor) {
     // Cita proyectada (F16) → diálogo de gestión F18; lo demás → 360.
     if (ev.type === 'cita' && ev.sourceSolicitudId) {
       openCitaDetail(ev, { onLead: (id) => store.set({ detailLeadId: id }) });
       return;
     }
     const leadId = ev.relatedTo && ev.relatedTo.id;
+    // OLA-2.5: el dueño puede ELIMINAR tareas/eventos sueltos (los huérfanos
+    // de purgas incluidos) — menú en vez de salto ciego al 360.
+    if (isSuper() && anchor && !store.get().mock) {
+      openMenu(anchor, [
+        leadId ? { value: 'open', iconId: 'user', label: 'Ver ficha del cliente' } : null,
+        { value: 'delete', iconId: 'trash', label: 'Eliminar de la Agenda' },
+      ].filter(Boolean), async (it) => {
+        if (it.value === 'open') { store.set({ detailLeadId: leadId }); return; }
+        if (it.value !== 'delete') return;
+        const ok = await confirmDialog({
+          title: '¿Eliminar este evento de la Agenda?',
+          message: `"${ev.subject || 'Evento'}" desaparece definitivamente.`,
+          confirmText: 'Eliminar', danger: true,
+        });
+        if (!ok) return;
+        try { await deleteActivity(ev.id); toast('🗑 Evento eliminado', 'ok'); }
+        catch (e) { toast('No se pudo eliminar: ' + ((e && e.message) || ''), 'error'); }
+      }, { title: ev.subject || 'Evento' });
+      return;
+    }
     if (leadId) store.set({ detailLeadId: leadId });
   }
 

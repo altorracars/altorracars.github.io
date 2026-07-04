@@ -15,7 +15,7 @@ import {
 import { scoreLead, RATING_META, FACTOR_LABELS, FACTOR_WEIGHTS } from '../../domain/scoring.js';
 import { classifyType, channelOf, statusMeta } from '../../domain/classify.js';
 import { computeNBA } from '../../domain/nba.js';
-import { getContact, subscribeActivities, subscribeNotes, addNote } from './contacts.data.js';
+import { getContact, subscribeActivities, subscribeNotes, addNote, fetchLeadById } from './contacts.data.js';
 import { openConvertDialog } from '../capture/convert-dialog.js';
 import { openCitaCreate } from '../agenda/cita-dialog.js';
 import { openContactEdit } from './contacts.edit.js';
@@ -66,7 +66,21 @@ export function mountDetailPanel(root) {
     const lead = (store.get().leads || []).find((l) => l.id === id);
     data = { lead: lead || null, contact: null, activities: [], notes: [], loadError: null };
     render();
-    if (!lead) return;
+    if (!lead) {
+      // OLA-2.5 (bug del dueño con captura): llegar desde la Agenda sin pasar
+      // por la Bandeja dejaba store.leads vacío → "Lead no disponible" SIEMPRE.
+      // Fallback: buscar el lead por id en Firestore; si tampoco existe en el
+      // server, el estado lo dice HONESTO (lead borrado, no "recarga").
+      if (store.get().mock) return;
+      fetchLeadById(id).then((l) => {
+        if (currentId !== id) return;
+        if (!l) { data.loadError = 'gone'; render(); return; }
+        data.lead = l;
+        store.set({ leads: [...(store.get().leads || []), l] });
+        open(id);
+      }).catch(() => { /* el estado por defecto ya lo explica */ });
+      return;
+    }
 
     // Contacto
     if (store.get().mock) {
@@ -95,11 +109,14 @@ export function mountDetailPanel(root) {
     clear(aside);
     const lead = data.lead;
     if (!lead) {
+      const gone = data.loadError === 'gone';
       aside.append(header(null));
       aside.append(el('div', { class: 'state' }, [
         el('div', { class: 'state__icon', html: icon('search') }),
-        el('div', { class: 'state__title', text: 'Lead no disponible' }),
-        el('div', { class: 'state__msg', text: 'Recarga la Bandeja e inténtalo otra vez.' }),
+        el('div', { class: 'state__title', text: gone ? 'Este lead ya no existe' : 'Buscando la ficha…' }),
+        el('div', { class: 'state__msg', text: gone
+          ? 'Fue eliminado del CRM. Si llegaste desde una cita o tarea vieja, puedes eliminar ese recordatorio desde la Agenda.'
+          : 'Un momento — cargando el lead directamente del servidor.' }),
       ]));
       return;
     }

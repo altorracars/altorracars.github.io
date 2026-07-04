@@ -5,7 +5,7 @@
 // ============================================================
 
 import {
-  collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc, getDocs, limit,
+  collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc, getDocs, limit, deleteDoc,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, fns } from '../../core/firebase.js';
@@ -63,6 +63,13 @@ export async function fetchLeadsForCita() {
   const q = query(collection(db, 'leads'), ...scopeCons(), orderBy('createdAt', 'desc'), limit(300));
   const snap = await getDocs(q);
   return snap.docs.map(withId);
+}
+
+/** OLA-2.5: borra un EVENTO de la agenda (activity/tarea) directo — las rules
+ *  ya lo permiten a super/crm.delete. Para CITAS reales usar citaAction
+ *  ('delete'): libera cupo+tupla y barre la proyección server-side. */
+export async function deleteActivity(activityId) {
+  return deleteDoc(doc(db, 'activities', activityId));
 }
 
 /** Agenda una TAREA simple (activity con dueAt) ligada a un lead. */

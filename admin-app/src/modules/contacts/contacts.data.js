@@ -15,6 +15,14 @@ import { getMockContacts, getMockLeads } from '../../core/mock.js';
 import { normalizePhone, dedupKeysOf } from '../../domain/phone.js';
 
 const withId = (d) => ({ id: d.id, ...d.data() });
+
+/** OLA-2.5: lead puntual por id — fallback del 360 cuando store.leads no lo
+ *  tiene (deep-link desde Agenda/palette sin pasar por la Bandeja). Devuelve
+ *  null si el doc NO existe (lead borrado — el caller lo dice honesto). */
+export async function fetchLeadById(id) {
+  const snap = await getDoc(doc(db, 'leads', id));
+  return snap.exists() ? withId(snap) : null;
+}
 // §dataScope OLA-0.2: los CONTACTOS son directorio compartido (opción A), pero el join a
 // `leads` sí se scopea — las rules rechazan la list query sin filtro para un asesor 'own'.
 const scopeCons = () => {

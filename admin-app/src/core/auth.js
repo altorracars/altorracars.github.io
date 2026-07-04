@@ -32,6 +32,14 @@ export function isAllScope() {
     || perms.includes('*');
 }
 
+// OLA-2.5: ¿es el DUEÑO (super admin)? Espejo del assertStaff.isSuper de las
+// callables — gatea los poderes destructivos del portal (eliminar/purgar).
+export function isSuper() {
+  const s = store.get();
+  const p = s.profile || {};
+  return p.rol === 'super_admin' || p.roleId === 'system_super_admin' || (s.permissions || []).includes('*');
+}
+
 function permissionsFromProfile(profile) {
   if (!profile) return [];
   if (profile.rol === 'super_admin' || profile.roleId === 'system_super_admin') return ['*'];

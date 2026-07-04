@@ -11,13 +11,14 @@
 import { el } from '../../core/dom.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
-import { hasPermission } from '../../core/auth.js';
+import { hasPermission, isSuper } from '../../core/auth.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { fetchAdvisors } from '../../core/advisors.js';
 import { fetchAvailableVehicles } from '../deals/deals.data.js';
 import { addMockAgenda } from '../../core/mock.js';
 import { getMockLeads } from '../../core/mock.js';
 import {
-  citaAction, fetchSolicitud, fetchAvailability, fetchBookedSlots, fetchLeadsForCita,
+  citaAction, fetchSolicitud, fetchAvailability, fetchBookedSlots, fetchLeadsForCita, deleteActivity,
 } from './agenda.data.js';
 
 const ESTADO_LABEL = {
@@ -137,7 +138,25 @@ export async function openCitaDetail(ev, { onLead } = {}) {
 
   let sol;
   try { sol = await fetchSolicitud(solId); } catch (e) { sol = null; }
-  if (!sol) { toast('No se pudo cargar la cita.', 'error'); return; }
+  if (!sol) {
+    // OLA-2.5: la cita ORIGEN ya no existe (borrada/purgada) pero su
+    // proyección quedó en la Agenda — el fantasma que reportó el dueño.
+    // El dueño lo limpia aquí mismo; el resto ve el aviso honesto.
+    if (isSuper() && ev.id) {
+      const ok = await confirmDialog({
+        title: 'Esta cita ya no existe',
+        message: 'La cita original fue eliminada; esto es solo un recordatorio huérfano en la Agenda. ¿Quitarlo?',
+        confirmText: 'Quitar de la Agenda', danger: true,
+      });
+      if (ok) {
+        try { await deleteActivity(ev.id); toast('↩ Recordatorio eliminado de la Agenda', 'ok'); }
+        catch (e2) { toast('No se pudo eliminar: ' + ((e2 && e2.message) || ''), 'error'); }
+      }
+      return;
+    }
+    toast('Esta cita ya no existe (fue eliminada del CRM).', 'error');
+    return;
+  }
 
   const canEdit = hasPermission('crm.edit');
   const activa = ACTIVAS.includes(sol.estado);
@@ -174,14 +193,36 @@ export async function openCitaDetail(ev, { onLead } = {}) {
     }
   }
 
+  // OLA-2.5: borrado DEFINITIVO owner-only — cualquier estado; si está activa
+  // el server libera cupo global + tupla y barre la proyección en la misma tx.
+  function deleteBtn() {
+    if (!isSuper()) return null;
+    const b = el('button', { class: 'btn btn--danger btn--sm', type: 'button', text: '🗑 Eliminar cita' });
+    b.addEventListener('click', async () => {
+      const ok = await confirmDialog({
+        title: '¿Eliminar esta cita definitivamente?',
+        message: (ACTIVAS.includes(sol.estado) ? 'Está ACTIVA: se libera su cupo y el horario queda disponible. ' : '')
+          + 'Desaparece de la Agenda y del historial. Esta acción no se puede deshacer.',
+        confirmText: 'Eliminar', danger: true,
+      });
+      if (!ok) return;
+      run('🗑 Cita eliminada' + (ACTIVAS.includes(sol.estado) ? ' (cupo liberado)' : ''), () => citaAction('delete', sol.id));
+    });
+    return b;
+  }
+
   async function renderMain() {
     body.replaceChildren(info(), err);
     if (!canEdit || !activa) {
+      const acts0 = el('div', { class: 'cita-actions' });
       if (sol._leadId) {
         const ver = el('button', { class: 'btn btn--soft btn--sm', type: 'button', text: 'Ver cliente (360)' });
         ver.addEventListener('click', () => { close(); store.set({ detailLeadId: sol._leadId }); });
-        body.append(ver);
+        acts0.append(ver);
       }
+      const del = canEdit ? deleteBtn() : null;
+      if (del) acts0.append(del);
+      if (acts0.childNodes.length) body.append(acts0);
       return;
     }
 
@@ -311,6 +352,8 @@ export async function openCitaDetail(ev, { onLead } = {}) {
       ver.addEventListener('click', () => { close(); store.set({ detailLeadId: sol._leadId }); });
       acts.append(ver);
     }
+    const del = deleteBtn();
+    if (del) acts.append(del);
     body.append(acts);
   }
 

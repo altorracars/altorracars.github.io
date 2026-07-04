@@ -168,12 +168,12 @@ async function assertStaff(db, auth, perm) {
   const snap = await db.collection('usuarios').doc(auth.uid).get();
   if (!snap.exists) throw new HttpsError('permission-denied', 'Usuario sin perfil de staff.');
   const u = snap.data();
-  const perms = u.rol === 'super_admin' || u.roleId === 'system_super_admin'
-    ? ['*'] : (Array.isArray(u.permissions) ? u.permissions : []);
+  const isSuper = u.rol === 'super_admin' || u.roleId === 'system_super_admin';
+  const perms = isSuper ? ['*'] : (Array.isArray(u.permissions) ? u.permissions : []);
   if (!perms.includes('*') && !perms.includes(perm)) {
     throw new HttpsError('permission-denied', 'Necesitas el permiso ' + perm + '.');
   }
-  return { uid: auth.uid, nombre: u.nombre || u.email || auth.uid };
+  return { uid: auth.uid, nombre: u.nombre || u.email || auth.uid, isSuper };
 }
 
 /* ── la callable ── */
@@ -248,6 +248,26 @@ const crmCitaAction = onCall(
         });
       });
       return { ok: true, solicitudId: solRef.id };
+    }
+
+    /* ---- purgeCancelled: limpieza masiva de citas TERMINALES (OLA-2.5) ----
+     * Owner-only. Solo 'cancelada'/'caducada' (ya liberaron su cupo al cerrar;
+     * completadas y no_show se CONSERVAN: son historial comercial/métricas). */
+    if (action === 'purgeCancelled') {
+      if (!staff.isSuper) throw new HttpsError('permission-denied', 'Solo el dueño puede purgar citas.');
+      const snap = await db.collection('solicitudes')
+        .where('kind', '==', 'cita').where('estado', 'in', ['cancelada', 'caducada'])
+        .limit(200).get();
+      if (snap.empty) return { ok: true, deleted: 0 };
+      const batch = db.batch();
+      snap.docs.forEach((d) => {
+        batch.delete(d.ref);
+        // La proyección F16 se conserva a propósito en deletes normales
+        // (historial); en una PURGA el dueño quiere la Agenda limpia.
+        batch.delete(db.collection('activities').doc('cita_' + d.id));
+      });
+      await batch.commit();
+      return { ok: true, deleted: snap.size, more: snap.size === 200 };
     }
 
     /* ---- el resto de acciones operan sobre una solicitud existente ---- */
@@ -452,6 +472,31 @@ const crmCitaAction = onCall(
         if (action === 'complete') upd.completedAt = now;
         tx.update(solRef, upd);
         return { ok: true, target, sol: { nombre: sol.nombre, fecha: sol.fecha, hora: sol.hora, assignedTo: sol.assignedTo, _leadId: sol._leadId, confirmedAt: sol.confirmedAt } };
+      }
+
+      /* delete — OLA-2.5: borrado DEFINITIVO owner-only. A diferencia de
+       * cancel (que cierra), funciona sobre CUALQUIER estado; si la cita
+       * está ACTIVA libera cupo global + tupla EN LA MISMA transacción
+       * (borrar sin liberar dejaría el slot fantasma = double-booking
+       * inverso; el mismo hazard del §188 kind:'cita'). */
+      if (action === 'delete') {
+        if (!staff.isSuper) throw new HttpsError('permission-denied', 'Solo el dueño puede eliminar citas.');
+        if (ESTADOS_ACTIVOS.includes(sol.estado)) {
+          const reads = [tx.get(slotsRef)];
+          if (sol.fecha) reads.push(tx.get(dayRefOf(sol.fecha)));
+          const [slotsSnap, daySnap] = await Promise.all(reads);
+          const slots = slotsSnap.exists ? slotsSnap.data() : {};
+          tx.set(slotsRef, globalRelease(slots, sol.fecha, sol.hora));
+          if (daySnap && daySnap.exists && holdsTuple(sol)) {
+            applyTupleRelease(tx, dayRefOf(sol.fecha), daySnap.data(), oldBlocks, sol.assignedTo || null, sol.vehicleAssignedId || null);
+          }
+        }
+        tx.delete(solRef);
+        // Sin esto la Agenda muestra una cita fantasma cuyo click da "lead
+        // no disponible" (onSolicitudWritten CONSERVA la proyección en
+        // deletes — correcto para el flujo normal, no para un borrado).
+        tx.delete(db.collection('activities').doc('cita_' + solicitudId));
+        return { ok: true, deleted: true };
       }
 
       throw new HttpsError('invalid-argument', 'Acción desconocida: ' + action);

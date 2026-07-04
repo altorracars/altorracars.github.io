@@ -122,6 +122,23 @@
         { "fieldPath": "kind", "order": "ASCENDING" },
         { "fieldPath": "startAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "vehiculos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "concesionario", "order": "ASCENDING" },
+        { "fieldPath": "estado", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "vehiculos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "concesionario", "order": "ASCENDING" },
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "canalVenta", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

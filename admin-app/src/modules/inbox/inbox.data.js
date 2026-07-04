@@ -53,7 +53,9 @@ export async function loadMoreLeads({ pageSize = 40, after }) {
 
 /** Equipo (para asignar). Lectura puntual, cacheada en el store. */
 export async function fetchTeam() {
-  const snap = await getDocs(collection(db, 'usuarios'));
+  // OLA-2.3: cap de sanidad — el equipo de un tenant es chico (hoy 1-5); a 100+
+  // usuarios este selector necesita búsqueda server-side, no un scan mayor.
+  const snap = await getDocs(query(collection(db, 'usuarios'), limit(100)));
   const team = snap.docs
     .map((d) => {
       const u = d.data();

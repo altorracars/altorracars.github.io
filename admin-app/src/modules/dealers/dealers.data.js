@@ -17,6 +17,7 @@
 
 import {
   collection, query, where, orderBy, onSnapshot, getDocs, setDoc, updateDoc, deleteDoc, doc, increment,
+  getCountFromServer,
 } from 'firebase/firestore';
 import { db } from '../../core/firebase.js';
 import { writeAudit } from '../../core/audit.js';
@@ -54,21 +55,38 @@ export async function fetchDealerStats() {
     if (nombre && !e.nombre) e.nombre = nombre; // nombre DESNORMALIZADO (no re-lee contacts)
     return e;
   };
-  // counts por origen. ALIADO → byDealer (legacy slug). CONSIGNA → byKey (tipado).
-  const vSnap = await getDocs(collection(db, 'vehiculos'));
-  vSnap.forEach((docSnap) => {
+  // OLA-2.3: los counts por ALIADO son AGREGADOS server-side (getCountFromServer,
+  // índices vehiculos(concesionario,estado[,canalVenta])) — la versión anterior
+  // descargaba la colección `vehiculos` COMPLETA (docs pesados) solo para contar
+  // y congeló el render 30s en vivo (§266). Cambio de contrato deliberado: un doc
+  // legacy SIN `estado` ya no cuenta como activo (el wizard siempre lo escribe;
+  // la cura de un doc así es ponerle estado, no pagar la colección entera).
+  const vehiculosCol = collection(db, 'vehiculos');
+  const countWhere = async (...cons) => {
+    const s = await getCountFromServer(query(vehiculosCol, ...cons));
+    return s.data().count;
+  };
+  const dealersSnap = await getDocs(collection(db, 'concesionarios'));
+  await Promise.all(dealersSnap.docs.map(async (d) => {
+    const slug = d.id;
+    const [activos, vendidos, ventasAltorra] = await Promise.all([
+      countWhere(where('concesionario', '==', slug), where('estado', '==', 'disponible')),
+      countWhere(where('concesionario', '==', slug), where('estado', '==', 'vendido')),
+      countWhere(where('concesionario', '==', slug), where('estado', '==', 'vendido'), where('canalVenta', '==', 'altorra')),
+    ]);
+    byDealer[slug] = { activos, vendidos, ventasAltorra, comisiones: 0 };
+  }));
+  // CONSIGNA: el group-by es por groupKey dinámica (contact:*) — no hay aggregate
+  // group-by en Firestore, pero la query filtrada por tenancy.type trae SOLO los
+  // vehículos en consigna (subconjunto chico), no el inventario entero.
+  const cSnap = await getDocs(query(vehiculosCol, where('tenancy.type', '==', 'CONSIGNA')));
+  cSnap.forEach((docSnap) => {
     const v = docSnap.data();
-    if (v.concesionario && v.concesionario !== '_particular') {
-      const s = ensureDealer(v.concesionario);
-      if (v.estado === 'vendido') { s.vendidos += 1; if (v.canalVenta === 'altorra') s.ventasAltorra += 1; }
-      else if (v.estado === 'disponible' || !v.estado) s.activos += 1;
-    }
     const gk = tenancyGroupKey(v.tenancy);
-    if (isConsignaKey(gk)) {
-      const s = ensureKey(gk, v.tenancy && v.tenancy.ownerDisplayName);
-      if (v.estado === 'vendido') s.vendidos += 1;
-      else if (v.estado === 'disponible' || !v.estado) s.activos += 1;
-    }
+    if (!isConsignaKey(gk)) return;
+    const s = ensureKey(gk, v.tenancy && v.tenancy.ownerDisplayName);
+    if (v.estado === 'vendido') s.vendidos += 1;
+    else if (v.estado === 'disponible' || !v.estado) s.activos += 1;
   });
   // §TODO-50: comisiones REALES de los deals ganados, agrupadas por la TUPLA congelada
   // (type+ownerRefId) — slug de aliado y contactId NUNCA colisionan. Live-only; si el rol

@@ -10,7 +10,7 @@
 
 import {
   collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, setDoc, runTransaction, writeBatch,
-  query, where,
+  query, where, limit,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -34,7 +34,10 @@ export function sortVehicles(list) {
 }
 
 export function subscribeVehicles(onData, onError) {
-  return onSnapshot(collection(db, 'vehiculos'), (snap) => {
+  // OLA-2.3: cap de emergencia (sin orderBy: `prioridad` falta en docs legacy y
+  // orderBy los EXCLUIRÍA; el orden real ya es client-side). Inventario hoy ~30;
+  // si el negocio llega a morder este cap, toca paginación real, no subirlo.
+  return onSnapshot(query(collection(db, 'vehiculos'), limit(400)), (snap) => {
     onData(sortVehicles(snap.docs.map((d) => ({ ...d.data(), _docId: d.id }))));
   }, (err) => onError && onError(err));
 }

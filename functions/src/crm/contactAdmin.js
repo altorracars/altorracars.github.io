@@ -5,6 +5,7 @@ const admin = require('firebase-admin');
 const {
   dedupKeysFor, ensureDedupEntries, removeAllDedupEntriesFor,
   repointContact, moveNotes, snapshotContactGraph, contactHashOf,
+  executeSuppression,
 } = require('./contactGraph');
 
 /**
@@ -139,46 +140,71 @@ const crmMergeContacts = onCall(
 /* ── F14: supresión Ley 1581 (gracia 72h) ── */
 
 const crmSuppressContact = onCall(
-  { region: 'us-central1', invoker: 'public', cors: true, timeoutSeconds: 120 },
+  { region: 'us-central1', invoker: 'public', cors: true, timeoutSeconds: 300 },
   async (request) => {
     const db = admin.firestore();
-    const staff = await assertPerm(db, request.auth, 'crm.delete');
-    const { contactId } = request.data || {};
+    const { contactId, immediate } = request.data || {};
+    // §270.12b: `immediate` = poder del DUEÑO (sin gracia) → permiso super,
+    // no crm.delete. La ejecución reusa executeSuppression (bifurcación de
+    // bloqueo fiscal incluida) con el MISMO contrato post-ejecución del
+    // finalizador del crmDailyJob (backup fuera + doc de estado opaco).
+    const staff = await assertPerm(db, request.auth, immediate === true ? 'super' : 'crm.delete');
     if (!contactId) throw new HttpsError('invalid-argument', 'Falta contactId.');
     const cRef = db.collection('contacts').doc(contactId);
     const cSnap = await cRef.get();
     if (!cSnap.exists) throw new HttpsError('not-found', 'El contacto no existe.');
     const c = cSnap.data();
     if (c._suppressed) throw new HttpsError('failed-precondition', 'Ese contacto ya fue suprimido.');
-    if (c.suppressionStatus === 'pendiente_supresion') {
+    if (c.suppressionStatus === 'pendiente_supresion' && immediate !== true) {
       const st = await db.collection('suppressions').doc(contactId).get();
       return { ok: true, idempotent: true, executeAfter: st.exists ? st.data().executeAfter : null };
     }
     if (c._mergedInto) throw new HttpsError('failed-precondition', 'Ese contacto está fusionado — suprime al sobreviviente.');
 
-    // Red F34: snapshot a Storage ANTES de cualquier mutación.
-    const snap = await snapshotContactGraph(db, contactId, 'suppressions');
+    if (c.suppressionStatus !== 'pendiente_supresion') {
+      // Red F34: snapshot a Storage ANTES de cualquier mutación.
+      const snap = await snapshotContactGraph(db, contactId, 'suppressions');
 
-    const executeAfter = new Date(Date.now() + GRACE_MS).toISOString();
-    await db.collection('suppressions').doc(contactId).set({
-      status: 'pending', contactId, executeAfter,
-      backupPath: snap.path, requestedBy: staff.uid, requestedByName: staff.nombre,
-      requestedAt: nowISO(),
+      const executeAfter = new Date(Date.now() + (immediate === true ? 0 : GRACE_MS)).toISOString();
+      await db.collection('suppressions').doc(contactId).set({
+        status: 'pending', contactId, executeAfter,
+        backupPath: snap.path, requestedBy: staff.uid, requestedByName: staff.nombre,
+        requestedAt: nowISO(),
+      });
+      // Gracia + B.3: fuera del índice EN EL MINUTO 0 (síncrono, no esperar
+      // al trigger) — por QUERY, no por claves derivables: el índice acumula
+      // entradas heredadas/no absorbidas que también deben caer (review §185).
+      await removeAllDedupEntriesFor(db, contactId);
+      await cRef.update({
+        suppressionStatus: 'pendiente_supresion', suppressionExecuteAfter: executeAfter,
+        dedupKeys: [], doNotContact: true,
+        updatedAt: nowISO(), _version: admin.firestore.FieldValue.increment(1),
+      });
+      await db.collection('auditLog').add({
+        action: 'crm_suppress_requested', contactHash: contactHashOf(contactId),
+        executeAfter, immediate: immediate === true || undefined, by: staff.uid, at: nowISO(),
+      });
+      if (immediate !== true) return { ok: true, executeAfter };
+    }
+
+    // ── Variante YA del dueño (o adelanto de una gracia en curso) ──
+    const stRef = db.collection('suppressions').doc(contactId);
+    const stSnap = await stRef.get();
+    const st = stSnap.exists ? stSnap.data() : {};
+    const r = await executeSuppression(db, contactId, { by: staff.uid });
+    // Contrato del finalizador (review §185): post-ejecución NADA conserva el
+    // ID derivado del email — backup F34 fuera y estado re-keyeado a ID opaco.
+    if (st.backupPath) {
+      await admin.storage().bucket().file(st.backupPath).delete().catch(() => {});
+    }
+    await db.collection('suppressions').doc().set({
+      status: 'done', contactHash: contactHashOf(contactId),
+      stubId: r.stubId || null, result: r, immediate: true,
+      requestedBy: st.requestedBy || staff.uid, requestedAt: st.requestedAt || nowISO(),
+      executedAt: nowISO(), executedBy: staff.uid,
     });
-    // Gracia + B.3: fuera del índice EN EL MINUTO 0 (síncrono, no esperar
-    // al trigger) — por QUERY, no por claves derivables: el índice acumula
-    // entradas heredadas/no absorbidas que también deben caer (review §185).
-    await removeAllDedupEntriesFor(db, contactId);
-    await cRef.update({
-      suppressionStatus: 'pendiente_supresion', suppressionExecuteAfter: executeAfter,
-      dedupKeys: [], doNotContact: true,
-      updatedAt: nowISO(), _version: admin.firestore.FieldValue.increment(1),
-    });
-    await db.collection('auditLog').add({
-      action: 'crm_suppress_requested', contactHash: contactHashOf(contactId),
-      executeAfter, by: staff.uid, at: nowISO(),
-    });
-    return { ok: true, executeAfter };
+    await stRef.delete();
+    return { ok: true, immediate: true, blocked: !!r.blocked, stubId: r.stubId || null };
   }
 );
 

@@ -132,9 +132,10 @@ export async function mergeContacts(survivorId, mergedId) {
   return (await call({ survivorId, mergedId })).data;
 }
 
-export async function suppressContact(contactId) {
+export async function suppressContact(contactId, { immediate = false } = {}) {
+  // §270.12b: immediate=true → variante YA del dueño (server exige super).
   const call = httpsCallable(fns, 'crmSuppressContact');
-  return (await call({ contactId })).data;
+  return (await call({ contactId, immediate })).data;
 }
 
 export async function cancelSuppression(contactId) {

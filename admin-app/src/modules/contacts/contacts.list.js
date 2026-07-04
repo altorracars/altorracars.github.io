@@ -9,10 +9,13 @@ import { icon, uIco } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { exportXlsx, xlsxDate } from '../../core/xlsx.js';
+import { hasPermission, isSuper } from '../../core/auth.js';
+import { openMenu } from '../../core/popover.js';
+import { confirmDialog } from '../../core/confirm.js';
 import { initials, timeAgo, normalizeSearch } from '../../domain/format.js';
 import { channelOf } from '../../domain/classify.js';
 import { RATING_META } from '../../domain/scoring.js';
-import { loadContactsList } from './contacts.data.js';
+import { loadContactsList, suppressContact, cancelSuppression } from './contacts.data.js';
 
 const FILTERS = [
   { id: 'todos', label: 'Todos' },
@@ -144,10 +147,12 @@ export function mountContactos(root) {
     const lm = LIFE_META[life];
     const ch = channelOf(c);
     const showTemp = Number(c.score) > 0 && RATING_META[c.rating];
+    const pendiente = c.suppressionStatus === 'pendiente_supresion';
 
     const badges = el('div', { class: 'contact-row__badges' }, [
       el('span', { class: `badge badge--${lm.badge}`, text: lm.label }),
       el('span', { class: 'badge' }, [uIco(ch.iconId), ch.label]),
+      pendiente ? el('span', { class: 'badge badge--warn', title: 'Supresión Ley 1581 programada — se ejecuta al vencer la gracia de 72 h', text: 'Supresión pendiente' }) : null,
       showTemp ? el('span', { class: `temp ${RATING_META[c.rating].cls}` }, [uIco(RATING_META[c.rating].iconId), String(c.score)]) : null,
     ]);
 
@@ -168,12 +173,73 @@ export function mountContactos(root) {
 
     // Con lead → botón que abre la ficha 360. Sin lead (p. ej. suscriptor) → fila informativa NO interactiva
     // (toda su info ya está visible; no se finge un botón que no lleva a ningún lado).
+    let base;
     if (lead) {
-      const r = el('button', { class: 'contact-row', type: 'button', 'aria-label': `Ver ficha de ${c.fullName || 'contacto'}` }, children);
-      r.addEventListener('click', () => open360(lead));
-      return r;
+      base = el('button', { class: 'contact-row', type: 'button', 'aria-label': `Ver ficha de ${c.fullName || 'contacto'}` }, children);
+      base.addEventListener('click', () => open360(lead));
+    } else {
+      base = el('div', { class: 'contact-row contact-row--nolead' }, children);
     }
-    return el('div', { class: 'contact-row contact-row--nolead' }, children);
+
+    // §270.12b: supresión Ley 1581 desde el directorio (crm.delete; la
+    // variante YA es del dueño). En mock no hay callables → sin menú.
+    if (!hasPermission('crm.delete') || store.get().mock) return base;
+    const menuBtn = el('button', {
+      class: 'btn btn--ghost btn--sm contact-row__menu', type: 'button',
+      'aria-label': `Acciones de ${c.fullName || 'contacto'}`, html: icon('moreVertical'),
+    });
+    menuBtn.addEventListener('click', () => openRowMenu(menuBtn, c, lead));
+    return el('div', { class: 'contact-row-shell' }, [base, menuBtn]);
+  }
+
+  function openRowMenu(anchor, c, lead) {
+    const pendiente = c.suppressionStatus === 'pendiente_supresion';
+    openMenu(anchor, [
+      lead ? { value: 'open', iconId: 'user', label: 'Ver ficha del cliente' } : null,
+      !pendiente ? { value: 'suppress', iconId: 'trash', label: 'Suprimir contacto (gracia 72 h)' } : null,
+      pendiente ? { value: 'cancel', iconId: 'undo', label: 'Cancelar la supresión pendiente' } : null,
+      isSuper() ? { value: 'suppressNow', iconId: 'trash', label: pendiente ? 'Ejecutar la supresión YA' : 'Suprimir YA (definitivo)' } : null,
+    ].filter(Boolean), async (it) => {
+      if (it.value === 'open') { open360(lead); return; }
+      const nombre = c.fullName || 'este contacto';
+      try {
+        if (it.value === 'suppress') {
+          const ok = await confirmDialog({
+            title: 'Suprimir contacto',
+            message: `Se borran los datos personales de "${nombre}" (Ley 1581). Corre una gracia de 72 horas durante la cual puedes cancelarla; después la supresión es DEFINITIVA. El historial comercial se conserva de forma anónima.`,
+            confirmText: 'Suprimir', danger: true,
+          });
+          if (!ok) return;
+          await suppressContact(c.id);
+          toast('Supresión programada — se ejecuta en 72 h (puedes cancelarla desde este menú).', 'ok');
+        } else if (it.value === 'suppressNow') {
+          const ok = await confirmDialog({
+            title: 'Suprimir YA (definitivo)',
+            message: `Se borran INMEDIATAMENTE y sin gracia los datos personales de "${nombre}". Esta acción no se puede deshacer. Si es un consignante con ventas cerradas, quedará bloqueado con retención fiscal en lugar de borrarse.`,
+            confirmText: 'Suprimir YA', danger: true,
+          });
+          if (!ok) return;
+          const r = await suppressContact(c.id, { immediate: true });
+          toast(r.blocked
+            ? 'Contacto bloqueado con retención fiscal (consignante con venta cerrada) — la purga total queda diferida.'
+            : '🗑 Contacto suprimido definitivamente.', 'ok');
+        } else if (it.value === 'cancel') {
+          const ok = await confirmDialog({
+            title: 'Cancelar la supresión',
+            message: `"${nombre}" se conserva y vuelve al índice de duplicados. Si durante la gracia nació un duplicado con el mismo dato, se reporta para fusionarlo a mano.`,
+            confirmText: 'Conservar contacto',
+          });
+          if (!ok) return;
+          const r = await cancelSuppression(c.id);
+          toast(r.duplicates && r.duplicates.length
+            ? `Supresión cancelada — ${r.duplicates.length} duplicado(s) detectado(s) para fusión manual.`
+            : 'Supresión cancelada — el contacto se conserva.', 'ok');
+        }
+        await load();
+      } catch (e) {
+        toast('No se pudo completar: ' + ((e && e.message) || 'error desconocido'), 'error');
+      }
+    });
   }
 
   function renderState(iconId, title, msg) {

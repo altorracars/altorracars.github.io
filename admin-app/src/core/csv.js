@@ -1,22 +1,41 @@
 // ============================================================
-// OLA-2.4 — CSV compartido (extraído de reportes.ui, que era el
-// único dueño). RFC-4180 + BOM UTF-8 + anti-inyección de fórmulas
-// (E4 review #15: nombres vienen de forms públicos — "=HYPERLINK"
-// se ejecutaría al abrir en Excel). Consumers: reportes, contactos,
-// pipeline, aliados, agenda (vehículos conserva su export VERBATIM
-// del clásico en vehicles.data — contrato de headers propio).
+// OLA-2.4 — CSV compartido (extraído de reportes, que era el
+// único dueño). Consumers: reportes, contactos, pipeline,
+// aliados, agenda, vehículos.
+//
+// FEEDBACK DUEÑO 04/07 (capturas Excel): con separador ',' Excel
+// es-CO metía TODO en la columna A (su separador de lista es ';')
+// y el apóstrofe anti-fórmula quedaba VISIBLE en los teléfonos.
+// → Separador ';' (Excel Colombia abre en columnas al doble click)
+// → Anti-inyección SOLO donde hay riesgo real: '=' '@' y '+/-' NO
+//   numéricos ejecutan; un teléfono '+573…' evaluado da un número
+//   inofensivo, así que va limpio (sin apóstrofe feo).
+// → fmtFechaCsv: ISO → "dd/mm/aaaa hh:mm" legible.
 // ============================================================
+
+const SEP = ';';
 
 function csvCell(v) {
   let s = v == null ? '' : String(v);
-  // Prefijo ' salvo números puros (los montos no se rompen).
-  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s;
-  // RFC-4180: entrecomilla si hay comilla, coma o salto de línea; + ';' por Excel es-CO.
+  // Riesgo real de ejecución en Excel: =CMD|…, @SUM(…), o +/- que arman
+  // fórmula NO-numérica. "+573001234567" evalúa a un número — inofensivo.
+  if (/^[=@\t\r]/.test(s)) s = "'" + s;
+  else if (/^[+-]/.test(s) && !/^[+-]?[\d\s().-]+$/.test(s)) s = "'" + s;
+  // RFC-4180 sobre el separador ';' (+ ',' y comillas/saltos por seguridad).
   return /[",\n\r;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 
 export function toCsv(rows) {
-  return '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+  return '﻿' + rows.map((r) => r.map(csvCell).join(SEP)).join('\r\n');
+}
+
+/** ISO/Date → "dd/mm/aaaa hh:mm" (hora local del navegador). Vacío si no parsea. */
+export function fmtFechaCsv(v) {
+  if (!v) return '';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return String(v);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 export function downloadText(filename, text, mime = 'text/csv;charset=utf-8;') {

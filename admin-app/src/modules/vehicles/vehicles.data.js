@@ -19,6 +19,7 @@ import { store } from '../../core/store.js';
 import { writeAudit } from '../../core/audit.js';
 import { compressImage } from '../../core/image.js';
 import { computeChanges, sanitizeForFirestore, snapshotHasAnyData } from '../../domain/vehicle.js';
+import { exportCsv, fmtFechaCsv } from '../../core/csv.js';
 
 const nowISO = () => new Date().toISOString();
 const me = () => {
@@ -260,8 +261,9 @@ export async function saveReorder(orderedList) {
   return changed;
 }
 
-/** CSV del inventario — headers/filename/BOM/quoting VERBATIM del
- *  clásico (admin-table-utils.js:210-258). */
+/** CSV del inventario — headers/filename del clásico; celdas via core/csv
+ *  desde OLA-2.4-fix (separador ';' para Excel es-CO + fechas legibles):
+ *  el quoting "verbatim" con ',' metía todo en la columna A del dueño. */
 export function exportVehiclesCSV(vehicles, dealerNames) {
   const headers = ['Codigo', 'Marca', 'Modelo', 'Ano', 'Tipo', 'Categoria', 'Precio', 'Precio Oferta',
     'Estado', 'Kilometraje', 'Transmision', 'Combustible', 'Motor', 'Color', 'Destacado', 'Origen',
@@ -279,27 +281,11 @@ export function exportVehiclesCSV(vehicles, dealerNames) {
       v.estado || 'disponible', v.kilometraje || '', v.transmision || '',
       v.combustible || '', v.motor || '', v.color || '',
       v.destacado ? 'Si' : 'No', origen,
-      v.createdByName || v.createdBy || '', v.createdAt || '',
-      v.lastModifiedByName || v.lastModifiedBy || '', v.lastModifiedAt || '',
+      v.createdByName || v.createdBy || '', fmtFechaCsv(v.createdAt),
+      v.lastModifiedByName || v.lastModifiedBy || '', fmtFechaCsv(v.lastModifiedAt),
     ];
   });
-  let csv = '﻿' + headers.join(',') + '\n';
-  rows.forEach((row) => {
-    csv += row.map((cell) => {
-      let val = cell == null ? '' : String(cell);
-      if (val.indexOf(',') >= 0 || val.indexOf('"') >= 0 || val.indexOf('\n') >= 0) {
-        val = '"' + val.replace(/"/g, '""') + '"';
-      }
-      return val;
-    }).join(',') + '\n';
-  });
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'vehiculos_altorra_' + new Date().toISOString().slice(0, 10) + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
+  exportCsv('vehiculos_altorra_' + new Date().toISOString().slice(0, 10) + '.csv', [headers, ...rows]);
 }
 
 /** Timeline de auditoría del vehículo (subcolección; sin orderBy server

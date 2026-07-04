@@ -8,7 +8,7 @@ import { el, clear } from '../../core/dom.js';
 import { icon, uIco } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
-import { exportCsv } from '../../core/csv.js';
+import { exportCsv, fmtFechaCsv } from '../../core/csv.js';
 import { initials, timeAgo, normalizeSearch } from '../../domain/format.js';
 import { channelOf } from '../../domain/classify.js';
 import { RATING_META } from '../../domain/scoring.js';
@@ -67,7 +67,7 @@ export function mountContactos(root) {
     if (!rows.length) { toast('No hay contactos para exportar.', 'info'); return; }
     exportCsv(`altorra-contactos-${new Date().toISOString().slice(0, 10)}.csv`, [
       ['Nombre', 'Email', 'Teléfono', 'Tipo', 'Etiquetas', 'Creado'],
-      ...rows.map((c) => [c.fullName || '', c.email || '', c.phone || '', lifecycleOf(c), (c.tags || []).join(' | '), c.createdAt || '']),
+      ...rows.map((c) => [c.fullName || '', c.email || '', c.phone || '', lifecycleOf(c), (c.tags || []).join(' | '), fmtFechaCsv(c.createdAt)]),
     ]);
   });
 

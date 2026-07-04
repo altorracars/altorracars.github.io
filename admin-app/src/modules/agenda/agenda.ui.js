@@ -13,7 +13,7 @@ import {
 import { hasPermission } from '../../core/auth.js';
 import { navigate } from '../../core/router.js';
 import { toast } from '../../core/toast.js';
-import { exportCsv } from '../../core/csv.js';
+import { exportCsv, fmtFechaCsv } from '../../core/csv.js';
 import { subscribeRange } from './agenda.data.js';
 import { openCitaDetail, openCitaChooser } from './cita-dialog.js';
 import { getMockAgenda } from '../../core/mock.js';
@@ -64,7 +64,7 @@ export function mountAgenda(root) {
       exportCsv(`altorra-agenda-${ui.year}-${String(ui.month + 1).padStart(2, '0')}.csv`, [
         ['Fecha y hora', 'Cliente', 'Asunto', 'Tipo', 'Estado'],
         ...ui.events.map((ev) => [
-          ev.dueAt || '', (ev.relatedTo && ev.relatedTo.name) || '', ev.subject || '',
+          fmtFechaCsv(ev.dueAt), (ev.relatedTo && ev.relatedTo.name) || '', ev.subject || '',
           ev.type || 'tarea', ev.type === 'cita' ? (ev.estadoCita || 'pendiente') : (ev.status || ''),
         ]),
       ]);

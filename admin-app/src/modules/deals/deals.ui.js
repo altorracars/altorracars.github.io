@@ -8,7 +8,7 @@ import { el, clear } from '../../core/dom.js';
 import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
-import { exportCsv } from '../../core/csv.js';
+import { exportCsv, fmtFechaCsv } from '../../core/csv.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { friendlyError, friendlyCallable } from '../../core/errors.js';
 import { icon } from '../../core/icons.js';
@@ -411,9 +411,9 @@ export function mountPipeline(root) {
         ['Cliente', 'Vehículo', 'Etapa', 'Valor (COP)', 'Prob. %', 'Asesor', 'Última actividad'],
         ...rows.map((d) => [
           d.name || d.contactName || '', d.vehicleName || '',
-          postventa ? 'Vendido' : (d.stageId || ''), d.amount || 0,
+          postventa ? 'Vendido' : stageById(d.stageId).label, d.amount || 0,
           postventa ? 100 : Math.round(probFor(d.stageId) * 100),
-          d.ownerName || '', d.lastActivityAt || '',
+          d.ownerName || '', fmtFechaCsv(d.lastActivityAt),
         ]),
       ]);
     });

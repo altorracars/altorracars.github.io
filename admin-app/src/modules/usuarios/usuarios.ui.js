@@ -299,8 +299,24 @@ export function mountUsuarios(root) {
     });
   }
 
+  // OLA-1.8b: skeleton con la forma real de la fila (avatar + 2 líneas + badge + acciones).
+  function renderSkeleton() {
+    countEl.textContent = '';
+    clear(list);
+    [1, 2, 3, 4, 5].forEach(() => list.append(
+      el('div', { class: 'usr-row', style: { pointerEvents: 'none' }, 'aria-hidden': 'true' }, [
+        el('span', { class: 'skeleton', style: { width: '30px', height: '30px', borderRadius: '50%' } }),
+        el('div', { class: 'usr-row__main' }, [
+          el('span', { class: 'skeleton', style: { width: '36%', height: '13px' } }),
+          el('span', { class: 'skeleton', style: { width: '56%', height: '11px' } }),
+        ]),
+        el('span', { class: 'skeleton', style: { width: '72px', height: '18px' } }),
+        el('span', { class: 'skeleton', style: { width: '96px', height: '26px' } }),
+      ])));
+  }
+
   function renderList() {
-    if (!ui.loaded) { clear(list); list.append(el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando equipo…' })])); return; }
+    if (!ui.loaded) { renderSkeleton(); return; }
     const rows = filtered();
     countEl.textContent = ui.search.trim() || ui.filter ? `${rows.length} de ${ui.users.length}` : `${ui.users.length} usuario${ui.users.length === 1 ? '' : 's'}`;
     clear(list);

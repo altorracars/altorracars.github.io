@@ -84,7 +84,7 @@ export function mountContactos(root) {
   }
 
   function renderList() {
-    if (ui.loading) return renderState('clock', 'Cargando contactos…', '');
+    if (ui.loading) return renderSkeleton();
     if (ui.error) return renderState('alertTriangle', 'No se pudieron cargar los contactos', ui.error);
     if (!ui.contacts.length) {
       return renderState('users', 'Aún no hay contactos', 'Cuando entren leads, registros de cuenta o suscripciones, las personas aparecerán aquí.');
@@ -161,6 +161,22 @@ export function mountContactos(root) {
       el('div', { class: 'state__title', text: title }),
       msg ? el('div', { class: 'state__msg', text: msg }) : null,
     ]));
+  }
+
+  // OLA-1.8b: skeleton con la forma real de la fila (avatar + 2 líneas + badge).
+  function renderSkeleton() {
+    countEl.textContent = '';
+    clear(list);
+    [1, 2, 3, 4, 5, 6].forEach(() => list.append(
+      el('div', { class: 'contact-row contact-row--nolead', style: { pointerEvents: 'none' }, 'aria-hidden': 'true' }, [
+        el('span', { class: 'skeleton', style: { width: '30px', height: '30px', borderRadius: '50%', flex: '0 0 auto' } }),
+        el('div', { class: 'contact-row__main' }, [
+          el('span', { class: 'skeleton', style: { width: '38%', height: '13px' } }),
+          el('span', { class: 'skeleton', style: { width: '62%', height: '11px' } }),
+        ]),
+        el('span', { class: 'skeleton', style: { width: '72px', height: '18px' } }),
+        el('span', { class: 'skeleton', style: { width: '48px', height: '11px' } }),
+      ])));
   }
 
   async function load() {

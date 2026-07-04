@@ -91,11 +91,19 @@ export function mountAgenda(root) {
           el('div', { class: 'agenda__daynum', text: String(cell.date.getDate()) }),
         ]);
         const list = el('div', { class: 'agenda__events' });
-        evs.slice(0, 3).forEach((ev) => list.append(eventChip(ev)));
-        if (evs.length > 3) {
-          const more = el('button', { class: 'agenda__more', type: 'button' }, [`+${evs.length - 3} más`]);
-          more.addEventListener('click', () => openMenu(more, evs.map((ev) => ({ value: ev, label: `${timeOf(ev.dueAt)} · ${ev.relatedTo?.name || ev.subject || 'Cita'}` })), (it) => openEvent(it.value), { title: `${cell.date.getDate()} ${MONTHS[ui.month]}` }));
-          list.append(more);
+        if (ui.loading) {
+          // OLA-1.8b: chips fantasma mientras llegan las citas (y NO se pintan los
+          // eventos del mes anterior, que aún viven en ui.events al navegar).
+          if (cell.inMonth && cell.date.getDate() % 7 === 3) {
+            list.append(el('span', { class: 'skeleton', style: { width: '85%', height: '18px' }, 'aria-hidden': 'true' }));
+          }
+        } else {
+          evs.slice(0, 3).forEach((ev) => list.append(eventChip(ev)));
+          if (evs.length > 3) {
+            const more = el('button', { class: 'agenda__more', type: 'button' }, [`+${evs.length - 3} más`]);
+            more.addEventListener('click', () => openMenu(more, evs.map((ev) => ({ value: ev, label: `${timeOf(ev.dueAt)} · ${ev.relatedTo?.name || ev.subject || 'Cita'}` })), (it) => openEvent(it.value), { title: `${cell.date.getDate()} ${MONTHS[ui.month]}` }));
+            list.append(more);
+          }
         }
         day.append(list);
         grid.append(day);
@@ -129,7 +137,8 @@ export function mountAgenda(root) {
   }
 
   function load() {
-    render(); // pinta el mes de inmediato
+    ui.loading = true;
+    render(); // pinta el mes de inmediato (con chips skeleton hasta que lleguen las citas)
     if (ui.sub) { ui.sub(); ui.sub = null; }
     if (store.get().mock) {
       ui.events = getMockAgenda(); ui.loading = false; render(); return;

@@ -462,7 +462,16 @@ export function mountVehicles(root) {
       return;
     }
     if (!ui.loaded) {
-      listRoot.append(el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando inventario…' })]));
+      // OLA-1.8b: skeleton con la forma real de la fila (thumb 64×48 + 2 líneas + precio).
+      [1, 2, 3, 4].forEach(() => listRoot.append(
+        el('article', { class: 'veh-row', style: { pointerEvents: 'none' }, 'aria-hidden': 'true' }, [
+          el('span', { class: 'skeleton', style: { width: '64px', height: '48px', flex: '0 0 64px' } }),
+          el('div', { class: 'veh-row__main' }, [
+            el('span', { class: 'skeleton', style: { width: '42%', height: '14px' } }),
+            el('span', { class: 'skeleton', style: { width: '64%', height: '11px' } }),
+          ]),
+          el('span', { class: 'skeleton', style: { width: '88px', height: '16px' } }),
+        ])));
       return;
     }
     const list = filtered();

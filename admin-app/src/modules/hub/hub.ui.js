@@ -164,7 +164,7 @@ export function mountHub(root) {
   function renderList() {
     renderChips();
     clear(listEl);
-    if (!ui.loaded) { listEl.append(loadingNode()); return; }
+    if (!ui.loaded) { renderListSkeleton(); return; }
     const rows = visibleChats();
     if (!rows.length) {
       const msg = ui.filter === 'pinned' ? 'No hay chats fijados.'
@@ -535,7 +535,7 @@ export function mountHub(root) {
     // Mensajes (server + optimistas + notas) ordenados por timestamp
     const msgsBox = el('div', { class: 'hub__msgs' });
     const items = ui.messages.concat(ui.pending).concat(ui.notes).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    if (!ui.msgLoaded) msgsBox.append(loadingNode());
+    if (!ui.msgLoaded) appendMsgSkeleton(msgsBox);
     else if (!items.length) msgsBox.append(el('div', { class: 'hub__msgs-empty u-caption u-faint', text: 'Sin mensajes en esta conversación.' }));
     else items.forEach((m) => msgsBox.append(bubble(m, chat)));
     if (ui.clientTyping) {
@@ -612,7 +612,23 @@ export function mountHub(root) {
       el('div', { class: 'state__msg', text: msg }),
     ]);
   }
-  function loadingNode() { return el('div', { class: 'state' }, [el('div', { class: 'state__msg', text: 'Cargando…' })]); }
+  // OLA-1.8b: skeletons con la forma real del contenido (filas de chat / burbujas).
+  function renderListSkeleton() {
+    [1, 2, 3, 4].forEach(() => listEl.append(
+      el('div', { class: 'hub__row', style: { pointerEvents: 'none' }, 'aria-hidden': 'true' }, [
+        el('span', { class: 'skeleton', style: { width: '34px', height: '34px', borderRadius: '50%', flex: '0 0 auto' } }),
+        el('div', { class: 'hub__row-body' }, [
+          el('span', { class: 'skeleton', style: { width: '55%', height: '13px' } }),
+          el('span', { class: 'skeleton', style: { width: '82%', height: '11px' } }),
+        ]),
+      ])));
+  }
+  function appendMsgSkeleton(box) {
+    [['in', '46%'], ['out', '34%'], ['in', '58%'], ['out', '28%']].forEach(([side, w]) => box.append(
+      el('div', { class: `hub-msg hub-msg--${side}`, style: { width: w }, 'aria-hidden': 'true' }, [
+        el('span', { class: 'skeleton', style: { width: '100%', height: '38px', borderRadius: 'var(--r-lg)' } }),
+      ])));
+  }
 
   /* ── Smart suggestions (3d) — heurísticas por keyword (sin LLM/NER) ── */
   function smartSuggestions(chat, items) {

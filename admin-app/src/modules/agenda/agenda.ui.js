@@ -14,7 +14,7 @@ import { hasPermission, isSuper } from '../../core/auth.js';
 import { navigate } from '../../core/router.js';
 import { toast } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
-import { exportCsv, fmtFechaCsv } from '../../core/csv.js';
+import { exportXlsx, xlsxDate } from '../../core/xlsx.js';
 import { subscribeRange, citaAction, deleteActivity } from './agenda.data.js';
 import { openCitaDetail, openCitaChooser } from './cita-dialog.js';
 import { getMockAgenda } from '../../core/mock.js';
@@ -59,16 +59,22 @@ export function mountAgenda(root) {
       nav.append(cfg);
     }
     // OLA-2.4: exporta las citas/tareas del MES visible.
-    const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV', title: 'Exportar el mes visible a CSV' });
+    const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' Excel', title: 'Exportar el mes visible a Excel' });
     csvBtn.addEventListener('click', () => {
       if (!ui.events.length) { toast('No hay citas en este mes para exportar.', 'info'); return; }
-      exportCsv(`altorra-agenda-${ui.year}-${String(ui.month + 1).padStart(2, '0')}.csv`, [
-        ['Fecha y hora', 'Cliente', 'Asunto', 'Tipo', 'Estado'],
-        ...ui.events.map((ev) => [
-          fmtFechaCsv(ev.dueAt), (ev.relatedTo && ev.relatedTo.name) || '', ev.subject || '',
-          ev.type || 'tarea', ev.type === 'cita' ? (ev.estadoCita || 'pendiente') : (ev.status || ''),
-        ]),
-      ]);
+      const mesLabel = new Date(ui.year, ui.month, 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+      csvBtn.disabled = true;
+      exportXlsx(`altorra-agenda-${ui.year}-${String(ui.month + 1).padStart(2, '0')}.xlsx`, {
+        title: 'Agenda — ' + mesLabel, types: ['date', 'text', 'text', 'text', 'text'],
+        rows: [
+          ['Fecha y hora', 'Cliente', 'Asunto', 'Tipo', 'Estado'],
+          ...ui.events.map((ev) => [
+            xlsxDate(ev.dueAt), (ev.relatedTo && ev.relatedTo.name) || '', ev.subject || '',
+            ev.type || 'tarea', ev.type === 'cita' ? (ev.estadoCita || 'pendiente') : (ev.status || ''),
+          ]),
+        ],
+      }).catch(() => toast('No se pudo generar el Excel.', 'error'))
+        .finally(() => { csvBtn.disabled = false; });
     });
     nav.append(csvBtn);
     // OLA-2.5: limpieza masiva owner-only — canceladas/caducadas (ya sin cupo).

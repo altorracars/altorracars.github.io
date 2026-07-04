@@ -19,7 +19,7 @@ import { store } from '../../core/store.js';
 import { writeAudit } from '../../core/audit.js';
 import { compressImage } from '../../core/image.js';
 import { computeChanges, sanitizeForFirestore, snapshotHasAnyData } from '../../domain/vehicle.js';
-import { exportCsv, fmtFechaCsv } from '../../core/csv.js';
+import { exportXlsx, xlsxDate } from '../../core/xlsx.js';
 
 const nowISO = () => new Date().toISOString();
 const me = () => {
@@ -261,10 +261,9 @@ export async function saveReorder(orderedList) {
   return changed;
 }
 
-/** CSV del inventario — headers/filename del clásico; celdas via core/csv
- *  desde OLA-2.4-fix (separador ';' para Excel es-CO + fechas legibles):
- *  el quoting "verbatim" con ',' metía todo en la columna A del dueño. */
-export function exportVehiclesCSV(vehicles, dealerNames) {
+/** Excel del inventario — headers del clásico; corporativo desde §270.12
+ *  (antes CSV: el separador ',' metía todo en la columna A del dueño). */
+export function exportVehiclesXlsx(vehicles, dealerNames) {
   const headers = ['Codigo', 'Marca', 'Modelo', 'Ano', 'Tipo', 'Categoria', 'Precio', 'Precio Oferta',
     'Estado', 'Kilometraje', 'Transmision', 'Combustible', 'Motor', 'Color', 'Destacado', 'Origen',
     'Creado Por', 'Fecha Creacion', 'Modificado Por', 'Fecha Modificacion'];
@@ -281,11 +280,17 @@ export function exportVehiclesCSV(vehicles, dealerNames) {
       v.estado || 'disponible', v.kilometraje || '', v.transmision || '',
       v.combustible || '', v.motor || '', v.color || '',
       v.destacado ? 'Si' : 'No', origen,
-      v.createdByName || v.createdBy || '', fmtFechaCsv(v.createdAt),
-      v.lastModifiedByName || v.lastModifiedBy || '', fmtFechaCsv(v.lastModifiedAt),
+      v.createdByName || v.createdBy || '', xlsxDate(v.createdAt),
+      v.lastModifiedByName || v.lastModifiedBy || '', xlsxDate(v.lastModifiedAt),
     ];
   });
-  exportCsv('vehiculos_altorra_' + new Date().toISOString().slice(0, 10) + '.csv', [headers, ...rows]);
+  return exportXlsx('vehiculos_altorra_' + new Date().toISOString().slice(0, 10) + '.xlsx', {
+    title: 'Inventario de vehículos',
+    types: ['text', 'text', 'text', 'int', 'text', 'text', 'cop', 'cop',
+      'text', 'int', 'text', 'text', 'text', 'text', 'text', 'text',
+      'text', 'date', 'text', 'date'],
+    rows: [headers, ...rows],
+  });
 }
 
 /** Timeline de auditoría del vehículo (subcolección; sin orderBy server

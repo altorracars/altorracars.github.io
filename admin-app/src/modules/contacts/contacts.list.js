@@ -8,7 +8,7 @@ import { el, clear } from '../../core/dom.js';
 import { icon, uIco } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
-import { exportCsv, fmtFechaCsv } from '../../core/csv.js';
+import { exportXlsx, xlsxDate } from '../../core/xlsx.js';
 import { initials, timeAgo, normalizeSearch } from '../../domain/format.js';
 import { channelOf } from '../../domain/classify.js';
 import { RATING_META } from '../../domain/scoring.js';
@@ -60,15 +60,20 @@ export function mountContactos(root) {
   const refreshBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('refresh') + ' Actualizar' });
   refreshBtn.addEventListener('click', load);
   // OLA-2.4: exporta lo VISIBLE (respeta búsqueda + filtro), no la colección ciega.
-  const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV', title: 'Exportar los contactos visibles a CSV' });
+  const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' Excel', title: 'Exportar los contactos visibles a Excel' });
   csvBtn.addEventListener('click', () => {
     if (ui.loading) { toast('Aún cargando…', 'info'); return; }
     const rows = visibleContacts();
     if (!rows.length) { toast('No hay contactos para exportar.', 'info'); return; }
-    exportCsv(`altorra-contactos-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ['Nombre', 'Email', 'Teléfono', 'Tipo', 'Etiquetas', 'Creado'],
-      ...rows.map((c) => [c.fullName || '', c.email || '', c.phone || '', lifecycleOf(c), (c.tags || []).join(' | '), fmtFechaCsv(c.createdAt)]),
-    ]);
+    csvBtn.disabled = true;
+    exportXlsx(`altorra-contactos-${new Date().toISOString().slice(0, 10)}.xlsx`, {
+      title: 'Contactos', types: ['text', 'text', 'text', 'text', 'text', 'date'],
+      rows: [
+        ['Nombre', 'Email', 'Teléfono', 'Tipo', 'Etiquetas', 'Creado'],
+        ...rows.map((c) => [c.fullName || '', c.email || '', c.phone || '', lifecycleOf(c), (c.tags || []).join(' | '), xlsxDate(c.createdAt)]),
+      ],
+    }).catch(() => toast('No se pudo generar el Excel.', 'error'))
+      .finally(() => { csvBtn.disabled = false; });
   });
 
   const toolbar = el('div', { class: 'contactos__toolbar' }, [

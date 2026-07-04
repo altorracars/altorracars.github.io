@@ -17,7 +17,7 @@ import { subscribeBrands, MOCK_BRANDS } from '../brands/brands.data.js';
 import {
   subscribeVehicles, toggleDestacado, deleteVehicle, restoreVehicle, sortVehicles, MOCK_VEHICLES,
   subscribeDrafts, deleteDraftDoc, mockDrafts,
-  saveReorder, exportVehiclesCSV, fetchVehicleAudit, revertAuditEntry,
+  saveReorder, exportVehiclesXlsx, fetchVehicleAudit, revertAuditEntry,
 } from './vehicles.data.js';
 import { openVehicleWizard } from './wizard.js';
 import { icon } from '../../core/icons.js';
@@ -426,8 +426,9 @@ export function mountVehicles(root) {
     const canCreate = hasPermission('vehicles.create');
     const headBtns = [];
     if (canEdit || hasPermission('vehicles.export')) {
-      const csv = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV' });
+      const csv = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' Excel' });
       csv.addEventListener('click', async () => {
+        csv.disabled = true;
         let dealerNames = null;
         if (!store.get().mock) {
           try {
@@ -435,8 +436,13 @@ export function mountVehicles(root) {
             dealerNames = Object.fromEntries((await fetchConcesionarios()).map((d) => [d.id, d.nombre]));
           } catch (e) { dealerNames = null; }
         }
-        exportVehiclesCSV(ui.vehicles, dealerNames);
-        toast('✓ CSV exportado', 'ok');
+        try {
+          await exportVehiclesXlsx(ui.vehicles, dealerNames);
+          toast('✓ Excel exportado', 'ok');
+        } catch (e) {
+          toast('No se pudo generar el Excel.', 'error');
+        }
+        csv.disabled = false;
       });
       headBtns.push(csv);
     }

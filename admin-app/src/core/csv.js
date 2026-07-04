@@ -1,7 +1,8 @@
 // ============================================================
 // OLA-2.4 — CSV compartido (extraído de reportes, que era el
-// único dueño). Consumers: reportes, contactos, pipeline,
-// aliados, agenda, vehículos.
+// único dueño). §270.12: los 6 exports visibles migraron a
+// core/xlsx.js (Excel corporativo); este módulo QUEDA como
+// utilidad por decisión del plan — sin consumidores UI hoy.
 //
 // FEEDBACK DUEÑO 04/07 (capturas Excel): con separador ',' Excel
 // es-CO metía TODO en la columna A (su separador de lista es ';')

@@ -19,7 +19,7 @@ import { toast, toastAction } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { friendlyError } from '../../core/errors.js';
 import { hasPermission } from '../../core/auth.js';
-import { exportCsv } from '../../core/csv.js';
+import { exportXlsx } from '../../core/xlsx.js';
 import {
   MOCK_DEALERS, MOCK_DEALER_STATS, subscribeDealers, fetchDealerStats,
   saveDealer, slugifyDealer, deleteDealer, restoreDealer,
@@ -218,18 +218,24 @@ export function mountDealers(root) {
     : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
   // OLA-2.4: exporta aliados visibles CON sus métricas (activos/vendidos/comisiones).
-  const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV', title: 'Exportar los aliados visibles a CSV' });
+  const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' Excel', title: 'Exportar los aliados visibles a Excel' });
   csvBtn.addEventListener('click', () => {
     const rows = filtered();
     if (!rows.length) { toast('No hay aliados para exportar.', 'info'); return; }
-    exportCsv(`altorra-aliados-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ['Nombre', 'Ciudad', 'Teléfono', 'Responsable', 'Activos', 'Vendidos', 'Ventas Altorra', 'Comisiones (COP)'],
-      ...rows.map((d) => {
-        const s = ui.stats[d.id] || {};
-        return [d.nombre || d.id, d.ciudad || '', d.telefono || '', d.responsable || '',
-          s.activos || 0, s.vendidos || 0, s.ventasAltorra || 0, s.comisiones || 0];
-      }),
-    ]);
+    csvBtn.disabled = true;
+    exportXlsx(`altorra-aliados-${new Date().toISOString().slice(0, 10)}.xlsx`, {
+      title: 'Aliados comerciales',
+      types: ['text', 'text', 'text', 'text', 'int', 'int', 'int', 'cop'],
+      rows: [
+        ['Nombre', 'Ciudad', 'Teléfono', 'Responsable', 'Activos', 'Vendidos', 'Ventas Altorra', 'Comisiones (COP)'],
+        ...rows.map((d) => {
+          const s = ui.stats[d.id] || {};
+          return [d.nombre || d.id, d.ciudad || '', d.telefono || '', d.responsable || '',
+            s.activos || 0, s.vendidos || 0, s.ventasAltorra || 0, s.comisiones || 0];
+        }),
+      ],
+    }).catch(() => toast('No se pudo generar el Excel.', 'error'))
+      .finally(() => { csvBtn.disabled = false; });
   });
 
   wrap.append(

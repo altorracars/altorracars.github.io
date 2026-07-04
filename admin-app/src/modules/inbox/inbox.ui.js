@@ -25,6 +25,7 @@ import {
 import { openNewLeadForm } from '../capture/new-lead.js';
 import { openQuickLeadForm } from '../capture/quick-lead.js';
 import { openConvertDialog } from '../capture/convert-dialog.js';
+import { unconfirmedCaptures, retryCapture, removeCapture } from '../capture/offline-queue.js';
 import { frictionTrack } from '../../core/friction.js';
 import { getMockLeads, getMockTeam } from '../../core/mock.js';
 
@@ -85,9 +86,10 @@ export function mountInbox(root) {
   const elFilters = el('div', { class: 'inbox__filters' });
   // F36 §178: el camino RÁPIDO es el primario (WhatsApp/walk-in en <30s);
   // el form completo queda como secundario (canales con campaña/vehículo).
-  const elQuickBtn = canEdit ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', style: { marginLeft: 'auto' }, html: icon('zap') + ' Lead rápido' }) : null;
+  // OLA-1.9: guía visible de la doble captura (title + estado-cero abajo).
+  const elQuickBtn = canEdit ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', style: { marginLeft: 'auto' }, title: 'WhatsApp o walk-in: nombre y teléfono en 30 segundos', html: icon('zap') + ' Lead rápido' }) : null;
   if (elQuickBtn) elQuickBtn.addEventListener('click', () => openQuickLeadForm());
-  const elNewBtn = canEdit ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('plus') + ' Completo' }) : null;
+  const elNewBtn = canEdit ? el('button', { class: 'btn btn--soft btn--sm', type: 'button', title: 'Captura completa: canal, campaña, vehículo de interés y nota', html: icon('plus') + ' Completo' }) : null;
   if (elNewBtn) elNewBtn.addEventListener('click', () => openNewLeadForm());
   // P2 §178: Pendientes hoy + vencidos.
   const elPendBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('clipboardList') + ' Pendientes hoy' });
@@ -101,7 +103,9 @@ export function mountInbox(root) {
   const elHint = el('p', { class: 'u-muted u-caption', style: { margin: '0' } }, [
     'Aquí llegan los interesados: contacta y califica. Las ventas activas viven en el Pipeline.',
   ]);
-  const section = el('section', { class: 'inbox' }, [elHint, elQueues, elToolbar, elBulkBar, elPendPanel, elList]);
+  // OLA-1.9b: capturas offline sin confirmar (rechazo de rules tras cierre de pestaña).
+  const elOfflineBanner = el('div', { class: 'inbox__offline', hidden: true });
+  const section = el('section', { class: 'inbox' }, [elHint, elQueues, elToolbar, elOfflineBanner, elBulkBar, elPendPanel, elList]);
   clear(root);
   root.append(section);
 
@@ -302,6 +306,7 @@ export function mountInbox(root) {
   function renderList() {
     if (ui.loading) return renderSkeletons();
     if (ui.error) return renderState(icon('alertTriangle'), 'No se pudo cargar', ui.error, true);
+    renderOfflineBanner();
 
     const { rows, hiddenClosed } = buildView(ui.leads, {
       queue: ui.queue, uid, filters: ui.filters, search: ui.search, showClosed: ui.showClosed,
@@ -310,6 +315,12 @@ export function mountInbox(root) {
 
     if (!rows.length && !hiddenClosed) {
       const empty = ui.search || ui.filters.type || ui.filters.channel || ui.filters.status;
+      // OLA-1.9: estado-cero REAL (tenant sin ningún lead) → guía de la doble captura.
+      if (!empty && !ui.leads.length && canEdit) {
+        elList.append(stateNode(icon('folder'), 'Aún no hay leads',
+          'Los del sitio web y el bot entran solos. Para registrarlos a mano: "Lead rápido" para WhatsApp o walk-in (nombre y teléfono, 30 segundos) · "Completo" cuando traes canal, campaña y vehículo de interés.'));
+        return;
+      }
       elList.append(stateNode(icon('folder'), empty ? 'Sin resultados' : '¡Bandeja al día!',
         empty ? 'Ajusta la búsqueda o los filtros.' : 'No hay clientes en esta cola.'));
       return;
@@ -620,6 +631,60 @@ export function mountInbox(root) {
       el('span', { class: 'inbox__bulkcount', text: `${n} seleccionado${n === 1 ? '' : 's'}` }),
       el('div', { class: 'u-row u-row--tight', style: { marginLeft: 'auto', flexWrap: 'wrap', gap: '6px' } }, [assignBtn, contactBtn, archiveBtn, clearBtn]),
     );
+  }
+
+  // ── OLA-1.9b: banner de capturas offline sin confirmar ──
+  // La reconciliación corre con cada snapshot: si el lead YA entró (el SDK
+  // reenvió con éxito), el registro se limpia solo y el banner no aparece.
+  function renderOfflineBanner() {
+    clear(elOfflineBanner);
+    elOfflineBanner.hidden = true;
+    if (store.get().mock || !canEdit) return;
+    const rows = unconfirmedCaptures(ui.leads);
+    if (!rows.length) return;
+    elOfflineBanner.hidden = false;
+    elOfflineBanner.append(
+      el('div', { class: 'inbox__offline-head u-ico-text' }, [
+        el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('alertTriangle') }),
+        el('strong', { text: rows.length === 1 ? '1 captura sin confirmar' : `${rows.length} capturas sin confirmar` }),
+        el('span', { class: 'u-caption u-faint', text: 'Se guardaron sin señal y el servidor aún no las acepta.' }),
+      ]),
+      ...rows.map(offlineRow),
+    );
+  }
+  function offlineRow(rec) {
+    const d = rec.data || {};
+    const retry = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: 'Reintentar' });
+    retry.addEventListener('click', async () => {
+      if (!navigator.onLine) { toast('Sin conexión — reintenta cuando vuelva la señal.', 'error'); return; }
+      retry.disabled = true; retry.textContent = 'Enviando…';
+      try {
+        await retryCapture(rec);
+        toast('✓ Captura reenviada — aparecerá en la Bandeja en segundos', 'ok');
+        renderOfflineBanner();
+      } catch (e2) {
+        retry.disabled = false; retry.textContent = 'Reintentar';
+        toast(friendlyError(e2, 'El servidor volvió a rechazarla.'), 'error');
+      }
+    });
+    const discard = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', text: 'Descartar' });
+    discard.addEventListener('click', async () => {
+      const ok = await confirmDialog({
+        title: 'Descartar la captura',
+        message: `Se pierde el registro de "${d.nombre || 'sin nombre'}"${d.telefono ? ' (' + d.telefono + ')' : ''}. Esta acción no se puede deshacer.`,
+        confirmText: 'Descartar', danger: true,
+      });
+      if (!ok) return;
+      removeCapture(rec.id);
+      renderOfflineBanner();
+    });
+    return el('div', { class: 'inbox__offline-row' }, [
+      el('div', { class: 'u-grow' }, [
+        el('div', { class: 'u-truncate', text: (d.nombre || 'Sin nombre') + (d.telefono ? ' · ' + d.telefono : '') }),
+        rec.error ? el('div', { class: 'u-caption u-faint u-truncate', text: rec.error }) : null,
+      ]),
+      retry, discard,
+    ]);
   }
 
   // ── Estados ──

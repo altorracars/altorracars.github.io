@@ -10,6 +10,7 @@
 
 import { el } from '../../core/dom.js';
 import { icon, iconEl } from '../../core/icons.js';
+import { createCombobox } from '../../core/combobox.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { friendlyCallable } from '../../core/errors.js';
@@ -24,10 +25,17 @@ export function openConvertDialog(lead, { onDone } = {}) {
   const t0 = performance.now();
   const team = store.get().team || [];
 
-  const vehSelect = el('select', { class: 'select' }, [
-    el('option', { value: '' }, ['Cargando inventario…']),
-  ]);
+  // OLA-1.9: combobox typeahead — el <select> nativo era inusable a 100+ vehículos.
   const amount = el('input', { class: 'input', type: 'number', min: '0', step: '100000', placeholder: 'Valor estimado (COP) *' });
+  const vehCombo = createCombobox({
+    placeholder: 'Cargando inventario…',
+    emptyText: 'Ningún vehículo coincide — revisa el término o marca "Sin vehículo aún".',
+    onChange: (o) => {
+      const v = vehicles.find((x) => x.id === o.value);
+      if (v && v.precio && !amount.value) amount.value = String(v.precio);
+    },
+  });
+  vehCombo.setDisabled(true);
   const ownerSelect = el('select', { class: 'select' },
     team.length
       ? team.map((m) => el('option', { value: m.uid, selected: m.uid === lead.ownerId ? '' : undefined }, [m.nombre]))
@@ -43,7 +51,7 @@ export function openConvertDialog(lead, { onDone } = {}) {
     el('p', { class: 'u-caption u-muted', style: { margin: '0' } }, [
       '✓ Hablaste con él · ✓ tiene presupuesto o forma de pago en mente · ✓ busca un carro concreto o una categoría',
     ]),
-    el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Vehículo *' }), vehSelect]),
+    el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Vehículo *' }), vehCombo.root]),
     el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Valor estimado (COP) *' }), amount]),
     el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Asesor responsable *' }), ownerSelect]),
     el('label', { class: 'field' }, [el('span', { class: 'field__label', text: 'Nota' }), nota]),
@@ -67,31 +75,27 @@ export function openConvertDialog(lead, { onDone } = {}) {
   overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
   cancel.addEventListener('click', close);
 
-  // Inventario: prellenar el valor con el precio del vehículo elegido.
+  // Inventario: prellenar el valor con el precio del vehículo elegido (onChange del combobox).
   let vehicles = [];
   (store.get().mock ? Promise.resolve([]) : fetchAvailableVehicles()).then((list) => {
     vehicles = list;
-    vehSelect.replaceChildren(
-      el('option', { value: '' }, ['— Elige un vehículo —']),
-      ...list.map((v) => el('option', { value: v.id }, [v.label + (v.precio ? ' · $' + v.precio.toLocaleString('es-CO') : '')])),
-      el('option', { value: SIN_VEHICULO }, ['Sin vehículo aún (buscando / retoma)']),
-    );
+    vehCombo.setOptions([
+      ...list.map((v) => ({ value: v.id, label: v.label, hint: v.precio ? '$' + v.precio.toLocaleString('es-CO') : '' })),
+      { value: SIN_VEHICULO, label: 'Sin vehículo aún (buscando / retoma)', pinned: true },
+    ]);
+    vehCombo.setDisabled(false);
+    vehCombo.setPlaceholder('Escribe marca o modelo…');
   }).catch(() => {
-    vehSelect.replaceChildren(
-      el('option', { value: SIN_VEHICULO }, ['Sin vehículo aún']),
-    );
-  });
-  vehSelect.addEventListener('change', () => {
-    const v = vehicles.find((x) => x.id === vehSelect.value);
-    if (v && v.precio && !amount.value) amount.value = String(v.precio);
+    vehCombo.setOptions([{ value: SIN_VEHICULO, label: 'Sin vehículo aún', pinned: true }]);
+    vehCombo.setDisabled(false);
   });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.hidden = true;
-    const vehId = vehSelect.value;
+    const vehId = vehCombo.value;
     const amt = Math.round(Number(amount.value) || 0);
-    if (!vehId) return fail('Elige un vehículo o marca "Sin vehículo aún".');
+    if (!vehId) return fail('Elige un vehículo de la lista o marca "Sin vehículo aún".');
     if (!(amt > 0)) return fail('El valor estimado es obligatorio (alimenta el pronóstico).');
     const ownerId = ownerSelect.value || lead.ownerId;
     if (!ownerId) return fail('El negocio necesita un asesor responsable.');
@@ -135,9 +139,10 @@ function showUndoSnackbar(dealId, lead) {
     role: 'status',
     style: {
       position: 'fixed', bottom: '18px', left: '50%', transform: 'translateX(-50%)',
-      display: 'flex', gap: '12px', alignItems: 'center', zIndex: '99',
+      display: 'flex', gap: '12px', alignItems: 'center', zIndex: 'var(--z-toast)',
       padding: '10px 14px', borderRadius: '10px',
-      background: 'var(--bg-elev, #1c1a17)', border: '1px solid var(--line, #444)',
+      // OLA-1.9 de paso: tokens fantasma (--bg-elev/--line no existen) → tokens reales del DS.
+      background: 'var(--surface-card)', border: '1px solid var(--surface-stroke-hi)',
       boxShadow: '0 6px 24px rgba(0,0,0,.4)',
     },
   }, [

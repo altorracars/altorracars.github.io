@@ -10,6 +10,7 @@ import { friendlyError } from '../../core/errors.js';
 import { MANUAL_CHANNELS, INTEREST_TYPES } from '../../domain/classify.js';
 import { createManualLead } from './capture.data.js';
 import { addMockLead } from '../../core/mock.js';
+import { queueCapture, confirmCapture, rejectCapture } from './offline-queue.js';
 
 export function openNewLeadForm() {
   const f = {};
@@ -129,7 +130,11 @@ export function openNewLeadForm() {
       }
       return;
     }
-    createManualLead(data).catch((e2) => {
+    // OLA-1.9b: registro paralelo — si la pestaña muere antes del ack y rules
+    // rechaza el reenvío del SDK, la Bandeja podrá avisar y reintentar.
+    const qid = queueCapture('new', data);
+    createManualLead(data).then(() => confirmCapture(qid)).catch((e2) => {
+      rejectCapture(qid, friendlyError(e2, ''));
       console.error('[new-lead] rechazo del servidor (offline-sync):', e2);
       toast('El lead "' + data.nombre + '" no se pudo sincronizar. ' + friendlyError(e2, ''), 'error');
     });

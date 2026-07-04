@@ -38,7 +38,7 @@ function greetWord() {
 }
 
 export function mountDashboard(root) {
-  const ui = { leads: [], deals: [], pending: [], loading: true, error: null, capped: false, scope: 'todos' };
+  const ui = { leads: [], deals: [], wons: [], pending: [], loading: true, error: null, capped: false, scope: 'todos' };
   let alive = true;
   let scopeDecided = false;
   const uid = store.get().user && store.get().user.uid;
@@ -85,6 +85,7 @@ export function mountDashboard(root) {
 
     appendAll(body, [
       renderHero(m),
+      renderOnboarding(),
       renderKpis(m),
       ui.capped ? el('div', { class: 'dash__notice u-caption' }, [
         el('span', { class: 'u-ico', 'aria-hidden': 'true', html: icon('info') }),
@@ -107,6 +108,61 @@ export function mountDashboard(root) {
     return el('header', { class: 'dash__hero' }, [
       el('h1', { class: 'dash__greet', text: `${greetWord()}${name ? ', ' + name : ''} 👋` }),
       el('p', { class: 'dash__sub u-muted', text: summary }),
+    ]);
+  }
+
+  // ── OLA-1.9: checklist de primeros pasos — guía al tenant que aún no
+  // completa su primer ciclo Bandeja→calificar→convertir→vender. Se marca
+  // solo con datos reales y DESAPARECE con la primera venta. ──
+  function renderOnboarding() {
+    const won = ui.wons.length > 0 || ui.deals.some((d) => d.status === 'won');
+    if (won) return null;
+    const steps = [
+      {
+        done: ui.leads.length > 0,
+        label: 'Recibe o registra tu primer lead',
+        hint: 'Los del sitio web y WhatsApp entran solos a la Bandeja; también puedes capturarlo a mano con ＋ Nuevo lead.',
+        to: 'bandeja', cta: 'Ir a la Bandeja',
+      },
+      {
+        done: ui.deals.length > 0,
+        label: 'Califícalo y crea el negocio',
+        hint: 'Habla con el cliente y usa "Calificar → crear negocio" en su ficha: pasa al Pipeline con su valor estimado.',
+        to: 'bandeja', cta: 'Calificar un lead',
+      },
+      {
+        done: false, // sin venta (el gate de arriba ya cortó si la hay)
+        label: 'Cierra tu primera venta',
+        hint: 'Mueve el negocio por las etapas del Pipeline hasta "Vendido".',
+        to: 'pipeline', cta: 'Abrir el Pipeline',
+      },
+    ];
+    let ctaGiven = false;
+    const rows = steps.map((s, i) => {
+      const active = !s.done && !ctaGiven;
+      if (active) ctaGiven = true;
+      let btn = null;
+      if (active) {
+        btn = el('button', { class: 'btn btn--gold btn--sm', type: 'button', text: s.cta });
+        btn.addEventListener('click', () => navigate(s.to));
+      }
+      return el('div', { class: 'dash__ob-step' + (s.done ? ' is-done' : '') + (active ? ' is-active' : '') }, [
+        s.done
+          ? el('span', { class: 'dash__ob-mark is-done u-ico', 'aria-hidden': 'true', html: icon('check') })
+          : el('span', { class: 'dash__ob-mark', 'aria-hidden': 'true', text: String(i + 1) }),
+        el('div', { class: 'u-grow' }, [
+          el('div', { class: 'dash__ob-label', text: s.label }),
+          el('div', { class: 'u-caption u-faint', text: s.hint }),
+        ]),
+        btn,
+      ]);
+    });
+    return el('div', { class: 'dash__onboard' }, [
+      el('div', { class: 'dash__sec-head' }, [
+        el('h2', { class: 'dash__sec-title', text: 'Primeros pasos' }),
+        el('span', { class: 'u-caption u-faint', text: 'El ciclo completo del CRM, de lead a venta' }),
+      ]),
+      ...rows,
     ]);
   }
 
@@ -287,7 +343,7 @@ export function mountDashboard(root) {
         store.get().mock ? Promise.resolve([]) : fetchPendingTasks().catch(() => []),
       ]);
       if (!alive) return;
-      ui.leads = data.leads; ui.deals = data.deals; ui.pending = pending || [];
+      ui.leads = data.leads; ui.deals = data.deals; ui.wons = data.wons || []; ui.pending = pending || [];
       ui.capped = !!data.capped; ui.loading = false;
     } catch (e) {
       if (!alive) return;

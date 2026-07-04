@@ -89,6 +89,21 @@
 :root[data-theme="dark"] .inbox__bulkcount { color: var(--gold-200); }
 @media (max-width: 560px) { .inbox__bulkbar { margin-left: var(--s-4); margin-right: var(--s-4); } }
 
+/* OLA-1.9b: banner de capturas offline sin confirmar */
+.inbox__offline {
+  display: flex; flex-direction: column; gap: var(--s-2); flex: 0 0 auto;
+  margin: 0 var(--s-6) var(--s-3); padding: var(--s-3) var(--s-4);
+  background: rgba(232, 93, 93, 0.1); /* tint de --danger (patrón badge--danger) */
+  border: 1px solid var(--danger); border-radius: var(--r-md);
+}
+.inbox__offline-head { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.inbox__offline-head .u-ico { color: var(--danger); }
+.inbox__offline-row { display: flex; align-items: center; gap: var(--s-3); }
+@media (max-width: 560px) {
+  .inbox__offline { margin-left: var(--s-4); margin-right: var(--s-4); }
+  .inbox__offline-row { flex-wrap: wrap; }
+}
+
 /* Skeleton (override del grid) */
 .lead-card--skeleton { display: flex; align-items: center; gap: var(--s-3); cursor: default; pointer-events: none; }
 .lead-card--skeleton:hover { box-shadow: var(--shadow-2); transform: none; border-color: var(--surface-stroke); }

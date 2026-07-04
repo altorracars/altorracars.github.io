@@ -16,6 +16,7 @@ import { toast } from '../../core/toast.js';
 import { friendlyError } from '../../core/errors.js';
 import { addMockLead } from '../../core/mock.js';
 import { frictionTrack } from '../../core/friction.js';
+import { queueCapture, confirmCapture, rejectCapture } from './offline-queue.js';
 
 const FUENTES = [
   { id: 'whatsapp', label: 'WhatsApp', iconId: 'whatsapp' },
@@ -139,7 +140,11 @@ export function openQuickLeadForm() {
       }
       return;
     }
-    addDoc(collection(db, 'lead_intake'), data).catch((e2) => {
+    // OLA-1.9b: registro paralelo — si la pestaña muere antes del ack y rules
+    // rechaza el reenvío del SDK, la Bandeja podrá avisar y reintentar.
+    const qid = queueCapture('quick', data);
+    addDoc(collection(db, 'lead_intake'), data).then(() => confirmCapture(qid)).catch((e2) => {
+      rejectCapture(qid, friendlyError(e2, ''));
       console.error('[quick-lead] rechazo del servidor (offline-sync):', e2);
       toast('El lead "' + data.nombre + '" no se pudo sincronizar. ' + friendlyError(e2, ''), 'error');
     });

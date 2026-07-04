@@ -19,6 +19,29 @@
 .dash__greet { font-family: var(--font-display); font-size: var(--t-title-sm); line-height: 1.15; }
 .dash__sub { font-size: var(--t-body); }
 
+/* OLA-1.9: checklist de primeros pasos (tenant sin su primera venta) */
+.dash__onboard {
+  display: flex; flex-direction: column; gap: var(--s-3);
+  padding: var(--s-4) var(--s-5); border-radius: var(--r-lg);
+  background: var(--surface-card); border: 1px solid var(--surface-stroke-hi);
+}
+.dash__ob-step { display: flex; align-items: center; gap: var(--s-3); }
+.dash__ob-step.is-done { opacity: 0.6; }
+.dash__ob-mark {
+  display: inline-grid; place-content: center; flex: 0 0 auto;
+  width: 26px; height: 26px; border-radius: 50%;
+  font-weight: 700; font-size: var(--t-caption);
+  border: 1px solid var(--surface-stroke-hi); color: var(--ink-text-muted);
+}
+.dash__ob-step.is-active .dash__ob-mark { border-color: var(--gold-500); color: var(--gold-500); }
+.dash__ob-mark.is-done { border-color: var(--success); color: var(--success); }
+.dash__ob-mark svg { width: 14px; height: 14px; }
+.dash__ob-label { font-weight: 700; font-size: var(--t-body); }
+@media (max-width: 560px) {
+  .dash__ob-step { flex-wrap: wrap; }
+  .dash__ob-step .btn { margin-left: calc(26px + var(--s-3)); }
+}
+
 /* KPIs de un vistazo */
 .dash__kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--s-3); }
 .dash__kpi {

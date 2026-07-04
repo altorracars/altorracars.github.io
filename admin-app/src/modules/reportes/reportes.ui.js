@@ -8,6 +8,7 @@ import { el, clear } from '../../core/dom.js';
 import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { exportCsv as exportCsvFile } from '../../core/csv.js';
 import { copShort } from '../../domain/format.js';
 import { dayKey } from '../../domain/agenda.js';
 import {
@@ -319,7 +320,7 @@ export function mountReportes(root) {
       d.name || d.id, r.ownerName, d.base, d.tipoPago || '', d.liquidable ? 'liquidable' : 'checklist pendiente',
     ])));
 
-    download(`altorra-reportes-${dayKey(new Date())}.csv`, toCsv(lines));
+    exportCsvFile(`altorra-reportes-${dayKey(new Date())}.csv`, lines);
     toast('Reporte exportado', 'ok');
   }
 
@@ -343,24 +344,4 @@ export function mountReportes(root) {
   return function cleanup() { alive = false; };
 }
 
-// ── CSV helpers (RFC-4180, BOM UTF-8) ──
-function csvCell(v) {
-  let s = v == null ? '' : String(v);
-  // Anti inyección de fórmulas (E4 review #15): nombres vienen del FORM
-  // PÚBLICO — "=HYPERLINK(...)" se ejecutaría al abrir el CSV en Excel.
-  // Prefijo ' salvo números puros (los montos no se rompen).
-  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s;
-  // RFC-4180: entrecomilla si hay comilla, coma o salto de línea; + ';' por Excel es-CO (separador de lista).
-  return /[",\n\r;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-}
-function toCsv(rows) {
-  return '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
-}
-function download(filename, text) {
-  const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.append(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+// ── CSV: helpers compartidos en core/csv.js desde OLA-2.4 (antes vivían aquí) ──

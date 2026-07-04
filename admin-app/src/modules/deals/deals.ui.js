@@ -8,6 +8,7 @@ import { el, clear } from '../../core/dom.js';
 import { openMenu } from '../../core/popover.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
+import { exportCsv } from '../../core/csv.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { friendlyError, friendlyCallable } from '../../core/errors.js';
 import { icon } from '../../core/icons.js';
@@ -395,7 +396,28 @@ export function mountPipeline(root) {
       stat('Oportunidades', String(open.length)),
       stat('Valor del embudo', copShort(tv) || '$0'),
       stat('Forecast ponderado', copShort(fc) || '$0', true),
+      csvBtn(),
     );
+  }
+
+  // OLA-2.4: exporta la vista activa (embudo abierto o ganados de post-venta).
+  function csvBtn() {
+    const b = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV', title: 'Exportar la vista actual a CSV' });
+    b.addEventListener('click', () => {
+      const postventa = ui.view === 'postventa';
+      const rows = postventa ? ui.won : ui.deals.filter((d) => d.status === 'open');
+      if (!rows.length) { toast('No hay negocios para exportar en esta vista.', 'info'); return; }
+      exportCsv(`altorra-pipeline-${postventa ? 'postventa' : 'embudo'}-${new Date().toISOString().slice(0, 10)}.csv`, [
+        ['Cliente', 'Vehículo', 'Etapa', 'Valor (COP)', 'Prob. %', 'Asesor', 'Última actividad'],
+        ...rows.map((d) => [
+          d.name || d.contactName || '', d.vehicleName || '',
+          postventa ? 'Vendido' : (d.stageId || ''), d.amount || 0,
+          postventa ? 100 : Math.round(probFor(d.stageId) * 100),
+          d.ownerName || '', d.lastActivityAt || '',
+        ]),
+      ]);
+    });
+    return b;
   }
 
   function setView(id) {

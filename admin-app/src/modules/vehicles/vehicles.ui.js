@@ -10,12 +10,12 @@ import { el, clear, appendAll } from '../../core/dom.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { friendlyError } from '../../core/errors.js';
 import { store } from '../../core/store.js';
-import { toast } from '../../core/toast.js';
+import { toast, toastAction } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
 import { ESTADO_LABELS, TIPO_LABELS, daysInStock, formatPrecio, toTitleCase } from '../../domain/vehicle.js';
 import { subscribeBrands, MOCK_BRANDS } from '../brands/brands.data.js';
 import {
-  subscribeVehicles, toggleDestacado, deleteVehicle, sortVehicles, MOCK_VEHICLES,
+  subscribeVehicles, toggleDestacado, deleteVehicle, restoreVehicle, sortVehicles, MOCK_VEHICLES,
   subscribeDrafts, deleteDraftDoc, mockDrafts,
   saveReorder, exportVehiclesCSV, fetchVehicleAudit, revertAuditEntry,
 } from './vehicles.data.js';
@@ -149,7 +149,17 @@ export function mountVehicles(root) {
       delBtn.disabled = true;
       try {
         await deleteVehicle(v);
-        close(); toast('✓ Vehículo eliminado', 'ok');
+        close();
+        // OLA-2.4: ventana de arrepentimiento — el doc se restaura completo
+        // (las fotos nunca se borraron de Storage; el sitio lo re-publica el cron).
+        toastAction('Vehículo "' + label + '" eliminado.', 'Deshacer', async () => {
+          try {
+            await restoreVehicle(v._docId, v);
+            toast('↩ Vehículo restaurado', 'ok');
+          } catch (e2) {
+            toast('No se pudo restaurar: ' + friendlyError(e2), 'error');
+          }
+        });
       } catch (e) {
         delBtn.disabled = false;
         toast('No se pudo eliminar: ' + friendlyError(e), 'error');

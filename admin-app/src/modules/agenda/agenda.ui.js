@@ -12,6 +12,8 @@ import {
 } from '../../domain/agenda.js';
 import { hasPermission } from '../../core/auth.js';
 import { navigate } from '../../core/router.js';
+import { toast } from '../../core/toast.js';
+import { exportCsv } from '../../core/csv.js';
 import { subscribeRange } from './agenda.data.js';
 import { openCitaDetail, openCitaChooser } from './cita-dialog.js';
 import { getMockAgenda } from '../../core/mock.js';
@@ -55,6 +57,19 @@ export function mountAgenda(root) {
       cfg.addEventListener('click', () => navigate('config'));
       nav.append(cfg);
     }
+    // OLA-2.4: exporta las citas/tareas del MES visible.
+    const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV', title: 'Exportar el mes visible a CSV' });
+    csvBtn.addEventListener('click', () => {
+      if (!ui.events.length) { toast('No hay citas en este mes para exportar.', 'info'); return; }
+      exportCsv(`altorra-agenda-${ui.year}-${String(ui.month + 1).padStart(2, '0')}.csv`, [
+        ['Fecha y hora', 'Cliente', 'Asunto', 'Tipo', 'Estado'],
+        ...ui.events.map((ev) => [
+          ev.dueAt || '', (ev.relatedTo && ev.relatedTo.name) || '', ev.subject || '',
+          ev.type || 'tarea', ev.type === 'cita' ? (ev.estadoCita || 'pendiente') : (ev.status || ''),
+        ]),
+      ]);
+    });
+    nav.append(csvBtn);
     // Gap 5 (F23-7 §188): crear cita SIN pasar por el 360 — walk-ins incluidos.
     if (hasPermission('crm.edit')) {
       const nueva = el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva cita' });

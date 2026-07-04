@@ -87,6 +87,21 @@ export async function deleteVehicle(v) {
   writeAudit('vehicle_delete', 'vehiculo ' + v._docId, label);
 }
 
+/** OLA-2.4: restaura un vehículo recién borrado (botón "Deshacer" del toast).
+ *  Viable porque deleteVehicle solo borra el DOC (fotos siguen en Storage →
+ *  las URLs restauradas viven). Mismo _docId (el sitio público depende del id
+ *  secuencial). _version re-arranca en 1 (validCreateVersion para no-super). */
+export async function restoreVehicle(docId, data) {
+  const { _docId, ...fields } = data || {};
+  fields._version = 1;
+  await setDoc(doc(db, 'vehiculos', docId), sanitizeForFirestore(fields));
+  await logVehicleAction(docId, {
+    action: 'restored', vehicleId: fields.id || null,
+    vehicleLabel: [fields.marca, fields.modelo, fields.year].filter(Boolean).join(' '), changes: [],
+  });
+  writeAudit('vehicle_restore', 'vehiculo ' + docId, [fields.marca, fields.modelo].filter(Boolean).join(' '));
+}
+
 /* ── Create / Update transaccionales (V2 — contratos del clásico) ── */
 
 /** codigoUnico 'ALT-YYYYMM-NNNN' vía tx sobre config/counters.vehicleCodeSeq

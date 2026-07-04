@@ -27,6 +27,20 @@ import { latestCommissionSnapshot, altorraRevenueOf, tenancyGroupKey } from '../
 /** §TODO-50: ¿la groupKey es de un consignante particular (contact) o el cubo anónimo? */
 const isConsignaKey = (k) => !!k && (k.indexOf('contact:') === 0 || k === 'consigna:_unidentified');
 
+/** OLA-2.4: restaura un aliado recién borrado (botón "Deshacer" del toast).
+ *  SANITIZADO a la whitelist de rules (dealerShapeOk) + _version re-arranca
+ *  en 1 (validCreateVersion exige versión inicial en create) — un doc legacy
+ *  con campos extra sería RECHAZADO si se restaurara verbatim. */
+export async function restoreDealer(docId, data) {
+  const d = data || {};
+  const fields = { nombre: d.nombre || docId, _version: 1 };
+  ['direccion', 'telefono', 'ciudad', 'horario', 'responsable', 'updatedAt', 'updatedBy'].forEach((k) => {
+    if (d[k] != null) fields[k] = d[k];
+  });
+  await setDoc(doc(db, 'concesionarios', docId), fields);
+  writeAudit('dealer_restore', 'aliado ' + docId, fields.nombre);
+}
+
 /** Slug VERBATIM del clásico (admin-dealers.js:189). NO usar brands.slugify(). */
 export function slugifyDealer(nombre) {
   return nombre.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');

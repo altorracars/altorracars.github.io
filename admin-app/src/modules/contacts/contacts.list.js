@@ -7,6 +7,8 @@
 import { el, clear } from '../../core/dom.js';
 import { icon, uIco } from '../../core/icons.js';
 import { store } from '../../core/store.js';
+import { toast } from '../../core/toast.js';
+import { exportCsv } from '../../core/csv.js';
 import { initials, timeAgo, normalizeSearch } from '../../domain/format.js';
 import { channelOf } from '../../domain/classify.js';
 import { RATING_META } from '../../domain/scoring.js';
@@ -57,10 +59,21 @@ export function mountContactos(root) {
   const countEl = el('span', { class: 'contactos__count u-caption u-faint' });
   const refreshBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('refresh') + ' Actualizar' });
   refreshBtn.addEventListener('click', load);
+  // OLA-2.4: exporta lo VISIBLE (respeta búsqueda + filtro), no la colección ciega.
+  const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV', title: 'Exportar los contactos visibles a CSV' });
+  csvBtn.addEventListener('click', () => {
+    if (ui.loading) { toast('Aún cargando…', 'info'); return; }
+    const rows = visibleContacts();
+    if (!rows.length) { toast('No hay contactos para exportar.', 'info'); return; }
+    exportCsv(`altorra-contactos-${new Date().toISOString().slice(0, 10)}.csv`, [
+      ['Nombre', 'Email', 'Teléfono', 'Tipo', 'Etiquetas', 'Creado'],
+      ...rows.map((c) => [c.fullName || '', c.email || '', c.phone || '', lifecycleOf(c), (c.tags || []).join(' | '), c.createdAt || '']),
+    ]);
+  });
 
   const toolbar = el('div', { class: 'contactos__toolbar' }, [
     search, chipsWrap,
-    el('div', { class: 'u-row u-row--tight' }, [countEl, refreshBtn]),
+    el('div', { class: 'u-row u-row--tight' }, [countEl, csvBtn, refreshBtn]),
   ]);
 
   const list = el('div', { class: 'contactos__list' });
@@ -83,6 +96,15 @@ export function mountContactos(root) {
     store.set({ leads: ui.leads, detailLeadId: lead.id });
   }
 
+  // Lo VISIBLE según búsqueda + chip activo (render y export CSV comparten esto).
+  function visibleContacts(q = normalizeSearch(ui.q)) {
+    return ui.contacts.filter((c) => {
+      if (ui.filter !== 'todos' && lifecycleOf(c) !== ui.filter) return false;
+      if (!q) return true;
+      return normalizeSearch(`${c.fullName || ''} ${c.email || ''} ${c.phone || ''}`).includes(q);
+    });
+  }
+
   function renderList() {
     if (ui.loading) return renderSkeleton();
     if (ui.error) return renderState('alertTriangle', 'No se pudieron cargar los contactos', ui.error);
@@ -92,11 +114,7 @@ export function mountContactos(root) {
 
     const idx = leadIndex();
     const q = normalizeSearch(ui.q);
-    const rows = ui.contacts.filter((c) => {
-      if (ui.filter !== 'todos' && lifecycleOf(c) !== ui.filter) return false;
-      if (!q) return true;
-      return normalizeSearch(`${c.fullName || ''} ${c.email || ''} ${c.phone || ''}`).includes(q);
-    });
+    const rows = visibleContacts(q);
 
     countEl.textContent = `${rows.length} de ${ui.contacts.length}`;
     clear(list);

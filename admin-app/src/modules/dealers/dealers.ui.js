@@ -15,13 +15,14 @@ import { el, clear } from '../../core/dom.js';
 import { icon } from '../../core/icons.js';
 import { navIcon } from '../../core/layout/nav-icons.js';
 import { store } from '../../core/store.js';
-import { toast } from '../../core/toast.js';
+import { toast, toastAction } from '../../core/toast.js';
 import { confirmDialog } from '../../core/confirm.js';
 import { friendlyError } from '../../core/errors.js';
 import { hasPermission } from '../../core/auth.js';
+import { exportCsv } from '../../core/csv.js';
 import {
   MOCK_DEALERS, MOCK_DEALER_STATS, subscribeDealers, fetchDealerStats,
-  saveDealer, slugifyDealer, deleteDealer,
+  saveDealer, slugifyDealer, deleteDealer, restoreDealer,
 } from './dealers.data.js';
 
 export function mountDealers(root) {
@@ -125,7 +126,7 @@ export function mountDealers(root) {
       : '';
     const ok = await confirmDialog({
       title: '¿Eliminar el aliado "' + (d.nombre || d.id) + '"?',
-      message: 'Se quita de la lista de aliados.' + aviso + ' Esta acción no se puede deshacer.',
+      message: 'Se quita de la lista de aliados.' + aviso + ' Podrás deshacer durante unos segundos.',
       confirmText: 'Eliminar', danger: true,
     });
     if (!ok) return;
@@ -135,7 +136,17 @@ export function mountDealers(root) {
     if (store.get().mock) { toast('Aliado eliminado (demo)', 'ok'); return; }
     try {
       await deleteDealer(d.id, d.nombre);
-      toast('✓ Aliado eliminado', 'ok');
+      // OLA-2.4: ventana de arrepentimiento — restaura el doc (sanitizado a rules).
+      toastAction('Aliado "' + (d.nombre || d.id) + '" eliminado.', 'Deshacer', async () => {
+        try {
+          await restoreDealer(d.id, removed || d);
+          ui.dealers.splice(Math.min(Math.max(idx, 0), ui.dealers.length), 0, removed || d);
+          renderGrid();
+          toast('↩ Aliado restaurado', 'ok');
+        } catch (e2) {
+          toast('No se pudo restaurar: ' + friendlyError(e2), 'error');
+        }
+      });
     } catch (e) {
       if (removed) { ui.dealers.splice(idx, 0, removed); renderGrid(); } // rollback
       toast('No se pudo eliminar: ' + friendlyError(e), 'error');
@@ -206,9 +217,23 @@ export function mountDealers(root) {
     ? el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nuevo aliado' })
     : null;
   if (newBtn) newBtn.addEventListener('click', () => openModal(null));
+  // OLA-2.4: exporta aliados visibles CON sus métricas (activos/vendidos/comisiones).
+  const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' CSV', title: 'Exportar los aliados visibles a CSV' });
+  csvBtn.addEventListener('click', () => {
+    const rows = filtered();
+    if (!rows.length) { toast('No hay aliados para exportar.', 'info'); return; }
+    exportCsv(`altorra-aliados-${new Date().toISOString().slice(0, 10)}.csv`, [
+      ['Nombre', 'Ciudad', 'Teléfono', 'Responsable', 'Activos', 'Vendidos', 'Ventas Altorra', 'Comisiones (COP)'],
+      ...rows.map((d) => {
+        const s = ui.stats[d.id] || {};
+        return [d.nombre || d.id, d.ciudad || '', d.telefono || '', d.responsable || '',
+          s.activos || 0, s.vendidos || 0, s.ventasAltorra || 0, s.comisiones || 0];
+      }),
+    ]);
+  });
 
   wrap.append(
-    el('div', { class: 'rev-head' }, [countSpan, newBtn]),
+    el('div', { class: 'rev-head' }, [countSpan, csvBtn, newBtn]),
     el('div', { class: 'dlr-toolbar' }, [searchIn]),
     gridHost,
   );

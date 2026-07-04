@@ -46,6 +46,7 @@
   --z-modal:     8500;   /* modales (captura, rev-modal genérico) */
   --z-panel-hub: 8600;   /* paneles del hub (transfer/resumen) — bajo popover */
   --z-popover:   9000;
+  --z-cmdk:      9300;   /* command palette Ctrl+K (OLA-2.1) — sobre popover, bajo confirm */
   --z-confirm:   9500;
   --z-toast:     9999;
 

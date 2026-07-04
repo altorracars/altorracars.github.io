@@ -16,6 +16,7 @@ import { initials } from '../../domain/format.js';
 import { openQuickLeadForm } from '../../modules/capture/quick-lead.js';
 // W-11 F2 (comité pt.8): iconos SVG inline (currentColor) del sidebar.
 import { navIcon } from './nav-icons.js';
+import { initCommandPalette } from '../command-palette.js';
 
 const APP_VERSION = '0.4.1';
 
@@ -182,6 +183,17 @@ export function mountShell(appRoot) {
     brand, nav,
     el('div', { class: 'sidebar__foot u-caption u-faint' }, [`v${APP_VERSION}`]),
   ]);
+
+  // OLA-2.1: command palette global (Ctrl+K). Se inyecta el NAV filtrado por
+  // canSee EN CADA apertura (permisos frescos); incluye rutas vivas fuera del
+  // sidebar (Disponibilidad). Cero ciclo de módulos: inyección, no import.
+  initCommandPalette(() => {
+    const groupOf = {};
+    NAV_GROUPS.forEach((g) => g.items.forEach((id) => { groupOf[id] = g.label; }));
+    return NAV.filter((i) => i.ready).filter(canSee).map((i) => ({
+      id: i.id, label: i.label, group: groupOf[i.id] || '', primary: NAV_PRIMARY.includes(i.id),
+    }));
+  });
 
   const titleH = el('h1', { class: 'topbar__h', text: TITLES.inicio });
   const crumb = el('span', { class: 'topbar__crumb u-caption u-faint', text: store.get().mock ? 'Modo demostración' : '' });

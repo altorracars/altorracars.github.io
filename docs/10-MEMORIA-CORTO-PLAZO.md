@@ -13,10 +13,9 @@
 > 🤖 **Impl = Opus 4.8** (tag `⟦OPUS-4.8⟧`); **revisión Fable 5 ✅ HECHA 03/07** (plan maestro). Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **RELEVO FABLE 5 (04/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; §266 revisión · §267 OLA 0 · §268 1.1-1.8core · **§269 OLA 1 CÓDIGO COMPLETO**). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale → grep antes de confiar (L-62).
-> **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus después). ✅ **OLA 1 CERRADA** (§269) · ✅ **OLA 2: 2.1-2.4 + CSV-fix es-CO + PURGA CRM → ADR §270** (.9 CSV `;` · .10 purga: 8 colecciones borradas con respaldo, verificada live — estado-cero real estrenado). ⚠️ `dist/` se COMMITEA por bloque.
-> **🧹 Owner-pending**: borrar `vehiculos/47` ZZZ (1 clic, estrena undo — clasificador me lo denegó) · pestañas del portal frescas (caché muestra tarea ZZZ fantasma) · decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap.
-> ✅ **2.5 + fix "Lead no disponible" HECHOS** (§270.11: delete/purgeCancelled owner en citas · menú tareas · fallback 360 · deploy crmCitaAction · 347/347).
-> **▶️ ARRANQUE SESIÓN NUEVA (disparador: "continúa"): FEEDBACK DUEÑO PRIMERO** — (1) **XLSX corporativo** y (2) **borrado de contactos owner** — **RECETAS COMPLETAS en §270.12** (exceljs dynamic + decisiones cerradas; crmSuppressContact sin UI + variante immediate + dedup) → (3) OLA 2.6 seguridad P2 → 2.7-2.12. Cadencia: build → preview mock → commit(+dist!)+push+merge; emulador solo si tocas rules (L-63: puerto 8081 = matar java zombi).
+> **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus después). ✅ **OLA 1 CERRADA** (§269) · ✅ **OLA 2: 2.1-2.5 + feedback dueño COMPLETO → ADR §270** (.13 XLSX corporativo `8ecd71ff` · .14 borrado contactos owner `42d9de7c` — ambos deployed+merged). ⚠️ `dist/` se COMMITEA por bloque.
+> **🧹 Owner-pending**: borrar `vehiculos/47` ZZZ (1 clic, estrena undo — clasificador me lo denegó) · pestañas del portal frescas (caché muestra tarea ZZZ fantasma) · decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap · **probar el Excel corporativo y el menú de supresión de contactos en el portal live**.
+> **▶️ SIGUE: OLA 2.6 (seguridad P2) → 2.7-2.12** — detalle en el PLAN MAESTRO (`specs/2026-07-03-PLAN-MAESTRO-fable5.md`). Cadencia: build → preview mock → commit(+dist!)+push+merge; emulador solo si tocas rules/functions (L-63: puerto 8081 = matar java zombi). El menú de contactos se OCULTA en mock — validación visual solo live.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

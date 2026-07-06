@@ -6,7 +6,7 @@
 | Señal | Valor (última actualización: **2026-07-03**) |
 |---|---|
 | **Build** | 🟢 `main`==`dev` `96b8cd01`: **PLAN MAESTRO = SSoT; 🤖 AHORA = OPUS 4.8 (Fable agotada) → arranque = §0+§0.b**. **OLA 0-1 ✅ · OLA 2: 2.1-2.8/2.10/2.12a ✅ · OLA 3.1 ✅ (§267-§276; suite 374) → OLA 2 restante = GATES DUEÑO (2.9 MFA · 2.11 App Check · 2.12b cutover `_legacy` DIFERIDO §275.4). SIGUE ejecutable: OLA 3.2+.** Gates dueño: saldo bot · purga clientes/suppressions · validar-live (supresión, presencia §274) · CUÁNDO MFA · OK borrar admin viejo · GSC noindex §276.7. |
-| **Cache version vigente** | **`v20260706033037`** (cron-CI 06/07 `8767fdcf`, mergeado receta L-02; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Cache version vigente** | **`v20260706233516`** (cron-CI 06/07 `23892168`, mergeado receta L-02; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
 

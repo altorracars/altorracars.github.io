@@ -10,10 +10,10 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **AHORA = OPUS 4.8** (Fable agotó su cuota gratis 06/07; el dueño avisará cuando vuelva). **ARRANQUE = §0 + §0.b del PLAN MAESTRO** (`docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md` = SSoT de ejecución, olas 0-4 · TODO-52 EPIC #1) ANTES de tocar código; tag `⟦OPUS-4.8⟧`. **YO decido+ejecuto+mergeo** (M-12/M-25); claims stale → grep (L-62).
-> ✅ **OLA 0-1 + OLA 2: 2.1-2.8, 2.10 y 2.12a COMPLETOS** (§267-§275; último: fusión Base de conocimiento en tabs `a070ef9e`). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. Bot LLM dormido (#917=saldo). ⚠️ `dist/` se COMMITEA por bloque.
-> **🧹 GATES DUEÑO**: (1) CUÁNDO del MFA (2.9) · (2) App Check enforce (2.11, con métricas) · (3) cutover `_legacy/admin.html` (2.12b) **DIFERIDO por guardián** — fallback FUNCIONAL + rollback versionado a propósito; decidir tras validación-live (§275.4) · (4) validar-live: supresión contactos + presencia §274 · (5) saldo bot · purga `clientes`/`suppressions` · GSC sitemap.
-> **▶️ SIGUE (sin gate): OLA 3 web pública** — 3.1 SEO (`detalle-vehiculo`→noindex + carpeta `v/`) · 3.2 perf `--transition:all` · 3.3 fuentes horneadas · 3.4 triple dorado · 3.5 a11y hamburguesa · 3.6 bot pulido. Cadencia §0.b.
+> 🤖 **AHORA = OPUS 4.8** (Fable agotó cuota gratis 06/07; dueño avisará al volver). **ARRANQUE = §0 + §0.b del PLAN MAESTRO** (`specs/2026-07-03-…fable5.md` = SSoT ejecución, olas 0-4 · TODO-52 EPIC #1) ANTES de código; tag `⟦OPUS-4.8⟧`. **YO decido+ejecuto+mergeo** (M-12/M-25); claims stale → grep (L-62).
+> ✅ **OLA 0-1 · OLA 2: 2.1-2.8/2.10/2.12a · OLA 3.1 COMPLETOS** (§267-§276; último: SEO quirúrgico noindex de templates dinámicos + `v/`, `96b8cd01`). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. Bot LLM dormido (#917=saldo). ⚠️ `dist/` se COMMITEA por bloque.
+> **🧹 GATES DUEÑO**: (1) CUÁNDO del MFA (2.9) · (2) App Check enforce (2.11, métricas) · (3) cutover `_legacy/admin.html` (2.12b) **DIFERIDO por guardián** (§275.4: fallback FUNCIONAL + rollback a propósito; decidir tras validación-live) · (4) validar-live: supresión contactos + presencia §274 · (5) **GSC: verificar noindex de `detalle-vehiculo.html` tras deploy (§276.7)** · (6) saldo bot · purga `clientes`/`suppressions`.
+> **▶️ SIGUE (sin gate): OLA 3** — 3.2 perf `--transition:all` (`style.css:48`) · 3.3 fuentes horneadas (FOUT) · 3.4 triple dorado · 3.5 a11y hamburguesa · 3.6 bot pulido. Detalle plan §3. Cadencia §0.b.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

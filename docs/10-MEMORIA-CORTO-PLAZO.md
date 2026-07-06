@@ -13,9 +13,9 @@
 > 🤖 **Impl = Opus 4.8** (tag `⟦OPUS-4.8⟧`); **revisión Fable 5 ✅ HECHA 03/07** (plan maestro). Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **RELEVO FABLE 5 (04/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; §266 revisión · §267 OLA 0 · §268 1.1-1.8core · **§269 OLA 1 CÓDIGO COMPLETO**). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale → grep antes de confiar (L-62).
-> **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus después). ✅ **OLA 1 CERRADA** (§269) · ✅ **OLA 2: 2.1-2.5 + feedback dueño COMPLETO → ADR §270** (.13 XLSX corporativo `8ecd71ff` · .14 borrado contactos owner `42d9de7c` — ambos deployed+merged). ⚠️ `dist/` se COMMITEA por bloque.
-> **🧹 Owner-pending**: borrar `vehiculos/47` ZZZ (1 clic, estrena undo — clasificador me lo denegó) · pestañas del portal frescas (caché muestra tarea ZZZ fantasma) · decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap · **probar el Excel corporativo y el menú de supresión de contactos en el portal live**.
-> **▶️ SIGUE: OLA 2.6 (seguridad P2) → 2.7-2.12** — detalle en el PLAN MAESTRO (`specs/2026-07-03-PLAN-MAESTRO-fable5.md`). Cadencia: build → preview mock → commit(+dist!)+push+merge; emulador solo si tocas rules/functions (L-63: puerto 8081 = matar java zombi). El menú de contactos se OCULTA en mock — validación visual solo live.
+> **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus después). ✅ **OLA 1 CERRADA** (§269) · ✅ **OLA 2: 2.1-2.6 COMPLETOS** (§270 + **§271 tren seguridad P2** `75e77c7e` — 10 ítems rules+functions+RTDB, 366/366, deploys hechos). Dueño confirmó live: Excel ✓ · vehiculos/47 borrado ✓ (undo estrenado). ⚠️ `dist/` se COMMITEA por bloque.
+> **🧹 Owner-pending**: decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap · probar menú de supresión de contactos live (oculto en mock).
+> **▶️ SIGUE: OLA 2.7 (test paridad RBAC 3 catálogos × 82 perms) → 2.8 código muerto (TODO-35 VENCIDO) → 2.9-2.12** — detalle en el PLAN MAESTRO (`specs/2026-07-03-PLAN-MAESTRO-fable5.md`). Cadencia: build → preview mock → commit(+dist!)+push+merge; emulador si tocas rules/functions (L-63: puerto 8081 = matar java zombi). ⚠️ typing del bot degrada best-effort hasta el próximo cache bump del cron (§271.7).
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

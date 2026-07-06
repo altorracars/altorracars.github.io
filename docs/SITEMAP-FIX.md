@@ -39,6 +39,33 @@ Bersaglio Jewelry (`bersagliojewelry.co`) se indexó de inmediato; Altorra Cars 
 ### Por qué Google no reintentó desde el 24 de marzo
 Google Search Console hizo un fetch el 24 mar 2026 (cuando el sitemap aún tenía problemas), recibió un error, y marcó el sitemap como "No se ha podido obtener". Desde entonces **no ha reintentado** (última lectura: 24/3/26). Esto es normal para subdominios `.github.io` — Google les da menor prioridad de crawl.
 
+---
+
+## Diagnóstico #3 (6 jul 2026, OLA-3.1 §276) — contenido DUPLICADO
+
+### Causa raíz
+La superficie **indexable** son los estáticos horneados por el SSG: `/vehiculos/{slug}.html` y `/marcas/{slug}.html` (con canonical propio). Pero los **templates dinámicos** `detalle-vehiculo.html` (SPA por `?id=`) y `marca.html` estaban `index, follow` **sin canonical** → Google los veía como URLs DUPLICADAS del contenido estático (misma ficha, dos URLs). Además la carpeta `v/` (15 redirect-stubs legacy: `v/N.html` → `detalle-vehiculo.html?id=N`, más `v/index.html` → `busqueda.html`) era indexable y apuntaba a la URL NO-canónica.
+
+### Fix aplicado
+| Qué | Archivo | Cambio |
+|-----|---------|--------|
+| Template dinámico de vehículo → no indexar | `detalle-vehiculo.html` | `robots` `index`→**`noindex, follow`** |
+| Template dinámico de marca → no indexar | `marca.html` | `robots` `index`→**`noindex, follow`** |
+| El SSG debe FLIPEAR el template a index+canonical en cada estático | `generate-vehicles.mjs` | ancla + `.replace()` de vehículo actualizados a `noindex` fuente → target sigue `index, follow` + `<link canonical>`. Marca ya usaba regex (robusto). |
+| 15 stubs `v/*.html` → no indexar (conservan el redirect) | `v/*.html` | `+ <meta name="robots" content="noindex, follow">` |
+
+**Verificación (sin Firestore):** simulación de los `.replace()` del SSG sobre los templates reales → los estáticos salen `index, follow` + canonical, los dinámicos quedan `noindex`. 12/12 checks. **Bug cazado en el proceso:** poner la etiqueta meta-robots literal en un comentario de `marca.html` hacía que el regex NO-global del SSG matcheara el comentario ANTES que la etiqueta real → habría generado marcas `noindex` (SEO roto). Corregido: cero etiquetas robots literales en comentarios.
+
+### Notas SEO (por qué NO se hizo `Disallow`)
+- **NO** se agregó `Disallow: /v/` (ni de los templates) a `robots.txt`: `Disallow` **impide el crawl** pero **NO desindexar** lo ya indexado (Google no llega a ver el `noindex`). Para DESINDEXAR, la página debe ser **crawleable + `noindex`**. Una vez Google reprocese y las suelte, se puede `Disallow` o borrar `v/`.
+- `sitemap.xml` NO lista ninguna de estas páginas (solo estáticos canónicos + landings) → cero señal contradictoria. Verificado.
+- El `admin.html` raíz (REDIRECT vivo) sigue `Disallow` en robots.txt (correcto).
+
+### Acción del dueño (GSC) — tras el próximo deploy
+1. **Inspección de URLs** → pegar `https://altorracars.github.io/detalle-vehiculo.html` → debe reportar "Excluida por etiqueta noindex" (confirma el fix).
+2. Re-enviar el sitemap (pasos abajo) — sin cambios en su contenido, pero fuerza un re-crawl.
+3. En semanas, verificar en GSC que `detalle-vehiculo.html`, `marca.html` y `/v/*` salgan del índice y que solo queden `/vehiculos/*` y `/marcas/*`.
+
 ## Acciones para el usuario (Google Search Console)
 
 ### Paso 1: Re-enviar el sitemap

@@ -13,7 +13,12 @@
 
     <!-- SEO Meta Tags (updated dynamically via JS) -->
     <meta name="description" content="Vehículo disponible en ALTORRA CARS - Cartagena, Colombia. Financiación disponible.">
-    <meta name="robots" content="index, follow">
+    <!-- OLA-3.1 §276: este archivo es el TEMPLATE dinámico (SPA por ?id=). La
+         superficie INDEXABLE son los estáticos /vehiculos/{slug}.html (canonical
+         horneado por generate-vehicles.mjs). Sin `noindex` aquí, esta URL se
+         indexaba como DUPLICADO sin canonical. El SSG FLIPEA noindex→index+
+         canonical al hornear cada estático (no heredan este noindex). -->
+    <meta name="robots" content="noindex, follow">
 
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="product">

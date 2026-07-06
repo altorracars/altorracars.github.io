@@ -140,7 +140,9 @@ function generatePage(template, v, slug) {
     // un anclaje, queremos un error RUIDOSO, no 27 páginas con SEO roto.
     const REQUIRED_ANCHORS = [
         '<meta charset="UTF-8">',
-        '<meta name="robots" content="index, follow">',
+        // OLA-3.1 §276: el template es `noindex` (es el SPA duplicado); el SSG lo
+        // FLIPEA a index+canonical al hornear cada estático (paso 2 abajo).
+        '<meta name="robots" content="noindex, follow">',
         '<title>Detalle de Vehículo | ALTORRA CARS</title>',
         'id="og-url" content="https://altorracars.github.io/detalle-vehiculo.html"',
         'id="og-title"',
@@ -168,9 +170,11 @@ function generatePage(template, v, slug) {
         );
     }
 
-    // 2. Add canonical URL
+    // 2. FLIP noindex→index + canonical (OLA-3.1 §276): el template dinámico es
+    //    `noindex` (duplicado del estático); CADA estático horneado SÍ se indexa,
+    //    con su canonical propio. El estático NO hereda el noindex del template.
     html = html.replace(
-        '<meta name="robots" content="index, follow">',
+        '<meta name="robots" content="noindex, follow">',
         `<meta name="robots" content="index, follow">\n    <link rel="canonical" href="${canonicalUrl}">`
     );
 

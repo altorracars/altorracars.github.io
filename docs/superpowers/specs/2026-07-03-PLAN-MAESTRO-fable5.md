@@ -31,6 +31,49 @@
 8. Gates que SÍ frenan: **dinero** (saldo LLM, dominio), **legal** (texto público → abogado, gate P4),
    **decisión de negocio nueva**. Nada más frena.
 
+## §0.b — RELEVO FABLE→OPUS (06/07): estado de ejecución + lecciones OPERATIVAS de 3 sesiones
+
+**ESTADO EXACTO (verificado, no confiar en memoria — L-62 aplica igual a esto):**
+OLA 0 ✅ (§267) · OLA 1 ✅ (§268-§269) · **OLA 2: 2.1-2.6 ✅** — 2.1-2.4 (§270.2-.9), 2.5 (§270.11),
+XLSX corporativo (§270.13, `8ecd71ff`), supresión contactos owner (§270.14, `42d9de7c`),
+2.6 tren seguridad (§271, `75e77c7e` — rules+RTDB+6 functions DEPLOYED, suite **366/366**).
+**SIGUE: 2.7** (paridad RBAC) → 2.8 (código muerto TODO-35, VENCIDO) → 2.9-2.12 → Ola 3.
+
+**Cadencia por bloque que FUNCIONÓ (repetir tal cual):** leer los archivos REALES que nombra la
+receta (nunca implementar desde el resumen) → implementar → `npm run build` (admin-app) → preview
+mock E2E con EVIDENCIA (blob/DOM real, no snapshot de humo) → suite emulador si tocas
+rules/functions → `firebase deploy --only <exacto>` → commit(+dist si hubo build)+push+**merge
+dev→main** → ADR+`10`+`05` ANTES de arrancar el siguiente bloque.
+
+**Reglas operativas ganadas (costaron errores reales — no re-pagarlos):**
+1. **Guards de rules apuntan al VALOR privilegiado, no al campo entero** (§271.5-i: bloquear todo
+   `rol` mató un contrato; lo correcto fue `rol in ['super_admin','editor']`). Antes de escribir un
+   guard, corre la suite y trata cada test roto como CONTRATO: decide si el guard es demasiado
+   ancho O el contrato evolucionó (actualízalo con comentario §) — nunca debilites a ciegas.
+2. **Whitelist SOLO con censo real**: grep de TODOS los escritores del cliente antes de un
+   `hasOnly()`. Colección con censo amplio/vivo (p.ej. conciergeChats update) → BLOCKLIST de lo
+   peligroso, no whitelist (§271.5-ii).
+3. **Binarios en preview NO se transcriben a mano** (base64 de 28KB se corrompió): puente HTTP
+   local — patrón `save-server.mjs` de §270.13 (Node http en :5199, el navegador hace POST del blob).
+4. **exceljs**: la compensación UTC de `Date` YA está resuelta en `admin-app/src/core/xlsx.js`
+   (`writeDate`) — reusar `exportXlsx/xlsxDate/blockBar`, jamás re-derivar.
+5. **Push a main rebota → casi siempre es el cron** (auto-generate + cache bump cada ~4h): fetch →
+   verificar → merge (limpio: el cron toca vehiculos/*.html, sitemap, SW, cache-manager) →
+   actualizar la fila cache del `05` con la versión nueva (el pre-commit lo valida). Receta L-02.
+6. **PowerShell de esta máquina**: el `cd` PERSISTE entre llamadas (usar rutas absolutas siempre);
+   un guard local bloquea here-strings con patrones tipo `config/`+asterisco → reformular el texto
+   del commit. Emulador: `firebase emulators:exec --only firestore "npm --prefix functions test"`
+   (L-63: si el puerto 8081 está tomado, matar el java zombi).
+7. **Preview mock**: `preview_start` config `admin-app` + navegar `?mock=1#/<ruta>`; NO
+   `preview_screenshot` (L-28, cuelga); los callables y el menú de supresión de contactos se
+   OCULTAN en mock (gate `store.get().mock`) — su validación visual es solo live.
+8. **dist/**: se commitea POR BLOQUE junto al código fuente. Los 2 warnings de Vite
+   "dynamically imported but also statically imported" (vehicles.data, lists.data) son
+   PREEXISTENTES — no arreglarlos de pasada.
+9. **Los ADR §270.12-style son el mejor handoff**: si cierras sesión con trabajo pendiente, deja
+   la RECETA (archivos+líneas+decisiones cerradas) en el ADR, no un resumen vago. La receta
+   §270.12 se ejecutó sin re-deliberar NADA.
+
 ---
 
 ## §1 — VEREDICTO FABLE 5 DEL ESTADO ACTUAL

@@ -13,9 +13,10 @@
 > 🤖 **Impl = Opus 4.8** (tag `⟦OPUS-4.8⟧`); **revisión Fable 5 ✅ HECHA 03/07** (plan maestro). Bot LLM = saldo (#917 dormido).
 >
 > 🟢 **RELEVO FABLE 5 (04/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; §266 revisión · §267 OLA 0 · §268 1.1-1.8core · **§269 OLA 1 CÓDIGO COMPLETO**). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale → grep antes de confiar (L-62).
-> **⚡ FABLE EJECUTA TODO hasta ~07-jul** (directiva dueño 03/07; Opus después). ✅ **OLA 1 CERRADA** (§269) · ✅ **OLA 2: 2.1-2.6 COMPLETOS** (§270 + **§271 tren seguridad P2** `75e77c7e` — 10 ítems rules+functions+RTDB, 366/366, deploys hechos). Dueño confirmó live: Excel ✓ · vehiculos/47 borrado ✓ (undo estrenado). ⚠️ `dist/` se COMMITEA por bloque.
+> **⚠️ CUOTA FABLE AL 88% (aviso dueño 06/07) → Opus 4.8 puede retomar EN CUALQUIER MOMENTO.** **ARRANQUE OPUS = leer §0 + §0.b del PLAN MAESTRO** (`specs/2026-07-03-PLAN-MAESTRO-fable5.md` — reglas vinculantes + relevo con estado exacto y 9 lecciones operativas) ANTES de tocar código; tag `⟦OPUS-4.8⟧`.
+> ✅ **OLA 0-1 + OLA 2: 2.1-2.7 COMPLETOS** (§267-§272; último: paridad RBAC `aaa9d535`, suite 374, typing+uid ya live vía cron). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. ⚠️ `dist/` se COMMITEA por bloque.
 > **🧹 Owner-pending**: decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap · probar menú de supresión de contactos live (oculto en mock).
-> **▶️ SIGUE: OLA 2.7 (test paridad RBAC 3 catálogos × 82 perms) → 2.8 código muerto (TODO-35 VENCIDO) → 2.9-2.12** — detalle en el PLAN MAESTRO (`specs/2026-07-03-PLAN-MAESTRO-fable5.md`). Cadencia: build → preview mock → commit(+dist!)+push+merge; emulador si tocas rules/functions (L-63: puerto 8081 = matar java zombi). ⚠️ typing del bot degrada best-effort hasta el próximo cache bump del cron (§271.7).
+> **▶️ SIGUE: OLA 2.8 (código muerto TODO-35, VENCIDO: `admin-calendar-config.js` → `js/concierge/shared/` + cuarentena `_legacy/` css muertos + `migrateLegacyUsers`) → 2.9-2.12** — recetas en el plan maestro líneas 211-215. Cadencia §0.b del plan.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

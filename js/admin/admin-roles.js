@@ -293,7 +293,6 @@
         // (refreshUserCounts no completó), default false (oculto)
         // hasta que el detector confirme. Re-render tras la detección.
         var showCleanupLegacy = !!(_state.hasLegacyDocs || _state.hasLegacyUsersWithSystemRoleId);
-        var showMigrateLegacy = !!_state.hasLegacyUsersWithoutRoleId;
         // §73.4 — "Resembrar sistema" auto-hide. Solo visible si CEO no
         // sembrado (caso edge inicial o post-borrado manual de Firestore).
         // Durante loading inicial (firstSnapshotReceived=false), también
@@ -313,10 +312,6 @@
         if (showCleanupLegacy) {
             html += '<button class="alt-btn alt-btn--ghost" data-action="cleanup-legacy" title="Elimina los docs huérfanos roles/system_editor y roles/system_viewer del catálogo + reset de usuarios con esos roleId. Acción destructiva.">' +
                 '<i data-lucide="archive-x"></i> Limpiar legacy</button>';
-        }
-        if (showMigrateLegacy) {
-            html += '<button class="alt-btn alt-btn--ghost" data-action="migrate-legacy" title="Migra usuarios pre-existentes (legacy) al sistema dinámico de roles. Idempotente — re-ejecutable sin riesgo.">' +
-                '<i data-lucide="users-round"></i> Migrar legacy</button>';
         }
         if (showBackfillNiveles) {
             html += '<button class="alt-btn alt-btn--ghost" data-action="backfill-niveles" title="Siembra nivel/departamento/alcance (RBAC ④a) en los usuarios que aún no los tienen. Idempotente — no toca datos existentes.">' +
@@ -1024,218 +1019,6 @@
     }
 
     // ════════════════════════════════════════════════════════════════
-    // §61.R4 — Legacy users migration (preview + execute)
-    // ════════════════════════════════════════════════════════════════
-
-    function migrateLegacyUsers() {
-        if (!isSuperAdmin()) {
-            toast('Solo super_admin puede migrar usuarios legacy', 'error');
-            return;
-        }
-        if (!window.functions) {
-            toast('Cloud Functions no disponibles', 'error');
-            return;
-        }
-
-        // Disable button + show loading
-        var btns = document.querySelectorAll('[data-action="migrate-legacy"]');
-        for (var i = 0; i < btns.length; i++) {
-            btns[i].disabled = true;
-            btns[i].innerHTML = '<i data-lucide="loader-2" class="roles-spinner"></i> Cargando preview...';
-        }
-        refreshIcons();
-
-        console.log('[AdminRoles] §61.R4 migrateLegacyUsers preview (dryRun)');
-        window.functions.httpsCallable('migrateLegacyUsers')({ dryRun: true })
-            .then(function (result) {
-                var data = result && result.data;
-                console.log('[AdminRoles] §61.R4 preview result:', data);
-                renderMigrationModal(data);
-            })
-            .catch(function (err) {
-                console.error('[AdminRoles] §61.R4 preview error:', err);
-                var msg = (window.AP && window.AP.parseCallableError)
-                    ? window.AP.parseCallableError(err)
-                    : (err.message || err.code || 'Error desconocido');
-                toast('Error al preparar migración: ' + msg, 'error');
-            })
-            .finally(function () {
-                var btns = document.querySelectorAll('[data-action="migrate-legacy"]');
-                for (var i = 0; i < btns.length; i++) {
-                    btns[i].disabled = false;
-                    btns[i].innerHTML = '<i data-lucide="users-round"></i> Migrar legacy';
-                }
-                refreshIcons();
-            });
-    }
-
-    function renderMigrationModal(planData) {
-        var existing = $('migrationModal');
-        if (existing) existing.parentNode.removeChild(existing);
-
-        if (!planData) {
-            toast('Sin datos del plan de migración', 'error');
-            return;
-        }
-
-        var migrated = planData.migrated || 0;
-        var alreadyMigrated = planData.alreadyMigrated || 0;
-        var skipped = planData.skipped || 0;
-        var total = planData.total || 0;
-        var plan = Array.isArray(planData.plan) ? planData.plan : [];
-        var skippedDetails = Array.isArray(planData.skippedDetails) ? planData.skippedDetails : [];
-
-        var html = '<div class="roles-modal-backdrop" id="migrationModal" data-action="close-migration-modal">' +
-            '<div class="roles-modal" role="dialog" aria-modal="true" data-no-close>' +
-            '<header class="roles-modal-header">' +
-            '<h2 class="roles-modal-title"><i data-lucide="users-round" style="display:inline-block;vertical-align:-3px;margin-right:6px;"></i> Migración de usuarios legacy</h2>' +
-            '<button class="roles-modal-close" data-action="close-migration-modal" aria-label="Cerrar"><i data-lucide="x"></i></button>' +
-            '</header>' +
-            '<div class="roles-modal-body">' +
-
-            // Stats
-            '<div class="migration-stats">' +
-            '<div class="migration-stat-card migration-stat-card--total">' +
-            '<div class="migration-stat-value">' + total + '</div>' +
-            '<div class="migration-stat-label">Total usuarios</div>' +
-            '</div>' +
-            '<div class="migration-stat-card migration-stat-card--ready">' +
-            '<div class="migration-stat-value">' + migrated + '</div>' +
-            '<div class="migration-stat-label">A migrar</div>' +
-            '</div>' +
-            '<div class="migration-stat-card migration-stat-card--done">' +
-            '<div class="migration-stat-value">' + alreadyMigrated + '</div>' +
-            '<div class="migration-stat-label">Ya migrados</div>' +
-            '</div>' +
-            '<div class="migration-stat-card migration-stat-card--skip">' +
-            '<div class="migration-stat-value">' + skipped + '</div>' +
-            '<div class="migration-stat-label">Omitidos</div>' +
-            '</div>' +
-            '</div>';
-
-        if (migrated === 0 && alreadyMigrated > 0) {
-            html += '<div class="migration-success-banner">' +
-                '<i data-lucide="check-circle-2"></i> Todos los usuarios ya están migrados al sistema dinámico.' +
-                ' Re-ejecutar es seguro pero no hay cambios pendientes.' +
-                '</div>';
-        } else if (migrated > 0) {
-            html += '<p class="migration-intro">Vas a migrar <strong>' + migrated + ' usuario' + (migrated === 1 ? '' : 's') + '</strong>' +
-                ' del sistema legacy (campo <code>rol</code>) al sistema dinámico (<code>roleId</code> +' +
-                ' <code>permissions[]</code>). El campo legacy se preserva intacto para retrocompat.</p>';
-
-            // Tabla de plan
-            html += '<div class="migration-plan-table">' +
-                '<table>' +
-                '<thead><tr>' +
-                '<th>Email</th><th>Nombre</th><th>Rol legacy</th><th>→</th><th>Role nuevo</th><th>Permisos</th>' +
-                '</tr></thead>' +
-                '<tbody>';
-            for (var i = 0; i < plan.length; i++) {
-                var p = plan[i];
-                var rolBadge = p.currentRol === 'super_admin' ? '<span class="badge badge-destacado">Super Admin</span>'
-                    : p.currentRol === 'editor' ? '<span class="badge badge-nuevo">Editor</span>'
-                    : '<span class="badge badge-usado">Viewer</span>';
-                html += '<tr>' +
-                    '<td><code>' + escapeHtml(p.email || '—') + '</code></td>' +
-                    '<td>' + escapeHtml(p.nombre || '—') + '</td>' +
-                    '<td>' + rolBadge + '</td>' +
-                    '<td style="text-align:center;color:rgba(255,255,255,0.4);">→</td>' +
-                    '<td><strong>' + escapeHtml(p.targetRoleName || p.targetRoleId) + '</strong></td>' +
-                    '<td>' + p.permsCount + ' permisos</td>' +
-                    '</tr>';
-            }
-            html += '</tbody></table></div>';
-        }
-
-        if (skipped > 0) {
-            html += '<details class="migration-skipped-section">' +
-                '<summary><i data-lucide="alert-triangle"></i> ' + skipped + ' usuario' + (skipped === 1 ? '' : 's') + ' omitido' + (skipped === 1 ? '' : 's') + ' (click para ver detalles)</summary>' +
-                '<ul class="migration-skipped-list">';
-            for (var s = 0; s < skippedDetails.length; s++) {
-                var sd = skippedDetails[s];
-                var reasonLabel = sd.reason === 'sin_rol_legacy' ? 'Sin campo rol legacy (perfil incompleto)'
-                    : sd.reason === 'rol_desconocido' ? 'Rol legacy desconocido: ' + (sd.rol || '—')
-                    : sd.reason;
-                html += '<li><code>' + escapeHtml(sd.email || sd.uid) + '</code> — ' + escapeHtml(reasonLabel) + '</li>';
-            }
-            html += '</ul></details>';
-        }
-
-        html += '</div>' + // body
-            '<footer class="roles-modal-footer">' +
-            '<button class="alt-btn alt-btn--ghost" data-action="close-migration-modal">Cancelar</button>' +
-            (migrated > 0
-                ? '<button class="alt-btn alt-btn--primary" data-action="execute-migration"><i data-lucide="play"></i> Ejecutar migración (' + migrated + ')</button>'
-                : '<button class="alt-btn alt-btn--primary" data-action="close-migration-modal">Cerrar</button>') +
-            '</footer>' +
-            '</div>' +
-            '</div>';
-
-        var wrapper = document.createElement('div');
-        wrapper.innerHTML = html;
-        document.body.appendChild(wrapper.firstChild);
-        refreshIcons(document.body);
-    }
-
-    function closeMigrationModal() {
-        var modal = $('migrationModal');
-        if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
-    }
-
-    function executeLegacyMigration() {
-        if (!isSuperAdmin()) {
-            toast('Solo super_admin puede ejecutar migración', 'error');
-            return;
-        }
-        if (!window.functions) {
-            toast('Cloud Functions no disponibles', 'error');
-            return;
-        }
-
-        var modal = $('migrationModal');
-        if (modal) {
-            // Disable footer buttons + show loading
-            var footerBtns = modal.querySelectorAll('.roles-modal-footer button');
-            for (var i = 0; i < footerBtns.length; i++) {
-                footerBtns[i].disabled = true;
-            }
-            var execBtn = modal.querySelector('[data-action="execute-migration"]');
-            if (execBtn) execBtn.innerHTML = '<i data-lucide="loader-2" class="roles-spinner"></i> Migrando...';
-            refreshIcons(modal);
-        }
-
-        console.log('[AdminRoles] §61.R4 executeLegacyMigration (real)');
-        window.functions.httpsCallable('migrateLegacyUsers')({ dryRun: false })
-            .then(function (result) {
-                var data = result && result.data;
-                console.log('[AdminRoles] §61.R4 migration result:', data);
-                var summary = (data.migrated || 0) + ' usuario' + ((data.migrated || 0) === 1 ? '' : 's') +
-                    ' migrado' + ((data.migrated || 0) === 1 ? '' : 's') + '. ' +
-                    (data.alreadyMigrated || 0) + ' ya estaban migrados. ' +
-                    (data.skipped || 0) + ' omitidos.';
-                toast('✓ Migración completa. ' + summary, 'success');
-                closeMigrationModal();
-            })
-            .catch(function (err) {
-                console.error('[AdminRoles] §61.R4 migration error:', err);
-                var msg = (window.AP && window.AP.parseCallableError)
-                    ? window.AP.parseCallableError(err)
-                    : (err.message || err.code || 'Error desconocido');
-                toast('Error en migración: ' + msg, 'error');
-                // Re-enable buttons
-                if (modal) {
-                    var footerBtns = modal.querySelectorAll('.roles-modal-footer button');
-                    for (var i = 0; i < footerBtns.length; i++) {
-                        footerBtns[i].disabled = false;
-                    }
-                    var execBtn = modal.querySelector('[data-action="execute-migration"]');
-                    if (execBtn) execBtn.innerHTML = '<i data-lucide="play"></i> Reintentar';
-                    refreshIcons(modal);
-                }
-            });
-    }
-
-    // ════════════════════════════════════════════════════════════════
     // §73 R8 — Cleanup masivo de roles legacy (system_editor/viewer)
     // ════════════════════════════════════════════════════════════════
     //
@@ -1539,15 +1322,11 @@
             var btn = e.target.closest && e.target.closest('[data-action]');
             if (!btn) return;
             // Solo procesar si está dentro de sec-roles, roles modal o migration modal
-            // §61.R4 hotfix — agregado migrationModal al filtro (sino el botón
-            // "Ejecutar migración" se ignoraba silenciosamente)
             var section = $('sec-roles');
             var modal = $('rolesModal');
-            var migModal = $('migrationModal');
             var cleanupModal = $('cleanupModal');
             if (!(section && section.contains(btn))
                 && !(modal && modal.contains(btn))
-                && !(migModal && migModal.contains(btn))
                 && !(cleanupModal && cleanupModal.contains(btn))) return;
 
             var action = btn.getAttribute('data-action');
@@ -1584,21 +1363,6 @@
                 case 'backfill-niveles':
                     e.preventDefault();
                     backfillNiveles();
-                    break;
-                case 'migrate-legacy':
-                    e.preventDefault();
-                    migrateLegacyUsers();
-                    break;
-                case 'close-migration-modal':
-                    if (btn.closest('[data-no-close]') && !btn.classList.contains('roles-modal-close') && btn.getAttribute('data-action') !== 'close-migration-modal') {
-                        return;
-                    }
-                    e.preventDefault();
-                    closeMigrationModal();
-                    break;
-                case 'execute-migration':
-                    e.preventDefault();
-                    executeLegacyMigration();
                     break;
                 // §73 R8 — Cleanup masivo de roles legacy (system_editor/viewer)
                 case 'cleanup-legacy':
@@ -1653,7 +1417,6 @@
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 if (_state._modalOpen) closeModal();
-                if ($('migrationModal')) closeMigrationModal();
             }
         });
 
@@ -1661,9 +1424,6 @@
         document.addEventListener('click', function (e) {
             if (e.target.id === 'rolesModal') {
                 closeModal();
-            }
-            if (e.target.id === 'migrationModal') {
-                closeMigrationModal();
             }
         });
     }

@@ -533,10 +533,12 @@ function loadAuthSystem() {
                     optin.defer = true;
                     document.body.appendChild(optin);
                 }
-                // D.7 — AI Auto-Scheduling helper para el Concierge
+                // D.7 — AI Auto-Scheduling helper para el Concierge.
+                // §2.8 (TODO-35): vive en js/concierge/shared/ — lo cargan TODAS
+                // las páginas públicas; en js/admin/ habría muerto con la purga.
                 if (!document.querySelector('script[src*="admin-calendar-config.js"]')) {
                     var calCfg = document.createElement('script');
-                    calCfg.src = 'js/admin/admin-calendar-config.js';
+                    calCfg.src = 'js/concierge/shared/admin-calendar-config.js';
                     calCfg.defer = true;
                     document.body.appendChild(calCfg);
                 }

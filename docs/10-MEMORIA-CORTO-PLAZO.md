@@ -14,9 +14,9 @@
 >
 > 🟢 **RELEVO FABLE 5 (04/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; §266 revisión · §267 OLA 0 · §268 1.1-1.8core · **§269 OLA 1 CÓDIGO COMPLETO**). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale → grep antes de confiar (L-62).
 > **⚠️ CUOTA FABLE AL 88% (aviso dueño 06/07) → Opus 4.8 puede retomar EN CUALQUIER MOMENTO.** **ARRANQUE OPUS = leer §0 + §0.b del PLAN MAESTRO** (`specs/2026-07-03-PLAN-MAESTRO-fable5.md` — reglas vinculantes + relevo con estado exacto y 9 lecciones operativas) ANTES de tocar código; tag `⟦OPUS-4.8⟧`.
-> ✅ **OLA 0-1 + OLA 2: 2.1-2.8 COMPLETOS** (§267-§273; último: código muerto TODO-35 cerrado `d03f4bba` — W-12 nuevo, trampa migrateLegacyUsers fuera, calendar-config a shared). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. ⚠️ `dist/` se COMMITEA por bloque.
-> **🧹 Owner-pending**: decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap · probar menú de supresión de contactos live (oculto en mock).
-> **▶️ SIGUE: OLA 2.9 (MFA TODO-43 — GATE DUEÑO: decidir el CUÁNDO; diseño junto al login) → si no hay decisión, SALTAR a 2.10 (hub presence: el portal publica su presencia — hoy solo LEE, `hub.data.js:16-21`) → 2.11 (App Check enforce — GATE DUEÑO métricas) → 2.12 (fusión KB+Consultas como tabs + cutover F-6: ahí mueren _legacy/admin.html + tokens/components/animations/admin*.css JUNTOS — ver §273.3). Cadencia §0.b del plan.
+> ✅ **OLA 0-1 + OLA 2: 2.1-2.8 y 2.10 COMPLETOS** (§267-§274; último: hub presence `a2eafe58` — el portal ya publica presencia RTDB). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. ⚠️ `dist/` se COMMITEA por bloque.
+> **🧹 Owner-pending**: decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap · probar menú de supresión de contactos live · **al abrir el portal, verificar que apareces "en línea" en el hub del otro admin (estrena §274)** · **GATE 2.9: decidir el CUÁNDO del MFA**.
+> **▶️ SIGUE: 2.9 MFA (esperando gate dueño) · 2.11 App Check enforce (gate dueño: métricas del monitor) · 2.12 fusión KB+Consultas como tabs + cutover F-6 (ahí mueren _legacy/admin.html + tokens/components/animations/admin*.css JUNTOS — §273.3). Sin gates pendientes de código: 2.12 es el único ítem ejecutable sin decisión del dueño. Cadencia §0.b del plan.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

@@ -7,9 +7,14 @@
     <link rel="apple-touch-icon" href="/multimedia/logo-placeholder.png">
     <meta name="description" content="Vehículos Honda disponibles en ALTORRA CARS, Cartagena. 1 vehículo en inventario. Financiación disponible.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- FASE 0.3 (comité v4): ancla `robots` requerida por el SSG (generate-vehicles.mjs)
+    <!-- FASE 0.3 (comité v4): ancla robots requerida por el SSG (generate-vehicles.mjs)
          para inyectar canonical + OG/Twitter en /marcas/*.html. Sin esta línea el .replace()
-         era no-op → las marcas se generaban SIN canonical/OG/robots (SEO roto, en silencio). -->
+         era no-op las marcas se generaban SIN canonical/OG/robots (SEO roto, en silencio).
+         OLA-3.1 §276: el TEMPLATE queda noindex (es el SPA duplicado de los estáticos
+         /marcas/{slug}.html); generateBrandPage lo FLIPEA a index+canonical al hornear
+         cada estático (regex sobre esta etiqueta) los estáticos NO heredan el noindex.
+         NB: no escribir aquí la etiqueta meta-robots literal el regex no-global del SSG
+         matchearía este comentario ANTES que la etiqueta real (verificado §276). -->
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://altorracars.github.io/marcas/honda.html">
     <meta property="og:type" content="website">

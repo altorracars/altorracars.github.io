@@ -16,11 +16,15 @@
 (function () {
     'use strict';
 
-    // ========== ATOMIC PERMISSIONS (71) ==========
-    // Agrupadas en 8 categorías que matchean los workspaces del topnav.
+    // ========== ATOMIC PERMISSIONS (82) ==========
+    // Agrupadas en 9 categorías que matchean los workspaces del topnav.
+    // ⚠️ PARIDAD (OLA 2.7 §272): este catálogo es ESPEJO 1:1 del port ESM
+    // admin-app/src/domain/rbac-catalog.js — el test de paridad
+    // functions/shared/rbac-catalog-parity.test.js revienta si divergen
+    // (ids, orden, categoría, flag critical). Cambias aquí → cambias allá.
 
     var PERMISSIONS_CATALOG = [
-        // 🚗 Inventario (12)
+        // 🚗 Inventario (14)
         { id: 'vehicles.read', name: 'Ver vehículos', description: 'Ver el inventario completo', category: 'Inventario', resource: 'vehicles', action: 'read' },
         { id: 'vehicles.create', name: 'Crear vehículos', description: 'Agregar nuevos autos al inventario', category: 'Inventario', resource: 'vehicles', action: 'create' },
         { id: 'vehicles.edit', name: 'Editar vehículos', description: 'Modificar datos de autos existentes', category: 'Inventario', resource: 'vehicles', action: 'edit' },
@@ -36,7 +40,7 @@
         { id: 'dealers.edit', name: 'Editar aliados', description: 'Modificar datos de aliados', category: 'Inventario', resource: 'dealers', action: 'edit' },
         { id: 'dealers.delete', name: 'Eliminar aliados', description: 'Borrar aliados', category: 'Inventario', resource: 'dealers', action: 'delete', critical: true },
 
-        // 🌐 Sitio público (8)
+        // 🌐 Sitio público (9)
         { id: 'banners.read', name: 'Ver banners', description: 'Ver banners promocionales', category: 'Sitio público', resource: 'banners', action: 'read' },
         { id: 'banners.create', name: 'Crear banners', description: 'Agregar nuevos banners', category: 'Sitio público', resource: 'banners', action: 'create' },
         { id: 'banners.edit', name: 'Editar banners', description: 'Modificar banners existentes', category: 'Sitio público', resource: 'banners', action: 'edit' },
@@ -94,7 +98,7 @@
         { id: 'reports.view', name: 'Ver reportes', description: 'Acceder al dashboard de reportes', category: 'Reportes', resource: 'reports', action: 'view' },
         { id: 'reports.export', name: 'Exportar reportes', description: 'Descargar reportes en CSV/PDF', category: 'Reportes', resource: 'reports', action: 'export' },
 
-        // ⚙️ Configuración (16)
+        // ⚙️ Configuración (23)
         { id: 'users.read', name: 'Ver usuarios', description: 'Ver lista de usuarios admin', category: 'Configuración', resource: 'users', action: 'read' },
         { id: 'users.create', name: 'Crear usuarios', description: 'Crear nuevos usuarios admin', category: 'Configuración', resource: 'users', action: 'create', critical: true },
         { id: 'users.edit', name: 'Editar usuarios', description: 'Modificar datos de usuarios admin', category: 'Configuración', resource: 'users', action: 'edit', critical: true },

@@ -10,13 +10,10 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **Impl = Opus 4.8** (tag `⟦OPUS-4.8⟧`); **revisión Fable 5 ✅ HECHA 03/07** (plan maestro). Bot LLM = saldo (#917 dormido).
->
-> 🟢 **RELEVO FABLE 5 (04/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; §266 revisión · §267 OLA 0 · §268 1.1-1.8core · **§269 OLA 1 CÓDIGO COMPLETO**). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale → grep antes de confiar (L-62).
-> **⚠️ CUOTA FABLE AL 88% (aviso dueño 06/07) → Opus 4.8 puede retomar EN CUALQUIER MOMENTO.** **ARRANQUE OPUS = leer §0 + §0.b del PLAN MAESTRO** (`specs/2026-07-03-PLAN-MAESTRO-fable5.md` — reglas vinculantes + relevo con estado exacto y 9 lecciones operativas) ANTES de tocar código; tag `⟦OPUS-4.8⟧`.
-> ✅ **OLA 0-1 + OLA 2: 2.1-2.8 y 2.10 COMPLETOS** (§267-§274; último: hub presence `a2eafe58` — el portal ya publica presencia RTDB). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. ⚠️ `dist/` se COMMITEA por bloque.
-> **🧹 Owner-pending**: decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap · probar menú de supresión de contactos live · **al abrir el portal, verificar que apareces "en línea" en el hub del otro admin (estrena §274)** · **GATE 2.9: decidir el CUÁNDO del MFA**.
-> **▶️ SIGUE: 2.9 MFA (esperando gate dueño) · 2.11 App Check enforce (gate dueño: métricas del monitor) · 2.12 fusión KB+Consultas como tabs + cutover F-6 (ahí mueren _legacy/admin.html + tokens/components/animations/admin*.css JUNTOS — §273.3). Sin gates pendientes de código: 2.12 es el único ítem ejecutable sin decisión del dueño. Cadencia §0.b del plan.
+> 🤖 **AHORA = OPUS 4.8** (Fable agotó su cuota gratis 06/07; el dueño avisará cuando vuelva). **ARRANQUE = §0 + §0.b del PLAN MAESTRO** (`docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md` = SSoT de ejecución, olas 0-4 · TODO-52 EPIC #1) ANTES de tocar código; tag `⟦OPUS-4.8⟧`. **YO decido+ejecuto+mergeo** (M-12/M-25); claims stale → grep (L-62).
+> ✅ **OLA 0-1 + OLA 2: 2.1-2.8, 2.10 y 2.12a COMPLETOS** (§267-§275; último: fusión Base de conocimiento en tabs `a070ef9e`). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. Bot LLM dormido (#917=saldo). ⚠️ `dist/` se COMMITEA por bloque.
+> **🧹 GATES DUEÑO**: (1) CUÁNDO del MFA (2.9) · (2) App Check enforce (2.11, con métricas) · (3) cutover `_legacy/admin.html` (2.12b) **DIFERIDO por guardián** — fallback FUNCIONAL + rollback versionado a propósito; decidir tras validación-live (§275.4) · (4) validar-live: supresión contactos + presencia §274 · (5) saldo bot · purga `clientes`/`suppressions` · GSC sitemap.
+> **▶️ SIGUE (sin gate): OLA 3 web pública** — 3.1 SEO (`detalle-vehiculo`→noindex + carpeta `v/`) · 3.2 perf `--transition:all` · 3.3 fuentes horneadas · 3.4 triple dorado · 3.5 a11y hamburguesa · 3.6 bot pulido. Cadencia §0.b.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -61,10 +58,8 @@
 | **TODO-43** | **MFA portal nuevo ⟦OPUS⟧ (§253)** — nuevo=email+pass only; SMS-MFA viejo (2FA/trusted/backup/TG) NO portado. Reimplementar TOTP+recovery si el dueño quiere. | 🔮 | dueño |
 | **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS⟧** — (a) freno boot-budget linter (M-10); (b) gate drift source↔dist (AUD-04). | 🔮 | bajo |
 | **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257+M-22 (check #16 ×4 ✅). RESTA: adopción `verificado-vivo:`. Absorbe TODO-33. | 🔄 | adopción |
-
 | **TODO-46** | **Bot v2 flujo + chat vivo ⟦OPUS⟧** — B1/B2/B3 LIVE + 3 bugs FIXED (defects-log). RESTA: roundtrip chat + iter-2 (marca·FAQ·ARIA). | 🔄 | roundtrip |
 | **TODO-48** | **Drift CRM del cutover ⟦OPUS⟧** — MF4.x admin viejo NO portadas (360°/KPIs/masivas/NPS) + doc-fixes. Bóveda `…barrido-drift…`. | 🔵 | tras bot |
-
 | **TODO-50** | **Consigna = ENTIDAD FORMAL ⟦OPUS⟧** — IMPL+DEPLOYED ✅ (L-57; 302 tests; SSoT→spec + `42`). RESTA (humanos): colegiado·contador·val.live·purga ZZZ. | 🔄 | colegiado/contador |
 | **TODO-51** | **Bloqueo fiscal — refinamientos ⟦OPUS⟧** — ciclo bloqueo→purga ✅ (`retentionUntil`+cron). RESTA (menor): grafo-comprador multi-rol + texto art.14 (`42`). | 🔵 | menor |
 

@@ -13,12 +13,14 @@
 //             claimedAt, radicado, closedAt, closedReason, closedByName, sourceVehicleId}.
 //   conciergeChats/{sid}/messages/{id} → turnos (read = concierge.read).
 //     Shape: {from('user'|'bot'|'asesor'|'system'), text, timestamp(ISO)}.
-// RTDB /presence (database.rules.json: .read = "auth != null" → la app
-//   'altorra-crm' SÍ lee; clave en auth.uid, no en nombre de app — verificado).
-//     Entry: {uid, nombre, online, currentChatId, rol, lastSeen, status, photoURL}.
+// RTDB /presence (database.rules.json §271: .read = staff no-anónimo).
+//   Clave = pushKey por sesión/tab (NO el uid — el clásico usa push() y dedupea
+//   por uid+deviceId); el uid vive DENTRO del entry.
+//     Entry: {uid, nombre, online, currentChatId, rol, lastSeen, status, deviceId}.
 //
-// ⚠️ Run-paralelo (§237.6): el Hub VIEJO (admin.html) sigue vivo. Por eso 3a NO
-// publica presence ni read-receipts (writes) → cero doble-fuente. ⟦OPUS-4.8 · rev-Fable⟧
+// §274 (OLA-2.10): el portal ya PUBLICA su presencia — core/presence.js
+// (login→pushKey+onDisconnect+heartbeat; hub.ui cablea currentChatId al
+// abrir/cerrar chat). Convive con el clásico: cada tab su pushKey. ⟦FABLE-5⟧
 // ============================================================
 
 import {

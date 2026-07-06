@@ -71,6 +71,7 @@ import { mountUnmatched } from './modules/unmatched/unmatched.ui.js';
 import { mountHub } from './modules/hub/hub.ui.js';
 import { mountPerfil } from './modules/perfil/perfil.ui.js';
 import { initFcm } from './core/fcm.js';
+import { initPresence } from './core/presence.js';
 
 const appRoot = document.getElementById('app');
 applyInitialTheme();
@@ -134,6 +135,9 @@ function renderScreen(s) {
 }
 
 store.subscribe(renderScreen);
+// OLA-2.10 (§274): el portal PUBLICA su presencia en RTDB (login→start,
+// logout→stop; en mock no hace nada). Antes solo leía → transferencias vacías.
+initPresence();
 
 if (MOCK) {
   store.set({

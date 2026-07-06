@@ -18,6 +18,7 @@ import { icon } from '../../core/icons.js';
 import { store } from '../../core/store.js';
 import { toast } from '../../core/toast.js';
 import { hasPermission } from '../../core/auth.js';
+import { setPresenceCurrentChat } from '../../core/presence.js';
 import { timeAgo, initials } from '../../domain/format.js';
 import {
   subscribeChats, subscribeChatMessages, subscribeAttendingPresence,
@@ -192,6 +193,7 @@ export function mountHub(root) {
       ui.msgLoaded = true; renderDetail();
       return;
     }
+    setPresenceCurrentChat(sessionId); // §274: "X está atendiendo" en los otros admins
     markChatRead(sessionId).catch(() => {});
     ui.msgSub = subscribeChatMessages(
       sessionId,
@@ -218,7 +220,10 @@ export function mountHub(root) {
     ui.typingThrottle = false;
     if (ui.transfer.open) { ui.transfer.open = false; renderTransferModal(); }
     closeSummary();
-    if (!isMock && ui.activeId) { const a = asesor(); if (a.uid) clearAdminTyping(ui.activeId, a.uid); }
+    if (!isMock && ui.activeId) {
+      const a = asesor(); if (a.uid) clearAdminTyping(ui.activeId, a.uid);
+      setPresenceCurrentChat(null); // §274: dejé de atender este chat
+    }
   }
   function activeChat() { return ui.chats.find((c) => c._docId === ui.activeId) || null; }
 

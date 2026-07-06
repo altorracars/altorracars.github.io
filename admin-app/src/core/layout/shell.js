@@ -76,11 +76,12 @@ const NAV = [
   // PLAN-UNIFICADO F-2 (6/6) · OLA-1.2: renombrado — el grupo ya se llama
   // "Administración"; "Ajustes>Ajustes" era colisión de nombres (antipatrón IA).
   { id: 'ajustes', label: 'Apariencia y SEO', icon: '🎛️', ready: true, perm: ['settings.theme', 'settings.seo'] },
-  // PLAN-UNIFICADO F-4 (gap §2.B Comunicaciones): ALTOR Hub (consola de chat) + Cerebro AI (FAQs del bot) + "Lo que no entendí" (unmatchedQueries = fugas).
+  // PLAN-UNIFICADO F-4 (gap §2.B Comunicaciones): ALTOR Hub (consola de chat) + Base de conocimiento (FAQs del bot + consultas sin respuesta).
   { id: 'hub', label: 'ALTOR Hub', icon: '💬', ready: true, perm: 'concierge.read' },
-  // OLA-1.2: labels corporativos — "Cerebro AI"/"No entendí" eran jerga interna.
-  { id: 'cerebro', label: 'Base de conocimiento', icon: '🧠', ready: true, perm: 'kb.read' },
-  { id: 'unmatched', label: 'Consultas sin respuesta', icon: '🤔', ready: true, perm: 'unmatched.read' },
+  // OLA-2.12 §275: "Base de conocimiento" fusiona FAQs (kb) + Consultas sin
+  // respuesta (unmatched) en UNA entrada con tabs (antes 2 → reduce sidebar).
+  // perm any-of: se ve si el usuario administra CUALQUIERA de las dos.
+  { id: 'conocimiento', label: 'Base de conocimiento', icon: '🧠', ready: true, perm: ['kb.read', 'unmatched.read'] },
 ];
 
 // W-11 F2 (comité pt.3): layout de nav en 2 ZONAS. PRIMARIA = el día a día, siempre
@@ -96,7 +97,7 @@ const NAV_PRIMARY = ['inicio', 'bandeja', 'pipeline', 'agenda', 'contactos', 're
 const NAV_GROUPS = [
   { id: 'g-inventario', label: 'Inventario', icon: '🚗', items: ['vehiculos', 'marcas', 'aliados', 'atributos'] },
   { id: 'g-sitio', label: 'Sitio web', icon: '🌐', items: ['banners', 'contenido', 'resenas'] },
-  { id: 'g-comms', label: 'Comunicaciones', icon: '📣', items: ['hub', 'cerebro', 'unmatched'] },
+  { id: 'g-comms', label: 'Comunicaciones', icon: '📣', items: ['hub', 'conocimiento'] },
   { id: 'g-equipo', label: 'Equipo', icon: '👥', items: ['usuarios', 'roles', 'departamentos'] },
   { id: 'g-admin', label: 'Administración', icon: '🛠️', items: ['workflows', 'auditoria', 'respaldos', 'ajustes'] },
 ];
@@ -134,8 +135,7 @@ const TITLES = {
   auditoria: 'Auditoría',
   ajustes: 'Apariencia y SEO',
   hub: 'ALTOR Hub',
-  cerebro: 'Base de conocimiento',
-  unmatched: 'Consultas sin respuesta',
+  conocimiento: 'Base de conocimiento',
   // F-6 (gap §3 sec-profile): accesible desde el menú de usuario, no del sidebar.
   perfil: 'Mi perfil',
 };

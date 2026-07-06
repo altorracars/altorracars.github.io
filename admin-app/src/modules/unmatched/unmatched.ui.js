@@ -32,7 +32,13 @@ function tsISO(ts) {
   return isNaN(d) ? null : d.toISOString();
 }
 
-export function mountUnmatched(root) {
+/**
+ * @param {HTMLElement} root
+ * @param {{onSwitchToKb?: () => void}} [opts] §275: dentro del wrapper de tabs,
+ *   "Crear FAQ" salta a la tab FAQs IN-PLACE (callback) en vez de navegar.
+ *   Sin opts (montaje directo, back-compat) cae al navigate clásico.
+ */
+export function mountUnmatched(root, opts = {}) {
   const ui = { entries: [], loaded: false, sub: null, filter: 'unseen' };
   const canRead = hasPermission('unmatched.read');
   const canPromote = hasPermission('unmatched.promote');
@@ -72,13 +78,17 @@ export function mountUnmatched(root) {
     catch (err) { toast('No se pudo marcar todas', 'error'); }
   }
 
-  // Promover a FAQ (F-4 2/3): handoff a Cerebro AI vía store. El módulo
+  // Promover a FAQ (F-4 2/3): handoff a FAQs vía store.kbPrefill. El módulo
   // `cerebro` lee `kbPrefill` al montar, abre el form prellenado y, al guardar,
   // marca esta query como `promotedToFAQ` (unmatched.data markPromoted).
+  // §275: dentro del wrapper de tabs, `onSwitchToKb` cambia a la tab FAQs
+  // IN-PLACE (monta cerebro → su maybePrefill toma el store); sin wrapper,
+  // fallback al navigate clásico (la ruta `conocimiento` aterriza en FAQs).
   function doPromote(e) {
     if (!canPromote) return;
     store.set({ kbPrefill: { question: e.query || '', keywords: e.keywords || [], unmatchedId: e._docId } });
-    navigate('cerebro');
+    if (typeof opts.onSwitchToKb === 'function') opts.onSwitchToKb();
+    else navigate('conocimiento');
   }
 
   async function doDelete(e) {

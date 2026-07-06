@@ -33,6 +33,7 @@ import './styles/auditoria.css';
 import './styles/ajustes.css';
 import './styles/cerebro.css';
 import './styles/unmatched.css';
+import './styles/kbhub.css'; // §275: wrapper de tabs Base de conocimiento
 import './styles/hub.css';
 import './styles/fcm.css';
 import './styles/perfil.css';
@@ -66,8 +67,7 @@ import { mountDepartamentos } from './modules/departamentos/departamentos.ui.js'
 import { mountWorkflows } from './modules/workflows/workflows.ui.js';
 import { mountAuditoria } from './modules/auditoria/auditoria.ui.js';
 import { mountAjustes } from './modules/ajustes/ajustes.ui.js';
-import { mountCerebro } from './modules/cerebro/cerebro.ui.js';
-import { mountUnmatched } from './modules/unmatched/unmatched.ui.js';
+import { mountConocimiento } from './modules/conocimiento/conocimiento.ui.js';
 import { mountHub } from './modules/hub/hub.ui.js';
 import { mountPerfil } from './modules/perfil/perfil.ui.js';
 import { initFcm } from './core/fcm.js';
@@ -77,7 +77,7 @@ const appRoot = document.getElementById('app');
 applyInitialTheme();
 
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
-const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes, cerebro: mountCerebro, unmatched: mountUnmatched, hub: mountHub, perfil: mountPerfil };
+const MODULES = { inicio: mountDashboard, bandeja: mountInbox, pipeline: mountPipeline, agenda: mountAgenda, reportes: mountReportes, contactos: mountContactos, config: mountConfig, resenas: mountReviews, banners: mountBanners, contenido: mountCmsDinamico, vehiculos: mountVehicles, marcas: mountBrands, aliados: mountDealers, atributos: mountLists, respaldos: mountBackup, usuarios: mountUsuarios, roles: mountRoles, departamentos: mountDepartamentos, workflows: mountWorkflows, auditoria: mountAuditoria, ajustes: mountAjustes, conocimiento: mountConocimiento, hub: mountHub, perfil: mountPerfil };
 
 let screen = null; // 'login' | 'app'
 let shell = null;

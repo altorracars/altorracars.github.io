@@ -4,7 +4,11 @@
 // permite deep-link vía ?lead= para abrirlo al cargar.
 // ============================================================
 
-const ROUTES = ['inicio', 'bandeja', 'pipeline', 'agenda', 'reportes', 'contactos', 'config', 'resenas', 'banners', 'contenido', 'vehiculos', 'marcas', 'aliados', 'atributos', 'respaldos', 'usuarios', 'roles', 'departamentos', 'workflows', 'auditoria', 'ajustes', 'hub', 'cerebro', 'unmatched', 'perfil'];
+// §275 (OLA-2.12): `cerebro`+`unmatched` → `conocimiento` (wrapper de tabs).
+// Las rutas legacy se retiran; un hash viejo #/cerebro cae al fallback 'inicio'
+// (graceful — CRM interno sin deep-links externos, verificado). Cero feature
+// perdida: ambas superficies viven bajo #/conocimiento.
+const ROUTES = ['inicio', 'bandeja', 'pipeline', 'agenda', 'reportes', 'contactos', 'config', 'resenas', 'banners', 'contenido', 'vehiculos', 'marcas', 'aliados', 'atributos', 'respaldos', 'usuarios', 'roles', 'departamentos', 'workflows', 'auditoria', 'ajustes', 'hub', 'conocimiento', 'perfil'];
 
 export function currentRoute() {
   const hash = (location.hash || '').replace(/^#\/?/, '');

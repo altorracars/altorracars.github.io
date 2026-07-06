@@ -14,9 +14,9 @@
 >
 > 🟢 **RELEVO FABLE 5 (04/07) ⟦FABLE-5⟧** — **SSoT DE EJECUCIÓN = `docs/superpowers/specs/2026-07-03-PLAN-MAESTRO-fable5.md`** (olas 0-4; TODO-52 sigue EPIC #1; §266 revisión · §267 OLA 0 · §268 1.1-1.8core · **§269 OLA 1 CÓDIGO COMPLETO**). **YO decido+ejecuto+mergeo** (M-12/M-25). Claims stale → grep antes de confiar (L-62).
 > **⚠️ CUOTA FABLE AL 88% (aviso dueño 06/07) → Opus 4.8 puede retomar EN CUALQUIER MOMENTO.** **ARRANQUE OPUS = leer §0 + §0.b del PLAN MAESTRO** (`specs/2026-07-03-PLAN-MAESTRO-fable5.md` — reglas vinculantes + relevo con estado exacto y 9 lecciones operativas) ANTES de tocar código; tag `⟦OPUS-4.8⟧`.
-> ✅ **OLA 0-1 + OLA 2: 2.1-2.7 COMPLETOS** (§267-§272; último: paridad RBAC `aaa9d535`, suite 374, typing+uid ya live vía cron). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. ⚠️ `dist/` se COMMITEA por bloque.
+> ✅ **OLA 0-1 + OLA 2: 2.1-2.8 COMPLETOS** (§267-§273; último: código muerto TODO-35 cerrado `d03f4bba` — W-12 nuevo, trampa migrateLegacyUsers fuera, calendar-config a shared). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. ⚠️ `dist/` se COMMITEA por bloque.
 > **🧹 Owner-pending**: decidir purga de `clientes`/`suppressions` · saldo Anthropic (flip bot) · estado GSC sitemap · probar menú de supresión de contactos live (oculto en mock).
-> **▶️ SIGUE: OLA 2.8 (código muerto TODO-35, VENCIDO: `admin-calendar-config.js` → `js/concierge/shared/` + cuarentena `_legacy/` css muertos + `migrateLegacyUsers`) → 2.9-2.12** — recetas en el plan maestro líneas 211-215. Cadencia §0.b del plan.
+> **▶️ SIGUE: OLA 2.9 (MFA TODO-43 — GATE DUEÑO: decidir el CUÁNDO; diseño junto al login) → si no hay decisión, SALTAR a 2.10 (hub presence: el portal publica su presencia — hoy solo LEE, `hub.data.js:16-21`) → 2.11 (App Check enforce — GATE DUEÑO métricas) → 2.12 (fusión KB+Consultas como tabs + cutover F-6: ahí mueren _legacy/admin.html + tokens/components/animations/admin*.css JUNTOS — ver §273.3). Cadencia §0.b del plan.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -56,7 +56,6 @@
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |
-| **TODO-35** | **Código muerto (anti-Knight-Capital) ⟦OPUS⟧** — `deadcode:check`✅ + skill✅. Huérfanos cutover→`_legacy/`. DIFERIDO ~03/07 (M-19). | 🔄 | ~03/07 |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS⟧ (§244)** — 7 skills + agente `seo-auditor` ✅ (25/06). RESTA: Core JS `visibility-core/` + `tenant_config`. | 🔄 | por-proyecto |
 | **TODO-45** | **Cleanups §257 ⟦OPUS⟧** — (a) functions residuales clásico (sin uso); (b) `brands.saveBrand` desc=nombre; (c) `kb.edit` sin editor `_brain`; (d/e) coment stale+NBA. | 🔮 | bajo |
 | **TODO-43** | **MFA portal nuevo ⟦OPUS⟧ (§253)** — nuevo=email+pass only; SMS-MFA viejo (2FA/trusted/backup/TG) NO portado. Reimplementar TOTP+recovery si el dueño quiere. | 🔮 | dueño |

@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-07-03**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev` `aaa9d535`: **PLAN MAESTRO = SSoT; ⚠️ cuota Fable 88% → arranque Opus = §0+§0.b del plan**. **OLA 0-1 ✅ · OLA 2: 2.1-2.7 ✅ (§267-§272; suite 374, paridad RBAC blindada) → SIGUE: 2.8 código muerto (TODO-35 vencido).** Dueño confirmó Excel+ZZZ live ✓; resta: saldo bot · purga clientes/suppressions · supresión contactos live. |
+| **Build** | 🟢 `main`==`dev` `d03f4bba`: **PLAN MAESTRO = SSoT; ⚠️ cuota Fable 88% → arranque Opus = §0+§0.b del plan**. **OLA 0-1 ✅ · OLA 2: 2.1-2.8 ✅ (§267-§273; TODO-35 cerrado, suite 374) → SIGUE: 2.9 MFA (gate dueño) o 2.10 hub presence.** Resta dueño: saldo bot · purga clientes/suppressions · supresión contactos live · decidir CUÁNDO del MFA. |
 | **Cache version vigente** | **`v20260706033037`** (cron-CI 06/07 `8767fdcf`, mergeado receta L-02; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

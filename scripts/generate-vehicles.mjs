@@ -586,11 +586,27 @@ function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
         `    <script type="application/ld+json">${safeJsonLd(breadcrumbSchema)}</script>\n</head>`
     );
 
-    // Inject PRERENDERED_BRAND_ID so the inline script picks up the brand without ?marca= query param
+    // Inject PRERENDERED_BRAND_ID + PRERENDERED_BANNER_URL antes del <script> lector (§222).
+    // Ancla TOLERANTE a line endings (\r?\n) con nl/indent capturados: en Windows con
+    // core.autocrlf=true marca.html se checkoutea con CRLF, y un ancla con "\n" literal
+    // fallaba EN SILENCIO (0 globals inyectados) — el guard suelto REQUIRED_ANCHORS_BRAND
+    // NO lo cazaba porque valida el substring `const params...` SIN el prefijo `<script>\n`.
+    // En CI (Linux/LF) el output queda byte-idéntico (nl/indent se reproducen del original
+    // → cero regresión). Reemplazo por FUNCIÓN (no string) → los valores safeJsonLd nunca
+    // re-interpretan `$&`/`$1`/`$'` (breakout via replacement-string patterns).
     html = html.replace(
-        '<script>\n        const params = new URLSearchParams(window.location.search);',
-        `<script>window.PRERENDERED_BRAND_ID = ${safeJsonLd(brandId)};</script><script>window.PRERENDERED_BANNER_URL = ${safeJsonLd(customBanner)};</script>\n    <script>\n        const params = new URLSearchParams(window.location.search);`
+        /<script>(\r?\n)([ \t]*)const params = new URLSearchParams\(window\.location\.search\);/,
+        (_m, nl, indent) =>
+            `<script>window.PRERENDERED_BRAND_ID = ${safeJsonLd(brandId)};</script>` +
+            `<script>window.PRERENDERED_BANNER_URL = ${safeJsonLd(customBanner)};</script>` +
+            `${nl}    <script>${nl}${indent}const params = new URLSearchParams(window.location.search);`
     );
+    // Guard anti-fail-silent (§222 · FASE 0.3): si el <script> lector cambia y el .replace
+    // vuelve a ser no-op, esto lo hace RUIDOSO en generación REAL (no solo bajo el selftest),
+    // cerrando el hueco de cobertura del guard suelto de arriba.
+    if (html.indexOf('window.PRERENDERED_BRAND_ID = ') < 0) {
+        throw new Error('[generate] marca: PRERENDERED_BRAND_ID NO se inyectó — el ancla del <script> lector (const params) cambió en marca.html y el .replace() fue no-op.');
+    }
 
     // <noscript> fallback for crawlers
     const noscript = `

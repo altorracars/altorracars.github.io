@@ -383,7 +383,8 @@
 .alt-footer-trust-item { display: flex; align-items: center; gap: 12px; color: var(--ink-text); font-size: var(--t-caption); line-height: 1.4; }
 .alt-footer-trust-item > svg { color: var(--gold-700); flex-shrink: 0; }
 
-.alt-footer-bottom-link { font-size: var(--t-caption); color: var(--ink-text-faint); transition: color var(--dur-2); }
+/* A11y (TODO-53 P1): muted (no faint) — enlaces secundarios legibles en ambos temas; defensa si style.css `.footer-legal a` desaparece. */
+.alt-footer-bottom-link { font-size: var(--t-caption); color: var(--ink-text-muted); transition: color var(--dur-2); }
 .alt-footer-bottom-link:hover { color: var(--gold-700); }
 
 /* ───── FOOTER MIRROR · dark gold ───── */

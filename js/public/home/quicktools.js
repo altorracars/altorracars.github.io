@@ -205,6 +205,7 @@
         toggle.className = 'qt-toggle';
         toggle.setAttribute('aria-label', 'Abrir herramientas');
         toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-controls', 'qt-dock');
 
         var gridIconWrap = document.createElement('span');
         gridIconWrap.setAttribute('aria-hidden', 'true');
@@ -225,10 +226,18 @@
         // ── Dock panel ────────────────────────────────────────────
         var dock = document.createElement('div');
         dock.className = 'qt-dock';
-        dock.setAttribute('role', 'menu');
+        dock.id = 'qt-dock';
+        // A11y (TODO-53 P1): NO es un menú de comandos (role=menu exige hijos
+        // role=menuitem → "árbol de accesibilidad mal formado"). Es una barra
+        // de herramientas: role=toolbar (sin hijos requeridos), etiquetada por
+        // el eyebrow, orientación vertical. El toggle la controla (disclosure).
+        dock.setAttribute('role', 'toolbar');
+        dock.setAttribute('aria-orientation', 'vertical');
+        dock.setAttribute('aria-labelledby', 'qt-dock-eyebrow');
 
         var eyebrow = document.createElement('span');
         eyebrow.className = 'qt-dock-eyebrow';
+        eyebrow.id = 'qt-dock-eyebrow';
         eyebrow.textContent = 'Herramientas';
         dock.appendChild(eyebrow);
 

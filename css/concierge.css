@@ -222,10 +222,11 @@
 }
 .cnc-cta-bubble-close {
     position: absolute;
-    top: 4px;
-    right: 6px;
-    width: 22px;
-    height: 22px;
+    top: 3px;
+    right: 5px;
+    /* A11y (TODO-53 P1): 22px < 24px mínimo táctil (WCAG 2.5.8 AA). Subido a 24px. */
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background: transparent;
     border: none;

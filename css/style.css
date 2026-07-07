@@ -5616,13 +5616,15 @@ a.footer-ci:hover {
 
 .footer-copy {
     font-size: 0.75rem;
-    color: rgba(255,255,255,0.22);
+    /* A11y (TODO-53 P1): 0.22 daba ~1.8:1 sobre #030303 (falla AA). 0.62 ≈ 7.8:1 (AAA). */
+    color: rgba(255,255,255,0.62);
     margin: 0;
     line-height: 1.5;
 }
 
 .footer-copy strong {
-    color: rgba(212,175,55,0.5);
+    /* A11y (TODO-53 P1): gold 0.5 daba ~3:1 (falla AA en texto bold 12px). 0.9 ≈ 8:1. */
+    color: rgba(212,175,55,0.9);
     font-weight: 600;
 }
 
@@ -5634,17 +5636,19 @@ a.footer-ci:hover {
 
 .footer-legal a {
     font-size: 0.72rem;
-    color: rgba(255,255,255,0.22);
+    /* A11y (TODO-53 P1): 0.22 daba ~1.8:1 sobre #030303 (falla AA). 0.62 ≈ 7.8:1 (AAA). */
+    color: rgba(255,255,255,0.62);
     text-decoration: none;
     transition: color 0.2s;
 }
 
 .footer-legal a:hover {
-    color: rgba(212,175,55,0.75);
+    color: rgba(212,175,55,0.95);
 }
 
 .footer-legal span {
-    color: rgba(255,255,255,0.1);
+    /* Separadores decorativos (aria-hidden): subidos 0.1→0.35 solo por pulido visual. */
+    color: rgba(255,255,255,0.35);
     font-size: 0.55rem;
 }
 

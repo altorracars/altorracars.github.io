@@ -30,7 +30,7 @@
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
 | **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — PLAN MAESTRO 03/07 **arco OLA 0-3 ✅** (§267-§282); continúa como Directiva Permanente vía TODO-53. | 🔄 permanente | pulir |
-| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 masonry ✅ (§283) · **P1 ✅ (§284)** · **P2 ✅ (§285)** · **P3.1 LCP hero ✅ (§286)** · **P3.2 LCP vehículos ✅ (§287)** · **P3.3 carrusel reflow ✅ (§289)** · **P3.4+P3.5 banner marca ✅ (§291: src+preload · PNG→WebP −66%)**. **✅✅ VALIDADO LIVE**: prod LCP 662ms (era 22.6s), CLS 0.03. RESTA (menor): render-blocking · minify · P0 barrido panel (extensión) + P4 extensión Chrome. | 🔄 impl | menor/panel |
+| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 masonry ✅ (§283) · **P1 ✅ (§284)** · **P2 ✅ (§285)** · **P3.1 LCP hero ✅ (§286)** · **P3.2 LCP vehículos ✅ (§287)** · **P3.3 carrusel reflow ✅ (§289)** · **P3.4+P3.5 banner marca ✅ (§291: src+preload · PNG→WebP −66%)**. **✅✅ VALIDADO LIVE**: prod LCP 662ms (era 22.6s), CLS 0.03. RESTA (menor): render-blocking · minify · **P0 grid-gaps PRE-DIAGNOSTICADO §292 (masonry refutado 0/10; apply order-preserving = gate extensión)** · P0 barrido visual + P4 extensión Chrome. | 🔄 impl | menor/panel |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
@@ -62,4 +62,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **07/07 ⟦OPUS⟧ Reconciliación 3-way (L-48) integrada a `dev`**: §288 fix selftest SSG marca (CRLF `.replace()`, L-68, `dc54349a`) · §289 P3.3 carrusel forced-reflow (`76b01728`) · §290 CI gate del selftest anti-XSS (`860efe8d`). §NN reconciliado 288/289/290. El §288-carrusel de la carrera se revirtió por error (L-48 hazard inverso, código salvo); su ADR canónico = §289. Callejones comprimidos (GC) para bajar `10` bajo cap.
+- **07/07 ⟦OPUS⟧ P0 grid-gap panel DIAGNOSTICADO → masonry §283 REFUTADO (§292, L-69)**: workflow 10 agentes → **0/10 APPLY-SAFE** (5 no-offender + 6 offenders ORDENADOS → masonry rompe lectura). Fix order-preserving = TRADEOFF visual → gate P4. Reviews = el peor. **0 código** (evité sweep ciego). 🚫 Callejón (m): no propagar un fix visual §NN sin re-verificar variable-height+orden por callsite.
+- **07/07 ⟦OPUS⟧ Reconciliación 3-way (L-48)**: §288 (selftest CRLF, L-68) · §289 (P3.3 carrusel) · §290 (CI gate anti-XSS) — todo consolidado en `99`/`00`.

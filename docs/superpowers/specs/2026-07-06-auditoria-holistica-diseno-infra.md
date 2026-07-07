@@ -11,7 +11,15 @@
 
 ## P0 — Diseño premium del PANEL (corazón del EPIC)
 - ✅ **Atributos: grilla a masonry** — `display:grid` alineaba filas a la tarjeta más alta → huecos. Fix: `columns` (ADR pend). `admin-app/src/styles/lists.css`. HECHO+verificado 2026-07-06 (`4e35145a`).
-- ⬜ **Barrido holístico del panel** (otras páginas): el dueño reporta "así en muchos lugares" — alineación/huecos/orden/espaciado inconsistente. Requiere recorrer cada módulo (inbox/pipeline/agenda/contactos/vehículos/dashboard/reportes/hub) con la extensión Chrome logueado + medir. Buscar: grids con huecos, tarjetas de altura desigual, ritmo vertical inconsistente, densidad, jerarquía visual.
+- 🔬 **Barrido de grid-gaps del panel — DIAGNOSTICADO 2026-07-07 (§292, workflow 10 agentes)**: la hipótesis "propagar el masonry §283 a las otras grillas" queda **REFUTADA — 0/10 APPLY-SAFE**. El "hueco" es DENTRO de la tarjeta corta (grid `stretch` + footer `margin-top:auto`), y masonry (`columns`) reordena a columna-mayor → rompe cualquier lista ordenada.
+
+  | Grilla | Veredicto | Por qué |
+  |---|---|---|
+  | `.aj-cols` `.brd-grid` `.perfil-grid` `.veh-wiz__grid` `.wf-grid` | **NOT-AN-OFFENDER** | 1 card / tiles uniformes / scaffold fijo / campos form / 3 ítems |
+  | `.rev-grid` (cronológico) | **DEFER** offender FUERTE | texto 0-600 char sin min-height → void grande |
+  | `.dlr-grid` `.dep-grid` `.rol-grid` `.ban-grid` `.veh-wiz__feats` | **DEFER** | variable-height PERO ORDENADO (alfa/jerarquía/`order`/curado) → masonry rompe lectura |
+
+  Fix order-preserving = `align-items:start`/`line-clamp`, pero revierte la alineación deliberada de footers → **TRADEOFF visual → gate del pase P4 (extensión)**. Recomendación: reviews es el único que vale un vistazo prioritario. El resto (barrido visual holístico — spacing/jerarquía/color/densidad por módulo) sigue requiriendo la extensión logueado.
 
 ## P1 — Accesibilidad pública (PageSpeed: móvil 87 / desktop 88 → objetivo ≥95) — ✅ COMPLETO (§284, `d349ecb2`)
 - ✅ **`qt-dock role="menu"` sin hijos `menuitem`** (`js/public/home/quicktools.js`): FIX = `role="toolbar"` + `id=qt-dock` + `aria-labelledby=qt-dock-eyebrow` + `aria-orientation=vertical`; toggle `aria-controls` (disclosure). Verif live: toolbar bien formado, disclosure false→true→false. (El `css/home/quicktools.css` no requirió cambios.)

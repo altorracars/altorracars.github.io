@@ -10,10 +10,10 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **AHORA = OPUS 4.8** (Fable agotó cuota gratis 06/07; dueño avisará al volver). **ARRANQUE = §0 + §0.b del PLAN MAESTRO** (`specs/2026-07-03-…fable5.md` = SSoT ejecución, olas 0-4 · TODO-52 EPIC #1) ANTES de código; tag `⟦OPUS-4.8⟧`. **YO decido+ejecuto+mergeo** (M-12/M-25); claims stale → grep (L-62).
-> 🏁 **ARCO PRINCIPAL DEL PLAN MAESTRO (OLA 0-3) COMPLETO** (§267-§282; detalle+shas en los ADR). OLA 3.6: #3 header race + #5 counter ✅; **#6 (confirm nativo v1) DIFERIDO al flip** (v2 ya lo tiene, soon-replaced §282.4). **Barrido legacy `#d4af37`→`#D4A85A` DIFERIDO** (~200 usos; `20 §🎨`+§279). ✅ **Cache: sin deuda** — el SW (network-first HTML+core+home, SWR el resto, `no-cache`) sirve el código nuevo sin bump (L-65). ⚠️ `dist/` se COMMITEA por bloque.
-> **🧹 GATES DUEÑO — delegó el CUÁNDO a mí (06/07); juicio: APARCADOS mientras usa el portal en vivo** (todos tocan producción activa): (1) MFA 2.9 → cuando el portal esté días-sólido · (2) App Check 2.11 (métricas) · (3) cutover `_legacy` 2.12b DIFERIDO (§275.4) · (4) validar-live: supresión + presencia §274 · (5) **GSC noindex `detalle-vehiculo.html` (§276.7)** · (6) saldo bot · purga `clientes`/`suppressions`.
-> **▶️ SIGUE**: el arco OLA 0-3 cerró. Resta = (a) **gates dueño** (flip LLM #917 · MFA 2.9 · App Check 2.11 · cutover 2.12b · validar-live · GSC §276.7); (b) **OLA 4 estratégico/diferido** (plan §OLA-4: templatabilidad, migración-dominio, TODO-48 drift); (c) **Directiva Permanente TODO-52** (auditar→pulir hasta "respira top mundial"). Sin próximo ítem sin-gate obvio → **preguntar al dueño el rumbo**. Cadencia §0.b.
+> 🤖 **AHORA = OPUS 4.8**. **YO decido+ejecuto+mergeo** (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES de construir (L-62). El PLAN MAESTRO (olas 0-4) está cerrado → foco = **TODO-53** (abajo).
+> 🏁 **PLAN MAESTRO arco OLA 0-3 COMPLETO** (§267-§282). Diferidos: #6 bot→flip (§282.4) · barrido legacy oro (`20 §🎨`+§279). ✅ **Cache sin deuda** (SW network-first/SWR `no-cache` sirve fresco sin bump, L-65). ⚠️ `dist/` se commitea por bloque.
+> **🧹 GATES DUEÑO APARCADOS** (delegó el CUÁNDO a mí 06/07; tocan producción viva): MFA 2.9 · App Check 2.11 · cutover 2.12b (§275.4) · validar-live supresión+presencia (§274) · GSC noindex `detalle-vehiculo.html` (§276.7) · saldo bot · purga `clientes`/`suppressions`.
+> **▶️ SIGUE = TODO-53 (mandato dueño 06/07): AUDITORÍA HOLÍSTICA diseño+infra** hacia "top mundial". SSoT = spec `2026-07-06-auditoria-holistica-diseno-infra.md` (P0 panel · P1 a11y · P2 CLS · P3 minify/perf · P4 extensión Chrome). ✅ P0.1 grilla Atributos→masonry (`4e35145a`). **NEXT: P1 a11y** (qt-dock role · contraste footer · touch targets CTA — quick, verificable en preview local). Bloqueados sin dinero: flip LLM #917 · Cloudflare. Otros gates dueño aparcados (MFA/AppCheck/cutover/GSC §276.7). Cadencia §0.b.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -27,7 +27,7 @@
 > (g) **Bot v2 = grafo de nodos tras flag** (default v1, riesgo cero). v1 battle-tested INTACTO; NO big-bang, NO Vite (vanilla). Módulo `js/concierge/shared/` (NO copiar). Detalle → defects-log §F-1.
 > (h) **Auditoría verifica CÓDIGO, no DEPLOY** — claim "LIVE" se chequea live (Firebase MCP), no por inferencia; verificadores SIN Bash (cuelgue gateado L-50). Panel ≠ journal.
 > (i) **Validación live SIN screenshot = cobertura fingida (M-23)** — el DOM caza texto/lógica, NO diseño → screenshot del render (extensión `computer`; preview cuelga L-28).
-> (j) **`confirm()` nativo BLOQUEA la extensión Chrome** (val.live 29/06): con el diálogo abierto la página no llega a `document_idle` → screenshots/clicks expiran 45s (parece colgado, NO lo está). Reparto: yo lleno/navego/verifico-Firestore, el DUEÑO da Aceptar; tab atascado → `tabs_create_mcp` (write server-side persiste → verificar por Firestore, no inferir).
+> (j) **`confirm()` nativo BLOQUEA la extensión Chrome**: la página no llega a `document_idle` → screenshots/clicks expiran (parece colgado). Reparto: yo lleno/verifico-Firestore, el DUEÑO da Aceptar; tab atascado → `tabs_create_mcp` (verificar por Firestore, no inferir).
 > (k) **Workflow read-only PUEDE colgar 1 agente** (structured-output, sin tool gateada) → bloquea `parallel()`; cosechar del `journal.jsonl` + `TaskStop` + straggler a mano (**L-61**).
 > (l) **Audit que clasifica código = FALSOS POSITIVOS** (infiere emoji desde `icon('id')` ya presente) → verificar cada hallazgo con grep real, no a ciegas (**L-62**).
 
@@ -39,7 +39,8 @@
 
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
-| **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — ejecución ordenada → **PLAN MAESTRO 03/07** (olas 0-4); visión → brief 29/06. | 🔄 impl | OLA 0 primero |
+| **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — PLAN MAESTRO 03/07 **arco OLA 0-3 ✅** (§267-§282); continúa como Directiva Permanente vía TODO-53. | 🔄 permanente | pulir |
+| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 grilla Atributos→masonry ✅ (`4e35145a`). RESTA: P1 a11y (qt-dock/contraste/touch) · P2 CLS (img w/h, animaciones, preconnect) · P3 minify/unused JS-CSS (LCP móvil 22.6s) · P0 barrido panel + P4 extensión Chrome. | 🔄 impl | P1 next |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |

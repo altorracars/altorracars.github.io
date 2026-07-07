@@ -11,9 +11,9 @@
 ## 🎯 Foco actual
 
 > 🤖 **AHORA = OPUS 4.8** (Fable agotó cuota gratis 06/07; dueño avisará al volver). **ARRANQUE = §0 + §0.b del PLAN MAESTRO** (`specs/2026-07-03-…fable5.md` = SSoT ejecución, olas 0-4 · TODO-52 EPIC #1) ANTES de código; tag `⟦OPUS-4.8⟧`. **YO decido+ejecuto+mergeo** (M-12/M-25); claims stale → grep (L-62).
-> ✅ **OLA 0-1 · OLA 2: 2.1-2.8/2.10/2.12a · OLA 3.1-3.3 COMPLETOS** (§267-§278; último: fuentes cinematic HORNEADAS → FOUT muerto en páginas SEO, `46cad599`; el CI regenera vehiculos/marcas + bumpea al push a main). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. Bot LLM dormido (#917=saldo). ⚠️ `dist/` se COMMITEA por bloque.
+> ✅ **OLA 0-1 · OLA 2: 2.1-2.8/2.10/2.12a · OLA 3.1-3.4 COMPLETOS** (§267-§279; 3.3 fuentes horneadas→FOUT muerto `46cad599`; 3.4 triple dorado→capa rediseño al canónico #D4A85A `9aed2ebe`). **Barrido legacy `#d4af37`→`#D4A85A` DIFERIDO** (~200 usos, cambio de marca; scope→`20 §🎨`+§279). Dueño confirmó live: Excel ✓ · vehiculos/47 ✓. Bot LLM dormido (#917=saldo). ⚠️ `dist/` se COMMITEA por bloque.
 > **🧹 GATES DUEÑO — delegó el CUÁNDO a mí (06/07); juicio: APARCADOS mientras usa el portal en vivo** (todos tocan producción activa): (1) MFA 2.9 → cuando el portal esté días-sólido · (2) App Check 2.11 (métricas) · (3) cutover `_legacy` 2.12b DIFERIDO (§275.4) · (4) validar-live: supresión + presencia §274 · (5) **GSC noindex `detalle-vehiculo.html` (§276.7)** · (6) saldo bot · purga `clientes`/`suppressions`.
-> **▶️ SIGUE (sin gate): OLA 3** — 3.4 triple dorado (#b89658/#D4A85A/#d4af37) · 3.5 a11y hamburguesa (`aria-expanded/aria-controls`) · 3.6 bot pulido. Detalle plan §3. Cadencia §0.b.
+> **▶️ SIGUE (sin gate): OLA 3** — 3.5 a11y hamburguesa (`aria-expanded/aria-controls` en `snippets/header.html:81` + inline index + toggle `home-chrome.js`) · 3.6 bot pulido (defectos #3/#5/#6). Detalle plan §3. Cadencia §0.b.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

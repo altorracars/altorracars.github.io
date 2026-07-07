@@ -130,6 +130,15 @@ admin-app/src/
 
 ---
 
+## 🎨 Sistema de color — "triple dorado" (§279 = detalle)
+
+Canon público go-forward:
+- **`#D4A85A`** = CANÓNICO rediseño + admin (`--gold-500` en `css/home/tokens-redesign.css`; rgba canónico `rgba(212,168,90)`). Todo `css/home/*` lo usa.
+- **`#b89658`** = DOCTRINA de marca (§1) + `<meta theme-color>` + page-loader. **CONSERVAR**.
+- **`#d4af37`** = LEGACY "bright" (`--gold-primary` en `dark-theme.css:8`, `--ak-bright` en `tokens.css:321`), **PERVASIVO ~200 usos** (`style.css`/`dark-theme`/`cookies`/`contact-forms` + page-styles). El plan lo creyó "aislado en index.html:266" → FALSO (L-62; index theme-color YA #b89658, su token es inerte). **Barrido `#d4af37`→`#D4A85A` DIFERIDO** (cambio de marca en todo el legacy, un solo cambio + un cache bump); §279 solo alineó la capa rediseño (`chrome-*.css`).
+
+---
+
 ## ⚙️ Convenciones espaciales (dónde NO equivocarse)
 
 - Apps namespaced: `altorra-admin` vs `altorra-public` aíslan sesiones (+ default app para internals del SDK).

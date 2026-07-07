@@ -56,7 +56,7 @@
   max-width: 60px !important;
   border-radius: 999px !important;
   background: rgba(20, 18, 24, 0.92) !important;
-  border-color: rgba(212, 175, 55, 0.35) !important;
+  border-color: rgba(212, 168, 90, 0.35) !important;
 }
 #header.alt-nav.alt-nav--gone {
   opacity: 0 !important;
@@ -98,7 +98,7 @@
   color: var(--ink-text-muted);
 }
 [data-theme="dark"] .alt-footer .footer-bottom {
-  border-top-color: rgba(212, 175, 55, 0.15);
+  border-top-color: rgba(212, 168, 90, 0.15);
 }
 
 /* El footer cinematic es transparente y fluye al final del documento

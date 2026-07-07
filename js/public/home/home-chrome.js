@@ -254,6 +254,10 @@
         // Mantenemos el atributo hidden en sync por semántica/accesibilidad.
         drawer.hidden = false;
         drawer.style.display = '';
+        // OLA-3.5 a11y: aria-expanded del botón hamburguesa refleja el estado
+        // del drawer (patrón disclosure). Se togglea aquí y en closeDrawer →
+        // cubre TODOS los caminos de cierre (X/backdrop/link/Escape/resize).
+        if (drawerOpenBtn) drawerOpenBtn.setAttribute('aria-expanded', 'true');
         // Scroll-lock propio (NO tocamos body.position:fixed como el nav
         // viejo, para no pelear con su CSS ni perder el scroll). overflow
         // hidden basta y es reversible.
@@ -268,6 +272,7 @@
             drawer.hidden = true;
             drawer.style.display = 'none';
         }
+        if (drawerOpenBtn) drawerOpenBtn.setAttribute('aria-expanded', 'false'); // OLA-3.5 a11y
         document.body.style.overflow = '';
         render();
     }

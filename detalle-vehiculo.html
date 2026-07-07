@@ -50,6 +50,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.gstatic.com">
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+    <!-- SSG (TODO-53 P3.2): preload de la imagen LCP del vehículo — horneado por
+         generate-vehicles.mjs en los estáticos (desacopla el LCP del fetch a Firestore);
+         en el SPA dinámico queda vacío (la imagen la pone el JS tras el fetch). -->
+    <!--SSG:LCP-HERO-PRELOAD-->
     <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
          para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
          DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->

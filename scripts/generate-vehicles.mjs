@@ -131,6 +131,11 @@ function generatePage(template, v, slug) {
     const precioText = precio ? formatPrice(precio) : '';
     const desc = `${marca} ${modelo} ${year} - ${precioText}. ${capitalize(v.tipo || '')}, ${capitalize(v.transmision || '')}, ${formatKm(v.kilometraje)}. Disponible en ALTORRA CARS, Cartagena.`;
     const fullImage = getFullImage(v);
+    // LCP (TODO-53 P3.2): imagen principal EXACTA que renderiza detalle-gallery.js
+    //   (`currentImages[0]` = imagenes[0] || imagen) → hornearla en el <img> + preload
+    //   desacopla el LCP del fetch a Firestore (paint sin esperar JS). URL cruda (ya
+    //   absoluta en Storage) para que el src que pone el JS luego sea cache-hit (no doble).
+    const mainImg = (Array.isArray(v.imagenes) && v.imagenes.length ? v.imagenes[0] : v.imagen) || '';
     const canonicalUrl = `${SITE_URL}/vehiculos/${slug}.html`;
 
     let html = template;
@@ -151,6 +156,8 @@ function generatePage(template, v, slug) {
         'id="tw-title"',
         'id="tw-description"',
         'id="tw-image"',
+        '<!--SSG:LCP-HERO-PRELOAD-->',
+        'id="mainImage" src=""',
         '</head>',
         '<div id="header-placeholder"></div>',
         '<script src="js/core/historial-visitas.js"></script>',
@@ -221,6 +228,20 @@ function generatePage(template, v, slug) {
         'id="tw-image" content="https://altorracars.github.io/multimedia/hero-car.jpg"',
         `id="tw-image" content="${escapeAttr(fullImage)}"`
     );
+
+    // 6b. LCP (TODO-53 P3.2): hornear la imagen principal (preload + src del <img>) para que
+    //     el LCP pinte SIN esperar el fetch a Firestore. mainImg='' → placeholder vacío y
+    //     src="" intacto (cero regresión si el vehículo no tiene imagen).
+    html = html.replace(
+        '<!--SSG:LCP-HERO-PRELOAD-->',
+        mainImg ? `<link rel="preload" as="image" fetchpriority="high" href="${escapeAttr(mainImg)}">` : ''
+    );
+    if (mainImg) {
+        html = html.replace(
+            'id="mainImage" src=""',
+            `id="mainImage" src="${escapeAttr(mainImg)}"`
+        );
+    }
 
     // 7. Inject JSON-LD schemas before </head>
     // §90 Fase 4 SEO — expandido con bodyType + driveWheelConfiguration +

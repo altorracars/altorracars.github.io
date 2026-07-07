@@ -3,9 +3,9 @@
 > **Nodo: signos vitales.** AUTO-CARGA (con `CLAUDE.md` + `10`). Tablero, no bitácora: solo señales
 > ACTUALES (pisar, no apilar); lo histórico vive en `99` (ADR). Tope ~25 líneas / ~2.8k chars (§G.5).
 
-| Señal | Valor (última actualización: **2026-07-06**) |
+| Señal | Valor (última actualización: **2026-07-07**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev` (sync) · código @ `b34b2f75` (los commits `docs(brain)` posteriores NO cambian el "build"): **PLAN MAESTRO = SSoT; 🤖 AHORA = OPUS 4.8 → arranque = §0+§0.b**. 🏁 **ARCO OLA 0-3 COMPLETO** (§267-§282; suite 374). OLA 3.6: #3+#5 ✅, #6 DIFERIDO al flip. **Resta = gates dueño + OLA 4 estratégico/diferido + Directiva Permanente TODO-52 (pulir→top mundial).** Gates dueño: flip LLM #917 · MFA 2.9 · App Check 2.11 · cutover 2.12b · saldo/purga · validar-live (§274) · GSC §276.7. |
+| **Build** | 🟢 `main`==`dev` (sync) · código @ `d349ecb2` (los commits `docs(brain)` posteriores NO cambian el "build"): **PLAN MAESTRO = SSoT; 🤖 AHORA = OPUS 4.8 → arranque = §0+§0.b**. 🏁 **ARCO OLA 0-3 COMPLETO** (§267-§282; suite 374). **TODO-53 (auditoría holística):** P0.1 masonry ✅ (§283) · P1 a11y ✅ (§284); NEXT P2 CLS. **Resta = gates dueño + OLA 4 estratégico/diferido + Directiva Permanente TODO-52 (pulir→top mundial).** Gates dueño: flip LLM #917 · MFA 2.9 · App Check 2.11 · cutover 2.12b · saldo/purga · validar-live (§274) · GSC §276.7. |
 | **Cache version vigente** | **`v20260707014857`** (cron-CI `b24a61b1`, regen OLA 3.3 fuentes horneadas; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

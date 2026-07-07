@@ -151,8 +151,13 @@
         // Update prev/next disabled state based on scroll position
         function updateArrows() {
             if (!btnPrev || !btnNext) return;
-            btnPrev.disabled = track.scrollLeft < 8;
-            btnNext.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 8;
+            // Perf (TODO-53 P3.3): batch de LECTURAS antes de ESCRITURAS → evita el
+            // forced reflow (escribir .disabled invalidaba el layout y la lectura de
+            // scrollWidth siguiente forzaba un reflow síncrono en cada scroll).
+            var sl = track.scrollLeft;
+            var maxScroll = track.scrollWidth - track.clientWidth;
+            btnPrev.disabled = sl < 8;
+            btnNext.disabled = sl >= maxScroll - 8;
         }
 
         // Nudge by one card width (port of JSX L823-828)
@@ -164,8 +169,17 @@
 
         if (btnPrev) btnPrev.addEventListener('click', function () { nudge(-1); });
         if (btnNext) btnNext.addEventListener('click', function () { nudge(1); });
-        track.addEventListener('scroll', updateArrows, { passive: true });
-        window.addEventListener('resize', updateArrows); // intentional: this is a static single-page app; listener lives for the page lifetime.
+        // Perf (TODO-53 P3.3): rAF-throttle → coalesce la ráfaga de scroll/resize de la
+        // carga (fixIOSViewportHeight escribe --vh en cada resize → invalida layout → la
+        // lectura de scrollWidth de updateArrows forzaba un reflow síncrono por evento).
+        var arrowsRaf = false;
+        function scheduleArrows() {
+            if (arrowsRaf) return;
+            arrowsRaf = true;
+            requestAnimationFrame(function () { arrowsRaf = false; updateArrows(); });
+        }
+        track.addEventListener('scroll', scheduleArrows, { passive: true }); // 1 call/frame
+        window.addEventListener('resize', scheduleArrows); // static SPA: listener por vida de la página
 
         // Event delegation for favorite and compare at click time
         track.addEventListener('click', function (e) {
@@ -391,8 +405,13 @@
 
         function updateArrows() {
             if (!btnPrev || !btnNext) return;
-            btnPrev.disabled = track.scrollLeft < 8;
-            btnNext.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 8;
+            // Perf (TODO-53 P3.3): batch de LECTURAS antes de ESCRITURAS → evita el
+            // forced reflow (escribir .disabled invalidaba el layout y la lectura de
+            // scrollWidth siguiente forzaba un reflow síncrono en cada scroll).
+            var sl = track.scrollLeft;
+            var maxScroll = track.scrollWidth - track.clientWidth;
+            btnPrev.disabled = sl < 8;
+            btnNext.disabled = sl >= maxScroll - 8;
         }
 
         function nudge(dir) {
@@ -403,8 +422,17 @@
 
         if (btnPrev) btnPrev.addEventListener('click', function () { nudge(-1); });
         if (btnNext) btnNext.addEventListener('click', function () { nudge(1); });
-        track.addEventListener('scroll', updateArrows, { passive: true });
-        window.addEventListener('resize', updateArrows); // intentional: this is a static single-page app; listener lives for the page lifetime.
+        // Perf (TODO-53 P3.3): rAF-throttle → coalesce la ráfaga de scroll/resize de la
+        // carga (fixIOSViewportHeight escribe --vh en cada resize → invalida layout → la
+        // lectura de scrollWidth de updateArrows forzaba un reflow síncrono por evento).
+        var arrowsRaf = false;
+        function scheduleArrows() {
+            if (arrowsRaf) return;
+            arrowsRaf = true;
+            requestAnimationFrame(function () { arrowsRaf = false; updateArrows(); });
+        }
+        track.addEventListener('scroll', scheduleArrows, { passive: true }); // 1 call/frame
+        window.addEventListener('resize', scheduleArrows); // static SPA: listener por vida de la página
 
         // Drag-to-scroll (§35: mousemove on window, added on drag-start, removed on drag-end)
         var _colStartX = 0, _colStartSL = 0;

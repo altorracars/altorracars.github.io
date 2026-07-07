@@ -6,7 +6,7 @@
 > `CLAUDE.md §G`).
 >
 > **Cerebro completo**: 🧠 `CLAUDE.md` (router/identidad) · 🩺 `05-ESTADO-GLOBAL.md` (signos vitales)
-> · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura)
+> · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura; hija 🚗 `21-ESPACIAL-ADMIN.md` = portal admin)
 > · 🧪 `30-LECCIONES.md` (experiencia/recetas; hijas 🔧 `31-LECCIONES-GIT.md` · 🪞 `32-LECCIONES-META.md`) · 🔁 `60-WORKFLOWS.md` (workflows W-01..W-11; **W-11 = flujo fuerte**) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
 >
 > **Cómo usarlo (regla de oro anti-saturación)**:

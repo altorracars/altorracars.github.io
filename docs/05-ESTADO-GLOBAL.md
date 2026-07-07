@@ -6,7 +6,7 @@
 | Señal | Valor (última actualización: **2026-07-07**) |
 |---|---|
 | **Build** | 🟢 `main`==`dev` (sync) · código @ `48853e0e`: **PLAN MAESTRO = SSoT; 🤖 AHORA = OPUS 4.8 → arranque = §0+§0.b**. 🏁 **ARCO OLA 0-3 COMPLETO** (§267-§282; suite 374). **TODO-53:** P0.1/P1/P2/P3.1-3.5 ✅ (§283-291; marca banner PNG→WebP −66%) + colaterales §288/§290. **✅✅ VALIDADO LIVE (deploy `f104708c`):** homepage prod móvil **LCP 662ms** (era 22.6s), CLS 0.03 — score-killer eliminado. RESTA menor: banners marca PNG→WebP · render-blocking · minify. **Resta = gates dueño + OLA 4 estratégico/diferido + Directiva Permanente TODO-52 (pulir→top mundial).** Gates dueño: flip LLM #917 · MFA 2.9 · App Check 2.11 · cutover 2.12b · saldo/purga · validar-live (§274) · GSC §276.7. |
-| **Cache version vigente** | **`v20260707073229`** (cron-CI `50a85817`, regen vehículos+marcas; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Cache version vigente** | **`v20260707182819`** (cron-CI `0ec72184`, regen marcas con banner-bake §291 P3.4; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
 

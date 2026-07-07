@@ -19,11 +19,12 @@
 - ✅ **Áreas táctiles CTA bot** (`css/concierge.css`): `.cnc-cta-bubble-close` 22px→**24px** (WCAG 2.5.8). El `.cnc-cta-bubble` en sí ya es un pill grande (>24px). Verif: computed 24×24.
 - ✅ **Botones sin nombre accesible** (móvil): auditados index (desktop+móvil), busqueda, detalle — incl. `role=button`/`onclick`/ocultos = **0 offenders** (el sitio ya etiqueta todo). NO reproducible; si el dueño señala el elemento exacto de PageSpeed, se corrige.
 
-## P2 — CLS + perf quirúrgica pública (CLS 0.034-0.046; LCP móvil 22.6s ⚠️)
-- ⬜ **Imágenes sin `width`/`height` explícitos** → CLS + reserva de layout. Añadir dims a los `<img>` que falten (grep).
-- ⬜ **14 animaciones NO compuestas** → violan §3.1 (solo transform/opacity). Auditar los 14 elementos, convertir a compuestas o `will-change` acotado.
-- ⬜ **>4 preconnect** (advertencia): los templates tienen 4 (googleapis/gstatic/www.gstatic/firestore). Recortar a los 2 críticos + `dns-prefetch` el resto.
-- ⬜ **Solicitudes que bloquean el render** (~900ms móvil): diferir CSS/JS no crítico.
+## P2 — CLS + perf quirúrgica pública — ✅ COMPLETO (§285, `f42e3ff5`) · 3/4 ya OK por OLA 0-3
+- ✅ **>4 preconnect** (el único gap real): index tenía 6 (4+par duplicado), templates 4 → **2 preconnect (fonts.googleapis+gstatic) + 2 dns-prefetch (www.gstatic+firestore, cargan diferidos)** en index+detalle-vehiculo+marca+busqueda; index quita el duplicado. CI propaga a vehiculos/*+marcas/*. Verif live: `preconnectCount=2`.
+- ✅ **Imágenes sin `width`/`height`** — YA OK (verificado, sin cambios): grep index = 0 sin dims; tarjetas dinámicas `render.js:146` = `width=400 height=260`+lazy+skeleton. CLS ya "good" (0.034 < 0.1).
+- ✅ **render-blocking** — YA OK (verificado, sin cambios): JS todo `defer` (salvo page-loader intencional); CSS no-crítico (8 hojas) ya `media="print" onload`. Resto blocking = CSS crítico above-fold (retiro = "Task 7" legacy, diferido).
+- ✅ **"14 animaciones no-compuestas"** — diagnóstico Lighthouse **peso-0**: mayoría COMPUESTAS (transform/opacity). Las de paint (`cinPulse` box-shadow hero DISEÑADO · `shimmer` bg-position skeleton) DIFERIDAS: convertir arriesga el diseño (owner: zero-regresión) por ganancia de score NULA.
+> **Score-killer real = LCP móvil 22.6s → P3** (minify/unused JS-CSS), NO P2. P2 era polish; el salto a ≥95 está en P3.
 
 ## P3 — Perf infraestructura (más grande; LCP móvil 22.6s es el gran objetivo)
 - ⬜ **Minificar JS/CSS público** (142 KiB JS + 32 KiB CSS): el sitio vanilla NO minifica. Necesita un paso de build/minify (¿workflow CI? — sin romper la simplicidad vanilla). Alto impacto.

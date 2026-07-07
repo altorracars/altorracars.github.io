@@ -253,8 +253,10 @@
                 const pageTitleEl = document.getElementById('pageTitle');
                 if (pageTitleEl) pageTitleEl.textContent = brandInfo.nombre + ' | ALTORRA CARS';
 
-                // Cargar banner inmediatamente — mostrar hero al instante
-                const bannerPath = window.PRERENDERED_BANNER_URL || `multimedia/banner/b_${brandId}.png`;
+                // Cargar banner inmediatamente — mostrar hero al instante.
+                // LCP (TODO-53 P3.5): fallback = WebP optimizado (1280w, ~66% menos que el PNG);
+                // el PNG queda como red de seguridad para navegadores sin WebP (onerror abajo).
+                const bannerPath = window.PRERENDERED_BANNER_URL || `multimedia/optimized/b_${brandId}-1280.webp`;
                 const brandHero = document.getElementById('brandHero');
                 const brandHeader = document.getElementById('brandHeader');
                 const bannerImg = document.getElementById('brandBanner');
@@ -266,8 +268,15 @@
                 if (brandPosMap[brandId]) bannerImg.dataset.brandPos = brandPosMap[brandId];
                 brandHero.style.display = 'block';
 
-                // Fallback: si el banner falla, mostrar header simple
+                // Fallback: si el banner falla, degradar con gracia.
                 bannerImg.onerror = function() {
+                    // WebP no soportado (navegador viejo) + banner estático → intenta el PNG UNA vez.
+                    if (!bannerImg.dataset.pngTried && !window.PRERENDERED_BANNER_URL) {
+                        bannerImg.dataset.pngTried = '1';
+                        bannerImg.src = `multimedia/banner/b_${brandId}.png`;
+                        return;
+                    }
+                    // PNG también falló (o banner custom roto) → header simple.
                     brandHero.style.display = 'none';
                     document.getElementById('brandTitle').textContent = brandInfo.nombre;
                     document.getElementById('brandDesc').textContent = brandInfo.descripcion || '';

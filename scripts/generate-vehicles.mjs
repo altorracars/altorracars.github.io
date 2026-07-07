@@ -458,11 +458,12 @@ function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
     const count = disponibles.length;
     const desc = `Vehículos ${nombre} disponibles en ALTORRA CARS, Cartagena. ${count} ${count === 1 ? 'vehículo' : 'vehículos'} en inventario. Financiación disponible.`;
     const bannerImage = customBanner || `${SITE_URL}/multimedia/banner/b_${brandId}.png`;
-    // LCP (TODO-53 P3.4): banner EXACTO que renderiza el JS del hero (marca.html: bannerPath =
-    //   PRERENDERED_BANNER_URL || `multimedia/banner/b_${brandId}.png`) → hornearlo en el
-    //   <img id="brandBanner"> + preload desacopla el LCP del fetch a Firestore. Fallback RELATIVO
-    //   (matchea el string del JS → el re-set del JS es cache-hit, sin doble-descarga). Los 18 b_*.png existen.
-    const mainBanner = customBanner || `multimedia/banner/b_${brandId}.png`;
+    // LCP (TODO-53 P3.4/P3.5): banner EXACTO que renderiza el JS del hero (marca.html: bannerPath =
+    //   PRERENDERED_BANNER_URL || `multimedia/optimized/b_${brandId}-1280.webp`) → hornearlo en el
+    //   <img id="brandBanner"> + preload desacopla el LCP del fetch a Firestore. P3.5: el fallback es
+    //   el WebP OPTIMIZADO (1280w, ~66% menos que el PNG; el PNG queda como red onerror). Fallback
+    //   RELATIVO (matchea el string del JS → el re-set del JS es cache-hit, sin doble-descarga).
+    const mainBanner = customBanner || `multimedia/optimized/b_${brandId}-1280.webp`;
 
     let html = template;
 

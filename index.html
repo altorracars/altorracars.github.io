@@ -84,11 +84,12 @@
     <link rel="preload" href="/multimedia/logo-placeholder.png" as="image">
 
 
-    <!-- Preconnect for External Resources (faster than dns-prefetch) -->
+    <!-- Preconnect SOLO a orígenes críticos de render (fonts); Firebase/Firestore
+         cargan diferidos → dns-prefetch basta (PageSpeed: ≤2 preconnect, TODO-53 P2). -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com">
 
     <!-- Prefetch top navigation targets (browser fetches in idle time) -->
     <link rel="prefetch" href="vehiculos-suv.html">
@@ -293,8 +294,7 @@
          Cargan DESPUÉS del CSS legacy para ganar donde haya solape de chrome.
          (El retiro del CSS viejo del index = Task 7.)
          ============================================================ -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- (preconnect a fonts.* ya declarado arriba en el head — sin duplicar, TODO-53 P2) -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Manrope:wght@200;300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/home/tokens-redesign.css">

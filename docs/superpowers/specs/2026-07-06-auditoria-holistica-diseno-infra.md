@@ -27,7 +27,8 @@
 > **Score-killer real = LCP móvil 22.6s → P3** (minify/unused JS-CSS), NO P2. P2 era polish; el salto a ≥95 está en P3.
 
 ## P3 — Perf infraestructura (más grande; LCP móvil 22.6s era el gran objetivo)
-- ✅ **P3.1 LCP del hero RESUELTO** (§286, `c541903a`): el LCP NO era minify — era el hero como CSS `background-image` (145KB full, descubierto tarde, preload responsivo desperdiciado). Fix: hero = `<picture>` real (AVIF/WebP srcset + fetchpriority) → preload usado. Verif chrome-devtools móvil Slow4G+4x: **LCP 720ms** (era 22.6s), Load 6ms, CLS 0. **Falta**: verificar si detalle/marca (heroes propios) repiten el patrón.
+- ✅ **P3.1 LCP del hero (index) RESUELTO** (§286, `c541903a`): el LCP NO era minify — era el hero como CSS `background-image` (145KB full, tarde, preload desperdiciado). Fix: hero = `<picture>` real → preload usado. Verif chrome-devtools móvil Slow4G+4x: **LCP 720ms** (era 22.6s), Load 6ms, CLS 0.
+- ✅ **P3.2 LCP páginas de vehículo** (§287, `cd5e30b9`): la trampa bg-image NO se repite en detalle/marca, pero detalle tenía `#mainImage src=""` (JS lo llena tras fetch a Firestore) sin preload. Fix SSG: hornea preload + `#mainImage src` (=`imagenes[0]||imagen`, cache-hit con el JS). Output-verificado; propaga vía CI. **Falta**: hero de marca (banner).
 - ⬜ **Minificar JS/CSS público** (142 KiB JS + 32 KiB CSS): el sitio vanilla NO minifica. Necesita un paso de build/minify (¿workflow CI? — sin romper la simplicidad vanilla). Impacto medio (ya NO es el cuello del LCP).
 - ⬜ **JS/CSS sin usar** (690 KiB JS · 87 KiB CSS): code-split / defer / cargar por-página lo que hoy es global.
 - ⬜ **JS duplicado** (8 KiB): ¿Firebase cargado 2×? Investigar.

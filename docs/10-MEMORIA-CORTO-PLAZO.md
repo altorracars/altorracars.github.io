@@ -11,9 +11,9 @@
 ## 🎯 Foco actual
 
 > 🤖 **AHORA = OPUS 4.8** (Fable agotó cuota gratis 06/07; dueño avisará al volver). **ARRANQUE = §0 + §0.b del PLAN MAESTRO** (`specs/2026-07-03-…fable5.md` = SSoT ejecución, olas 0-4 · TODO-52 EPIC #1) ANTES de código; tag `⟦OPUS-4.8⟧`. **YO decido+ejecuto+mergeo** (M-12/M-25); claims stale → grep (L-62).
-> ✅ **OLA 0-1 · OLA 2: 2.1-2.8/2.10/2.12a · OLA 3.1-3.5 COMPLETOS** (§267-§280; detalle+shas en los ADR). **Barrido legacy `#d4af37`→`#D4A85A` DIFERIDO** (~200 usos; scope→`20 §🎨`+§279). ✅ **Cache: sin deuda** — el SW (network-first HTML+core+home, SWR el resto, todo `no-cache`) sirve el código nuevo sin bump (L-65). Bot LLM dormido (#917=saldo). ⚠️ `dist/` se COMMITEA por bloque.
+> 🏁 **ARCO PRINCIPAL DEL PLAN MAESTRO (OLA 0-3) COMPLETO** (§267-§282; detalle+shas en los ADR). OLA 3.6: #3 header race + #5 counter ✅; **#6 (confirm nativo v1) DIFERIDO al flip** (v2 ya lo tiene, soon-replaced §282.4). **Barrido legacy `#d4af37`→`#D4A85A` DIFERIDO** (~200 usos; `20 §🎨`+§279). ✅ **Cache: sin deuda** — el SW (network-first HTML+core+home, SWR el resto, `no-cache`) sirve el código nuevo sin bump (L-65). ⚠️ `dist/` se COMMITEA por bloque.
 > **🧹 GATES DUEÑO — delegó el CUÁNDO a mí (06/07); juicio: APARCADOS mientras usa el portal en vivo** (todos tocan producción activa): (1) MFA 2.9 → cuando el portal esté días-sólido · (2) App Check 2.11 (métricas) · (3) cutover `_legacy` 2.12b DIFERIDO (§275.4) · (4) validar-live: supresión + presencia §274 · (5) **GSC noindex `detalle-vehiculo.html` (§276.7)** · (6) saldo bot · purga `clientes`/`suppressions`.
-> **▶️ SIGUE (sin gate): OLA 3** — 3.6 bot pulido (defectos #3 race cerrar-sesión · #5 flicker contador · #6 confirm nativo widget → luego flip LLM TODO-34, gate saldo). ÚLTIMO ítem de OLA 3. Detalle plan §3.6. Cadencia §0.b.
+> **▶️ SIGUE**: el arco OLA 0-3 cerró. Resta = (a) **gates dueño** (flip LLM #917 · MFA 2.9 · App Check 2.11 · cutover 2.12b · validar-live · GSC §276.7); (b) **OLA 4 estratégico/diferido** (plan §OLA-4: templatabilidad, migración-dominio, TODO-48 drift); (c) **Directiva Permanente TODO-52** (auditar→pulir hasta "respira top mundial"). Sin próximo ítem sin-gate obvio → **preguntar al dueño el rumbo**. Cadencia §0.b.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >

@@ -45,6 +45,7 @@ completo; ellipsis solo si excede 2 líneas. 🔜 pendiente re-validación live.
 dropdown y el re-bind del botón tras re-render del header (`auth.js:1355-1368`).
 **Fix sugerido**: bind estable (delegación de eventos) + estado visual consistente del ítem.
 **Evidencia**: validador 2026-06-23 (2 pasadas, intermitente).
+**Estado**: ✅ **FIX APLICADO** (§282, `b34b2f75`): (a) `.hdr-dd-logout` `#888`→`#333` (consistente); (b) delegación con bind ÚNICO en `document` (`auth.js`) → mata la fuga de listeners por-render + closures stale del dropdown. 🔜 pend validación live logueado (2-clics ya no debería pasar).
 
 ### #4 · 🟡 MEDIO · z-index · el widget tapa el dropdown de cuenta del header
 **Síntoma**: con el chat abierto (esquina sup-derecha), el menú "Daniel → Mi perfil / Cerrar sesión"
@@ -60,10 +61,12 @@ cross-component → **mejor en el bloque F4/F5** (no piecemeal, evita efectos co
 **Síntoma**: el contador del hero muestra transitoriamente "+90 vehículos" al cargar y se asienta en "+27"
 (el conteo real del catálogo). Flicker cosmético, no error de datos. **Fix**: arrancar en el valor real /
 placeholder neutro hasta que cargue. **Evidencia**: validador 2026-06-23 (exploración propia).
+**Estado**: ✅ **FIX APLICADO** (§282): `+90 vehículos` hardcoded → placeholder neutro "Decenas de vehículos" (`index.html:517`); `home-motion.js` lo actualiza al real. Verif preview: "+27 vehículos", sin el "+90" falso.
 
 ### #6 · 🟡 MEDIO · Widget bot · "Finalizar conversación" usa `window.confirm()` nativo
 **Síntoma**: el confirm nativo del navegador bloquea el render hasta navegar (ya flagueado §233/§235 follow-up).
 Para un widget premium → **modal in-app** en vez del confirm nativo. **Evidencia**: validador 2026-06-23 (re-confirmado).
+**Estado**: ⏸️ **DIFERIDO al flip LLM** (§282.4, juicio análogo al barrido §279): v2 (`altor-bot.js:126,610`) YA tiene el confirm in-app; v2 REEMPLAZA v1 (TODO-46) → construir un modal en `concierge.js` (v1 soon-dead) = bajo ROI. El confirm nativo funciona (solo un-premium); se cierra con el flip.
 
 ### #7 · 🔴 ALTO · Widget bot · gate de captura NO es takeover (form + chat + input + quick-actions a la vez)
 **Síntoma** (validado LIVE 2026-06-24 por Claude vía extensión Chrome — reporte del dueño con captura): al pedir datos, el formulario se ve "media conversación, medio formulario". Quedan visibles A LA VEZ: el form, los mensajes (comprimidos a ~156px), los **quick-actions** ("Hablar con asesor") y la **barra de texto**.

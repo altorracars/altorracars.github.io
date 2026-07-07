@@ -458,6 +458,11 @@ function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
     const count = disponibles.length;
     const desc = `Vehículos ${nombre} disponibles en ALTORRA CARS, Cartagena. ${count} ${count === 1 ? 'vehículo' : 'vehículos'} en inventario. Financiación disponible.`;
     const bannerImage = customBanner || `${SITE_URL}/multimedia/banner/b_${brandId}.png`;
+    // LCP (TODO-53 P3.4): banner EXACTO que renderiza el JS del hero (marca.html: bannerPath =
+    //   PRERENDERED_BANNER_URL || `multimedia/banner/b_${brandId}.png`) → hornearlo en el
+    //   <img id="brandBanner"> + preload desacopla el LCP del fetch a Firestore. Fallback RELATIVO
+    //   (matchea el string del JS → el re-set del JS es cache-hit, sin doble-descarga). Los 18 b_*.png existen.
+    const mainBanner = customBanner || `multimedia/banner/b_${brandId}.png`;
 
     let html = template;
 
@@ -475,6 +480,8 @@ function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
         'const params = new URLSearchParams(window.location.search);',
         '<div id="header-placeholder"></div>',
         '<!--CMS:aboutBrand-->',
+        '<!--SSG:LCP-BANNER-PRELOAD-->',
+        'id="brandBanner" src=""',
     ];
     for (const anchor of REQUIRED_ANCHORS_BRAND) {
         if (!template.includes(anchor)) {
@@ -486,6 +493,17 @@ function generateBrandPage(template, brand, slug, vehicles, siteContent = {}) {
     if (!html.includes('<base href="/">')) {
         html = html.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n    <base href="/">');
     }
+
+    // LCP (TODO-53 P3.4): hornear el banner (preload + src del <img id=brandBanner>) para que el
+    //   hero pinte SIN esperar el fetch a Firestore. mainBanner siempre existe (custom o b_{slug}.png).
+    html = html.replace(
+        '<!--SSG:LCP-BANNER-PRELOAD-->',
+        `<link rel="preload" as="image" fetchpriority="high" href="${escapeAttr(mainBanner)}">`
+    );
+    html = html.replace(
+        'id="brandBanner" src=""',
+        `id="brandBanner" src="${escapeAttr(mainBanner)}"`
+    );
 
     // Canonical + robots
     html = html.replace(

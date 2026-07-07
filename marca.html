@@ -29,6 +29,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.gstatic.com">
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+    <!-- SSG (TODO-53 P3.4): preload del banner LCP de la marca — horneado por
+         generate-vehicles.mjs en los estáticos (desacopla el LCP del fetch a Firestore);
+         en el SPA dinámico queda vacío (el JS pone el banner tras el fetch). -->
+    <!--SSG:LCP-BANNER-PRELOAD-->
     <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
          para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
          DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->

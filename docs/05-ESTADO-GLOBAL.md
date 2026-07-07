@@ -5,7 +5,7 @@
 
 | Señal | Valor (última actualización: **2026-07-03**) |
 |---|---|
-| **Build** | 🟢 `main`==`dev` `d05f35ba`: **PLAN MAESTRO = SSoT; 🤖 AHORA = OPUS 4.8 (Fable agotada) → arranque = §0+§0.b**. **OLA 0-1 ✅ · OLA 2: 2.1-2.8/2.10/2.12a ✅ · OLA 3.1-3.2 ✅ (§267-§277; suite 374) → OLA 2 restante = GATES DUEÑO APARCADOS por juicio (2.9 MFA · 2.11 App Check · 2.12b cutover DIFERIDO). SIGUE ejecutable: OLA 3.3+.** Gates dueño: saldo bot · purga clientes/suppressions · validar-live (supresión, presencia §274) · GSC noindex §276.7. |
+| **Build** | 🟢 `main`==`dev` `46cad599`: **PLAN MAESTRO = SSoT; 🤖 AHORA = OPUS 4.8 (Fable agotada) → arranque = §0+§0.b**. **OLA 0-1 ✅ · OLA 2: 2.1-2.8/2.10/2.12a ✅ · OLA 3.1-3.3 ✅ (§267-§278; suite 374) → OLA 2 restante = GATES DUEÑO APARCADOS por juicio (2.9 MFA · 2.11 App Check · 2.12b cutover DIFERIDO). SIGUE ejecutable: OLA 3.4+.** Gates dueño: saldo bot · purga clientes/suppressions · validar-live (supresión, presencia §274) · GSC noindex §276.7. |
 | **Cache version vigente** | **`v20260707001137`** (cron-CI 07/07 `37a0569a`, mergeado receta L-02; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |

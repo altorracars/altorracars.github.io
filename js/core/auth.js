@@ -1363,26 +1363,33 @@
         // else: matchesPrerender AND hasDropdown — already fully rendered, idempotent
 
         if (window.lucide) window.lucide.createIcons({ nodes: [container] });
-        // Dropdown toggle — guard against double-binding (renderUserArea
-        // can fire multiple times: pre-render, then onAuthStateChanged)
-        var btn      = $id('hdrUserBtn');
-        var dropdown = $id('hdrUserDropdown');
-        if (btn && dropdown && !btn.dataset.bound) {
-            btn.dataset.bound = '1';
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var open = dropdown.classList.toggle('open');
-                btn.setAttribute('aria-expanded', open);
+        // OLA-3.6 #3: interacción del dropdown por DELEGACIÓN, bind ÚNICO en
+        // `document`. ANTES: el bind era por-render dentro del guard `dataset.bound`
+        // → cada FULL re-render (innerHTML) creaba nuevos nodos y añadía OTRO
+        // `document.addEventListener('click')` (nunca removido) + closures que
+        // capturaban el dropdown YA reemplazado → el toggle/cierre operaba sobre
+        // DOM muerto = "2 clics" intermitente. Ahora un único handler delegado
+        // consulta el DOM VIGENTE por id en cada click → sobrevive re-renders sin
+        // fugas ni referencias stale.
+        if (!window.__altorraHdrUserDelegated) {
+            window.__altorraHdrUserDelegated = true;
+            document.addEventListener('click', function (e) {
+                var dd = $id('hdrUserDropdown');
+                if (!dd) return;
+                var t = e.target;
+                if (t && t.closest && t.closest('#hdrLogoutBtn')) { handleLogout(); return; }
+                if (t && t.closest && t.closest('#hdrUserBtn')) {
+                    e.stopPropagation();
+                    var open = dd.classList.toggle('open');
+                    var b = $id('hdrUserBtn');
+                    if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    return;
+                }
+                // click fuera del botón → cerrar
+                dd.classList.remove('open');
+                var b2 = $id('hdrUserBtn');
+                if (b2) b2.setAttribute('aria-expanded', 'false');
             });
-            document.addEventListener('click', function () {
-                dropdown.classList.remove('open');
-                btn.setAttribute('aria-expanded', 'false');
-            });
-        }
-        var logoutBtn = $id('hdrLogoutBtn');
-        if (logoutBtn && !logoutBtn.dataset.bound) {
-            logoutBtn.dataset.bound = '1';
-            logoutBtn.addEventListener('click', handleLogout);
         }
     }
 

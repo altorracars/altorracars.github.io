@@ -7042,7 +7042,7 @@ html.auth-authenticated #headerUserArea:empty::before {
     margin: 4px 0;
 }
 
-.hdr-dd-logout { color: #888; }
+.hdr-dd-logout { color: #333; } /* OLA-3.6 #3: consistente con .hdr-dd-item (era #888 atenuado); el hover rojo señala lo destructivo */
 .hdr-dd-logout:hover { color: #d93025; background: #fef0ee; }
 
 /* ── Mobile: area de usuario en el menú ── */

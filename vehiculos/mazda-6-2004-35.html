@@ -51,6 +51,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.gstatic.com">
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+    <!-- SSG (TODO-53 P3.2): preload de la imagen LCP del vehículo — horneado por
+         generate-vehicles.mjs en los estáticos (desacopla el LCP del fetch a Firestore);
+         en el SPA dinámico queda vacío (la imagen la pone el JS tras el fetch). -->
+    <link rel="preload" as="image" fetchpriority="high" href="https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773523871522_MAZDA_6_MEC_MODELO_2004-1_compressed.webp?alt=media&amp;token=9eb8375a-c8dc-4960-ad31-356321ec2591">
     <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
          para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
          DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->
@@ -151,7 +155,7 @@
                 <!-- Galería -->
                 <div class="gallery-section">
                     <div class="main-image-container gallery-main">
-                        <img id="mainImage" src="" alt="Vehículo" class="main-image" loading="eager" fetchpriority="high" decoding="async">
+                        <img id="mainImage" src="https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773523871522_MAZDA_6_MEC_MODELO_2004-1_compressed.webp?alt=media&amp;token=9eb8375a-c8dc-4960-ad31-356321ec2591" alt="Vehículo" class="main-image" loading="eager" fetchpriority="high" decoding="async">
                         <div class="image-counter" id="imageCounter">1/1</div>
                         <span class="gallery-zoom-hint" aria-hidden="true">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>

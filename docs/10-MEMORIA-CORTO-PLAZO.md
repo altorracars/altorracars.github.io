@@ -13,23 +13,13 @@
 > 🤖 **AHORA = OPUS 4.8**. **YO decido+ejecuto+mergeo** (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES de construir (L-62). El PLAN MAESTRO (olas 0-4) está cerrado → foco = **TODO-53** (abajo).
 > 🏁 **PLAN MAESTRO arco OLA 0-3 COMPLETO** (§267-§282). Diferidos: #6 bot→flip (§282.4) · barrido legacy oro (`20 §🎨`+§279). ✅ **Cache sin deuda** (SW network-first/SWR `no-cache` sirve fresco sin bump, L-65). ⚠️ `dist/` se commitea por bloque.
 > **🧹 GATES DUEÑO APARCADOS** (delegó el CUÁNDO a mí 06/07; tocan producción viva): MFA 2.9 · App Check 2.11 · cutover 2.12b (§275.4) · validar-live supresión+presencia (§274) · GSC noindex `detalle-vehiculo.html` (§276.7) · saldo bot · purga `clientes`/`suppressions`.
-> **▶️ SIGUE = TODO-53 (mandato dueño 06/07): AUDITORÍA HOLÍSTICA diseño+infra** hacia "top mundial". SSoT = spec `2026-07-06-auditoria-holistica-diseno-infra.md`. ✅ **P0.1 masonry (§283) · P1 a11y (§284) · P2 CLS/perf (§285) · P3.1 LCP hero index (§286: 22.6s→720ms) · P3.2 LCP páginas de vehículo (§287: SSG hornea preload+`#mainImage src`, propaga vía CI)**. **NEXT resto P3**: (a) hero de marca (¿banner JS-injected?) · (b) render-blocking CSS (trace FCP −2766ms, pero es CSS crítico "Task 7" riesgoso) · (c) minify+unused JS/CSS · (d) main-thread. Bloqueados sin dinero: flip LLM #917 · Cloudflare. Cadencia §0.b.
+> **▶️ SIGUE = TODO-53 (mandato dueño 06/07): AUDITORÍA HOLÍSTICA diseño+infra** hacia "top mundial". SSoT = spec `2026-07-06-auditoria-holistica-diseno-infra.md`. ✅ **P0.1 masonry (§283) · P1 a11y (§284) · P2 CLS/perf (§285) · P3.1 LCP hero index (§286: 22.6s→720ms) · P3.2 LCP vehículos (§287) · P3.3 carrusel forced-reflow (§289)**. Colaterales (sesiones hermanas): §288 fix selftest marca CRLF · §290 CI gate del selftest anti-XSS. **NEXT resto P3**: (a) hero de marca (banner JS-injected, mismo patrón §287) · (b) render-blocking CSS (inconsistente 0-2659ms, CSS crítico "Task 7" riesgoso) · (c) minify+unused JS/CSS. **⚠️ ANTES de más P3: re-medir PageSpeed LIVE tras deploy** — el LCP 22.6s→sub-1s debió mover el score fuerte; medir el real antes de invertir. Bloqueados sin dinero: flip LLM #917 · Cloudflare. Cadencia §0.b.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
-> **🚫 Callejones sin salida (NO reintentar)**:
-> (a) **NO custom claims ahora** — reglas Fase 1 usan lookup `usuarios/{uid}`; claims = Fase 5 (§159.3).
-> (b) **NO `preview_screenshot`** (se cuelga tras `preview_resize`, L-28) — usar `preview_snapshot`+`preview_eval`.
-> (c) Consejo Externo = Gemini/Antigravity **code-aware solo-lectura** (§224); cuándo + R1-R4 → `§15`; seguridad/dinero/arquitectura ESTRUCTURAL, no rutina.
-> (d) **NO E2E de forms en localhost** (L-08/§175) — E2E solo contra live; UI con stub `window.db`.
-> (e) **NO mutar config de producción vía MCP** (el clasificador lo deniega) — ruta: acción de 1 clic del dueño (patrón F39) o autorización explícita.
-> (f) **Fan-out acotado escala LIBRE** si agente = in-cwd read-only + structured-output + sin tools gateadas (git/fuera-cwd cuelga en bg → worktree/foreground). L-50/§226.
-> (g) **Bot v2 = grafo de nodos tras flag** (default v1, riesgo cero). v1 battle-tested INTACTO; NO big-bang, NO Vite (vanilla). Módulo `js/concierge/shared/` (NO copiar). Detalle → defects-log §F-1.
-> (h) **Auditoría verifica CÓDIGO, no DEPLOY** — claim "LIVE" se chequea live (Firebase MCP), no por inferencia; verificadores SIN Bash (cuelgue gateado L-50). Panel ≠ journal.
-> (i) **Validación live SIN screenshot = cobertura fingida (M-23)** — el DOM caza texto/lógica, NO diseño → screenshot del render (extensión `computer`; preview cuelga L-28).
-> (j) **`confirm()` nativo BLOQUEA la extensión Chrome**: la página no llega a `document_idle` → screenshots/clicks expiran (parece colgado). Reparto: yo lleno/verifico-Firestore, el DUEÑO da Aceptar; tab atascado → `tabs_create_mcp` (verificar por Firestore, no inferir).
-> (k) **Workflow read-only PUEDE colgar 1 agente** (structured-output, sin tool gateada) → bloquea `parallel()`; cosechar del `journal.jsonl` + `TaskStop` + straggler a mano (**L-61**).
-> (l) **Audit que clasifica código = FALSOS POSITIVOS** (infiere emoji desde `icon('id')` ya presente) → verificar cada hallazgo con grep real, no a ciegas (**L-62**).
+> **🚫 Callejones (NO reintentar; detalle en el §/L citado)**:
+> (a) NO custom claims aún (Fase 1=lookup `usuarios/{uid}`; §159.3). (b) NO `preview_screenshot` (cuelga tras resize L-28)→`snapshot`+`eval`. (c) Consejo Externo=Gemini code-aware **solo-lectura** (§224/§15), no rutina. (d) NO E2E forms localhost (L-08/§175)→solo live+stub `window.db`. (e) NO mutar config prod vía MCP→acción 1-clic dueño (F39). (f) Fan-out acotado escala libre si in-cwd read-only+structured-output sin tools gateadas (git cuelga bg→worktree/fg) L-50/§226.
+> (g) Bot v2=grafo tras flag (v1 INTACTO; NO big-bang/Vite; `js/concierge/shared/` NO copiar) §F-1. (h) Auditoría=CÓDIGO≠DEPLOY→"LIVE" se chequea live (Firebase MCP), verificadores SIN Bash L-50. (i) Val. live SIN screenshot=cobertura fingida (M-23)→screenshot del render (ext. `computer`). (j) `confirm()` nativo BLOQUEA la ext. Chrome→yo lleno/verifico-Firestore, dueño Acepta; tab atascado→`tabs_create_mcp`. (k) Workflow read-only puede colgar 1 agente→bloquea `parallel()`; cosechar `journal.jsonl`+`TaskStop` (L-61). (l) Audit que clasifica código=FALSOS POSITIVOS→verificar con grep real (L-62).
 
 ---
 
@@ -40,7 +30,7 @@
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
 | **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — PLAN MAESTRO 03/07 **arco OLA 0-3 ✅** (§267-§282); continúa como Directiva Permanente vía TODO-53. | 🔄 permanente | pulir |
-| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 masonry ✅ (§283) · **P1 ✅ (§284)** · **P2 ✅ (§285)** · **P3.1 LCP hero ✅ (§286: 22.6s→720ms)** · **P3.2 LCP vehículos ✅ (§287, CI)**. RESTA: P3 (hero marca · minify/unused JS-CSS · main-thread) · P0 barrido panel (extensión) + P4 extensión Chrome. | 🔄 impl | P3 resto |
+| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 masonry ✅ (§283) · **P1 ✅ (§284)** · **P2 ✅ (§285)** · **P3.1 LCP hero ✅ (§286)** · **P3.2 LCP vehículos ✅ (§287)** · **P3.3 carrusel reflow ✅ (§289)**. RESTA: P3 (hero marca · render-blocking · minify/unused) — **re-medir PageSpeed live antes** · P0 barrido panel (extensión) + P4 extensión Chrome. | 🔄 impl | re-medir |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
@@ -72,4 +62,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **07/07 ⟦OPUS⟧** Fix selftest SSG `marca` (CRLF `.replace()`) → §288 / L-68; exit 0 ✅. (Incidente: reverti §288-carrusel ajeno sin commitear, código salvo `76b01728` → L-48; merge reconcilia §288.)
+- **07/07 ⟦OPUS⟧ Reconciliación 3-way (L-48) integrada a `dev`**: §288 fix selftest SSG marca (CRLF `.replace()`, L-68, `dc54349a`) · §289 P3.3 carrusel forced-reflow (`76b01728`) · §290 CI gate del selftest anti-XSS (`860efe8d`). §NN reconciliado 288/289/290. El §288-carrusel de la carrera se revirtió por error (L-48 hazard inverso, código salvo); su ADR canónico = §289. Callejones comprimidos (GC) para bajar `10` bajo cap.

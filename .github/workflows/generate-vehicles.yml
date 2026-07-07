@@ -45,6 +45,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # SECURITY GATE (§288) — anti-stored-XSS self-test. Bakes breakout payloads into the
+      # JSON-LD / PRERENDERED_* sinks with mocks (NO Firestore) and asserts every JSON block
+      # parses. If safeJsonLd or the injections ever regress, exit≠0 fails the job HERE — the
+      # generation + commit/push steps below never run, so no vulnerable pages reach production.
+      # Runs before generation on purpose: a manual gate is a gate nobody runs.
+      - name: Security self-test (SSG anti-stored-XSS)
+        run: npm run selftest
+
       - name: Generate vehicle pages from Firestore
         run: npm run generate
         env:

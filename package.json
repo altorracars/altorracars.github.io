@@ -7,6 +7,7 @@
     "lint": "bunx biome lint --write",
     "format": "bunx biome format --write",
     "generate": "node scripts/generate-vehicles.mjs",
+    "selftest": "SSG_SELFTEST=1 node scripts/generate-vehicles.mjs",
     "brain:check": "node scripts/brain-check.mjs",
     "brain:diff": "node scripts/brain-diff.mjs",
     "brain:index": "node scripts/brain-index.mjs",

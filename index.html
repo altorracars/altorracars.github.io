@@ -71,15 +71,13 @@
          fallaba parcialmente → hero quedaba en gradient negro sin imagen
          real. Fix: solo referenciar variants que realmente existen en
          multimedia/optimized/. -->
+    <!-- LCP hero preload (TODO-53 P3): SOLO AVIF para no doble-descargar — el
+         <picture> del hero usa AVIF en navegadores modernos (mayoría); los sin
+         AVIF saltan este preload (type mismatch) y cargan el WebP del <picture>. -->
     <link rel="preload" as="image" type="image/avif" fetchpriority="high"
           imagesrcset="multimedia/optimized/heroindex-480.avif 480w,
                        multimedia/optimized/heroindex-768.avif 768w,
                        multimedia/optimized/heroindex-1280.avif 1280w"
-          imagesizes="100vw">
-    <link rel="preload" as="image" type="image/webp" fetchpriority="high"
-          imagesrcset="multimedia/optimized/heroindex-480.webp 480w,
-                       multimedia/optimized/heroindex-768.webp 768w,
-                       multimedia/optimized/heroindex-1280.webp 1280w"
           imagesizes="100vw">
     <link rel="preload" href="/multimedia/logo-placeholder.png" as="image">
 
@@ -489,7 +487,12 @@
          01 · HERO (CinHero)
          ============================================================ -->
     <section class="cin-hero" data-screen-label="01 Hero">
-        <div class="cin-hero-bg" aria-hidden="true"></div>
+        <div class="cin-hero-bg" aria-hidden="true">
+            <picture>
+                <source type="image/avif" srcset="multimedia/optimized/heroindex-480.avif 480w, multimedia/optimized/heroindex-768.avif 768w, multimedia/optimized/heroindex-1280.avif 1280w" sizes="100vw">
+                <img class="cin-hero-img" src="multimedia/optimized/heroindex-1280.webp" srcset="multimedia/optimized/heroindex-480.webp 480w, multimedia/optimized/heroindex-768.webp 768w, multimedia/optimized/heroindex-1280.webp 1280w" sizes="100vw" alt="" fetchpriority="high" decoding="async">
+            </picture>
+        </div>
         <div class="cin-grain" aria-hidden="true"></div>
 
         <header class="cin-hero-meta">

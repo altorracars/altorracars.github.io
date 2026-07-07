@@ -91,14 +91,20 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
 
 .cin-hero-bg {
   position: absolute; inset: 0; z-index: 0;
-  /* Path absoluto desde la raíz: el CSS está en /css/home/ y url() es relativa
-     al archivo CSS (NO usa <base href="/">). Lección L-05. */
-  background-image: url("/multimedia/heroindex.webp");
-  background-size: cover;
-  background-position: center 42%;
+  /* LCP (TODO-53 P3): el hero pasó de background-image (145KB, descubierto tarde)
+     a un <picture> real hijo → el preload responsivo (imagesrcset 480/768/1280 +
+     fetchpriority=high) SÍ aplica: móvil baja 24KB (480w) temprano, no 145KB tarde.
+     filter+transform siguen en el contenedor → afectan img + gradientes igual. */
   filter: saturate(85%) brightness(0.55);
   transform: scale(1.08);
   will-change: transform;
+}
+.cin-hero-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  z-index: -1; /* debajo de ::before/::after (gradientes) — replica el orden del bg */
 }
 .cin-hero-bg::before {
   content: ""; position: absolute; inset: 0;

@@ -1501,7 +1501,7 @@
     cursor: pointer;
     text-decoration: none;
     text-align: center;
-    transition: all 0.15s ease;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
     font-family: inherit;
 }
 .cnc-vcard-btn:hover {
@@ -2118,7 +2118,37 @@
    §87 Sprint C-S9 — CSAT (Customer Satisfaction) post-cierre
    Survey de 5 caritas estilo Intercom/Drift entre el radicado y los
    botones de acción de la pantalla "Chat finalizado". Idempotente.
-   Cero transition: all (§17.2). Solo transform/opacity/border-color
+   Cero transition: color (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, background-color (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, border-color (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, box-shadow (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, transform (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, opacity (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, filter (§17.2). Solo transform/opacity/border-color
    específicos. prefers-reduced-motion respetado.
    ═══════════════════════════════════════════════════════════════════ */
 

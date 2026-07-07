@@ -1041,7 +1041,7 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
     background: rgba(255,255,255,.06);
     color: var(--pf-text-muted);
     border: 2px solid var(--pf-border);
-    transition: all .2s;
+    transition: color .2s, background-color .2s, border-color .2s, box-shadow .2s, transform .2s, opacity .2s, filter .2s;
 }
 .pf-sol-step--done .pf-sol-step-dot {
     background: rgba(34,160,107,.12);

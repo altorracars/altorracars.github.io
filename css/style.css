@@ -45,7 +45,7 @@
     --shadow-lg: 0 8px 24px rgba(29, 27, 25, 0.2);
 
     /* Transitions */
-    --transition: all 0.3s ease;
+    --transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
 }
 
 /* Reset & Base Styles */
@@ -1672,7 +1672,7 @@ section {
     padding: 0.72rem 1.7rem;
     border-radius: 4px;
     width: fit-content;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
     box-shadow: 0 4px 18px rgba(212,175,55,0.2);
@@ -1901,7 +1901,7 @@ section {
     border: none;
     background: rgba(255,255,255,0.12);
     cursor: pointer;
-    transition: all 0.4s ease;
+    transition: color 0.4s ease, background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease, opacity 0.4s ease, filter 0.4s ease;
     padding: 0;
 }
 
@@ -1933,7 +1933,7 @@ section {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     padding: 0;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
@@ -2651,7 +2651,7 @@ section {
     border-radius: var(--radius-md);
     font-weight: 600;
     font-size: 0.9rem;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
 }
 
 .no-results-btn:hover {
@@ -3218,7 +3218,7 @@ section {
     max-width: 900px;
     margin: 0 auto;
     box-shadow: 0 8px 30px rgba(184, 150, 88, 0.15);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .guarantee-card:hover {
@@ -3305,7 +3305,7 @@ section {
     font-weight: 600;
     text-decoration: none;
     font-size: 0.95rem;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     margin-top: 0.5rem;
 }
 
@@ -3762,7 +3762,7 @@ section {
     border-radius: var(--radius-md);
     border: 2px solid var(--primary-gold);
     background: white;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -4277,7 +4277,7 @@ section {
     box-shadow: 
         0 2px 8px rgba(0, 0, 0, 0.08),
         0 4px 16px rgba(0, 0, 0, 0.04);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     /* Evitar colapso */
     min-width: 0;
@@ -4433,7 +4433,7 @@ section {
     font-size: 1.3rem;
     color: #b89658;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     border: none;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent !important;
@@ -4516,7 +4516,7 @@ section {
     border-radius: 8px;
     font-weight: 500;
     font-size: 0.9rem;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     text-decoration: none;
 }
 
@@ -4690,7 +4690,7 @@ section {
     border-radius: 8px;
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
 }
 
 .btn-clear-filters:hover,
@@ -4754,7 +4754,7 @@ section {
     border-radius: 10px;
     color: white;
     font-size: 0.9rem;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     appearance: none;
 }
 
@@ -4882,7 +4882,7 @@ section {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
 }
 
 .filter-checkbox input:checked + .checkmark {
@@ -4917,7 +4917,7 @@ section {
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     margin-top: 1.5rem;
     display: flex;
     align-items: center;
@@ -5109,7 +5109,7 @@ section {
     align-items: center;
     justify-content: space-between;
     box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
 }
 
 .mobile-filters-toggle:hover {
@@ -5140,7 +5140,7 @@ section {
         padding: 0;
         margin: 0;
         transform: translateY(-10px);
-        transition: all 0.3s ease;
+        transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     }
 
     .filters-sidebar,
@@ -5148,7 +5148,7 @@ section {
     .catalog-filters {
         position: static;
         max-height: none;
-        transition: all 0.3s ease;
+        transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     }
 }
 

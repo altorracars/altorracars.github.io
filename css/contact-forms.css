@@ -76,7 +76,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
 }
 
 .modal-close:hover {
@@ -121,7 +121,7 @@
     font-family: 'Poppins', sans-serif;
     color: #1d1b19;
     background: white;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
 }
 
 .form-input:focus,
@@ -157,7 +157,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
     box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
     display: flex;
     align-items: center;
@@ -319,7 +319,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s;
+    transition: color 0.25s, background-color 0.25s, border-color 0.25s, box-shadow 0.25s, transform 0.25s, opacity 0.25s, filter 0.25s;
 }
 
 .wizard-step-item.active .wizard-dot {
@@ -405,7 +405,7 @@
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s, filter 0.2s;
 }
 
 .wizard-btn-back:hover {

@@ -17,19 +17,9 @@
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
-> **🚫 Callejones sin salida (NO reintentar)**:
-> (a) **NO custom claims ahora** — reglas Fase 1 usan lookup `usuarios/{uid}`; claims = Fase 5 (§159.3).
-> (b) **NO `preview_screenshot`** (se cuelga tras `preview_resize`, L-28) — usar `preview_snapshot`+`preview_eval`.
-> (c) Consejo Externo = Gemini/Antigravity **code-aware solo-lectura** (§224); cuándo + R1-R4 → `§15`; seguridad/dinero/arquitectura ESTRUCTURAL, no rutina.
-> (d) **NO E2E de forms en localhost** (L-08/§175) — E2E solo contra live; UI con stub `window.db`.
-> (e) **NO mutar config de producción vía MCP** (el clasificador lo deniega) — ruta: acción de 1 clic del dueño (patrón F39) o autorización explícita.
-> (f) **Fan-out acotado escala LIBRE** si agente = in-cwd read-only + structured-output + sin tools gateadas (git/fuera-cwd cuelga en bg → worktree/foreground). L-50/§226.
-> (g) **Bot v2 = grafo de nodos tras flag** (default v1, riesgo cero). v1 battle-tested INTACTO; NO big-bang, NO Vite (vanilla). Módulo `js/concierge/shared/` (NO copiar). Detalle → defects-log §F-1.
-> (h) **Auditoría verifica CÓDIGO, no DEPLOY** — claim "LIVE" se chequea live (Firebase MCP), no por inferencia; verificadores SIN Bash (cuelgue gateado L-50). Panel ≠ journal.
-> (i) **Validación live SIN screenshot = cobertura fingida (M-23)** — el DOM caza texto/lógica, NO diseño → screenshot del render (extensión `computer`; preview cuelga L-28).
-> (j) **`confirm()` nativo BLOQUEA la extensión Chrome**: la página no llega a `document_idle` → screenshots/clicks expiran (parece colgado). Reparto: yo lleno/verifico-Firestore, el DUEÑO da Aceptar; tab atascado → `tabs_create_mcp` (verificar por Firestore, no inferir).
-> (k) **Workflow read-only PUEDE colgar 1 agente** (structured-output, sin tool gateada) → bloquea `parallel()`; cosechar del `journal.jsonl` + `TaskStop` + straggler a mano (**L-61**).
-> (l) **Audit que clasifica código = FALSOS POSITIVOS** (infiere emoji desde `icon('id')` ya presente) → verificar cada hallazgo con grep real, no a ciegas (**L-62**).
+> **🚫 Callejones (NO reintentar; detalle en el §/L citado)**:
+> (a) NO custom claims aún (Fase 1=lookup `usuarios/{uid}`; §159.3). (b) NO `preview_screenshot` (cuelga tras resize L-28)→`snapshot`+`eval`. (c) Consejo Externo=Gemini code-aware **solo-lectura** (§224/§15), no rutina. (d) NO E2E forms localhost (L-08/§175)→solo live+stub `window.db`. (e) NO mutar config prod vía MCP→acción 1-clic dueño (F39). (f) Fan-out acotado escala libre si in-cwd read-only+structured-output sin tools gateadas (git cuelga bg→worktree/fg) L-50/§226.
+> (g) Bot v2=grafo tras flag (v1 INTACTO; NO big-bang/Vite; `js/concierge/shared/` NO copiar) §F-1. (h) Auditoría=CÓDIGO≠DEPLOY→"LIVE" se chequea live (Firebase MCP), verificadores SIN Bash L-50. (i) Val. live SIN screenshot=cobertura fingida (M-23)→screenshot del render (ext. `computer`). (j) `confirm()` nativo BLOQUEA la ext. Chrome→yo lleno/verifico-Firestore, dueño Acepta; tab atascado→`tabs_create_mcp`. (k) Workflow read-only puede colgar 1 agente→bloquea `parallel()`; cosechar `journal.jsonl`+`TaskStop` (L-61). (l) Audit que clasifica código=FALSOS POSITIVOS→verificar con grep real (L-62).
 
 ---
 
@@ -71,3 +61,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 ## 📝 Bitácora (efímera)
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
+
+- **07/07 ⟦OPUS⟧** SSG anti-XSS self-test → **gate CI** (`generate-vehicles.yml` step `npm run selftest` + script npm) = §290 (`860efe8d`); cumple §288.7. `.gitattributes` descartado (§288 hace el ancla CRLF-tolerante). Callejones comprimidos para bajar `10` bajo cap (GC parcial, detalle en refs §/L). ⚠️ 3-way concurrente (L-48) → NO mergeé; integración reconcilia §NN + orden de merge.

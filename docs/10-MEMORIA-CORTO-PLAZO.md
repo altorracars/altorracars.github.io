@@ -13,7 +13,7 @@
 > 🤖 **AHORA = OPUS 4.8**. **YO decido+ejecuto+mergeo** (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES de construir (L-62). El PLAN MAESTRO (olas 0-4) está cerrado → foco = **TODO-53** (abajo).
 > 🏁 **PLAN MAESTRO arco OLA 0-3 COMPLETO** (§267-§282). Diferidos: #6 bot→flip (§282.4) · barrido legacy oro (`20 §🎨`+§279). ✅ **Cache sin deuda** (SW network-first/SWR `no-cache` sirve fresco sin bump, L-65). ⚠️ `dist/` se commitea por bloque.
 > **🧹 GATES DUEÑO APARCADOS** (delegó el CUÁNDO a mí 06/07; tocan producción viva): MFA 2.9 · App Check 2.11 · cutover 2.12b (§275.4) · validar-live supresión+presencia (§274) · GSC noindex `detalle-vehiculo.html` (§276.7) · saldo bot · purga `clientes`/`suppressions`.
-> **▶️ SIGUE = TODO-53 (mandato dueño 06/07): AUDITORÍA HOLÍSTICA diseño+infra** hacia "top mundial". SSoT = spec `2026-07-06-auditoria-holistica-diseno-infra.md` (P0 panel · P1 a11y · P2 CLS · P3 minify/perf · P4 extensión Chrome). ✅ P0.1 grilla Atributos→masonry (`4e35145a`). **NEXT: P1 a11y** (qt-dock role · contraste footer · touch targets CTA — quick, verificable en preview local). Bloqueados sin dinero: flip LLM #917 · Cloudflare. Otros gates dueño aparcados (MFA/AppCheck/cutover/GSC §276.7). Cadencia §0.b.
+> **▶️ SIGUE = TODO-53 (mandato dueño 06/07): AUDITORÍA HOLÍSTICA diseño+infra** hacia "top mundial". SSoT = spec `2026-07-06-auditoria-holistica-diseno-infra.md` (P0 panel · P1 a11y · P2 CLS · P3 minify/perf · P4 extensión Chrome). ✅ P0.1 grilla Atributos→masonry (`4e35145a`, §283). ✅ **P1 a11y COMPLETO** (§284, `d349ecb2`): qt-dock role=menu→toolbar · contraste footer 1.83→7.81:1 AAA (el culpable REAL era `style.css .footer-legal a`, no `--ink-text-faint` — spec mis-atribuyó, medí live) · CTA close 22→24px · botones-sin-nombre = 0 offenders. **NEXT: P2 CLS** (img w/h faltantes · 14 animaciones no-compuestas · >4 preconnect · render-blocking — quick, verificable en preview). Bloqueados sin dinero: flip LLM #917 · Cloudflare. Otros gates dueño aparcados (MFA/AppCheck/cutover/GSC §276.7). Cadencia §0.b.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -40,7 +40,7 @@
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
 | **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — PLAN MAESTRO 03/07 **arco OLA 0-3 ✅** (§267-§282); continúa como Directiva Permanente vía TODO-53. | 🔄 permanente | pulir |
-| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 grilla Atributos→masonry ✅ (`4e35145a`). RESTA: P1 a11y (qt-dock/contraste/touch) · P2 CLS (img w/h, animaciones, preconnect) · P3 minify/unused JS-CSS (LCP móvil 22.6s) · P0 barrido panel + P4 extensión Chrome. | 🔄 impl | P1 next |
+| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 masonry ✅ (§283) · **P1 a11y ✅ (§284)**. RESTA: P2 CLS (img w/h, 14 animaciones no-compuestas, preconnect, render-blocking) · P3 minify/unused JS-CSS (LCP móvil 22.6s) · P0 barrido panel (extensión) + P4 extensión Chrome. | 🔄 impl | P2 next |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
@@ -50,7 +50,7 @@
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
 | **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
 | **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); **`00`→`00a-INDICE` (§1–159) + `30`→`32-LECCIONES-META` (M-NN) SHARDEADOS ✅ 03/07** (38k/43k, holgura). Resta menor: 99a/99b · `ignoreDirs` · `33-FRONTEND` (headroom, baja prioridad). | 🔄 | — |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); **`00`→`00a-INDICE` (§1–159) + `30`→`32-LECCIONES-META` (M-NN) SHARDEADOS ✅ 03/07** (38k/43k, holgura). Resta menor: 99a/99b · `ignoreDirs` · **`33-FRONTEND` ⚠️ over cap (39k/34k tras L-66) → shard/GC = próximo candidato**. | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |

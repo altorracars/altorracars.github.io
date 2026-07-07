@@ -13,11 +13,11 @@
 - ✅ **Atributos: grilla a masonry** — `display:grid` alineaba filas a la tarjeta más alta → huecos. Fix: `columns` (ADR pend). `admin-app/src/styles/lists.css`. HECHO+verificado 2026-07-06 (`4e35145a`).
 - ⬜ **Barrido holístico del panel** (otras páginas): el dueño reporta "así en muchos lugares" — alineación/huecos/orden/espaciado inconsistente. Requiere recorrer cada módulo (inbox/pipeline/agenda/contactos/vehículos/dashboard/reportes/hub) con la extensión Chrome logueado + medir. Buscar: grids con huecos, tarjetas de altura desigual, ritmo vertical inconsistente, densidad, jerarquía visual.
 
-## P1 — Accesibilidad pública (PageSpeed: móvil 87 / desktop 88 → objetivo ≥95)
-- ⬜ **`qt-dock role="menu"` sin hijos `menuitem`** (`js/public/home/quicktools.js` + `css/home/quicktools.css`): un `role=menu` exige hijos `role=menuitem`; los `.qt-item` son `<a>` sin rol → error ARIA **Y** "árbol de accesibilidad mal formado" (categoría Navegación Agéntica 1/2). Fix: quitar `role=menu` (es una barra de nav → `<nav aria-label>` o `role=toolbar`), no un menú de comandos.
-- ⬜ **Contraste footer** (`snippets/footer.html` `.alt-footer-bottom-link` en `.footer-bottom`): Términos/Privacidad/Cookies < AA. Subir contraste del texto.
-- ⬜ **Áreas táctiles CTA bot** (`css/concierge.css`): `.cnc-cta-bubble-close` (×) + `.cnc-cta-bubble` muy chicas/juntas (<24px o sin spacing). Agrandar/espaciar.
-- ⬜ **Botones sin nombre accesible** (móvil): auditar los `<button>` sin `aria-label`/texto.
+## P1 — Accesibilidad pública (PageSpeed: móvil 87 / desktop 88 → objetivo ≥95) — ✅ COMPLETO (§284, `d349ecb2`)
+- ✅ **`qt-dock role="menu"` sin hijos `menuitem`** (`js/public/home/quicktools.js`): FIX = `role="toolbar"` + `id=qt-dock` + `aria-labelledby=qt-dock-eyebrow` + `aria-orientation=vertical`; toggle `aria-controls` (disclosure). Verif live: toolbar bien formado, disclosure false→true→false. (El `css/home/quicktools.css` no requirió cambios.)
+- ✅ **Contraste footer** — la spec lo MIS-ATRIBUYÓ a `.alt-footer-bottom-link{--ink-text-faint}` (#8A8A95, ~5.6:1). Medición live (§3.3): el ganador de especificidad era `css/style.css .footer-legal a{rgba(255,255,255,0.22)}` (0-1-1) = **1.83:1** sobre `#030303` (falla AA). FIX: 0.22→0.62 = **7.81:1 AAA** (links + `.footer-copy`); `strong` 0.5→0.9; defensa `.alt-footer-bottom-link` faint→muted.
+- ✅ **Áreas táctiles CTA bot** (`css/concierge.css`): `.cnc-cta-bubble-close` 22px→**24px** (WCAG 2.5.8). El `.cnc-cta-bubble` en sí ya es un pill grande (>24px). Verif: computed 24×24.
+- ✅ **Botones sin nombre accesible** (móvil): auditados index (desktop+móvil), busqueda, detalle — incl. `role=button`/`onclick`/ocultos = **0 offenders** (el sitio ya etiqueta todo). NO reproducible; si el dueño señala el elemento exacto de PageSpeed, se corrige.
 
 ## P2 — CLS + perf quirúrgica pública (CLS 0.034-0.046; LCP móvil 22.6s ⚠️)
 - ⬜ **Imágenes sin `width`/`height` explícitos** → CLS + reserva de layout. Añadir dims a los `<img>` que falten (grep).

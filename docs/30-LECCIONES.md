@@ -263,6 +263,7 @@
 - **Meta (verifica al consejo + comité de DOMINIO):** (a) la revisión 4-lentes cazó un gap real (`snapshotEntriesRedacted` faltaba en auditLog) pero **alucinó** un `firestore.indexes.json` inexistente → verifica todo claim (query de igualdad anidado = auto-indexado). (b) un comité LEGAL ×5 vs `.gov.co` cazó un gap PROBATORIO que el code-review NO ve: borrar el contacto mataba `contractRef` → snapshot económico HUÉRFANO (no reconciliable, C.Co. art.60 + E.T. art.632 + Ley 1581 art.12) → fix C1 = rescatar el contrato al auditLog antes de borrar. **Para CUMPLIMIENTO corre el comité del DOMINIO, no solo code-review** (el requisito de RECONSTRUCCIÓN no es un bug). Detalle → `42-LEGAL §Certificación`.
 
 ### L-60 · SVG inline hijo-flex directo colapsa a `width:0` sin `flex:0 0 auto` (mide vivo, no confíes en la regla) → detalle en `33-LECCIONES-FRONTEND.md`
+### L-66 · Contraste/rol a11y: MIDE la cascada viva (el ganador de especificidad ≠ el token que dice la spec) · `role=menu` es un contrato (exige `menuitem`; barra de acciones = `toolbar`) → detalle en `33-LECCIONES-FRONTEND.md`
 
 ---
 

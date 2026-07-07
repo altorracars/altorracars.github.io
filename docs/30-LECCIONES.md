@@ -264,6 +264,7 @@
 
 ### L-60 · SVG inline hijo-flex directo colapsa a `width:0` sin `flex:0 0 auto` (mide vivo, no confíes en la regla) → detalle en `33-LECCIONES-FRONTEND.md`
 ### L-66 · Contraste/rol a11y: MIDE la cascada viva (el ganador de especificidad ≠ el token que dice la spec) · `role=menu` es un contrato (exige `menuitem`; barra de acciones = `toolbar`) → detalle en `33-LECCIONES-FRONTEND.md`
+### L-67 · Hero de CSS `background-image` = trampa de LCP (descubierto tarde, sin `fetchpriority`, no usa el preload responsivo) → usar `<img>`/`<picture>`; verifica el LCP con TRACE real, no con el observer del preview → detalle en `33-LECCIONES-FRONTEND.md`
 
 ---
 

@@ -26,8 +26,9 @@
 - ✅ **"14 animaciones no-compuestas"** — diagnóstico Lighthouse **peso-0**: mayoría COMPUESTAS (transform/opacity). Las de paint (`cinPulse` box-shadow hero DISEÑADO · `shimmer` bg-position skeleton) DIFERIDAS: convertir arriesga el diseño (owner: zero-regresión) por ganancia de score NULA.
 > **Score-killer real = LCP móvil 22.6s → P3** (minify/unused JS-CSS), NO P2. P2 era polish; el salto a ≥95 está en P3.
 
-## P3 — Perf infraestructura (más grande; LCP móvil 22.6s es el gran objetivo)
-- ⬜ **Minificar JS/CSS público** (142 KiB JS + 32 KiB CSS): el sitio vanilla NO minifica. Necesita un paso de build/minify (¿workflow CI? — sin romper la simplicidad vanilla). Alto impacto.
+## P3 — Perf infraestructura (más grande; LCP móvil 22.6s era el gran objetivo)
+- ✅ **P3.1 LCP del hero RESUELTO** (§286, `c541903a`): el LCP NO era minify — era el hero como CSS `background-image` (145KB full, descubierto tarde, preload responsivo desperdiciado). Fix: hero = `<picture>` real (AVIF/WebP srcset + fetchpriority) → preload usado. Verif chrome-devtools móvil Slow4G+4x: **LCP 720ms** (era 22.6s), Load 6ms, CLS 0. **Falta**: verificar si detalle/marca (heroes propios) repiten el patrón.
+- ⬜ **Minificar JS/CSS público** (142 KiB JS + 32 KiB CSS): el sitio vanilla NO minifica. Necesita un paso de build/minify (¿workflow CI? — sin romper la simplicidad vanilla). Impacto medio (ya NO es el cuello del LCP).
 - ⬜ **JS/CSS sin usar** (690 KiB JS · 87 KiB CSS): code-split / defer / cargar por-página lo que hoy es global.
 - ⬜ **JS duplicado** (8 KiB): ¿Firebase cargado 2×? Investigar.
 - ⬜ **Payload enorme** (móvil 8660 KiB): imágenes (ya AVIF/WebP §91) + JS. Auditar qué pesa.

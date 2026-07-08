@@ -202,6 +202,7 @@
 | §293 | **P0 hueco de grilla APLICADO, 5 grillas ⟦OPUS-4.8⟧** — `align-items:start` (vs masonry §292). L-69. | 44651 |
 | §294 | **P0 barrido responsive móvil panel ⟦OPUS-4.8⟧** — ~22 pantallas @390: 3 clips fixed (Bandeja · Agenda header · Vehículos flex-collapse). L-70. | 44663 |
 | §295 | **P0 Agenda vista día/lista móvil ⟦OPUS-4.8⟧** — cierra diferido §294.5. `@≤560`: grid→lista de días-con-citas (`:has()`); desktop intacto; verif live. L-72. | 44675 |
+| §296 | **PageSpeed home Fase 0 + 1.1a ⟦OPUS-4.8⟧** (móvil 53/ord 69) — imágenes −1.1MB (webp+favicon real, preload 412KB fuera) · a11y→100 (aria-labels button-name + CTA close 28px target-size + label-in-name) · logos marca `onerror`→local (fix 404 Audi) · `cinWord` sin filter (§3.1). SSoT spec `2026-07-08-pagespeed-audit-plan.md`, TODO-54. `018ad1d8`. | 44687 |
 | §243 | **F-2 (5/6) `auditoria` visor en admin-app ⟦OPUS⟧** — LECTOR read-only de `auditLog`: lista cronológica (onSnapshot 200) + buscador + filtro; inmutable. | 44069 |
 | §242 | **F-2 (4/6) `workflows`/Automatización en admin-app ⟦OPUS⟧** — port admin-automation: NO CRUD (verificar-no-asumir) sino 4 reglas FIJAS toggle + visor `automationLog`; motor sigue legacy client-side (→TODO-41) + gap RBAC `workflows.edit`. dist gateado. | 44057 |
 | §241 | **F-2 (3/6) `departamentos` en admin-app ⟦OPUS⟧** — catálogo ④a `departments/{id}` (grid+modal, id slug `dept_<slug>`). Guard §66 (no borrar con userCount>0, UI+rules). Port admin-departments. dist gateado. | 44045 |
@@ -230,20 +231,6 @@
 | RCA Mode (verificar, no asumir) | §19 | 9793 |
 | Protocolo IAP (5 secciones pre-commit) | §37 | 19449 |
 | PERF KILL (purga anti-patterns) | §35 | 18619 |
-
----
-
-## Planes maestros (todos cerrados — detalle en historial)
-
-| Plan | § rango | Estado |
-|---|---|---|
-| RBAC dinámico | §61-§73.4 + §89 | ✅ 100% |
-| ALTOR Hub (cirugía) | §59-§88 | ✅ 7/7 + C-S8/S9/S10 |
-| Smart Update Prompts | §82-§84 | ✅ Producción |
-| SEO Fase 4 técnica | §90 | ✅ Validado |
-| Fase 3 Performance | §91-§97 | ✅ 3A+3B (3C/3D pendientes TODO-03/04) |
-| Motor cromático tema | §115-§117 | ✅ 6 paletas |
-| Rediseño index cinematic (SP-1) | §122 | ✅ Vanilla port (T1-T8) |
 
 ---
 

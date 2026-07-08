@@ -32,6 +32,7 @@
 |---|---|---|---|
 | **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — PLAN MAESTRO 03/07 **arco OLA 0-3 ✅** (§267-§282); continúa como Directiva Permanente vía TODO-53. | 🔄 permanente | pulir |
 | **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 masonry ✅ (§283) · **P1 ✅ (§284)** · **P2 ✅ (§285)** · **P3.1 LCP hero ✅ (§286)** · **P3.2 LCP vehículos ✅ (§287)** · **P3.3 carrusel reflow ✅ (§289)** · **P3.4+P3.5 banner marca ✅ (§291: src+preload · PNG→WebP −66%)**. **✅✅ VALIDADO LIVE**: prod LCP 662ms (era 22.6s), CLS 0.03. RESTA (menor): render-blocking · minify · **P0 grid-gaps PRE-DIAGNOSTICADO §292 (masonry refutado 0/10; apply order-preserving = gate extensión)** · P0 barrido visual + P4 extensión Chrome. | 🔄 impl | menor/panel |
+| **TODO-54** | **⚡ PageSpeed perf home ⟦OPUS⟧ (08/07)** — spec `2026-07-08-pagespeed-audit-plan.md`. **Fase 0 + 1.1a ✅ (§296)**. RESTA: 1.1b (anim visual-check) · 1.2 fuentes · 1.3 render-block · F2 dieta JS · F3 minify/categorías · F4 Cloudflare (dinero). | 🔄 impl | 1.1b+ |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
@@ -63,4 +64,4 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **07-08/07 ⟦OPUS⟧ Pulido grillas + responsive del panel (§292-§295, L-69/70/72)**: workflow 10-agentes refutó masonry §283 (0/10 APPLY-SAFE) → `align-items:start` a 5 grillas (§293; LIVE: void −38/−50px). Barrido responsive @390/600/768/1440 de ~22 pantallas → **3 clips fixed** (Bandeja · Agenda header 155px · Vehículos `flex+min-width:0` colapsa; §294) + **Agenda vista día/lista en móvil** (§295, `:has()`; bug empty cazado L-72) + dist. Base del panel SÓLIDA y **responsive-completa**. Bot+Cloudflare = BLOQUEADOS (dinero).
+- **08/07 ⟦OPUS⟧ PageSpeed Fase 0/1.1a (§296, TODO-54, spec `2026-07-08-pagespeed-audit-plan.md`)**: móvil 53/ord 69. SHIPPED `018ad1d8`: imágenes −1.1MB · a11y→100 · logos marca `onerror`→local (fix 404 Audi) · `cinWord` sin filter. Verif preview. Deltas + PDF (scratchpad, NO borrar) → spec. 🚫 NO quitar Poppins/`admin-calendar-config` sin verificar.

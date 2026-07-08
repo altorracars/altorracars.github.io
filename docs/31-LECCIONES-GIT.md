@@ -47,6 +47,11 @@
 - **Receta**: todo anchor de `.replace()` con estructura MULTILÍNEA debe (a) tolerar `\r?\n` vía regex capturando `nl`/`indent` para reproducir el original **byte-idéntico en LF** (cero regresión en CI), o (b) anclarse en UNA sola línea (inmune a CRLF — así es la inyección de vehículo, por eso nunca falló). + un guard debe validar el anchor EXACTO del `.replace()`, no un substring suelto. + post-condición ruidosa (`if (html.indexOf('window.X = ')<0) throw`) → el no-op deja de ser silencioso también en generación REAL.
 - *Vivido en el fix del selftest SSG `marca` (rama `claude/practical-franklin`; ADR de cierre §288 — ⚠️ colisión de numeración con el §288-carrusel P3.3 de `dev`/`76b01728`, reconciliar al merge). Primo de L-01 (CRLF+`sed`). El selftest es gate **MANUAL** — NO está en CI (`generate-vehicles.yml` solo corre `npm run generate`).*
 
+### L-71 · Commit en HEAD DESPRENDIDO (tras resume) → queda COLGANTE, no llega a `dev`/`main`
+- **Síntoma**: `git commit` imprime `[detached HEAD <hash>]` (no `[dev <hash>]`); luego `git push origin dev` = "Everything up-to-date" y el `git checkout dev` REVIERTE tu edit del working tree (vuelve al estado de `dev`). El commit existe pero es DANGLING (solo alcanzable por hash).
+- **Causa**: la sesión arrancó/quedó en HEAD desprendido (resume, o un pipeline previo `checkout main && merge && checkout dev` que abortó por `&&`). `git rev-parse HEAD` devuelve un hash estés o no en rama → NO revela el detached.
+- **Receta**: (a) ANTES de commitear, verifica `git rev-parse --abbrev-ref HEAD` == `dev` (si imprime `HEAD` = detached → `git checkout dev` primero). (b) Recuperar el colgante: desde `dev`, `git merge --ff-only <hash>` (si su padre es el tip de dev = fast-forward limpio) o `git cherry-pick <hash>`; luego push + merge normal. Vivido 2026-07-08 (§294-audit, `38539b6e` recuperado). Primo operativo de L-48.
+
 ---
 
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento:

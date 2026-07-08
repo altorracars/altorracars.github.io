@@ -14,6 +14,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--s-3);
+  align-items: start; /* §293: sin hueco bajo tarjetas cortas (orden por `order` intacto) */
 }
 
 .ban-card {

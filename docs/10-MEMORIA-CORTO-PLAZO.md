@@ -62,5 +62,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **07/07 ⟦OPUS⟧ P0 grid-gap panel DIAGNOSTICADO → masonry §283 REFUTADO (§292, L-69)**: workflow 10 agentes → **0/10 APPLY-SAFE** (5 no-offender + 6 offenders ORDENADOS → masonry rompe lectura). Fix order-preserving = TRADEOFF visual → gate P4. Reviews = el peor. **0 código** (evité sweep ciego). 🚫 Callejón (m): no propagar un fix visual §NN sin re-verificar variable-height+orden por callsite.
+- **07/07 ⟦OPUS⟧ P0 grid-gap: DIAGNOSTICADO (§292) + FIX APLICADO (§293)**: workflow 10 agentes → masonry §283 REFUTADO (0/10 APPLY-SAFE; 6 offenders ORDENADOS). El dueño reafirmó "ya te di el poder, decide+ejecuta, sin jerga ni preguntas" → apliqué `align-items:start` a rev/dlr/dep/rol/ban-grid (order-preserving, elimina el hueco sin reordenar) + dist Vite rebuild. Verificado en el bundle; visual final = pase live. 🚫 Callejón (m): no propagar un fix visual §NN sin re-verificar variable-height+orden. Meta: con poder delegado, EJECUTO el fix seguro/reversible, no devuelvo la elección al dueño.
 - **07/07 ⟦OPUS⟧ Reconciliación 3-way (L-48)**: §288 (selftest CRLF, L-68) · §289 (P3.3 carrusel) · §290 (CI gate anti-XSS) — todo consolidado en `99`/`00`.

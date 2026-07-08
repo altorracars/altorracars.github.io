@@ -12,7 +12,7 @@
 .dep-toolbar .search { flex: 1 1 240px; max-width: 360px; }
 
 .dep-host { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--s-4) var(--s-6) var(--s-8); }
-.dep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--s-4); }
+.dep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--s-4); align-items: start; /* §293: sin hueco bajo tarjetas cortas */ }
 
 .dep-card {
   display: flex; flex-direction: column; gap: var(--s-3);

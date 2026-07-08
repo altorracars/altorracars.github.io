@@ -19,7 +19,7 @@
   | `.rev-grid` (cronológico) | **DEFER** offender FUERTE | texto 0-600 char sin min-height → void grande |
   | `.dlr-grid` `.dep-grid` `.rol-grid` `.ban-grid` `.veh-wiz__feats` | **DEFER** | variable-height PERO ORDENADO (alfa/jerarquía/`order`/curado) → masonry rompe lectura |
 
-  Fix order-preserving = `align-items:start`/`line-clamp`, pero revierte la alineación deliberada de footers → **TRADEOFF visual → gate del pase P4 (extensión)**. Recomendación: reviews es el único que vale un vistazo prioritario. El resto (barrido visual holístico — spacing/jerarquía/color/densidad por módulo) sigue requiriendo la extensión logueado.
+  Fix order-preserving = `align-items:start` (elimina el hueco sin reordenar). **✅ APLICADO 2026-07-07 (§293)** a las 5 grillas de tarjetas de contenido: `.rev-grid`·`.dlr-grid`·`.dep-grid`·`.rol-grid`·`.ban-grid` (+dist Vite rebuild). Verificado horneado en el bundle; verificación VISUAL final = pase live del dueño. Si un módulo pide altura uniforme sin hueco → `min-height`/clamp por-módulo. El barrido visual holístico restante (spacing/jerarquía/color/densidad por módulo) sigue requiriendo la extensión logueado (P4).
 
 ## P1 — Accesibilidad pública (PageSpeed: móvil 87 / desktop 88 → objetivo ≥95) — ✅ COMPLETO (§284, `d349ecb2`)
 - ✅ **`qt-dock role="menu"` sin hijos `menuitem`** (`js/public/home/quicktools.js`): FIX = `role="toolbar"` + `id=qt-dock` + `aria-labelledby=qt-dock-eyebrow` + `aria-orientation=vertical`; toggle `aria-controls` (disclosure). Verif live: toolbar bien formado, disclosure false→true→false. (El `css/home/quicktools.css` no requirió cambios.)

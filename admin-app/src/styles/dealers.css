@@ -13,6 +13,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--s-3);
+  align-items: start; /* §293: cada tarjeta a su altura natural → sin hueco bajo las cortas (orden alfabético intacto) */
 }
 
 .dlr-card {

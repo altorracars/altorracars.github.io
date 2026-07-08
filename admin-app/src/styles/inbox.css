@@ -111,4 +111,9 @@
 @media (max-width: 560px) {
   .lead-card__nba { display: none; }
   .inbox__queues, .inbox__toolbar, .inbox__list { padding-left: var(--s-4); padding-right: var(--s-4); }
+  /* En pantallas angostas las columnas fijas (checkbox+dot+avatar) + gaps + los
+     botones de acción (no encogen) desbordaban la tarjeta y recortaban ~5px del
+     último botón. Ajustamos gap y padding horizontal (sin tocar el tamaño de los
+     botones = touch targets intactos) para que quepan. */
+  .lead-card { gap: var(--s-2); padding-left: var(--s-3); padding-right: var(--s-3); }
 }

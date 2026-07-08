@@ -59,6 +59,11 @@
   .agenda__head, .agenda__weekdays { padding-left: var(--s-3); padding-right: var(--s-3); }
   .agenda__grid { margin-left: var(--s-3); margin-right: var(--s-3); grid-auto-rows: minmax(72px, 1fr); }
   .agenda__chip span:not(.agenda__chip-time) { display: none; }
+  /* El cluster de controles (Hoy/Disponibilidad/Exportar…) medía 472px y con
+     flex nowrap desbordaba ~155px → el último control quedaba fuera de pantalla.
+     Dejamos que la cabecera y el cluster envuelvan en angosto (scope al agenda). */
+  .agenda__head { flex-wrap: wrap; }
+  .agenda__head .u-row--tight { flex-wrap: wrap; row-gap: var(--s-2); }
 }
 
 /* F18 §184 — estado de la cita visible en el chip */

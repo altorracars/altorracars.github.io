@@ -64,6 +64,11 @@
 @media (max-width: 720px) { /* OLA-1.3: breakpoint canónico */
   .veh-row { flex-wrap: wrap; }
   .veh-row__price { align-items: flex-start; }
+  /* Sin esto, flex encogía __main a ~26px (min-width:0) para que precio+acciones
+     cupieran en la misma fila → el título ("…Touring") desbordaba. Le damos a
+     __main el ancho restante tras el thumb para que ocupe la 1ª fila y precio+
+     acciones envuelvan debajo. */
+  .veh-row__main { flex-basis: calc(100% - 64px - var(--s-3)); }
 }
 
 /* ── Wizard 6 pasos (V2) — §106: modal ancho, body con scroll ── */

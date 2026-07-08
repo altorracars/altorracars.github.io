@@ -66,6 +66,40 @@
   .agenda__head .u-row--tight { flex-wrap: wrap; row-gap: var(--s-2); }
 }
 
+/* Base: nombre de día y estado-vacío ocultos en desktop (la cuadrícula del mes
+   no los usa; los activa la vista día/lista móvil de abajo). */
+.agenda__dayname { display: none; }
+.agenda__empty { display: none; align-items: center; justify-content: center; gap: var(--s-2); padding: var(--s-8) var(--s-4); color: var(--ink-text-muted); }
+
+/* ── Vista día/lista en móvil (≤560, §294 continuación) ─────────────────────
+   La cuadrícula de mes (7 col) recortaba la hora de las citas en el teléfono.
+   Aquí se vuelve una LISTA vertical solo de los días CON citas (+ hoy): cada
+   día = cabecera (nº + "mié") + sus citas full-width con hora/cliente/estado
+   legibles. Order-preserving (por fecha, igual que la data). ────────────────*/
+@media (max-width: 560px) {
+  .agenda__weekdays { display: none; }
+  .agenda__grid {
+    display: flex; flex-direction: column; gap: 0;
+    background: none; border: 0; border-radius: 0;
+    margin: 0 var(--s-3) var(--s-4); overflow-y: auto;
+  }
+  .agenda__day {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2);
+    background: none; padding: var(--s-3) 0; box-shadow: none;
+    border-bottom: 1px solid var(--surface-stroke);
+  }
+  .agenda__day.is-out { display: none; }
+  .agenda__day:not(.is-today):not(:has(.agenda__events > *)) { display: none; }
+  .agenda__daynum { font-size: 1.05rem; font-weight: 700; color: var(--ink-text); }
+  .agenda__dayname { display: inline; font-size: var(--t-caption); color: var(--ink-text-muted); text-transform: capitalize; }
+  .agenda__events { flex-basis: 100%; gap: 4px; overflow: visible; margin-top: 6px; }
+  .agenda__chip { width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 0 var(--r-sm) var(--r-sm) 0; gap: var(--s-2); }
+  .agenda__chip span:not(.agenda__chip-time) { display: inline; }
+  .agenda__chip-time { font-weight: 700; }
+  .agenda__more { padding: 4px 0; }
+  .agenda__empty { display: flex; }
+}
+
 /* F18 §184 — estado de la cita visible en el chip */
 .agenda__chip--pendiente { border-left: 3px solid var(--warning, #d9a014); }
 .agenda__chip--confirmada { border-left: 3px solid var(--success, #2f9e63); }

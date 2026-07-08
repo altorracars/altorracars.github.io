@@ -132,6 +132,9 @@ export function mountAgenda(root) {
           role: 'gridcell',
         }, [
           el('div', { class: 'agenda__daynum', text: String(cell.date.getDate()) }),
+          // Nombre corto del día (ej. "mié") — oculto en desktop (cuadrícula);
+          // la vista día/lista móvil (≤560, CSS) lo muestra como cabecera del día.
+          el('span', { class: 'agenda__dayname', 'aria-hidden': 'true', text: cell.date.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '') }),
         ]);
         const list = el('div', { class: 'agenda__events' });
         if (ui.loading) {
@@ -152,6 +155,14 @@ export function mountAgenda(root) {
         grid.append(day);
       });
     });
+    // Estado vacío SOLO para la vista día/lista móvil (donde los días sin citas
+    // se ocultan → sin esto quedaría en blanco). En desktop está display:none
+    // (la cuadrícula del mes ya se ve). Se añade solo si el mes VISIBLE no tiene
+    // citas (ui.events retiene las de otros meses al navegar → cuento las in-month).
+    const monthHasEvents = weeks.some((week) => week.some((cell) => cell.inMonth && (byDay[dayKey(cell.date)] || []).length));
+    if (!ui.loading && !monthHasEvents) {
+      grid.append(el('div', { class: 'agenda__empty' }, [el('span', { text: 'No hay citas este mes.' })]));
+    }
   }
 
   function eventChip(ev) {

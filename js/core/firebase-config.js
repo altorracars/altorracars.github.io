@@ -70,11 +70,9 @@
             // Critical: Auth + Firestore needed for login
             return Promise.all([
                 loadScript(CDN_BASE + '/firebase-auth-compat.js'),
-                loadScript(CDN_BASE + '/firebase-firestore-compat.js'),
-                // App Check (SEC-02) — carga NO-BLOQUEANTE: si este CDN falla, el sitio
-                // sigue funcionando (auth/firestore son los críticos); el guard
-                // if(firebase.appCheck) de abajo simplemente no activa App Check.
-                loadScript(CDN_BASE + '/firebase-app-check-compat.js').catch(function(){ return null; })
+                loadScript(CDN_BASE + '/firebase-firestore-compat.js')
+                // App Check (reCAPTCHA v3 ~1MB) se DIFIERE fuera de la ruta crítica →
+                // bloque deferAppCheck más abajo (§PERF Fase 2). Monitor mode = no bloquea.
             ]);
         })
         .then(function() {
@@ -136,16 +134,9 @@
                 firebase.initializeApp(FIREBASE_CONFIG);
             }
 
-            // App Check (SEC-02, ADR §169) — anti-abuso/anti-spam. MODO MONITOR:
-            // el cliente ADJUNTA tokens reCAPTCHA v3, pero el enforcement se prende
-            // por recurso en la consola (Unenforced al inicio → nada se rechaza).
-            // Se activa sobre la app namespaced (la que usan window.db/auth/storage),
-            // NO la [DEFAULT] — confirmado con docs Firebase: compat acepta `appCheck(app)`.
-            try {
-                if (firebase.appCheck) {
-                    firebase.appCheck(app).activate('6Lfz8BQtAAAAAILjn8GbHFT8u6dpg5rFvg5hGZzS', true);
-                }
-            } catch (e) { console.warn('[AppCheck] no activado:', e); }
+            // App Check (SEC-02, ADR §169) — MODO MONITOR (unenforced → nada se rechaza).
+            // Su activación Y la carga de reCAPTCHA v3 (~1MB + ~500ms de hilo) se DIFIEREN
+            // fuera de la ruta crítica → bloque deferAppCheck más abajo (§PERF Fase 2).
 
             var db = firebase.firestore(app);
             var auth = firebase.auth(app);
@@ -205,6 +196,25 @@
             }).catch(function(err) {
                 console.warn('Deferred Firebase SDKs failed:', err);
             });
+
+            // App Check (reCAPTCHA v3) DIFERIDO fuera de la ruta crítica (§PERF Fase 2).
+            // reCAPTCHA pesa ~1MB + ~500ms de hilo principal y App Check está en MONITOR
+            // (unenforced → Firestore/Storage funcionan sin token). En la web pública se
+            // carga en idle tras el LCP; en admin se mantiene el timing inmediato previo.
+            (function deferAppCheck() {
+                function initAppCheck() {
+                    loadScript(CDN_BASE + '/firebase-app-check-compat.js').then(function () {
+                        try {
+                            if (firebase.appCheck) {
+                                firebase.appCheck(app).activate('6Lfz8BQtAAAAAILjn8GbHFT8u6dpg5rFvg5hGZzS', true);
+                            }
+                        } catch (e) { console.warn('[AppCheck] no activado:', e); }
+                    }).catch(function () { /* App Check no crítico (monitor) */ });
+                }
+                if (isAdminPage) { initAppCheck(); }
+                else if ('requestIdleCallback' in window) { requestIdleCallback(initAppCheck, { timeout: 4000 }); }
+                else { setTimeout(initAppCheck, 2500); }
+            })();
 
             // Troubleshooting: clear stale offline writes from IndexedDB
             window.clearFirestoreCache = function() {

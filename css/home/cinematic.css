@@ -178,11 +178,13 @@ body[data-cin="on"] .cin-cursor-light--on { opacity: 1; }
   display: inline-block;
   opacity: 0;
   transform: translateY(0.4em);
-  filter: blur(10px);
   animation: cinWord 1300ms var(--cin-ease) forwards;
 }
+/* §PERF Fase 1.1: se retira `filter: blur()` de la animación (no se compone en GPU →
+   14 animaciones no-compuestas en PageSpeed). El estado en reposo es IDÉNTICO; solo la
+   transición de entrada pierde el desenfoque, conservando el fade + slide (cinematográfico). */
 @keyframes cinWord {
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .cin-hero-foot {

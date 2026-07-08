@@ -2274,7 +2274,7 @@
      * página (raíz, /vehiculos/X, /marcas/X, etc.). Fallback a iniciales
      * "AL" si el PNG falla a cargar (defensivo).
      */
-    var ALTOR_IMG_SRC = '/ALTOR.png';
+    var ALTOR_IMG_SRC = '/multimedia/altor-128.webp';
     var ALTOR_AVATAR_HTML =
         '<img src="' + ALTOR_IMG_SRC + '" alt="ALTOR" class="cnc-altor-img" ' +
         'loading="eager" decoding="async" ' +
@@ -2297,7 +2297,8 @@
         ctaBubble.className = 'cnc-cta-bubble';
         ctaBubble.setAttribute('role', 'button');
         ctaBubble.setAttribute('tabindex', '0');
-        ctaBubble.setAttribute('aria-label', 'Abrir ALTOR');
+        /* WCAG 2.5.3 (label-in-name): sin aria-label fijo — el nombre accesible se deriva
+           del texto visible del bubble (que rota), evitando el desajuste texto↔nombre. */
         ctaBubble.innerHTML =
             '<span class="cnc-cta-bubble-text" id="altorraCtaBubbleText">¡Quiero hablar contigo!</span>' +
             '<button class="cnc-cta-bubble-close" aria-label="Cerrar invitación">×</button>';

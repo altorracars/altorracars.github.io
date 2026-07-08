@@ -224,9 +224,11 @@
     position: absolute;
     top: 3px;
     right: 5px;
-    /* A11y (TODO-53 P1): 22px < 24px mínimo táctil (WCAG 2.5.8 AA). Subido a 24px. */
-    width: 24px;
-    height: 24px;
+    /* A11y (TODO-53 P1 + §PERF Fase 0): objetivo táctil ≥24px REAL. El scale de la
+       animación de entrada del bubble encogía 24px→~20.2px en el momento de medición
+       (PageSpeed target-size, ordenador). Se sube la base a 28px para dar margen. */
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: transparent;
     border: none;

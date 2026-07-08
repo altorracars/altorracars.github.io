@@ -517,6 +517,15 @@
         var mark = document.createElement('div');
         mark.className = 'cin-card-brand-mark';
         var markImg = document.createElement('img');
+        // §PERF Fase 0: fallback robusto de logo de marca. Si la URL (Firestore/Storage)
+        // 404ea (caso Audi) o falla, cae al WebP local multimedia/Logos/{Marca}.webp
+        // (existen los 17); si tampoco, oculta el <img> en vez de dejar rota la marca.
+        markImg.onerror = function () {
+            this.onerror = null;
+            var local = v.marca ? 'multimedia/Logos/' + v.marca + '.webp' : '';
+            if (local && this.getAttribute('src') !== local) { this.src = local; }
+            else { this.style.display = 'none'; }
+        };
         markImg.src = brandLogo;
         markImg.alt = v.marca || '';
         markImg.loading = 'lazy';

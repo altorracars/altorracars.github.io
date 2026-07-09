@@ -34,10 +34,31 @@ export const app = initializeApp(FIREBASE_CONFIG, APP_NAME);
 
 // App Check (SEC-02, ADR §169) — anti-abuso, modo MONITOR (Unenforced en consola).
 // Mismo site key reCAPTCHA v3 que el sitio compat (misma web app / projectId).
-export const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider('6Lfz8BQtAAAAAILjn8GbHFT8u6dpg5rFvg5hGZzS'),
-  isTokenAutoRefreshEnabled: true,
-});
+// §PERF (medido PageSpeed 09/07): reCAPTCHA v3 cuesta ~1656ms de CPU + ~1.1MB en
+// el boot del Moto G — era el MAYOR costo de JS del admin. App Check está en
+// MONITOR (unenforced → Firestore/Storage/Functions funcionan SIN token) y NINGÚN
+// módulo importa `appCheck` (solo se inicializa por su side-effect de token-refresh)
+// → se DIFIERE a requestIdleCallback, fuera de la ruta crítica del panel. Las
+// pocas requests del boot van sin token (permitido en monitor); al inicializarse
+// en idle, las siguientes ya lo llevan.
+// ⚠️ SI algún día App Check pasa a ENFORCE, revertir este diferido (o inicializarlo
+//    ANTES de la 1ª request enforced) — en enforce, requests sin token se rechazan.
+export let appCheck = null;
+(function deferAppCheck() {
+  function init() {
+    try {
+      appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider('6Lfz8BQtAAAAAILjn8GbHFT8u6dpg5rFvg5hGZzS'),
+        isTokenAutoRefreshEnabled: true,
+      });
+    } catch (e) { console.warn('[AppCheck] no inicializado:', e); }
+  }
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    window.requestIdleCallback(init, { timeout: 4000 });
+  } else {
+    setTimeout(init, 2500);
+  }
+})();
 
 export const auth = getAuth(app);
 

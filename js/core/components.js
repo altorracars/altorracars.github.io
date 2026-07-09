@@ -356,7 +356,14 @@ function loadAuthSystem() {
     }
 
     // 1. Lucide Icons CDN (misma versión que admin)
-    if (!window.lucide && !document.querySelector('script[src*="lucide"]')) {
+    // §PERF Fase 2.5 — En el HOME, diferir Lucide (82KB UMD) a idle: el home NO
+    // usa `data-lucide` en el primer paint (0 en index/header/footer, verificado);
+    // Lucide solo pinta iconos en el auth-modal (abre al click), el área de usuario
+    // logueado (avatar ya pre-renderizado) y el bot (diferido). En OTRAS páginas
+    // públicas (que sí pueden tener data-lucide propio) se mantiene la carga
+    // inmediata → cero regresión. (Subset real de iconos = tarea de build futura.)
+    function loadLucide() {
+        if (window.lucide || document.querySelector('script[src*="lucide"]')) return;
         var lucideScript = document.createElement('script');
         lucideScript.src = 'https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js';
         lucideScript.defer = true;
@@ -369,6 +376,13 @@ function loadAuthSystem() {
             if (hdr && window.lucide) window.lucide.createIcons({ nodes: [hdr] });
         };
         document.head.appendChild(lucideScript);
+    }
+    var _lp = window.location.pathname;
+    var _isHome = _lp === '/' || _lp === '' || _lp === '/index.html' || _lp.endsWith('/index.html');
+    if (_isHome && 'requestIdleCallback' in window) {
+        requestIdleCallback(function () { loadLucide(); }, { timeout: 3000 });
+    } else {
+        loadLucide(); // otras páginas / sin rIC: inmediato (comportamiento previo)
     }
 
     // 2. CSS del auth modal

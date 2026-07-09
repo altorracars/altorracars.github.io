@@ -15,6 +15,21 @@
 
 *Admin SEO 54 = IRRELEVANTE (dueño: "el admin es indiferente al SEO, solo velocidad").
 
+### ✅ RE-BASELINE home móvil VIVO (P0-A hecho vía extensión Chrome, run `vn4cvuam8o`) — POST dieta-JS
+| | 08/07 (pre-dieta) | **VIVO (post-dieta)** | Δ |
+|---|---|---|---|
+| Rendimiento | 55 | **61** | +6 |
+| FCP | 10.2s | **3.0s** | **−7.2s** |
+| LCP | 18.3s | **7.4s** | **−10.9s** |
+| TBT | 120ms | 280ms | +160ms |
+| CLS | 0.001 | 0.024 | ok |
+| SI | 10.2s | 5.4s | −4.8s |
+
+**Lectura:** la dieta-JS dio mejora REAL enorme (FCP/LCP). El score subió poco (curva no-lineal: LCP 7.4s sigue rojo; bajarlo a <4s dispara el score). **Próximo lever del score = LCP render-delay (P1-A fuentes + P1-B CSS below-fold) + TBT 280ms (P1-C diferir GTM/GA4)**. ⏳ FALTA re-medir: detalle-vehiculo + admin (tras deploy P0-C).
+
+### 🔴 BÚSQUEDA móvil VIVO (run `fj1okb29ne`) = **40** (FCP 10.4s · LCP 18.5s · TBT ~6xxms · CLS 0)
+**CONFIRMADO el diagnóstico del comité:** las páginas NO-home siguen lentas (como el home ANTES) porque la dieta-JS (2.1b/2.3/2.5) fue **home-only** (`isHomePage` gate) → busqueda/detalle cargan auth/SDKs/bot/lucide EAGER. **🎯 NUEVO P0/P1 = EXTENDER la dieta-JS a busqueda + detalle-vehiculo** (páginas de alta intención de compra): usan los mismos módulos core ya arreglados (`dbReady` render, `auth.js` gateado) → extender el gate a esas páginas debería darles la misma mejora del home (40 → ~61). Verificar sus consumidores antes (caza-bugs).
+
 ## ⚠️ Los reportes son PRE dieta-JS (2.1b-2.5)
 
 Los 4 muestran `auth/iframe.js` a **2004ms en la cadena crítica** (WEB móvil) — pero la Fase 2.1b ya lo difirió fuera de la ruta crítica en el deploy actual. → **La web LIVE actual ya debería puntuar mejor que 55/78.** RE-MEDIR el deploy actual antes de dar números finales (P0-A). El admin NO se tocó en la dieta-JS (carga Firebase inmediato por diseño) → admin 56/92 sigue vigente.

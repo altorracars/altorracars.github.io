@@ -402,6 +402,13 @@ function loadAuthSystem() {
                 // ── F-1 (TODO-46): bot v2 detrás de FLAG (cutover seguro, callejón g). Default = v1.
                 //   Validar en vivo: ?altorbot=v2 (persiste en localStorage) · volver: ?altorbot=v1.
                 //   Los visitantes reales siguen en v1 hasta el flip (cambiar el default).
+                // §PERF Fase 2.3 — Diferir TODO el stack del bot (dormido) a idle:
+                // ~18 archivos (concierge.js 58KB + concierge.css + ai/* + kb-client +
+                // comm-schema + admin-calendar-config). El CTA flotante NO es crítico
+                // para el LCP; cada módulo se auto-registra en window y el bot los
+                // consume al abrirse (el orden ya era async post-parse). auth.js y
+                // solicitudes-watcher NO se difieren (ruta de login).
+                var loadConciergeStack = function() {
                 var ALTOR_V2 = false;
                 try {
                     if (location.search.indexOf('altorbot=v1') !== -1) localStorage.removeItem('altor_bot_v2');
@@ -548,6 +555,13 @@ function loadAuthSystem() {
                     calCfg.src = 'js/concierge/shared/admin-calendar-config.js';
                     calCfg.defer = true;
                     document.body.appendChild(calCfg);
+                }
+                }; // fin loadConciergeStack (§PERF 2.3)
+                // Cargar el bot fuera de la ventana crítica del LCP (idle/timeout).
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(loadConciergeStack, { timeout: 3000 });
+                } else {
+                    setTimeout(loadConciergeStack, 1800);
                 }
             })
             .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });

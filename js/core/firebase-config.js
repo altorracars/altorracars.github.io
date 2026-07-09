@@ -67,21 +67,26 @@
     var isAdminPage = location.pathname.indexOf('admin.html') !== -1
                       || location.pathname.endsWith('/admin')
                       || location.pathname.endsWith('/admin/');
-    // Home pública = único objetivo de la dieta de ruta crítica (§296 TODO-54).
-    // Admin y el resto de páginas públicas conservan el timing INMEDIATO previo
-    // (cero regresión: sus consumidores esperan `firebaseReady` ⇒ auth ya listo).
+    // §PERF (re-baseline 09/07): la dieta de ruta crítica se aplica a las PÁGINAS
+    // PÚBLICAS DE CONTENIDO (home, busqueda, detalle-vehiculo, categorías vehiculos-*,
+    // marcas, comparar, simulador, nosotros, resenas, contacto…) — muestran contenido
+    // público y NO necesitan auth eager (auth = solo header-login-state + favoritos,
+    // tolerante). Se EXCLUYEN: admin (necesita auth ya) y las páginas de CUENTA
+    // (perfil/favoritos) que muestran contenido del usuario y sí requieren auth pronto.
+    // Medido: el home pasó 55→61 (FCP −7.2s/LCP −10.9s) con esto; busqueda seguía en
+    // 40 por estar HOME-gated → se extiende aquí (mismos módulos core + consumidores
+    // tolerantes: database.js→dbReady, auth.js→firebaseReady, detalle-page/contact-forms
+    // usan window.db/auth DEFENSIVO — verificado caza-bugs).
     var _p = location.pathname;
-    var isHomePage = !isAdminPage &&
-        (_p === '/' || _p === '' || _p === '/index.html' || _p.endsWith('/index.html'));
+    var _accountPage = /(perfil|favoritos|cuenta|mi-cuenta)\.html/i.test(_p);
+    var isDeferPage = !isAdminPage && !_accountPage;
 
-    // §PERF Fase 2.1b — Diferir fuera de la ruta crítica (SOLO home).
-    // El home difiere lo NO crítico a la 1ª interacción del usuario O a idle
-    // (lo que ocurra antes) → saca auth/iframe.js (~1.4s), reCAPTCHA (~1MB) y los
-    // SDKs pesados de la ventana de contención de red del LCP. Fuera del home
-    // (admin/otras) corre inmediato. Devuelve el "kicker" idempotente (para que
-    // la interacción del usuario fuerce la carga antes de idle).
+    // §PERF Fase 2.1b — Diferir fuera de la ruta crítica. Difiere lo NO crítico a la
+    // 1ª interacción del usuario O a idle (lo que ocurra antes) → saca auth/iframe.js
+    // (~1.4s), reCAPTCHA (~1MB) y los SDKs pesados de la ventana del LCP. En admin y
+    // páginas de cuenta corre inmediato. Devuelve el "kicker" idempotente.
     function runDeferred(fn, timeout) {
-        if (!isHomePage) { fn(); return null; }
+        if (!isDeferPage) { fn(); return null; }
         var done = false;
         function once() { if (done) return; done = true; fn(); }
         if ('requestIdleCallback' in window) {
@@ -237,14 +242,15 @@
             console.log('Firebase core ready (Firestore) [' + APP_NAME + ']');
 
             // ── Cargar lo NO crítico ─────────────────────────────────────
-            // Home: diferido (idle/interacción). Admin + resto: inmediato.
+            // Páginas públicas de contenido: diferido (idle/interacción). Admin +
+            // páginas de cuenta: inmediato.
             runDeferred(function(){ loadDeferredSDKs(app, APP_NAME); }, 4000);
             runDeferred(function(){ loadAppCheck(app); }, 4000);
 
-            // Auth: en el home, además de idle, la 1ª interacción del usuario la
-            // fuerza (login/lead snappy — protege la ruta del dinero).
+            // Auth: en las páginas diferidas, además de idle, la 1ª interacción del
+            // usuario la fuerza (login/lead snappy — protege la ruta del dinero).
             var authKick = runDeferred(function(){ loadAuth(app, APP_NAME); }, 2500);
-            if (isHomePage && authKick) {
+            if (isDeferPage && authKick) {
                 ['pointerdown', 'keydown', 'touchstart'].forEach(function(ev) {
                     window.addEventListener(ev, function fire() {
                         window.removeEventListener(ev, fire, true);

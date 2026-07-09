@@ -377,12 +377,17 @@ function loadAuthSystem() {
         };
         document.head.appendChild(lucideScript);
     }
+    // §PERF (re-baseline 09/07): diferir Lucide en las PÁGINAS PÚBLICAS DE CONTENIDO
+    // (no solo home) — busqueda/detalle/categorías no usan data-lucide en el primer
+    // paint (los iconos son de modal/user-area/bot, todo diferido). Se EXCLUYEN las
+    // páginas de CUENTA (perfil/favoritos, que sí muestran iconos de usuario pronto).
+    // (loadAuthSystem ya retornó para admin, así que aquí solo hay páginas públicas.)
     var _lp = window.location.pathname;
-    var _isHome = _lp === '/' || _lp === '' || _lp === '/index.html' || _lp.endsWith('/index.html');
-    if (_isHome && 'requestIdleCallback' in window) {
+    var _accountPage = /(perfil|favoritos|cuenta|mi-cuenta)\.html/i.test(_lp);
+    if (!_accountPage && 'requestIdleCallback' in window) {
         requestIdleCallback(function () { loadLucide(); }, { timeout: 3000 });
     } else {
-        loadLucide(); // otras páginas / sin rIC: inmediato (comportamiento previo)
+        loadLucide(); // páginas de cuenta / sin rIC: inmediato
     }
 
     // 2. CSS del auth modal

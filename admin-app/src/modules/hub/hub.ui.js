@@ -513,7 +513,7 @@ export function mountHub(root) {
       const relBtn = isSuper ? actionBtn(icon('unlock') + ' Liberar', () => doRelease(chat)) : null;
       detailEl.append(banner(isSuper ? icon('alertTriangle') : icon('lock'),
         (chat.claimedByName || 'Otro asesor') + ' está atendiendo este chat',
-        isSuper ? 'Si escribes acá interrumpís su atención.' : (chat.claimedAt ? 'Tomado ' + timeAgo(chat.claimedAt) : 'Solo quien lo tomó puede responder.'),
+        isSuper ? 'Si escribes aquí interrumpes su atención.' : (chat.claimedAt ? 'Tomado ' + timeAgo(chat.claimedAt) : 'Solo quien lo tomó puede responder.'),
         'claimed', relBtn ? [relBtn] : null));
     }
     if (att) detailEl.append(banner(icon('eye'), att.nombre + ' está mirando este chat ahora mismo', 'Presencia en tiempo real.', 'attending'));

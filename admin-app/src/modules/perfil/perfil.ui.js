@@ -383,7 +383,7 @@ function buildSecurityCard(mock) {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!current.value) { toast('Ingresá tu contraseña actual.', 'error'); return; }
+    if (!current.value) { toast('Ingresa tu contraseña actual.', 'error'); return; }
     if (passwordScore(next.value) < PW_RULES.length) { toast('La nueva contraseña no cumple los requisitos.', 'error'); return; }
     submit.disabled = true;
     try {

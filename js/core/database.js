@@ -63,7 +63,9 @@ class VehicleDatabase {
         }
 
         // STEP 2: Load from Firestore (reduced timeout for fast first paint)
-        if (window.firebaseReady) {
+        // §PERF 2.1b — gate en `dbReady` (solo Firestore, rápido) y NO en
+        // `firebaseReady` (que en el home resuelve tras el auth diferido).
+        if (window.dbReady || window.firebaseReady) {
             var firebaseOk = await this._awaitFirebaseWithTimeout(5000);
             if (firebaseOk && window.db) {
                 var delays = [0, 2000]; // retry backoff (2 attempts)
@@ -113,8 +115,9 @@ class VehicleDatabase {
     }
 
     async _awaitFirebaseWithTimeout(ms) {
+        var _ready = window.dbReady || window.firebaseReady; // §PERF 2.1b
         return Promise.race([
-            window.firebaseReady.then(function() { return true; }),
+            _ready.then(function() { return true; }),
             new Promise(function(resolve) {
                 setTimeout(function() { resolve(false); }, ms);
             })

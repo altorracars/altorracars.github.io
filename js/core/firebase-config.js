@@ -63,45 +63,119 @@
         });
     }
 
-    // Load firebase-app first, then Auth + Firestore in parallel (critical path),
-    // then defer Analytics, Storage, Functions (non-critical for login)
+    // ── Contexto de página (§23 FASE 6) ──────────────────────────────
+    var isAdminPage = location.pathname.indexOf('admin.html') !== -1
+                      || location.pathname.endsWith('/admin')
+                      || location.pathname.endsWith('/admin/');
+    // Home pública = único objetivo de la dieta de ruta crítica (§296 TODO-54).
+    // Admin y el resto de páginas públicas conservan el timing INMEDIATO previo
+    // (cero regresión: sus consumidores esperan `firebaseReady` ⇒ auth ya listo).
+    var _p = location.pathname;
+    var isHomePage = !isAdminPage &&
+        (_p === '/' || _p === '' || _p === '/index.html' || _p.endsWith('/index.html'));
+
+    // §PERF Fase 2.1b — Diferir fuera de la ruta crítica (SOLO home).
+    // El home difiere lo NO crítico a la 1ª interacción del usuario O a idle
+    // (lo que ocurra antes) → saca auth/iframe.js (~1.4s), reCAPTCHA (~1MB) y los
+    // SDKs pesados de la ventana de contención de red del LCP. Fuera del home
+    // (admin/otras) corre inmediato. Devuelve el "kicker" idempotente (para que
+    // la interacción del usuario fuerce la carga antes de idle).
+    function runDeferred(fn, timeout) {
+        if (!isHomePage) { fn(); return null; }
+        var done = false;
+        function once() { if (done) return; done = true; fn(); }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(once, { timeout: timeout || 3000 });
+        } else {
+            setTimeout(once, Math.min(timeout || 3000, 2000));
+        }
+        return once;
+    }
+
+    // Promesa "solo Firestore lista" (RUTA CRÍTICA de render). El home
+    // (database.js) la espera para pintar vehículos/marcas SIN quedar detrás
+    // de la carga diferida de auth. `window.firebaseReady` sigue resolviendo
+    // tras AUTH (contrato de compat: auth.js/admin esperan `window.auth`).
+    var _resolveDbReady, _resolveAuthChain;
+    window.dbReady = new Promise(function(res){ _resolveDbReady = res; });
+    var _authChain = new Promise(function(res){ _resolveAuthChain = res; });
+
+    // ── Carga (diferida en home) de Auth ─────────────────────────────
+    // auth/iframe.js (cuello #1: 1425ms móvil) lo dispara la init de Auth + la
+    // suscripción onAuthStateChanged (auth.js:startAuthListener). Diferir la
+    // carga del SDK lo saca de la ruta crítica. El header NO parpadea: index.html
+    // aplica la clase auth-* síncrona desde localStorage (hint optimista, §auth).
+    function loadAuth(app, APP_NAME) {
+        return loadScript(CDN_BASE + '/firebase-auth-compat.js')
+            .then(function () {
+                var auth = firebase.auth(app);
+                window.auth = auth;
+                // Idioma del dispositivo para códigos SMS de verificación (español)
+                auth.useDeviceLanguage();
+                console.log('Firebase auth ready [' + APP_NAME + ']');
+                _resolveAuthChain({ auth: auth });
+                return auth;
+            })
+            .catch(function (e) {
+                console.warn('[Auth] no se pudo cargar:', e);
+                _resolveAuthChain({ auth: null }); // no bloquear firebaseReady
+            });
+    }
+
+    // ── Carga (diferida en home) de SDKs no-críticos ─────────────────
+    // §23 — pasan `app` explícito → apuntan a la app namespaced (altorra-admin
+    // o altorra-public), no a [DEFAULT]. Ningún consumidor del home los necesita
+    // en el primer render (bot dormido + guards null); admin los carga inmediato.
+    function loadDeferredSDKs(app, APP_NAME) {
+        Promise.all([
+            loadScript(CDN_BASE + '/firebase-storage-compat.js'),
+            loadScript(CDN_BASE + '/firebase-functions-compat.js'),
+            loadScript(CDN_BASE + '/firebase-analytics-compat.js'),
+            loadScript(CDN_BASE + '/firebase-database-compat.js')
+        ]).then(function() {
+            window.storage = firebase.storage(app);
+            window.functions = firebase.functions(app);
+            // Analytics: solo se inicializa para la default app por limitación del
+            // SDK Compat. Para evitar errores cuando app !== default, lo intentamos
+            // pero no fallamos si no.
+            try { window.firebaseAnalytics = firebase.analytics(app); }
+            catch (e) { window.firebaseAnalytics = null; }
+            window.rtdb = firebase.database(app);
+            console.log('Firebase deferred SDKs loaded (' + APP_NAME + ')');
+        }).catch(function(err) {
+            console.warn('Deferred Firebase SDKs failed:', err);
+        });
+    }
+
+    // ── App Check (SEC-02, ADR §169) — MODO MONITOR, diferido (§PERF 2.1a) ──
+    // reCAPTCHA v3 pesa ~1MB + ~500ms de hilo; App Check está en MONITOR
+    // (unenforced → Firestore/Storage funcionan sin token). En home se difiere.
+    function loadAppCheck(app) {
+        loadScript(CDN_BASE + '/firebase-app-check-compat.js').then(function () {
+            try {
+                if (firebase.appCheck) {
+                    firebase.appCheck(app).activate('6Lfz8BQtAAAAAILjn8GbHFT8u6dpg5rFvg5hGZzS', true);
+                }
+            } catch (e) { console.warn('[AppCheck] no activado:', e); }
+        }).catch(function () { /* App Check no crítico (monitor) */ });
+    }
+
+    // Load firebase-app + Firestore (RUTA CRÍTICA: db para el render del home).
+    // Auth + App Check + storage/functions/analytics/rtdb se DIFIEREN en el home
+    // (§PERF Fase 2.1a/2.1b). Fuera del home cargan inmediato (cero regresión).
     window.firebaseReady = loadScript(CDN_BASE + '/firebase-app-compat.js')
         .then(function() {
-            // Critical: Auth + Firestore needed for login
-            return Promise.all([
-                loadScript(CDN_BASE + '/firebase-auth-compat.js'),
-                loadScript(CDN_BASE + '/firebase-firestore-compat.js')
-                // App Check (reCAPTCHA v3 ~1MB) se DIFIERE fuera de la ruta crítica →
-                // bloque deferAppCheck más abajo (§PERF Fase 2). Monitor mode = no bloquea.
-            ]);
+            // Crítico: solo Firestore es necesario para el primer render.
+            return loadScript(CDN_BASE + '/firebase-firestore-compat.js');
         })
         .then(function() {
-            // §23 FASE 6 (Capa 3) — AISLAMIENTO TOTAL ADMIN ↔ WEB PÚBLICA
+            // §23 FASE 6 (Capa 3) — AISLAMIENTO TOTAL ADMIN ↔ WEB PÚBLICA.
             // ───────────────────────────────────────────────────────────
-            // Antes: una sola app Firebase con appName=[DEFAULT]. Como TODAS
-            // las páginas del sitio cargaban este mismo firebase-config.js,
-            // la sesión de Firebase Auth se compartía entre admin.html e
-            // index.html. Resultado: si te logueabas en admin, automáticamente
-            // aparecías logueado en la web pública (con la misma cuenta).
-            // Era imposible estar simultáneamente como super_admin en
-            // admin.html Y como cliente normal en otra tab.
-            //
-            // Solución: detectar el contexto (admin vs público) y usar
-            // appName DIFERENTE. Firebase Auth genera storage keys distintas
-            // por appName (`firebase:authUser:<apiKey>:<appName>`), por lo
-            // que cada contexto tiene su propio IndexedDB de auth.
-            //
-            // Trade-off: usuarios actuales serán deslogueados UNA VEZ
-            // tras este deploy (storage key cambió). Es esperado y aceptable.
-            //
-            // Caveat operacional: si alguien navega de admin.html → index.html
-            // dentro del MISMO tab, ambas apps quedan instanciadas en memoria.
-            // No es problema funcional — `window.auth` siempre apunta a la app
-            // del contexto actual porque firebase-config.js solo se carga
-            // UNA vez por page load.
-            var isAdminPage = location.pathname.indexOf('admin.html') !== -1
-                              || location.pathname.endsWith('/admin')
-                              || location.pathname.endsWith('/admin/');
+            // appName distinto por contexto: Firebase Auth genera storage keys
+            // separadas (`firebase:authUser:<apiKey>:<appName>`), por lo que
+            // admin.html e index.html NO comparten sesión (antes: loguearte en
+            // admin te logueaba en la web pública). Trade-off: deslogueo único
+            // tras el deploy que introdujo esto (storage key cambió).
             var APP_NAME = isAdminPage ? 'altorra-admin' : 'altorra-public';
 
             var app;
@@ -114,46 +188,29 @@
 
             // §25.12 — DUAL-APP STRATEGY (default + namespaced)
             // ──────────────────────────────────────────────────────────
-            // Firebase Compat SDK v11 tiene paths internos en
-            // RecaptchaVerifier, signInWithPhoneNumber, firebase.messaging
-            // y otros que IGNORAN el `app` pasado por parámetro y caen a
-            // `firebase.app()` (default). Sin default app inicializada,
-            // crashean con `[DEFAULT] has been created`.
-            //
-            // Solución: inicializar TAMBIÉN la default con la misma
-            // config. NO afecta el aislamiento de auth admin/web
-            // porque Firebase Auth diferencia storage keys por appName:
-            //   firebase:authUser:<apiKey>:[DEFAULT]
-            //   firebase:authUser:<apiKey>:altorra-admin
-            //   firebase:authUser:<apiKey>:altorra-public
-            // window.auth sigue apuntando al namespaced — la default
-            // solo existe para que SDK internals no fallen.
+            // El SDK Compat v11 tiene paths internos (RecaptchaVerifier,
+            // signInWithPhoneNumber, firebase.messaging…) que IGNORAN el `app`
+            // pasado y caen a `firebase.app()` (default). Sin default app
+            // inicializada crashean con `[DEFAULT] has been created`. Solución:
+            // inicializar TAMBIÉN la default con la misma config. NO afecta el
+            // aislamiento de auth (storage keys por appName). window.auth apunta
+            // al namespaced; la default solo existe para que internals no fallen.
             try {
                 firebase.app('[DEFAULT]');
             } catch (e) {
                 firebase.initializeApp(FIREBASE_CONFIG);
             }
 
-            // App Check (SEC-02, ADR §169) — MODO MONITOR (unenforced → nada se rechaza).
-            // Su activación Y la carga de reCAPTCHA v3 (~1MB + ~500ms de hilo) se DIFIEREN
-            // fuera de la ruta crítica → bloque deferAppCheck más abajo (§PERF Fase 2).
-
             var db = firebase.firestore(app);
-            var auth = firebase.auth(app);
 
             window.firebaseApp = app;
             window.firebaseAppName = APP_NAME;  // útil para debugging
             window.db = db;
-            window.auth = auth;
 
-            // Set language for SMS verification codes (Spanish)
-            auth.useDeviceLanguage();
-
-            // F0.2: Enable offline persistence — queues writes during network issues
-            // Note: The deprecation warning about enableMultiTabIndexedDbPersistence()
-            // is expected — the modern API (persistentLocalCache) requires the modular SDK.
-            // The compat SDK only supports enablePersistence(). Safe to ignore until
-            // a full migration to the modular SDK is done.
+            // F0.2: Enable offline persistence — queues writes during network issues.
+            // La deprecation warning de enableMultiTabIndexedDbPersistence() es
+            // esperada — el API moderno (persistentLocalCache) requiere el SDK
+            // modular; el compat solo soporta enablePersistence(). Safe ignore.
             db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
                 if (err.code === 'failed-precondition') {
                     console.warn('[Firestore] Persistence disabled: multiple tabs open');
@@ -175,46 +232,26 @@
                 // Silencioso: si falla (sin permisos) no interrumpe nada
             });
 
-            // Defer non-critical SDKs (load in background after login is ready)
-            // §23 — todos pasan `app` explícitamente para que apunten a la
-            // app namespaced (altorra-admin o altorra-public), no a [DEFAULT]
-            Promise.all([
-                loadScript(CDN_BASE + '/firebase-storage-compat.js'),
-                loadScript(CDN_BASE + '/firebase-functions-compat.js'),
-                loadScript(CDN_BASE + '/firebase-analytics-compat.js'),
-                loadScript(CDN_BASE + '/firebase-database-compat.js')
-            ]).then(function() {
-                window.storage = firebase.storage(app);
-                window.functions = firebase.functions(app);
-                // Analytics: solo se inicializa para la default app por
-                // limitación del SDK Compat. Para evitar errores cuando
-                // app !== default, lo intentamos pero no fallamos si no.
-                try { window.firebaseAnalytics = firebase.analytics(app); }
-                catch (e) { window.firebaseAnalytics = null; }
-                window.rtdb = firebase.database(app);
-                console.log('Firebase deferred SDKs loaded (' + APP_NAME + ')');
-            }).catch(function(err) {
-                console.warn('Deferred Firebase SDKs failed:', err);
-            });
+            // db lista → desbloquea el render del home YA (sin esperar auth).
+            _resolveDbReady({ app: app, db: db });
+            console.log('Firebase core ready (Firestore) [' + APP_NAME + ']');
 
-            // App Check (reCAPTCHA v3) DIFERIDO fuera de la ruta crítica (§PERF Fase 2).
-            // reCAPTCHA pesa ~1MB + ~500ms de hilo principal y App Check está en MONITOR
-            // (unenforced → Firestore/Storage funcionan sin token). En la web pública se
-            // carga en idle tras el LCP; en admin se mantiene el timing inmediato previo.
-            (function deferAppCheck() {
-                function initAppCheck() {
-                    loadScript(CDN_BASE + '/firebase-app-check-compat.js').then(function () {
-                        try {
-                            if (firebase.appCheck) {
-                                firebase.appCheck(app).activate('6Lfz8BQtAAAAAILjn8GbHFT8u6dpg5rFvg5hGZzS', true);
-                            }
-                        } catch (e) { console.warn('[AppCheck] no activado:', e); }
-                    }).catch(function () { /* App Check no crítico (monitor) */ });
-                }
-                if (isAdminPage) { initAppCheck(); }
-                else if ('requestIdleCallback' in window) { requestIdleCallback(initAppCheck, { timeout: 4000 }); }
-                else { setTimeout(initAppCheck, 2500); }
-            })();
+            // ── Cargar lo NO crítico ─────────────────────────────────────
+            // Home: diferido (idle/interacción). Admin + resto: inmediato.
+            runDeferred(function(){ loadDeferredSDKs(app, APP_NAME); }, 4000);
+            runDeferred(function(){ loadAppCheck(app); }, 4000);
+
+            // Auth: en el home, además de idle, la 1ª interacción del usuario la
+            // fuerza (login/lead snappy — protege la ruta del dinero).
+            var authKick = runDeferred(function(){ loadAuth(app, APP_NAME); }, 2500);
+            if (isHomePage && authKick) {
+                ['pointerdown', 'keydown', 'touchstart'].forEach(function(ev) {
+                    window.addEventListener(ev, function fire() {
+                        window.removeEventListener(ev, fire, true);
+                        authKick();
+                    }, { capture: true, passive: true });
+                });
+            }
 
             // Troubleshooting: clear stale offline writes from IndexedDB
             window.clearFirestoreCache = function() {
@@ -229,8 +266,12 @@
                 });
             };
 
-            console.log('Firebase core ready (Auth + Firestore) [' + APP_NAME + ']');
-            return { app: app, db: db, auth: auth };
+            // window.firebaseReady resuelve tras AUTH (contrato compat: auth.js y
+            // admin esperan window.auth). En el home resuelve en idle/interacción;
+            // fuera del home, inmediato.
+            return _authChain.then(function() {
+                return { app: app, db: db, auth: window.auth || null };
+            });
         })
         .catch(function(error) {
             console.warn('Firebase could not be loaded:', error);

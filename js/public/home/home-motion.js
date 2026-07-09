@@ -82,12 +82,16 @@
         var raf = null;
 
         function apply() {
+            // §PERF 2.6 — leer scrollY DENTRO del rAF (batch read+write antes del
+            // paint) evita el reflujo forzado que causaba leerlo en el handler de
+            // scroll, donde colisiona con los writes de clase de otros módulos
+            // (home-chrome onScroll) en el mismo frame.
+            sy = (window.scrollY || window.pageYOffset || 0) * 0.18;
             bg.style.transform = 'scale(1.08) translate3d(0, ' + sy + 'px, 0)';
             raf = null;
         }
 
         function onScroll() {
-            sy = window.scrollY * 0.18;
             if (!raf) raf = window.requestAnimationFrame(apply);
         }
 

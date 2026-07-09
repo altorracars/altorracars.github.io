@@ -342,8 +342,18 @@ function loadAuthSystem() {
     // No cargar en admin.html — tiene su propia auth
     if (window.location.pathname.indexOf('admin') !== -1) return;
 
-    // Load GIS library in parallel (failure is gracefully handled)
-    loadGisLibrary();
+    // §PERF Fase 2.4 — Diferir GSI (accounts.google.com/gsi/client, ~50-96KB)
+    // fuera de la ventana crítica del LCP. GSI solo alimenta el flujo Google
+    // Sign-In (One Tap de returning-users + "Continuar como X" +
+    // signInWithCredential). En idle: One Tap sigue auto-mostrándose (~1-2s
+    // más tarde, imperceptible) y auth.js espera vía _onGisReady si el usuario
+    // pulsa login antes. FedCM NO se toca (lo exige One Tap en Chrome moderno;
+    // sus errores son solo de localhost). Fallo de red = fallback legacy popup.
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(function () { loadGisLibrary(); }, { timeout: 3000 });
+    } else {
+        setTimeout(loadGisLibrary, 1800);
+    }
 
     // 1. Lucide Icons CDN (misma versión que admin)
     if (!window.lucide && !document.querySelector('script[src*="lucide"]')) {

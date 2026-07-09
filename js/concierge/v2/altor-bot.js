@@ -346,7 +346,7 @@
             var l = document.createElement('link');
             l.id = 'altor-v2-fonts';
             l.rel = 'stylesheet';
-            l.href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Instrument+Serif&display=swap';
+            l.href = 'css/fonts.css'; // self-hosted (TODO-54 perf-v2): Manrope + Instrument Serif ya incluidos
             document.head.appendChild(l);
         }
 

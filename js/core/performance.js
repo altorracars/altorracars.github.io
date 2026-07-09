@@ -164,21 +164,8 @@ class PerformanceOptimizer {
         // Solo precargar si el navegador soporta preload
         if (!document.createElement('link').relList?.supports?.('preload')) return;
 
-        // Preconnect a dominios externos
-        const preconnects = [
-            'https://fonts.googleapis.com',
-            'https://fonts.gstatic.com'
-        ];
-
-        preconnects.forEach(url => {
-            if (!document.querySelector(`link[href="${url}"]`)) {
-                const link = document.createElement('link');
-                link.rel = 'preconnect';
-                link.href = url;
-                link.crossOrigin = 'anonymous';
-                document.head.appendChild(link);
-            }
-        });
+        // Fuentes self-hosted (css/fonts.css, TODO-54 perf-v2) → ya NO se hace
+        // preconnect a Google Fonts (eran conexiones muertas tras el self-host).
 
         // Prefetch de páginas más visitadas (después de 3 segundos)
         setTimeout(() => this.prefetchPages(), 3000);

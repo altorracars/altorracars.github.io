@@ -46,8 +46,6 @@
     <link rel="stylesheet" href="css/animaciones.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/dark-theme.css">
     <link rel="stylesheet" href="css/performance-fixes.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.gstatic.com">
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
     <!-- SSG (TODO-53 P3.2): preload de la imagen LCP del vehículo — horneado por
@@ -57,9 +55,7 @@
     <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
          para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
          DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->
-    <link rel="stylesheet" data-altorra-fonts href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+    <link rel="stylesheet" data-altorra-fonts href="css/fonts.css">
     <link rel="stylesheet" href="css/home/soft-redesign.css">
     <link rel="stylesheet" href="css/home/detalle-cinematic.css">
     <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of

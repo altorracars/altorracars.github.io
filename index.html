@@ -84,10 +84,8 @@
 
 
 
-    <!-- Preconnect SOLO a orígenes críticos de render (fonts); Firebase/Firestore
-         cargan diferidos → dns-prefetch basta (PageSpeed: ≤2 preconnect, TODO-53 P2). -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Fuentes self-hosted (css/fonts.css, TODO-54 perf-v2) → ya NO se hace preconnect a
+         Google Fonts. Firebase/Firestore cargan diferidos → dns-prefetch basta. -->
     <link rel="dns-prefetch" href="https://www.gstatic.com">
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
 
@@ -294,8 +292,11 @@
          Cargan DESPUÉS del CSS legacy para ganar donde haya solape de chrome.
          (El retiro del CSS viejo del index = Task 7.)
          ============================================================ -->
-    <!-- (preconnect a fonts.* ya declarado arriba en el head — sin duplicar, TODO-53 P2) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@200;300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Fuentes self-hosted (TODO-54 perf-v2): fonts.css = Manrope+Instrument Serif+Cardo+Poppins
+         (universal; el marcador data-altorra-fonts frena la reinyección de Google en components.js).
+         fonts-inter.css = Inter (--font-body del home). Ambas same-origin → fuera del critical path. -->
+    <link rel="stylesheet" data-altorra-fonts href="css/fonts.css">
+    <link rel="stylesheet" href="css/fonts-inter.css">
 
     <link rel="stylesheet" href="css/home/tokens-redesign.css">
     <link rel="stylesheet" href="css/home/base-redesign.css">
@@ -309,9 +310,8 @@
          → requieren extracción de CSS crítico + verificación visual live. -->
     <link rel="stylesheet" href="css/home/quicktools.css" media="print" onload="this.media='all'">
 
-    <!-- Optimized Google Fonts Loading (Poppins — aún usado por CSS legacy/modales) -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+    <!-- Poppins (legacy/modales) ya viene incluido en css/fonts.css self-hosted. -->
+
     <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
          unauthenticated header buttons when the user is already logged in.
          Sets html.auth-authenticated or html.auth-guest based on the

@@ -98,21 +98,13 @@ function injectCinematicAssets() {
     // Fallback: páginas legacy sin el <link> horneado siguen recibiendo la inyección JS
     // (retrocompat — cero regresión mientras el cron no haya regenerado un estático).
     if (!document.querySelector('link[data-altorra-fonts]')) {
-        // 1. Preconnect para Google Fonts (perf hint).
-        var preconnect = document.createElement('link');
-        preconnect.rel = 'preconnect';
-        preconnect.href = 'https://fonts.gstatic.com';
-        preconnect.crossOrigin = 'anonymous';
-        head.appendChild(preconnect);
-
-        // 2. Google Fonts: Manrope + Instrument Serif + Cardo (display:swap → sin FOIT).
+        // Fallback (páginas legacy sin el <link> horneado): inyectar el CSS de
+        // fuentes SELF-HOSTED (css/fonts.css, TODO-54 perf-v2) — mismo origen, sin
+        // Google Fonts. El data-altorra-fonts lo hace idempotente (2ª pasada no re-inyecta).
         var fontsLink = document.createElement('link');
         fontsLink.rel = 'stylesheet';
-        fontsLink.href = 'https://fonts.googleapis.com/css2?'
-            + 'family=Manrope:wght@200;300;400;500;600;700'
-            + '&family=Instrument+Serif:ital@0;1'
-            + '&family=Cardo:ital,wght@0,400;0,700;1,400'
-            + '&display=swap';
+        fontsLink.href = 'css/fonts.css';
+        fontsLink.setAttribute('data-altorra-fonts', '');
         head.appendChild(fontsLink);
     }
 

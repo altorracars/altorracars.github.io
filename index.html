@@ -301,7 +301,13 @@
     <link rel="stylesheet" href="css/home/base-redesign.css">
     <link rel="stylesheet" href="css/home/chrome-redesign.css">
     <link rel="stylesheet" href="css/home/cinematic.css">
-    <link rel="stylesheet" href="css/home/quicktools.css">
+    <!-- §PERF Fase 1.3 (slice seguro) — quicktools.css (dock flotante) NO es
+         above-fold: el dock lo inyecta quicktools.js (deferred) tras el render.
+         Se difiere con el truco media=print (mismo patrón que líneas 279-289) →
+         sale del CSS render-blocking sin riesgo FOUC. Los demás CSS del home
+         (style/dark-theme/cinematic/chrome/tokens/base) son críticos above-fold
+         → requieren extracción de CSS crítico + verificación visual live. -->
+    <link rel="stylesheet" href="css/home/quicktools.css" media="print" onload="this.media='all'">
 
     <!-- Optimized Google Fonts Loading (Poppins — aún usado por CSS legacy/modales) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">

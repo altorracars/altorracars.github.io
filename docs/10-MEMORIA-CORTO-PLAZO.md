@@ -14,7 +14,7 @@
 > 🏁 PLAN MAESTRO OLA 0-3 ✅ (§267-282; diferidos: bot→flip §282.4 · legacy oro §279). ✅ Cache sin deuda (SWR sirve fresco sin bump, L-65). ⚠️ `dist/` se commitea por bloque.
 > **🧹 GATES DUEÑO APARCADOS** (delegó el CUÁNDO a mí 06/07; tocan producción viva): MFA 2.9 · App Check 2.11 · cutover 2.12b (§275.4) · validar-live supresión+presencia (§274) · GSC noindex `detalle-vehiculo.html` (§276.7) · saldo bot · purga `clientes`/`suppressions`.
 > **✅ TODO-54 PageSpeed (§296, spec `2026-07-08-...` = SSoT) — CERRADO en alcance seguro** (`3b11ab10`→`bee56f0f`): dieta-JS COMPLETA (2.1b·2.3·2.4·2.5·2.6) + 1.3-slice + llms.txt. 1.3-core cerrado empírico (above-fold=113KB/460KB → critical-CSS no limpio). **🚫 Perf restante = Cloudflare (build pipeline) = BLOQUEADO SIN PRESUPUESTO** — el dueño dijo **NO re-preguntar/proponer hasta que ÉL avise que hay presupuesto** (09/07). No re-surfacear. (1.1b/1.2 = gate visual/equipo, menores.)
-> **▶️ TODO-53 pública ✅✅ LIVE + TODO-52 panel AL DÍA** (§283-295; prod LCP 662ms/CLS 0.03; SSoT spec `2026-07-06-auditoria-holistica-diseno-infra.md`). RESTA menor: render-block · minify · P0 barrido visual (ext, P4). Bloqueados sin dinero: flip LLM #917 · Cloudflare. Cadencia §0.b.
+> **▶️ TODO-53 pública ✅✅ LIVE** (§283-295; prod LCP 662ms/CLS 0.03; spec `2026-07-06-auditoria-holistica-diseno-infra.md`). Bloqueados sin dinero: flip LLM #917.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -64,4 +64,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **08/07 ⟦OPUS⟧ PageSpeed §296** (detalle → spec + foco↑): dieta-JS COMPLETA (2.1b·2.3·2.4·2.5·2.6) + 1.3-slice. **Claves**: `dbReady`(render) vs `firebaseReady`(tras auth); defer **home-only**; header sin flash por hint `auth-*` sync (index.html:311); GSI-idle NO rompe One-Tap; 8 CSS core = críticos above-fold (1.3 = gate live). 🚫 NO quitar Poppins/`admin-calendar-config`.
+- **08/07 ⟦OPUS⟧ PageSpeed §296 CERRADO** (spec SSoT): dieta-JS (2.1b·2.3·2.4·2.5·2.6)+1.3-slice+llms.txt. Claves durables: `dbReady`(render) vs `firebaseReady`(tras auth); defer **home-only**; hint `auth-*` sync (index.html:311) evita flash; 8 CSS core=críticos above-fold. 🚫 NO quitar Poppins/`admin-calendar-config`.
+- **09/07 ⟦OPUS⟧ TODO-52 P1 voz admin-app** (`89f2dcaf`): 3 voseo→tú (grep 0 + build limpio + dist). RESTA voseo bot `js/ai` + legacy `js/admin` (⚠️ `intent.js`=reconocimiento, NO tocar). **Cloudflare BLOQUEADO sin presupuesto — no re-preguntar.**

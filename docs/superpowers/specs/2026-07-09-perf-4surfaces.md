@@ -42,18 +42,36 @@ Los 4 muestran `auth/iframe.js` a **2004ms en la cadena crítica** (WEB móvil) 
 - **Sitio público = SIN build** (GitHub Pages sirve directo). `.min` hermanos = footgun (se desincronizan; el linter del cerebro es kernel compartido, no se le puede añadir gate). **Admin = CON build Vite** (sí code-split/minify nativo).
 - CERO regresión + diseño premium (dueño). CLS ya bien (0–0.041) → no es el problema.
 
-## Plan
-> Refinado por comité acotado (4 lentes + síntesis, `wf_990be945-676`, 09/07). Ver §PLAN-FINAL abajo (se completa al volver el comité).
+## Hallazgos EXTRA (lectura completa de las páginas de diagnóstico, 09/07)
+> No salían en la página de "oportunidades"; aparecieron al leer TODAS las páginas de rendimiento (el dueño insistió, con razón).
+- 🔴 **ADMIN: reCAPTCHA/App Check = el MAYOR costo de JS del admin** — `recaptcha__en.js` **1656ms CPU** (1200 eval + 283 parse) + **1123 KiB descargados** (3× 374KiB) + **621 KiB de JS sin usar** (328 recaptcha + 235 del bundle) + 41 KiB CSS recaptcha 100% sin usar + top de tareas largas. El admin carga App Check **inmediato** (mi diferido 2.1a fue solo público; además admin-app usa Firebase **modular propio**, no `firebase-config.js`). App Check está en **MONITOR** (no bloquea) → **diferirlo en el admin = victoria mayor, mayor incluso que exceljs.** ⚠️ **exceljs (938KB) NO aparece en el payload del login** → verificar si ya es chunk aparte (quizá no es el problema de boot que se creía; el problema de boot = bundle 1.38MB con 235KB sin usar en login + reCAPTCHA).
+- 🟢 **WEB: LCP = el `<img>` del hero** (`cin-hero-img` con `fetchpriority=high`), gated por **render-delay 2090ms** (NO descarga: load-delay 130ms + load 120ms). → **re-comprimir el hero NO ayuda al LCP**; el lever es reducir render-block + fuentes.
+- 🟠 **WEB: fuentes = 108 KiB en MUCHOS pesos** (Inter/Manrope/Instrument/Cardo + **Poppins ×5 pesos** 400-800) → self-host + reducir pesos = palanca grande de FCP.
+- 🟠 **WEB: GTM/GA4 (`gtag` 162 KiB / 107ms) NO lo difirió mi dieta-JS** → candidato a diferir a idle.
+- ℹ️ **WEB PC (78): único cuello = TBT 380ms** (JS hilo principal). Reflujos PC chicos (home-motion ya 0ms tras 2.6; home-chrome:439 = 43ms).
 
-### Borrador del arquitecto (pre-comité)
-- **P0-A** re-medir web actual (post dieta-JS). · **P0-B** ADMIN code-split (mayor ROI).
-- **P1** WEB imágenes (re-comprimir hero+SEDAN, resize altor) · WEB reflujos (page-loader.js + home-chrome.js:439).
-- **P2** WEB render-block CSS (minify style.css + podar CSS sin usar) · minify JS web.
-- 🚫 caché larga (Cloudflare) = bloqueado.
+## §PLAN-FINAL (comité `wf_990be945-676` + hallazgos extra) — P0→P3, todo sin Cloudflare
+> Regla del comité: **re-medir es COMPUERTA DURA** (los reportes son pre-dieta-JS; el 55 podría ya ser 75+). Nada web se dimensiona hasta re-medir.
+
+- **P0-A · RE-MEDIR (gate duro)** — Lighthouse/Chrome-ext sobre el deploy ACTUAL: home móvil **+ busqueda + detalle-vehiculo** (la dieta fue HOME-ONLY → esas páginas pueden puntuar peor) + identificar elemento LCP y si el gating es JS o CSS/fonts. Congela P1/P2 web. Riesgo=0.
+- **P0-B · CAZA-BUGS** — verificar E2E que la dieta-JS NO rompió login · solicitud→lead (contacts/leads/activities) · GA4 · arranque bot. Un LCP mejor con leads rotos = regresión de negocio.
+- **P0-C · ADMIN diferir App Check/reCAPTCHA** (hallazgo extra, MAYOR ROI admin) — App Check en MONITOR; sacarlo del boot ahorra ~1656ms CPU + 1123KiB. En admin-app (Firebase modular). Verificar que no rompe nada (monitor = no enforce).
+- **P0-D · ADMIN exceljs** — VERIFICAR primero si es estático o ya chunk aparte; si estático, `await import('exceljs')` dentro del handler de Exportar. Ship aislado + re-medir.
+- **P1-A · WEB self-host Google Fonts** (woff2 al repo + `font-display:swap` + preload del peso crítico; quitar `<link>` a googleapis/gstatic + reducir pesos Poppins). Mayor lever individual del FCP móvil, sin footgun. Mismo patrón en admin (asset Vite).
+- **P1-B · WEB entrega CSS** — dejar bloqueante SOLO el above-fold; diferir below-fold (cinematic/dark-theme/chrome/performance-fixes) vía `media=print onload` swap; podar CSS muerto EN LA FUENTE. **VALIDAR FOUC live en Chrome (no preview).** Es el critical-CSS ALCANZABLE (sin inline 113KB).
+- **P1-C · WEB defer GTM/GA4** (162KB) a idle + (contingente P0-A) LCP hero: como es render-delay, el lever es P1-A/P1-B, NO recomprimir.
+- **P2-A · SW cache** — auditar `service-worker.js` + precache de estáticos pesados (CSS/JS/fonts self-hosted/hero). ÚNICO lever de repeat-visit sin Cloudflare (la caché-Lighthouse es diagnóstico, no puntúa). Respetar bump §4 + L-02.
+- **P2-B · ADMIN lazy routes** (CONDICIONAL a P0-C/D re-medir) — `import()` por módulo; `cssCodeSplit` parte el render-block 1640ms por ruta. Login no carga CRM/reportes (mata los 235KB sin usar). Admin sin SEO = libertad total.
+- **P2-C · ADMIN build** — `build.target` evergreen + `manualChunks` firebase (mantenibilidad/caché, NO palanca de score) + revisar por qué el bundle marca 66KiB de minify pendiente (¿minify Vite off?).
+- **P2-D · WEB-PC TBT 380ms** (CONDICIONAL a P0-A) — romper long-tasks / más idle.
+- **P3** · imágenes (hero/SEDAN recomprimir = bajo impacto, contingente) · altor-128→68 **PROBABLE MANTENER** (128@68 ≈ 1.88x, óptimo retina; encoger = borroso, contra premium) · reflujos 75ms (skip si >10min) · consolidar nº de hojas CSS.
+
+### DESCARTADO (deuda técnica): minify manual `.min` en sitio público (footgun desync sin gate + ~10KB post-gzip) · critical-CSS inline a mano (113KB, FOUC no verificable) · manualChunks especulativo · perseguir la caché-KiB como palanca de score.
+### Veredictos riesgosos (comité, unánime): (a) minify-sin-build público = MATAR. (b) critical-CSS a mano = TECHO EN CERO (usar diferir-below-fold + fonts). (c) admin code-split = SECUENCIADO (exceljs/AppCheck → medir → lazy-routes → build), NUNCA monolítico; meta honesta admin-móvil 56→72-78 (80+ exige cerrar CSS/fonts).
 
 ## Checklist
-- [ ] Evidencia: 4 PDFs renderizados + leídos (hecho 09/07; scores en §"Puntajes verificados" de este spec).
-- [ ] §PLAN-FINAL del comité integrado (`wf_990be945-676`).
-- [ ] P0-A re-baseline live.
-- [ ] P0-B admin code-split.
-- [ ] P1/P2 web.
+- [ ] Evidencia: 4 PDFs — TODAS las páginas de rendimiento leídas (scores + oportunidades + diagnósticos; hallazgos extra en §"Hallazgos EXTRA"). Faltan solo las secciones A11y/Prácticas/SEO (ya 95-100) + auditorías-aprobadas.
+- [ ] §PLAN-FINAL integrado (comité `wf_990be945-676` + hallazgos extra) — ver §§ arriba.
+- [ ] P0-A re-medir live (Chrome ext) — gate duro.
+- [ ] P0-C admin diferir App Check + P0-D exceljs.
+- [ ] P1 web fonts + CSS + GTM.

@@ -88,7 +88,7 @@ Los 4 muestran `auth/iframe.js` a **2004ms en la cadena crítica** (WEB móvil) 
 - ✅ Evidencia: 4 PDFs leídos (perf completo) · §PLAN-FINAL (comité + extra).
 - ✅ **P0-A re-baseline live** (Chrome ext): HOME 55→**61** (FCP −7.2s/LCP −10.9s); BÚSQUEDA=**40** (home-only diet).
 - ✅ **P0-C admin App Check diferido** (`879c3fb9`) · P0-D exceljs = ya estaba (chunk aparte).
-- ✅ **EXTENDER dieta-JS a páginas públicas de contenido** (`12eeb928`) — gate `isHomePage`→`isDeferPage` (no admin/cuenta) en firebase-config.js + components.js(Lucide). Verificado preview: busqueda 27veh/129cards + iframe off-critical; detalle OK. **⏳ re-medir busqueda vivo tras deploy (confirmar 40→~61).**
+- ✅ **EXTENDER dieta-JS a páginas públicas de contenido** (`12eeb928`) — gate `isHomePage`→`isDeferPage` (no admin/cuenta) en firebase-config.js + components.js(Lucide). **✅✅ RE-MEDIDO VIVO (run `55z7h8zs6e`): BÚSQUEDA 40→65 (+25!)** — salto MAYOR que el home (más JS eager que diferir); página de alta intención de compra. A11y 95, SEO 100. ⏳ re-medir admin (post P0-C).
 - ⏳ **P1 web (próximo, mayor lever del score)**: self-host fuentes + `font-display:swap` (LCP 7.4s→verde) · diferir CSS below-fold · diferir GTM/GA4 (TBT 280ms).
 - ⏳ P2: SW precache · admin lazy-routes · re-medir admin (post P0-C).
 

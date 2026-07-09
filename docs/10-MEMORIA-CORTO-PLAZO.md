@@ -11,8 +11,8 @@
 ## 🎯 Foco actual
 
 > 🤖 **AHORA = OPUS 4.8**. YO decido+ejecuto+mergeo (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES (L-62). **DOS hilos abiertos (la sesión fresca elige):** **(1) ⚡ RENDIMIENTO v2** (activo esta sesión, ↓) · **(2) 🟣 TODO-52 CRM** (mandato permanente #1, brief `2026-06-29-crm-overhaul-productizacion-brief.md`; próximo = **P0-CAPTURE** leads perdidos = dinero; + voz voseo bot-público/legacy c/`catalogo-voz`; retomar "continúa el EPIC TODO-52").
-> **⚡ RENDIMIENTO v2 (TODO-54 cont., spec `2026-07-09-perf-4surfaces.md` = SSoT).** ✅✅ **Confirmado LIVE (ext Chrome): BÚSQUEDA 40→65 · HOME 55→61** (FCP 10.2→3.0s, LCP 18.3→7.4s). Hecho: comité (`wf_990be945-676`) + **admin App Check diferido** (`879c3fb9`, −1656ms) + **extender dieta-JS a páginas de contenido** (`12eeb928`, gate `isHomePage`→`isDeferPage`=!admin&&!cuenta). **RETOMAR (sin Cloudflare):** (a) re-medir admin live (confirmar App Check) · (b) admin lazy-routes (P2, seguro) · (c) self-host fuentes (FCP; verificar tipografía LIVE) · (d) SW precache retorno. **🚫 techo del home (LCP 7.4s→verde) = render-block CSS = pipeline build = Cloudflare BLOQUEADO** (no re-preguntar). exceljs ya era chunk aparte; GTM ya diferido vía analytics.
-> 🏁 PLAN MAESTRO OLA 0-3 ✅ (§267-282). ✅ Cache sin deuda (SWR sin bump, L-65). ⚠️ `dist/` (público + `admin-app/dist/`) se commitea por bloque. TODO-53 pública ✅✅ LIVE (§283-295, LCP 662ms).
+> **⚡ RENDIMIENTO v2 (TODO-54 cont., spec `2026-07-09-perf-4surfaces.md` = SSoT).** ✅✅ **LIVE: BÚSQUEDA 40→65 · HOME 55→61** (FCP 10.2→3.0s, LCP 18.3→7.4s). Hecho: comité (`wf_990be945-676`) + admin App Check diferido (`879c3fb9`) + extend dieta-JS a contenido (`12eeb928`) + **self-host de fuentes** (`eb9054d0`, §297). **RETOMAR (sin Cloudflare):** (a) **re-medir home/búsqueda LIVE tras fuentes** (dueño valida) · (b) re-medir admin (App Check) · (c) admin lazy-routes (P2) · (d) SW precache. **🚫 techo home (LCP verde) = render-block CSS = Cloudflare BLOQUEADO** (no re-preguntar). exceljs=chunk aparte; GTM diferido.
+> 🏁 OLA 0-3 ✅ (§267-282). Cache sin deuda (SWR sin bump, L-65). ⚠️ `dist/` (público + `admin-app/dist/`) se commitea por bloque.
 > **🧹 GATES DUEÑO APARCADOS** (06/07): MFA 2.9 · App Check 2.11 · cutover 2.12b · validar-live (§274) · GSC (§276.7) · saldo bot · purga clientes/suppressions.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
@@ -30,8 +30,8 @@
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
 | **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — OLA 0-3 ✅ (§267-282); Directiva Permanente (brief `2026-06-29-crm-overhaul…`). Próximo=P0-CAPTURE. | 🔄 permanente | pulir |
-| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧** — spec `2026-07-06-...`. ✅✅ LIVE (§283-295; LCP 662ms). RESTA menor: barrido visual P4. | 🔄 | menor |
-| **TODO-54** | **⚡ PageSpeed perf ⟦OPUS⟧** — **v2 (4 superficies) spec `2026-07-09-perf-4surfaces.md` = SSoT** (v1 `2026-07-08` = dieta-JS home). ✅ LIVE: **BÚSQUEDA 40→65 · HOME 55→61**; admin App Check diferido; extend-diet a páginas de contenido. RESTA sin Cloudflare: re-medir admin · admin lazy-routes · self-host fuentes · SW precache. 🚫 techo home LCP=Cloudflare BLOQUEADO. | 🔄 impl | perf-v2/gates |
+| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA ⟦OPUS⟧** — ✅✅ LIVE (§283-295; LCP 662ms). RESTA: barrido visual P4. | 🔄 | menor |
+| **TODO-54** | **⚡ PageSpeed perf v2 ⟦OPUS⟧** — spec `2026-07-09-perf-4surfaces` = SSoT. ✅ LIVE: **BÚSQUEDA 40→65 · HOME 55→61**; App Check diferido; extend-diet; **self-host fuentes ✅ §297**. RESTA (sin Cloudflare): re-medir LIVE · admin lazy-routes · SW precache. 🚫 techo home=Cloudflare BLOQUEADO. | 🔄 | perf/gates |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
@@ -41,7 +41,7 @@
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
 | **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
 | **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); `00a`/`32` shardeados ✅ 03/07. Resta menor: 99a/99b · `ignoreDirs` · **`33-FRONTEND` + `10` over cap → shard/GC próximo**. | 🔄 | — |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); `00a`/`32` shardeados ✅ 03/07. Resta: 99a/99b · `ignoreDirs` · **`33`+`10`+`00` over cap → shard/GC (00 cruzó ⚠️ tras §297)**. | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |
@@ -63,4 +63,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **08-09/07 ⟦OPUS⟧ (detalle→spec `2026-07-09-perf-4surfaces`)**: perf dieta-JS (`dbReady` render vs `firebaseReady` tras auth; hint `auth-*` sync index.html:311 evita flash) → extendida a páginas de contenido (búsqueda 40→65) + admin App Check diferido. TODO-52 voz admin-app ✅ (`89f2dcaf`); RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js`=reconocimiento, NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**
+- **08/07 ⟦OPUS⟧ §297 self-host de Google Fonts**: fuera del critical path público. 5 familias en `/fonts/` vía `scripts/fetch-fonts.mjs` reproducible (subsets latin, `unicode-range`) → `css/fonts.css`+`fonts-inter.css`; ~70 HTML+templates+generados+fallbacks+`@import` Cardo retirados; `.gitattributes` blinda woff2. Verif live: 0 req a Google, 5 familias en el DOM, SSG OK. Inter solo en index (réplica exacta). Sin bump (L-65). `eb9054d0`.
+- **08-09/07 ⟦OPUS⟧ (spec `perf-4surfaces`)**: dieta-JS (`dbReady` vs `firebaseReady`; hint `auth-*` sync evita flash) → contenido (búsqueda 40→65) + admin App Check diferido. TODO-52 voz admin-app ✅ (`89f2dcaf`); RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**

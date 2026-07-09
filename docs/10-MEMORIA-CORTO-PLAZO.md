@@ -10,11 +10,11 @@
 
 ## 🎯 Foco actual
 
-> 🤖 **AHORA = OPUS 4.8**. **YO decido+ejecuto+mergeo** (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES de construir (L-62). El PLAN MAESTRO (olas 0-4) está cerrado → foco = **TODO-53** (abajo).
-> 🏁 **PLAN MAESTRO arco OLA 0-3 COMPLETO** (§267-§282). Diferidos: #6 bot→flip (§282.4) · barrido legacy oro (`20 §🎨`+§279). ✅ **Cache sin deuda** (SW network-first/SWR `no-cache` sirve fresco sin bump, L-65). ⚠️ `dist/` se commitea por bloque.
+> 🤖 **AHORA = OPUS 4.8**. **YO decido+ejecuto+mergeo** (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES (L-62). **Foco = TODO-54 (§296, arriba)**.
+> 🏁 PLAN MAESTRO OLA 0-3 ✅ (§267-282; diferidos: bot→flip §282.4 · legacy oro §279). ✅ Cache sin deuda (SWR sirve fresco sin bump, L-65). ⚠️ `dist/` se commitea por bloque.
 > **🧹 GATES DUEÑO APARCADOS** (delegó el CUÁNDO a mí 06/07; tocan producción viva): MFA 2.9 · App Check 2.11 · cutover 2.12b (§275.4) · validar-live supresión+presencia (§274) · GSC noindex `detalle-vehiculo.html` (§276.7) · saldo bot · purga `clientes`/`suppressions`.
-> **🤝 HANDOFF 08/07 (2ª) — CERRADA LIMPIA**: EPIC PageSpeed **TODO-54** (§296, `cbe88243`): Fase 0+1.1a+1.2a+2.1a ✅ LIVE — payload ~−50%, a11y/agéntica **100**, reCAPTCHA diferido. **RETOMAR: "continúa el TODO-54"** desde 2.1b (spec `2026-07-08-pagespeed-audit-plan.md`). Cerebro SANO.
-> **▶️ TODO-53 (pública) ✅ + TODO-52 (panel) AL DÍA.** SSoT = spec `2026-07-06-auditoria-holistica-diseno-infra.md`. **Pública** P0.1-P3.5 ✅ (§283-291) · **✅✅ LIVE (`f104708c`): prod LCP 662ms** (era 22.6s), CLS 0.03. **Panel (§292-295)**: masonry refutado 0/10 → `align-items:start` 5 grillas (§293) · **responsive móvil COMPLETO** — barrido ~22 pantallas @390/600/768/1440, 3 clips fixed (§294) + Agenda vista día/lista (§295); base del panel SÓLIDA. **RESTA (menor, retorno decreciente)**: render-blocking · minify (decisión build) · P0 barrido VISUAL fino (extensión, P4). Bloqueados sin dinero: flip LLM #917 · Cloudflare. Cadencia §0.b.
+> **🤝 TODO-54 PageSpeed (§296, spec `2026-07-08-pagespeed-audit-plan.md` = SSoT)** — 08/07 3ª ⟦OPUS⟧: **2.1b ✅ `3b11ab10`** (diferir auth+SDKs Firebase; `auth/iframe.js` off-critical; nuevo `window.dbReady`; home-only) · **2.3 ✅ `73aadeaa`** (diferir stack bot/IA ~18 archivos a idle). Verif preview OK. **RETOMAR desde 2.4** (GSI solo-login+FedCM, 96KB) · **2.6** (reflujo `home-chrome.js:439`) · **1.3** (CSS crítico, ~900ms, gate FOUC). 🔻 2.2 diferido (main.js:982 ya idle vía P14; get() rompe frescura, gate live). Sin bump (js/core=networkFirst).
+> **▶️ TODO-53 pública ✅✅ LIVE + TODO-52 panel AL DÍA** (§283-295; prod LCP 662ms/CLS 0.03; SSoT spec `2026-07-06-auditoria-holistica-diseno-infra.md`). RESTA menor: render-block · minify · P0 barrido visual (ext, P4). Bloqueados sin dinero: flip LLM #917 · Cloudflare. Cadencia §0.b.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -31,8 +31,8 @@
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
 | **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — PLAN MAESTRO 03/07 **arco OLA 0-3 ✅** (§267-§282); continúa como Directiva Permanente vía TODO-53. | 🔄 permanente | pulir |
-| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (mandato dueño 06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. P0.1 masonry ✅ (§283) · **P1 ✅ (§284)** · **P2 ✅ (§285)** · **P3.1 LCP hero ✅ (§286)** · **P3.2 LCP vehículos ✅ (§287)** · **P3.3 carrusel reflow ✅ (§289)** · **P3.4+P3.5 banner marca ✅ (§291: src+preload · PNG→WebP −66%)**. **✅✅ VALIDADO LIVE**: prod LCP 662ms (era 22.6s), CLS 0.03. RESTA (menor): render-blocking · minify · **P0 grid-gaps PRE-DIAGNOSTICADO §292 (masonry refutado 0/10; apply order-preserving = gate extensión)** · P0 barrido visual + P4 extensión Chrome. | 🔄 impl | menor/panel |
-| **TODO-54** | **⚡ PageSpeed perf home ⟦OPUS⟧ (08/07)** — spec `2026-07-08-pagespeed-audit-plan.md`. **Fase 0 + 1.1a ✅ (§296)**. RESTA: 1.1b (anim visual-check) · 1.2 fuentes · 1.3 render-block · F2 dieta JS · F3 minify/categorías · F4 Cloudflare (dinero). | 🔄 impl | 1.1b+ |
+| **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA diseño+infra ⟦OPUS⟧ (06/07)** — spec `2026-07-06-auditoria-holistica-diseno-infra.md`. Pública P0.1-P3.5 ✅ (§283-291) **VALIDADO LIVE** (prod LCP 662ms/CLS 0.03) · panel §292-295 (grillas+responsive móvil). RESTA menor: render-block · minify · P0 barrido visual (ext, P4). | 🔄 impl | menor/panel |
+| **TODO-54** | **⚡ PageSpeed perf home ⟦OPUS⟧ (08/07)** — spec `2026-07-08-pagespeed-audit-plan.md` (SSoT). **✅ Fase 0·1.1a·1.2a·2.1a·2.1b·2.3** (§296). RESTA: **2.4** GSI solo-login · **2.6** reflujo · **2.5** subset lucide · **1.3** CSS crítico (gate FOUC) · **1.1b** animaciones (gate visual) · 1.2 fuentes (🚫 equipo) · F3 minify · F4 Cloudflare (dinero). **2.2 🔻 diferido** (ya idle vía P14). | 🔄 impl | 2.4+ |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
@@ -42,7 +42,7 @@
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
 | **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
 | **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); **`00`→`00a-INDICE` (§1–159) + `30`→`32-LECCIONES-META` (M-NN) SHARDEADOS ✅ 03/07** (38k/43k, holgura). Resta menor: 99a/99b · `ignoreDirs` · **`33-FRONTEND` ⚠️ over cap (39k/34k tras L-66) → shard/GC = próximo candidato**. | 🔄 | — |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); `00a`/`32` shardeados ✅ 03/07. Resta menor: 99a/99b · `ignoreDirs` · **`33-FRONTEND` + `10` over cap → shard/GC próximo**. | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |
@@ -64,4 +64,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **08/07 ⟦OPUS⟧ PageSpeed Fase 0/1.1a (§296, TODO-54, spec `2026-07-08-pagespeed-audit-plan.md`)**: móvil 53/ord 69. SHIPPED `018ad1d8`: imágenes −1.1MB · a11y→100 · logos marca `onerror`→local (fix 404 Audi) · `cinWord` sin filter. Verif preview. Deltas + PDF (scratchpad, NO borrar) → spec. 🚫 NO quitar Poppins/`admin-calendar-config` sin verificar.
+- **08/07 (1ª/2ª) ⟦OPUS⟧ PageSpeed Fase 0·1.1a·1.2a·2.1a LIVE (§296)**: base móvil 53/ord 69 · imágenes −1.1MB · a11y→100 · categorías→WebP · reCAPTCHA diferido. Detalle+PDF → spec. 🚫 NO quitar Poppins/`admin-calendar-config` sin verificar.
+- **08/07 (3ª) ⟦OPUS⟧ PageSpeed 2.1b+2.3 (§296)** → detalle en foco↑ + spec. Claves durables: `window.dbReady` (render) vs `firebaseReady` (tras auth, compat); defer **home-only** (admin/otras=inmediato); header sin flash por hint `auth-*` sync de index.html:311; scripts del bot post-parse ya son async (defer no-op).

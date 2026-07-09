@@ -84,9 +84,13 @@ Los 4 muestran `auth/iframe.js` a **2004ms en la cadena crítica** (WEB móvil) 
 ### DESCARTADO (deuda técnica): minify manual `.min` en sitio público (footgun desync sin gate + ~10KB post-gzip) · critical-CSS inline a mano (113KB, FOUC no verificable) · manualChunks especulativo · perseguir la caché-KiB como palanca de score.
 ### Veredictos riesgosos (comité, unánime): (a) minify-sin-build público = MATAR. (b) critical-CSS a mano = TECHO EN CERO (usar diferir-below-fold + fonts). (c) admin code-split = SECUENCIADO (exceljs/AppCheck → medir → lazy-routes → build), NUNCA monolítico; meta honesta admin-móvil 56→72-78 (80+ exige cerrar CSS/fonts).
 
+## Progreso (09/07)
+- ✅ Evidencia: 4 PDFs leídos (perf completo) · §PLAN-FINAL (comité + extra).
+- ✅ **P0-A re-baseline live** (Chrome ext): HOME 55→**61** (FCP −7.2s/LCP −10.9s); BÚSQUEDA=**40** (home-only diet).
+- ✅ **P0-C admin App Check diferido** (`879c3fb9`) · P0-D exceljs = ya estaba (chunk aparte).
+- ✅ **EXTENDER dieta-JS a páginas públicas de contenido** (`12eeb928`) — gate `isHomePage`→`isDeferPage` (no admin/cuenta) en firebase-config.js + components.js(Lucide). Verificado preview: busqueda 27veh/129cards + iframe off-critical; detalle OK. **⏳ re-medir busqueda vivo tras deploy (confirmar 40→~61).**
+- ⏳ **P1 web (próximo, mayor lever del score)**: self-host fuentes + `font-display:swap` (LCP 7.4s→verde) · diferir CSS below-fold · diferir GTM/GA4 (TBT 280ms).
+- ⏳ P2: SW precache · admin lazy-routes · re-medir admin (post P0-C).
+
 ## Checklist
-- [ ] Evidencia: 4 PDFs — TODAS las páginas de rendimiento leídas (scores + oportunidades + diagnósticos; hallazgos extra en §"Hallazgos EXTRA"). Faltan solo las secciones A11y/Prácticas/SEO (ya 95-100) + auditorías-aprobadas.
-- [ ] §PLAN-FINAL integrado (comité `wf_990be945-676` + hallazgos extra) — ver §§ arriba.
-- [ ] P0-A re-medir live (Chrome ext) — gate duro.
-- [ ] P0-C admin diferir App Check + P0-D exceljs.
-- [ ] P1 web fonts + CSS + GTM.
+- [ ] P1 fonts+CSS+GTM · re-medir busqueda/admin vivo.

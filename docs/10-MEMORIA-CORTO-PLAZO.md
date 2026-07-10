@@ -10,12 +10,9 @@
 
 ## 🎯 Foco actual
 
-> **✅ Input Fable 5 10/07 ATENDIDO** (§299·§300·§301). Auditoría de Opus OFRECIDA → **"todavía no"**; re-ofrecer. Después: CAMINOS A/B/C o CRM (TODO-52: leer `43-UX §Doctrina-panel`).
+> **⏸️ PIVOTE 10/07 (dueño, ADR §302): CARS EN PAUSA — prioridad #1 = ALTORRA INMOBILIARIA**, que además ASUME el liderazgo del cerebro ×4. Paquete de arranque (SSoT) = **`specs/2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`** (identidad legal VALIDADA · activos · programa R0-R5 · stack candidato · traspaso kernel §7 · checklist dueño §8 · página mantenimiento §9 · prompt de arranque §10). El dueño abre el chat de inmobiliaria con ese prompt; este cerebro queda en modo mantenimiento.
 >
-> 🤖 **AHORA = OPUS 4.8**. YO decido+ejecuto+mergeo (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES (L-62). **DOS hilos abiertos (la sesión fresca elige):** **(1) ⚡ RENDIMIENTO v2** (activo esta sesión, ↓) · **(2) 🟣 TODO-52 CRM** (mandato #1; próximo **P0-CAPTURE** leads=dinero; voz voseo bot c/`catalogo-voz`; "continúa el EPIC TODO-52").
-> **⚡ RENDIMIENTO v2 (TODO-54).** ✅ LIVE búsqueda 40→65 · home 55→61 · §297 fuentes (`eb9054d0`) · **§298 Ola 1** (`5e8c4762`: logo 412KB→ligeros ~40+ págs + diferir GSI). **📊 Diagnóstico LH (Artifact): ord 95 (≈Apple 94) · móvil 57**. **Ola 1 verif por RED** (logo 412KB=0, GSI=0, −96KB script, −3 errores consola); **score móvil 57→55 = RUIDO de galería dinámica** (13→53 fotos ±1.8MB enmascaran → medir por RED no score, lección en skill). **CAMINOS (dueño elige):** ⭐**(A) win REAL móvil = optimizar fotos de vehículos** (Firebase Storage = MAYOR cuello 2.5-4.4MB; lazy agresivo + srcset) · (B) Ola 2 reCAPTCHA 375KB — **GATE: dueño confirma App Check MONITOR en Firebase Console** (§41) antes de tocar · (C) TODO-52 CRM. **🚫 techo home=Cloudflare BLOQUEADO.** Descartado fuentes-async (§298).
-> 🏁 OLA 0-3 ✅ (§267-282). Cache: SWR sin bump (L-65). ⚠️ `dist/` se commitea por bloque.
-> **🧹 GATES DUEÑO APARCADOS** (06/07): MFA 2.9 · App Check 2.11 · cutover 2.12b · validar-live (§274) · GSC (§276.7) · saldo bot · purga clientes/suppressions.
+> **REANUDAR CARS (solo cuando el dueño lo diga)**: ⭐(A) fotos de vehículos = win móvil REAL (Firebase Storage 2.5-4.4MB; lazy agresivo + srcset) · (B) Ola 2 reCAPTCHA — GATE: App Check MONITOR confirmado en Firebase Console (§41) · (C) TODO-52 CRM (leer `43-UX §Doctrina-panel` primero). Detalle perf → §297/§298; gates dueño aparcados → §283-298 (MFA · App Check · cutover 2.12b · GSC · saldo bot · purga). **Auditoría-de-Opus OFRECIDA sigue en pie (§300)**. Cache: SWR sin bump (L-65); `dist/` por bloque.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -28,6 +25,7 @@
 ## 📋 Pendientes abiertos (TODO-NN) — ledger ÚNICO de pendientes
 
 > Al cerrar uno: ✅ + link al ADR, y retirarlo en la próxima poda.
+> ⏸️ **§302: TODOS los TODO de cars quedan EN PAUSA** (no cerrados) hasta que el dueño reanude la línea cars.
 
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
@@ -65,6 +63,7 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
+- **10/07 ⟦FABLE-5⟧ §302 PIVOTE**: cars EN PAUSA; kickoff inmobiliaria emitido (legal validado: ALTORRA COMPANY S.A.S, NIT 902063965-4; matrícula de arrendador EN TRÁMITE = gate; stack candidato Cloudflare+Astro+Firebase). Liderazgo del cerebro → inmobiliaria (traspaso §7 del kickoff).
 - **10/07 ⟦FABLE-5⟧ §299-§301**: sinapsis ×4 — cars importó (L-73/74/75 · W-13 · panel→`43-UX` · meta-ads); payloads bersaglio/inmob en `sinapsis-cerebros/references/` (harness bloquea writes cross-repo → aplica cada operador). Resta §G/W (TODO-28).
 - **09/07 ⟦OPUS⟧ perf-v2**: §297 fuentes + §298 Ola 1 — detalle en ADRs + foco↑. Skill `optimizacion-rendimiento-web` ×4.
 - **Pendientes vivos perf/voz** (histórico §283-297): RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**

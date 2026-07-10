@@ -15,11 +15,16 @@ description: Usar ANTES de re-investigar un problema TRANSVERSAL (Firebase/Fires
 
 ## 1. Mapa de los 4 cerebros (mismo disco, rutas hermanas)
 
+> ⚠️ **LIDERAZGO EN TRASPASO (2026-07-10, cars §302, mandato del dueño)**: el líder/constructor del
+> cerebro ×4 (kernel + §G) pasa de **cars → inmobiliaria** (prioridad #1 del negocio). El chat de
+> inmobiliaria lo asume ejecutando el §7 de su kickoff (`..\altorracars.github.io\specs\2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`)
+> y actualiza esta tabla al completarlo. Cars queda EN PAUSA como peer.
+
 | Cerebro | Repo en `C:\Users\romad\Documents\GitHub\` | Lecciones | Fuerte en |
 |---|---|---|---|
-| **cars** (canon) | `altorracars.github.io` | `docs/30-LECCIONES.md` + hijas `31` (git) · `32` (meta M-NN) · `33` (frontend) | SSG/cron/SW · CRM Firestore · workflows/subagentes · a11y/perf · meta-gobernanza del cerebro |
+| **cars** (canon histórico, EN PAUSA) | `altorracars.github.io` | `docs/30-LECCIONES.md` + hijas `31` (git) · `32` (meta M-NN) · `33` (frontend) | SSG/cron/SW · CRM Firestore · workflows/subagentes · a11y/perf · meta-gobernanza del cerebro |
 | **bersaglio** | `bersagliojewelry.github.io` | `docs/30-LECCIONES.md` + `31-…FIRESTORE` · `32-…CARGA` · `34-…META` | **DINERO** (POS/caja/pasarela Wompi/arqueos/idempotencia) · rules adversariales · functions gen2 · LCP/carga CMS |
-| **inmobiliaria** | `altorrainmobiliaria.github.io` | `docs/30-LECCIONES.md` (joven: 7) | arranque Firebase/presence |
+| **inmobiliaria** (🏛️ NUEVO LÍDER, prioridad #1) | `altorrainmobiliaria.github.io` | `docs/30-LECCIONES.md` (joven: 7 + payload pendiente) | arranque Firebase/presence · (asumirá kernel/§G/TODO-28) |
 | **insema** | `insemastereo.github.io` | `docs/30-LECCIONES.md` (joven: 7) | sitio estático user-site / GitHub Pages |
 
 ## 2. Cómo consultar (barato — 2 pasos, en el hilo PRINCIPAL)

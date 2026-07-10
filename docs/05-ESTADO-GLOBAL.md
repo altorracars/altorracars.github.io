@@ -3,9 +3,9 @@
 > **Nodo: signos vitales.** AUTO-CARGA (con `CLAUDE.md` + `10`). Tablero, no bitácora: solo señales
 > ACTUALES (pisar, no apilar); lo histórico vive en `99` (ADR). Tope ~25 líneas / ~2.8k chars (§G.5).
 
-| Señal | Valor (última actualización: **2026-07-08**) |
+| Señal | Valor (última actualización: **2026-07-10**) |
 |---|---|
-| **Build** | 🟢 código @ `5e8c4762` (`dev`): **🤖 OPUS 4.8 · PLAN MAESTRO=SSoT**. 🏁 OLA 0-3 ✅ (§267-282). TODO-53 ✅ LIVE (§283-295, LCP 662ms). **⚡ TODO-54 PERF v2:** ✅ LIVE búsqueda 40→65 · home 55→61; §297 self-host fuentes; **§298 Ola 1 (logo 412KB→ligeros + diferir GSI, verif live)**. **Diagnóstico LH: ord 95 (≈Apple 94) · móvil 57** (Artifact; CrUX vacío = falta tráfico, no bug). **Techo home = Cloudflare 🚫 BLOQUEADO** (no re-preguntar). **🧭 perf-v2 sigue: Ola 2 reCAPTCHA/AppCheck (gate Firebase Console) · re-medir · TODO-52 CRM.** **Gates dueño:** flip LLM #917 · MFA 2.9 · App Check 2.11 · cutover 2.12b · saldo/purga · validar-live (§274) · GSC §276.7. |
+| **Build** | ⏸️ **CARS EN PAUSA (pivote §302, 10/07): prioridad #1 del dueño = ALTORRA INMOBILIARIA**, que asume el liderazgo del cerebro ×4. Kickoff (SSoT) → **`specs/2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`**. Último estado cars: 🟢 código @ `5e8c4762` + docs §299-§302; perf-v2 Ola 1 LIVE (§298: ord 95 · móvil 57 · LCP 662ms). **Reanudar = caminos A/B/C (§298.7 y `10`)**; gates dueño aparcados (§283-298); Cloudflare 🚫 solo-cars (inmobiliaria SÍ tiene dominio). |
 | **Cache version vigente** | **`v20260710031654`** (cron-CI `e98d17cc`, bump rutinario + sitemap; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
@@ -20,4 +20,4 @@
 - cron↔cache = patrón conocido (L-02, hija `31`).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · CRM canónico LIVE ✅. **🧭 FOCO = TODO-52 (EPIC #1) vía PLAN MAESTRO 03/07**: OLA 0-3.5 ✅ (§267-§280); resta **OLA 3.6** (bot pulido, gate saldo #917). Multi-tenancy DESCARTADA. Bot DORMIENTE.
+`js/` modular ✅ · CRM canónico LIVE ✅ · **🧭 FOCO GLOBAL = INMOBILIARIA (§302)**; TODOs de cars pausados (no cerrados). Multi-tenancy DESCARTADA. Bot DORMIENTE.

@@ -1,11 +1,11 @@
-# 🗂️ 00a — Índice sináptico · ARCHIVO (Mapa §→línea, §1–§159)
+# 🗂️ 00a — Índice sináptico · ARCHIVO (Mapa §→línea, §1–§190)
 
 > **Shard de `00-INDICE.md`** (range-shard §228 / TODO-29). Contiene SOLO la mitad vieja del
 > "Mapa §→línea". El kernel descubre `00[a-z]?-INDICE*.md` y lo une con `00` (`readIndex()`),
 > así que los checks (#3 desync, #5a refs-ADR, #9 consolidado) lo ven como parte del índice.
 > NO es neurona (no `NN-` registrada en CLAUDE.md); alcanzable vía el puntero de `00-INDICE.md`.
 
-## Mapa § → línea (archivo §1–§159)
+## Mapa § → línea (archivo §1–§190)
 
 | § | Tema | Línea |
 |---|---|---|
@@ -197,3 +197,34 @@
 | §157 | **Fix rectángulo negro del hero**: `<footer class=cin-hero-foot>` heredaba `body footer{background}` (dark-theme.css:688). Fix `.cin-hero-foot{background:transparent}`. Lección **L-25** | 42919 |
 | §158 | **CRM Fase 1: ingestión canónica DESPLEGADA**: `onSolicitudCreated` normaliza `solicitudes`→`contacts`/`leads`/`activities` en tx atómica (dedup, consent 1581, idempotencia, dead-letter). 21 tests. LIVE. L-26 | 42929 |
 | §159 | **CRM Fase 2: Bandeja + app admin greenfield** (`admin-app/`, Vite+Firebase modular `altorra-crm`): colas triage + score/NBA determinista + acciones 1-clic + Customer 360. Auth lookup `usuarios/{uid}` (claims→Fase 5). Verif `?mock=1`. L-27 | 42939 |
+| §160 | **CRM Fase 3a: Pipeline drag-drop** sobre `deals` (lead→oportunidad): `domain/pipeline.js` (8 etapas, forecast) + kanban a11y + ganado/perdido. Reglas+índice `deals` LIVE (`1e154c2`). L-29 | 42949 |
+| §161 | **CRM Fase 3b: Agenda unificada**: `domain/agenda.js` (grilla mes, `dayKey` LOCAL) + lee `activities.dueAt` (índice automático). Acción '📅 Agendar' en 360. Verif `?mock=1`. L-30 | 42959 |
+| §162 | **CRM: Captura MANUAL de leads multi-canal** (Meta/WhatsApp/TikTok/llamada): form '＋Nuevo lead' escribe `solicitudes` → reusa ingestión Fase 1, cero backend. Atribución canal/pauta/campaña (ROI). L-31 | 42968 |
+| §163 | **CRM Canal AUTO #1: registro→contacto** (`onClienteCreated`): upsert `contacts` (dedup), NO crea lead (registrarse≠intención), fusiona invitado→registrado sin pisar first-seen. 28 tests. DESPLEGADO. Backfill pendiente | 42977 |
+| §164 | **CRM Canal AUTO #2: newsletter→contacto** (`onSubscriptionCreated`) — TOCA SITIO PÚBLICO: form roto → `subscriptions` → upsert contact (subscriber). `home.js initNewsletter`. Cache bump. 33 tests | 42987 |
+| §165 | **CRM Fase 4: Reportes/KPIs** (`#/reportes`): KPIs + embudo + canal (`channelOf`) + forecast + tendencia + CSV. `domain/reports.js` PURO + charts SVG/CSS sin librería. L-30/L-32. | 42996 |
+| §166 | **CRM: Contactos (directorio)** (`#/contactos`): lista buscable/filtrable; con lead → ficha 360 existente (detailLeadId atómico L-27); suscriptor sin lead → fila no interactiva. L-33. | 43006 |
+| §167 | **Cerebro Fase A**: Lente de Arquitecto §3.8 (6 pilares → `46`) · Legal=Colombia en Trigger 🔵 · workflow `adversarial-review.js` + L-34. Comité ×3 diseñado. Spec `2026-06-06-cerebro-skills-roadmap.md` | 43016 |
+| §168 | Cerebro Fase B (reconciliación): las 3 skills YA EXISTEN (portables, build paralelo Bersaglio) + registro + eval llm-council/engineering | 43024 |
+| §169 | Cerebro Fase C: auditoría seguridad (9 hallazgos) + holística CRM + legal vehículos → nacen 41-SEGURIDAD y 42-LEGAL (nada desplegado) | 43033 |
+| §170 | Decisión Fuerte: cerebro MULTI-PROYECTO (núcleo compartido 4-capas + brain:diff, NO único; comité×3 + Gemini) → spec 2026-06-09 | 43041 |
+| §171 | **ENMIENDA a §170**: revalidación comité×3 + Gemini (convergentes) PAUSA el sync P2P del KERNEL → economía LOCAL primero (destilar 10) + Opción C template/generator diferida a Cloudflare. "PASO 1 extraer KERNEL" SUPERSEDED. Veredicto → `…-comite-revalidacion-paso1-VEREDICTO.md` | 43050 |
+| §172 | **Mandato 3 (validación FINAL) → CERTIFICADO**: comité 11 agentes verificó en disco; 2 bloqueantes (cura no aterrizada §171.7 + README stale) RESUELTOS+grep → CERTIFICADO. Meta: verificar la cura en la capa que el boot lee | 43062 |
+| §173 | **Comité v6 — cerebro auto-evaluable** (16 agentes, 45 hallazgos): cura 'SANO-teatro' = evaluación 2 NIVELES (gates + skill `auditoria-cerebro`) + GC dos palancas con trinquete + TODO ledger único + captura-en-ORIGEN + brain-diff gateado. Checklist A-U → bóveda VEREDICTO | 43074 |
+| §174 | **Bóveda privada brain-private** (ítem C, Gemini adoptado/refutado): RED/AMBER → repo hermano privado (NO submódulo — rompe Pages; NO purga de historial — riesgo residual documentado); stubs públicos + archiveDir ×3 → bóveda; cliente crea remote privado + push | 43111 |
+| §175 | **TODO-17 E2E live CRM ✅** (web+newsletter → solicitudes/subscriptions → ingestión → canónico → Bandeja score/NBA + Contactos 3/3) + **incidente billing-disabled** (~2h, Eventarc re-entregó solo, L-38) + **FIX spinner form contacto** (`.form-card` eliminada por el rediseño → fallback al `<form>`, L-37) + shard `31-LECCIONES-GIT` | 43141 |
+| §176 | **Comité CRM v2 → plan E0→E6** (quejas reales: cero sync lead↔deal, sin CRUD, calendarios desconectados, cupos no liberan). Estados lead v3, pipeline v3, calendario único, Ley 1581=anonimización, F42 comisiones. VEREDICTO→bóveda. Manual `docs/MANUAL-CRM-USO.md`. TODO-21 | 43153 |
+| §177 | **E0 EJECUTADA**: spec única crm-spec + F34 export/restore + F1 lead inmutable (atacado live ✓) + Bandeja Activos/SLA chip + F17-urgente cupos transaccionales | 43165 |
+| §178 | **E1a núcleo**: ⚡ lead rápido `lead_intake` offline (<30s, E2E live 2s) + ingestLead compartido + quick-log + Pendientes hoy + P2.b próximo paso. Gotcha: 1er evento perdido por propagación Eventarc | 43177 |
+| §181 | **E1b Pipeline v2**: restore ENSAYADO (gate) + enums v3 + paridad 7×7 + Rules gates/matriz + onDealUpdated (E2E live 3s) + F7 conversión/anulación + undo 10s | 43213 |
+| §182 | **E2 tanda 1**: F21.1 configs DIVERGÍAN (web vendía festivos) + F16 proyección cita→Agenda (E2E live 5s) + crmDailyJob 5am (backup→rebuild→purga→digest) | 43225 |
+| §183 | **Decisiones del dueño (end-game panel)**: agenda clásica muere EN el cutover tras paridad F39 · E6.5 comité de DISEÑO del panel (FIRME) · E6.6 auditoría TOTAL admin clásico post-migración · relevo por saturación (retomar 'continúa E2 tanda 2', §182.7) | 43237 |
+| §179 | **E1a CERRADA**: F37 SLA 2h hábiles + rotación de intake en tx (E2E live ✓) + F38 notify (crítica/info) + F33a fricción | 43189 |
+| §180 | **Adelanto E3**: F13 Archivar + F15 crmPurgeLead (cascada server, super admin) + fix credencial GitHub | 43201 |
+| §185 | **E3 EJECUTADA**: índice dedup F40e (E2E live ✓) + F12 editar/_version/fusión resumible + F14 supresión 1581 (gracia 72h, finalizador, tombstones en cascada). Review: 1 crítico + 9 majors corregidos. 139 tests | 43260 |
+| §184 | **E2 COMPLETA**: F21 SSoT availability + módulo Disponibilidad (festivos 1-clic) + F18/F19 crmCitaAction (tupla 30min, token rota C.4) + citaConfirm HTTP (E2E live ✓) + F20 sweep horario + F28 v2. Carrera C.5 en verde | 43247 |
+| §187 | **E5 EJECUTADA — blindaje**: SEC-01 read estricto (8 colecciones) · SEC-06 whitelist hasOnly+caps+shapes (⚠️ ~1000 exprs Rules) · SEC-08 bookedSlots · retry:true ×6 + DLQ. 189 tests. Residual: cupos por anónimo → App Check | 43286 |
+| §186 | **E4 EJECUTADA**: `vehicleAggregate` (won→vendido/apartado, no pisa manuales, badge web) · `dealWon` (postventa+commissionSnapshot) · F26 colisión · F42 Comisiones (CSV anti-inyección). Rules anti-forja. Fix pipeline yml roto 16 días. 169 tests | 43273 |
+| §188 | **E6.6 EJECUTADA — auditoría admin clásico** (16 agentes, 112 hallazgos): KPIs envenenados (portal no actualiza `solicitudes.estado`) · mapa 21 secciones · 14 riesgos cutover (stub redirect, NO borrar admin.html) · plan strangler 29 pasos → bóveda | 43299 |
+| §189 | **E6 paso 0**: cacheSignal ×4 (system/meta 13 días stale) · onUsuarioBloqueadoSync + loginAttempts CERRADO · fix: E5 rompió cita interna (createdBy no censado, L-41) + kind:'cita'. 192 tests. Deploy ✅ | 43312 |
+| §190 | **E6 fase ② p1 — Reseñas en el portal** (1er módulo público migrado, patrón validado): shape VERBATIM del lector público + RBAC reviews.* + mock + **core/audit.js NUEVO** (no perder auditoría; semilla fase ④) + `#/resenas`. Preview mock ✓. F39 live doble: reseña real valida módulo + cacheSignal | 43324 |

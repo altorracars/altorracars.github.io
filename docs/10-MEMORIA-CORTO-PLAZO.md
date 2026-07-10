@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> **🆕 ARRANQUE PRÓXIMA SESIÓN (dueño 09/07):** el dueño quiere **revisar algo con FABLE 5** (ya disponible) — te lo detallará al empezar; **ESPERA su input antes de abrir los CAMINOS A/B/C de perf o el CRM**. (Fable 5 = modelo del PLAN MAESTRO §266.)
+> **✅ Input Fable 5 10/07 ATENDIDO** (propagación bersaglio §181→cars = ADR §299). Si el dueño tenía OTRO tema Fable 5, que lo detalle; mientras, **ESPERA su input antes de abrir CAMINOS A/B/C o CRM**.
 >
 > 🤖 **AHORA = OPUS 4.8**. YO decido+ejecuto+mergeo (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES (L-62). **DOS hilos abiertos (la sesión fresca elige):** **(1) ⚡ RENDIMIENTO v2** (activo esta sesión, ↓) · **(2) 🟣 TODO-52 CRM** (mandato #1; próximo **P0-CAPTURE** leads=dinero; voz voseo bot c/`catalogo-voz`; "continúa el EPIC TODO-52").
 > **⚡ RENDIMIENTO v2 (TODO-54).** ✅ LIVE búsqueda 40→65 · home 55→61 · §297 fuentes (`eb9054d0`) · **§298 Ola 1** (`5e8c4762`: logo 412KB→ligeros ~40+ págs + diferir GSI). **📊 Diagnóstico LH (Artifact): ord 95 (≈Apple 94) · móvil 57**. **Ola 1 verif por RED** (logo 412KB=0, GSI=0, −96KB script, −3 errores consola); **score móvil 57→55 = RUIDO de galería dinámica** (13→53 fotos ±1.8MB enmascaran → medir por RED no score, lección en skill). **CAMINOS (dueño elige):** ⭐**(A) win REAL móvil = optimizar fotos de vehículos** (Firebase Storage = MAYOR cuello 2.5-4.4MB; lazy agresivo + srcset) · (B) Ola 2 reCAPTCHA 375KB — **GATE: dueño confirma App Check MONITOR en Firebase Console** (§41) antes de tocar · (C) TODO-52 CRM. **🚫 techo home=Cloudflare BLOQUEADO.** Descartado fuentes-async (§298).
@@ -43,7 +43,7 @@
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
 | **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
 | **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); `00a`/`32` shardeados ✅ 03/07. Resta: 99a/99b · `ignoreDirs` · **`33`+`10`+`00` over cap → shard/GC (00 cruzó ⚠️ tras §297)**. | 🔄 | — |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); `00a`/`32` shardeados ✅ 03/07; **00→00a ampliado a §1–§190 ✅ 10/07 (§299)**. Resta: 99a/99b · `ignoreDirs` · `33` over cap. | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |
@@ -65,5 +65,6 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **09/07 ⟦OPUS⟧ perf-v2**: §297 fuentes + §298 Ola 1 (logo+GSI) — detalle en ADRs + foco↑. Skill `optimizacion-rendimiento-web` creada+enriquecida+propagada **×4** (playbook perf + fetch-fonts.mjs + lecciones). Análisis por **workflow acotado** (5 ag read-only, 0 colgados = callejón f OK).
+- **10/07 ⟦FABLE-5⟧ propagación bersaglio→cars = ADR §299**: 4 skills dinero + espejo `skills/` sync (3 STALE) · L-73 · W-13 · check kernel RECHAZADO → [HONOR]/TODO-30.
+- **09/07 ⟦OPUS⟧ perf-v2**: §297 fuentes + §298 Ola 1 — detalle en ADRs + foco↑. Skill `optimizacion-rendimiento-web` ×4.
 - **Pendientes vivos perf/voz** (histórico §283-297): RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**

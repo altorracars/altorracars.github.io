@@ -65,6 +65,6 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **10/07 ⟦FABLE-5⟧ §299-§301**: sinapsis bersaglio r1+r2 (skills dinero/interino/POS · L-73/74/75 · W-13 · doctrina panel→`43-UX` · meta-ads minado) + mandato §300 (Fable-audita-Opus · `sinapsis-cerebros`). Fase 2 = §G/W ×4 (TODO-28).
+- **10/07 ⟦FABLE-5⟧ §299-§301**: sinapsis ×4 — cars importó (L-73/74/75 · W-13 · panel→`43-UX` · meta-ads); payloads bersaglio/inmob en `sinapsis-cerebros/references/` (harness bloquea writes cross-repo → aplica cada operador). Resta §G/W (TODO-28).
 - **09/07 ⟦OPUS⟧ perf-v2**: §297 fuentes + §298 Ola 1 — detalle en ADRs + foco↑. Skill `optimizacion-rendimiento-web` ×4.
 - **Pendientes vivos perf/voz** (histórico §283-297): RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**

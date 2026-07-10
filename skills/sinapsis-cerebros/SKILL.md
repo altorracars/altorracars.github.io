@@ -44,6 +44,11 @@ esperando un permiso que nadie aprueba (cars L-50). Shell en foreground funciona
    respetar SU política de ramas (bersaglio = el dueño mergea a main por PR · cars = Claude
    mergea `dev`→`main`) + su `brain:check` en verde después. Ante la duda, deja la importación
    listada abajo y que la ejecute la próxima sesión de ESE repo.
+5. **⚠️ Verificado 2026-07-10: el harness BLOQUEA los writes cross-repo desde una sesión ajena**
+   (el clasificador de permisos deniega Edit/Add-Content sobre el repo hermano; las LECTURAS sí
+   pasan). El canal fiable de propagación = **payload listo-para-pegar en `references/` de esta
+   skill** (compartida, escribible desde cualquier sesión) + aplicación por el operador LOCAL
+   de cada repo. No intentes burlar el bloqueo.
 
 ## 4. Importaciones pendientes por cerebro (auditoría 2026-07-10 — cada operador ejecuta la suya y actualiza esta lista)
 
@@ -58,18 +63,16 @@ esperando un permiso que nadie aprueba (cars L-50). Shell en foreground funciona
   repo quedó con redacción propia — si quieres converger, re-sincroniza desde el global) · skills
   `opus-interino-protocolo` (+flag en su 05) y `pos-facturacion-retail` catalogadas · n8n = Decisión
   Fuerte propia futura, NO adoptado.
-- **bersaglio**: de cars → M-20 (un hit de grep prueba PRESENCIA, no semántica — leer el match
-  antes de construir encima) · M-24 (no construir maquinaria nueva compleja si hay solución
-  simple a la mano) · L-71 de cars (commit en HEAD desprendido queda COLGANTE; verificar
-  `git rev-parse --abbrev-ref HEAD` antes de commitear tras un resume).
-- **inmobiliaria** (mayor ganancia — mismo stack Firebase): de cars → L-26 (upsert de ingestión:
-  `merge:true` pisa first-seen; mark de idempotencia DENTRO de la transacción) · L-47/L-64
-  (rules: leer campo AUSENTE de `resource.data` LANZA, no es null → `('x' in …)`/`.get()`) ·
-  L-39 (un GET público linkeado por WhatsApp/email JAMÁS muta — los previews lo disparan solos) ·
-  L-40 (`merge:true` no borra claves de mapas; liberar recursos compartidos exige verificar
-  PROPIEDAD). De bersaglio → §115 (callable 403 = invoker; delete+recreate) · secrets gen2 ≠
-  deploy `.env` · §66 ("desactivar" = deshabilitar la cuenta de AUTH, un campo en un doc NO es
-  credencial) · §181 (método forense del dinero, cuando maneje plata → skill `auditoria-financiera`).
+- **bersaglio**: 🟡 **PAYLOAD LISTO** (2026-07-10, preparado por cars al pedir el dueño la alineación
+  total; el write directo lo bloqueó el harness, regla 5) → **`references/import-bersaglio-2026-07-10.md`**:
+  su L-84 (detached HEAD) + sus M-09/M-10 (grep≠semántica · maquinaria-simple-a-la-mano), con anclas
+  exactas y en SU convención. Aplicar en 3 pegas + brain:check + commit en `Desarrollo`; luego marcar ✅ aquí
+  y borrar el archivo. Opcional: converger su copia repo de `meta-ads-diagnostico` desde el global.
+- **inmobiliaria** (mayor ganancia — mismo stack Firebase): 🟡 **PAYLOAD LISTO** (2026-07-10, ídem) →
+  **`references/import-inmobiliaria-2026-07-10.md`**: sus L-08..L-12 (rules campo-ausente-LANZA ·
+  upsert/merge trampa doble · GET público no muta · 3 gotchas functions gen2 · método del dinero),
+  redactadas en SU convención `### L-NN — título` con anclas. Aplicar en 1 pega + brain:check + commit;
+  luego marcar ✅ aquí y borrar el archivo.
 - **insema**: bajo valor hoy (sitio estático sin Firebase ni dinero); su doctrina §3.3 ya cubre
   la esencia de proceso. Revisar si el stack crece.
 

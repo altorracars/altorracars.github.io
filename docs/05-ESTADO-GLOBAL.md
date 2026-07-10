@@ -6,7 +6,7 @@
 | Señal | Valor (última actualización: **2026-07-08**) |
 |---|---|
 | **Build** | 🟢 código @ `eb9054d0` (`dev`): **🤖 OPUS 4.8 · arranque §0+§0.b · PLAN MAESTRO=SSoT**. 🏁 OLA 0-3 ✅ (§267-282). TODO-53 pública ✅ LIVE (§283-295, LCP 662ms). **⚡ TODO-54 PERF v2 (spec `2026-07-09-perf-4surfaces` = SSoT):** ✅✅ LIVE **BÚSQUEDA 40→65 · HOME 55→61**; admin App Check diferido; extend-diet contenido; **self-host fuentes §297 (Google fuera del critical path, verif live 0-req)**. **Techo home = Cloudflare = 🚫 BLOQUEADO sin presupuesto** (dueño: NO re-preguntar, 09/07). **🧭 2 hilos frescos: perf-v2 (re-medir admin·lazy-routes·SW-precache) · TODO-52 CRM.** **Gates dueño:** flip LLM #917 · MFA 2.9 · App Check 2.11 · cutover 2.12b · saldo/purga · validar-live (§274) · GSC §276.7. |
-| **Cache version vigente** | **`v20260709004621`** (cron-CI `0ffcf63b`, regen vehículos+marcas; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
+| **Cache version vigente** | **`v20260710031654`** (cron-CI `e98d17cc`, bump rutinario + sitemap; el cron es DUEÑO del bump → NO bump manual en rama; Ctrl+Shift+R). SW == cache-manager ✅. |
 | **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
 

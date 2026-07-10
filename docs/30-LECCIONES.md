@@ -277,6 +277,12 @@
 - **Instrumentos**: skill `caza-bugs §2b` (checklist del dinero: ida-y-vuelta con recarga · foto incompleta · conservación 3-vistas · deshacer-netea-todo · negativos visibles · doble sesión) + skill `auditoria-financiera` (7 invariantes + 4 fases) + **W-13** (`60-WORKFLOWS`).
 - **Gate (evaluado ADR §299)**: el check kernel "diff toca dinero sin test del escenario" NO es mecanizable limpio en `brain-check` (byte-idéntico ×4 + sin child_process → no lee el git diff; y "test del ESCENARIO" no se verifica mecánicamente = invita green-tuning). El gate mecánico real = CI del TODO-30 (Doble Llave). Mientras: **[HONOR]** vía `caza-bugs §2b`.
 
+### L-74 · Sinapsis bersaglio→cars: 4 gotchas Firebase/dinero importados (auditoría cross-cerebros §300, 2026-07-10) ⟦FABLE-5⟧
+- **Callable v2 que devuelve 403 SIN ejecutarse** (cero logs): falta el invoker público — firebase-tools NO lo re-aplica en update → borrar y re-desplegar la function (bersaglio §115). Cars despliega callables seguido (crmSuppressContact, triggerSeoRegeneration…).
+- **`firebase functions:secrets:set` (gen2) NO re-empaqueta `functions/.env`**: tras cambiar env-vars no-secretas, re-deploy COMPLETO de la function o sigue leyendo el `.env` viejo (bersaglio, síntoma real con Wompi). Cars: 57 functions gen2.
+- **MCP `firestore_query_collection` filtrando un campo timestamp con `string_value` devuelve `[]` SIN error** = falso "no hay datos" → usar `firestore_list_documents` con `orderBy` + re-probar con ventana amplia ANTES de concluir 0 (bersaglio; hermana de M-20).
+- **El RENDER sugiere, el CLICK re-valida** (bersaglio §76): toda acción de dinero/decisión disparada desde el contexto PINTADO (NBA, acciones 1-clic de la Bandeja) RE-LEE el doc fuente al ejecutar — un fetch fallido es indistinguible de "no existe" y convierte un blip de red en decisión one-way; y todo `onSnapshot` de una superficie de control lleva error-callback (sin él la cola muere MUDA: "roto" se ve igual que "al día"). Completa L-73. Consulta a los hermanos → skill `sinapsis-cerebros`.
+
 ---
 
 > Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve

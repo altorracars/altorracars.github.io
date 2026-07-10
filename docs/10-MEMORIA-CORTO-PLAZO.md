@@ -11,8 +11,8 @@
 ## 🎯 Foco actual
 
 > 🤖 **AHORA = OPUS 4.8**. YO decido+ejecuto+mergeo (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES (L-62). **DOS hilos abiertos (la sesión fresca elige):** **(1) ⚡ RENDIMIENTO v2** (activo esta sesión, ↓) · **(2) 🟣 TODO-52 CRM** (mandato permanente #1, brief `2026-06-29-crm-overhaul-productizacion-brief.md`; próximo = **P0-CAPTURE** leads perdidos = dinero; + voz voseo bot-público/legacy c/`catalogo-voz`; retomar "continúa el EPIC TODO-52").
-> **⚡ RENDIMIENTO v2 (TODO-54 cont., spec `2026-07-09-perf-4surfaces.md` = SSoT).** ✅✅ **LIVE: BÚSQUEDA 40→65 · HOME 55→61** (FCP 10.2→3.0s, LCP 18.3→7.4s). Hecho: comité (`wf_990be945-676`) + admin App Check diferido (`879c3fb9`) + extend dieta-JS a contenido (`12eeb928`) + **self-host de fuentes** (`eb9054d0`, §297). **RETOMAR (sin Cloudflare):** (a) **re-medir home/búsqueda LIVE tras fuentes** (dueño valida) · (b) re-medir admin (App Check) · (c) admin lazy-routes (P2) · (d) SW precache. **🚫 techo home (LCP verde) = render-block CSS = Cloudflare BLOQUEADO** (no re-preguntar). exceljs=chunk aparte; GTM diferido.
-> 🏁 OLA 0-3 ✅ (§267-282). Cache sin deuda (SWR sin bump, L-65). ⚠️ `dist/` (público + `admin-app/dist/`) se commitea por bloque.
+> **⚡ RENDIMIENTO v2 (TODO-54 cont., spec `2026-07-09-perf-4surfaces.md`).** ✅ **LIVE: búsqueda 40→65 · home 55→61**. Hecho: comité + App Check diferido + extend-diet + **§297 self-host fuentes** (`eb9054d0`) + **§298 Ola 1** (`5e8c4762`: logo 412KB→ligeros en ~40+ págs + diferir GSI al abrir modal, verif live). **📊 Diagnóstico LH (Artifact): ord 95 (≈Apple 94) · móvil 57**; CrUX vacío = falta tráfico (no bug). **RETOMAR (sin Cloudflare):** (a) **Ola 2 = diferir reCAPTCHA/App Check** — GATE: dueño confirma en Firebase Console que sigue MONITOR/unenforced (§41) antes de tocar · (b) re-medir LIVE tras Ola 1 · (c) unsized-images (bonus, CLS ya OK). **🚫 techo home = Cloudflare BLOQUEADO** (no re-preguntar). **Descartado: fuentes-async (REFUTADO por agente: FCP≈0 + FOUT; long-pole real = style/cinematic.css).** minify/critical-CSS=build.
+> 🏁 OLA 0-3 ✅ (§267-282). Cache: SWR sin bump (L-65). ⚠️ `dist/` se commitea por bloque.
 > **🧹 GATES DUEÑO APARCADOS** (06/07): MFA 2.9 · App Check 2.11 · cutover 2.12b · validar-live (§274) · GSC (§276.7) · saldo bot · purga clientes/suppressions.
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
@@ -31,7 +31,7 @@
 |---|---|---|---|
 | **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — OLA 0-3 ✅ (§267-282); Directiva Permanente (brief `2026-06-29-crm-overhaul…`). Próximo=P0-CAPTURE. | 🔄 permanente | pulir |
 | **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA ⟦OPUS⟧** — ✅✅ LIVE (§283-295; LCP 662ms). RESTA: barrido visual P4. | 🔄 | menor |
-| **TODO-54** | **⚡ PageSpeed perf v2 ⟦OPUS⟧** — spec `2026-07-09-perf-4surfaces` = SSoT. ✅ LIVE: **BÚSQUEDA 40→65 · HOME 55→61**; App Check diferido; extend-diet; **self-host fuentes ✅ §297**. RESTA (sin Cloudflare): re-medir LIVE · admin lazy-routes · SW precache. 🚫 techo home=Cloudflare BLOQUEADO. | 🔄 | perf/gates |
+| **TODO-54** | **⚡ PageSpeed perf v2 ⟦OPUS⟧** — ✅ LIVE búsqueda 40→65 · home 55→61; §297 fuentes; **§298 Ola 1 (logo 412KB + GSI diferido)**. Diagnóstico LH: ord 95/móvil 57 (Artifact). RESTA: **Ola 2 reCAPTCHA/AppCheck (GATE Firebase Console)** · re-medir · unsized-images. 🚫 techo home=Cloudflare. | 🔄 | perf/gate-App-Check |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
 | **TODO-19** | CRM Fase 5 → E6 EN CURSO (E6.6 ✅ §188) | ⏳ | — |
 | **TODO-49** | **🔁 Re-barrido del gap ⟦OPUS⟧** — 1er barrido incompleto; re-lanzar SIN Bash (callejón h) sobre lo no verificado. | 🔵 | tras implementar |
@@ -63,5 +63,5 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **08/07 ⟦OPUS⟧ §297 self-host de Google Fonts**: fuera del critical path público. 5 familias en `/fonts/` vía `scripts/fetch-fonts.mjs` reproducible (subsets latin, `unicode-range`) → `css/fonts.css`+`fonts-inter.css`; ~70 HTML+templates+generados+fallbacks+`@import` Cardo retirados; `.gitattributes` blinda woff2. Verif live: 0 req a Google, 5 familias en el DOM, SSG OK. Inter solo en index (réplica exacta). Sin bump (L-65). `eb9054d0`.
-- **08-09/07 ⟦OPUS⟧ (spec `perf-4surfaces`)**: dieta-JS (`dbReady` vs `firebaseReady`; hint `auth-*` sync evita flash) → contenido (búsqueda 40→65) + admin App Check diferido. TODO-52 voz admin-app ✅ (`89f2dcaf`); RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**
+- **09/07 ⟦OPUS⟧ perf-v2 §297+§298** (detalle en ADRs): §297 self-host fuentes (`eb9054d0`). §298 Ola 1 (diagnóstico LH ord 95/móvil 57): logo 412KB→ligeros ~40+ págs + diferir GSI (−3 errores FedCM), verif live OK, `5e8c4762`. Análisis por **workflow acotado** (5 ag read-only, 0 colgados = callejón f OK). Skill `optimizacion-rendimiento-web` enriquecida ×4. Descartado fuentes-async (refutado).
+- **Pendientes vivos perf/voz** (histórico §283-297): RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**

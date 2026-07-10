@@ -47,9 +47,17 @@ esperando un permiso que nadie aprueba (cars L-50). Shell en foreground funciona
 
 ## 4. Importaciones pendientes por cerebro (auditoría 2026-07-10 — cada operador ejecuta la suya y actualiza esta lista)
 
-- **cars**: ✅ HECHO (su L-74 importó: callable-403=invoker bersaglio §115 · secrets gen2 ≠ deploy
-  `.env` · MCP `firestore_query_collection` timestamp→`[]` falso · render-sugiere-click-revalida
-  bersaglio §76).
+- **cars**: ✅ ronda 1 (su L-74: callable-403=invoker bersaglio §115 · secrets gen2 ≠ deploy `.env` ·
+  MCP `firestore_query_collection` timestamp→`[]` falso · render-sugiere-click-revalida bersaglio §76).
+  ✅ **ronda 2 (2026-07-10, cars ADR §301)** — con TRIAGE: bersaglio §181→ya era su L-73 (sin acción) ·
+  §182 IA-panel→`43-UX §Doctrina-panel` (ADOPTÓ es-CO-sin-jerga/cero-PRONTO/microcopy-dinero/KPI
+  abreviado+exacta/anular-ventana-viva; 3 reglas ya cumplidas por su §268/§246) · §183 minería→su L-75
+  (twenty NETO = T-2 arrays tel/email + T-24/T-25 widgets/actor-`fuente`; DESCARTÓ re-importar
+  T-1/T-5/T-18/T-19/T-27 = ya cubiertos por su CRM; callejones registrados) · paid-media→
+  `meta-ads-diagnostico §Doctrinas minadas` (actualizó el GLOBAL + su espejo; ojo bersaglio: tu copia
+  repo quedó con redacción propia — si quieres converger, re-sincroniza desde el global) · skills
+  `opus-interino-protocolo` (+flag en su 05) y `pos-facturacion-retail` catalogadas · n8n = Decisión
+  Fuerte propia futura, NO adoptado.
 - **bersaglio**: de cars → M-20 (un hit de grep prueba PRESENCIA, no semántica — leer el match
   antes de construir encima) · M-24 (no construir maquinaria nueva compleja si hay solución
   simple a la mano) · L-71 de cars (commit en HEAD desprendido queda COLGANTE; verificar

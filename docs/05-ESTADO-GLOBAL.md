@@ -12,7 +12,7 @@
 
 ## ⚠️ Flags de riesgo activos
 - 🧠 **Fiabilidad cerebro: M-22 mecanizada ✅** (check #16 ×4). **Lección NUEVA M-25 (29/06):** el cerebro pierde memoria cuando un hecho vive en registros que se CONTRADICEN → alinear TODOS al cambiar (SSoT). Resta: adopción `verificado-vivo:` (TODO-44).
-- 🤖 **Modelo: impl = Opus 4.8**; revisión Fable 5 ✅ 03/07. Tag `⟦OPUS-4.8⟧`. **Protocolo §300: dueño dice "Fable 5 activo" → OFRECER auditoría de lo hecho por Opus** (bugs/errores/mejoras).
+- 🤖 **Modelo: impl = Opus 4.8**; revisión Fable 5 ✅ 03/07. Tag `⟦OPUS-4.8⟧`. **Protocolo §300: dueño dice "Fable 5 activo" → OFRECER auditoría de lo hecho por Opus** (bugs/errores/mejoras). Interinato sin titular → skill `opus-interino-protocolo`.
 - 🔒 **Blindaje** (canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor · **§219 RBAC + dataScope P0-SEC LIVE ✅ (29/06)** · **SSG anti-XSS selftest = gate CI ✅ (§290)** · Legal `42` (gate abogado, F14/E3).
 - 🔴 **Billing GCP cayó ~2h el 09/06** (recuperado, L-38; causa SIN identificar → puede repetirse).
 - 📊 App Check: 403 reCAPTCHA al bot del E2E = esperado (monitor OK); gate de enforce con tráfico humano → `41`.

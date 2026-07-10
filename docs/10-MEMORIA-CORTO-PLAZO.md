@@ -10,7 +10,7 @@
 
 ## 🎯 Foco actual
 
-> **✅ Input Fable 5 10/07 ATENDIDO** (§299+§300). Auditoría de lo de Opus OFRECIDA → dueño: **"todavía no"** (10/07, está en el chat bersaglio y VUELVE con otro encargo — espéralo); re-ofrecer luego. Después: CAMINOS A/B/C o CRM.
+> **✅ Input Fable 5 10/07 ATENDIDO** (§299·§300·§301). Auditoría de Opus OFRECIDA → **"todavía no"**; re-ofrecer. Después: CAMINOS A/B/C o CRM (TODO-52: leer `43-UX §Doctrina-panel`).
 >
 > 🤖 **AHORA = OPUS 4.8**. YO decido+ejecuto+mergeo (M-12/M-25); tag `⟦OPUS-4.8⟧`; claims stale → grep ANTES (L-62). **DOS hilos abiertos (la sesión fresca elige):** **(1) ⚡ RENDIMIENTO v2** (activo esta sesión, ↓) · **(2) 🟣 TODO-52 CRM** (mandato #1; próximo **P0-CAPTURE** leads=dinero; voz voseo bot c/`catalogo-voz`; "continúa el EPIC TODO-52").
 > **⚡ RENDIMIENTO v2 (TODO-54).** ✅ LIVE búsqueda 40→65 · home 55→61 · §297 fuentes (`eb9054d0`) · **§298 Ola 1** (`5e8c4762`: logo 412KB→ligeros ~40+ págs + diferir GSI). **📊 Diagnóstico LH (Artifact): ord 95 (≈Apple 94) · móvil 57**. **Ola 1 verif por RED** (logo 412KB=0, GSI=0, −96KB script, −3 errores consola); **score móvil 57→55 = RUIDO de galería dinámica** (13→53 fotos ±1.8MB enmascaran → medir por RED no score, lección en skill). **CAMINOS (dueño elige):** ⭐**(A) win REAL móvil = optimizar fotos de vehículos** (Firebase Storage = MAYOR cuello 2.5-4.4MB; lazy agresivo + srcset) · (B) Ola 2 reCAPTCHA 375KB — **GATE: dueño confirma App Check MONITOR en Firebase Console** (§41) antes de tocar · (C) TODO-52 CRM. **🚫 techo home=Cloudflare BLOQUEADO.** Descartado fuentes-async (§298).
@@ -65,6 +65,6 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **10/07 ⟦FABLE-5⟧ §299+§300**: propagación bersaglio (skills dinero · L-73 · W-13) + mandato (protocolo Fable-audita-Opus en 05 · skill `sinapsis-cerebros` + L-74). Fase 2 = §G/W ×4 (TODO-28).
+- **10/07 ⟦FABLE-5⟧ §299-§301**: sinapsis bersaglio r1+r2 (skills dinero/interino/POS · L-73/74/75 · W-13 · doctrina panel→`43-UX` · meta-ads minado) + mandato §300 (Fable-audita-Opus · `sinapsis-cerebros`). Fase 2 = §G/W ×4 (TODO-28).
 - **09/07 ⟦OPUS⟧ perf-v2**: §297 fuentes + §298 Ola 1 — detalle en ADRs + foco↑. Skill `optimizacion-rendimiento-web` ×4.
 - **Pendientes vivos perf/voz** (histórico §283-297): RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**

@@ -100,6 +100,24 @@ Fuente: `C:\Users\romad\Downloads\ALTORRA Company (Legal)\RUT y Cámara de Comer
 
 **Lo que NO** (con razón): no Vercel/Next por defecto (lock-in y costo al escalar SSR; Astro cubre mejor el perfil SEO-listings) · no migrar Firestore→SQL hoy (re-aprendizaje sin necesidad; re-evaluar si el marketplace exige joins/reportes pesados — gate explícito en el MEGA-PLAN) · no microservicios (YAGNI) · no n8n/infra externa de arranque (Decisión Fuerte aparte, bersaglio la parqueó).
 
+## §6b · Pipeline de DISEÑO — "Claude Design" (mandato del dueño, añadido 2026-07-10)
+
+> El diseño es CARRIL PROPIO del plan, no un sub-punto de implementación: el dueño detesta lo
+> genérico del sitio viejo y pide diseñar la web con las herramientas de diseño de Claude. Regla
+> W-11: toda UI no trivial lleva MOCKUP aprobado ANTES de código. Herramienta central **verificada
+> en esta máquina**: **Claude Design (claude.ai/design) vía tool `DesignSync` + skill `/design-sync`**
+> — proyecto de design-system en la cuenta claude.ai del dueño, sincronizado componente a componente
+> desde el repo (incremental, nunca replace total). Complementos: Stitch MCP (`create_design_system`,
+> `generate_screen_from_text`, `generate_variants`) · mockups inline `visualize`/`show_widget` · Canva ·
+> skills anti-genérico (`frontend-design`, `design-taste-frontend`, `impeccable`, `high-end-visual-design`, `theme-factory`).
+
+- **D0 · Dirección de marca** (tras R1/R2, informada por sus hallazgos UX): 2-3 direcciones visuales COMPARATIVAS como mockups, partiendo del branding real (`Branding y Membretes`: logo + "Seguridad·Legalidad·Confianza") y del posicionamiento premium-confianza. **El dueño ELIGE la dirección** (su decisión = gusto/marca; lo técnico lo decide Claude).
+- **D1 · Design System PRIMERO**: tokens (color/tipografía/espaciado/radios/sombras/motion) + componentes base del dominio (botón, card de inmueble, filtros, formularios, mapa, badges de estado, galería) como biblioteca en el repo → **sync a un proyecto Claude Design** ("ALTORRA Inmobiliaria DS": `DesignSync create_project` → `finalize_plan` → `write_files`). El pane de claude.ai/design = **catálogo VIVO que el dueño ve siempre**.
+- **D2 · Mockups de pantallas clave ANTES de implementar cada una**: home · resultados de búsqueda con mapa · ficha de inmueble · flujo "publica tu inmueble" · portal broker · panel admin. Cada pantalla se maqueta SOBRE los tokens D1 → aprobación del dueño → recién ahí Opus implementa **réplica EXACTA**.
+- **D3 · Gate de fidelidad visual**: la validación funcional NO caza defectos de diseño (cars M-23) → cada implementación se valida VISUALMENTE (screenshot vs mockup + ojo del dueño en live vía extensión Chrome).
+- **D4 · El DS es SSoT anti-deriva**: ningún componente nuevo nace en el código sin pasar por el design system; el proyecto Claude Design se re-sincroniza con `/design-sync` en cada ola.
+- Arranque: la PRIMERA llamada a `DesignSync` le pedirá al dueño autorizar el scope de diseño en su login de claude.ai — un clic (checklist §8).
+
 ## §7 · TRASPASO DE LIDERAZGO DEL CEREBRO (cars → inmobiliaria; mandato del dueño)
 
 Estado actual: operador-cars = escritor único del kernel/§G (L-31 ×cerebros). **Nuevo líder = operador-inmobiliaria.** Protocolo (lo ejecuta el chat nuevo; cars ya dejó constancia en su ADR §302):
@@ -119,6 +137,7 @@ Estado actual: operador-cars = escritor único del kernel/§G (L-31 ×cerebros).
 6. **Matrícula de Arrendador**: estado real del trámite EXT-AMC-26-0060455 (¿se subsanaron las observaciones del oficio AMC-OFI-0074376-2026?). Es gate del negocio de arriendos.
 7. **Wompi**: NADA aún (se abre cuando el marketplace de suscripciones esté por lanzar).
 8. Mantener a mano la carpeta `ALTORRA Company (Legal)` (será fuente de R0/R2/R3).
+9. **Claude Design**: cuando el chat nuevo invoque `DesignSync` por primera vez, aprobar el permiso de diseño en tu login de claude.ai (un clic) — habilita el catálogo vivo en claude.ai/design.
 
 ## §9 · PÁGINA DE MANTENIMIENTO (copy listo — implementa el chat nuevo en el repo actual, 1 commit)
 
@@ -173,8 +192,13 @@ Ejecuta en orden:
    nuevas cuando la investigación esté VERIFICADA (no antes).
 5. Sella el stack (§6 candidato: Cloudflare Pages + Astro + Firebase + R2 + Wompi + MapLibre) con el
    flujo fuerte W-11 COMPLETO: comité de expertos + consejo externo (Gemini) + verificación de cada claim.
-6. MEGA-PLAN del portal por olas (R5) → Opus 4.8 implementa; Fable 5 audita al cierre de cada ola
-   (protocolo Fable-audita-Opus, cars §300).
+6. Pipeline de DISEÑO "Claude Design" (§6b): dirección de marca en mockups comparativos (yo elijo la
+   dirección) → design system PRIMERO (tokens + componentes del dominio) sincronizado a un proyecto
+   Claude Design en mi cuenta claude.ai vía DesignSync + /design-sync (catálogo vivo que yo veo) →
+   mockup aprobado de CADA pantalla clave ANTES de codearla → implementación réplica-exacta con gate
+   de fidelidad VISUAL. Cero diseño genérico (skills frontend-design/design-taste/impeccable).
+7. MEGA-PLAN del portal por olas (R5, con el diseño como carril propio) → Opus 4.8 implementa;
+   Fable 5 audita al cierre de cada ola (protocolo Fable-audita-Opus, cars §300).
 
 Reglas permanentes: Fable 5 planifica/investiga/audita · Opus 4.8 implementa (tag por commit) · yo
 solo decido dinero/legal/go-no-go. Español SIEMPRE. Autonomía total: no me preguntes opciones

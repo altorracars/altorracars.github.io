@@ -2,11 +2,19 @@
 
 > **SSoT de la misión "el mejor portal inmobiliario" (altorrainmobiliaria.co).** Producido en el chat
 > de cars (ADR §302 cars) por mandato del dueño: cars EN PAUSA; inmobiliaria = prioridad #1 y NUEVO
-> LÍDER del cerebro ×4. El chat de inmobiliaria lee este archivo PRIMERO (ruta cross-repo:
-> `..\altorracars.github.io\specs\2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`) y lo adopta como su spec
-> madre — puede copiarlo a su repo y mejorarlo (esta copia queda como origen histórico).
+> LÍDER del cerebro ×4. El chat de inmobiliaria lee este archivo PRIMERO **junto con el mandato
+> VERBATIM del dueño** (`2026-07-10-INMOBILIARIA-MANDATO-DUENO-verbatim.md`, mismo directorio — este
+> kickoff es la síntesis operativa; el verbatim es la FUENTE) y copia ambos a su repo como specs madre.
 > División de modelos: **Fable 5 = investigación/planificación/auditoría · Opus 4.8 = implementación**
 > (tag por commit; protocolo Fable-audita-Opus = cars §300 aplica ×4).
+>
+> ⛔ **REGLA INNEGOCIABLE (corrección del dueño, mismo día): DESDE CERO ABSOLUTO.** Del sitio actual
+> NO le gusta NADA (diseño anticuado/genérico, fue su primera web): **cero reutilización de código,
+> diseño o arquitectura del sitio viejo** — greenfield total, infraestructura excelente, todo bien
+> pensado de inicio a fin, "no empezar desde la basura". Lo ÚNICO que se cosecha del viejo: DATOS
+> reales (propiedades/usuarios), historial SEO (URLs viejas → mapa de redirects 301), documentos
+> legales/operativos y el APRENDIZAJE del cerebro. Las 8 CFs y el código viejo sirven solo como
+> REFERENCIA de lectura (qué lógica existía), jamás como base.
 
 ---
 
@@ -53,7 +61,7 @@ Fuente: `C:\Users\romad\Downloads\ALTORRA Company (Legal)\RUT y Cámara de Comer
 
 ## §4 · Activos EXISTENTES (no partir de cero ciego — verificado 2026-07-10)
 
-1. **Repo `altorrainmobiliaria.github.io`** (dominio live `altorrainmobiliaria.co`): NO es solo estático — catálogo dinámico Firestore (5 propiedades), admin SPA (`window.IP`), **8 Cloud Functions** (Node 20), SEO trabajado (13 landings, 43 páginas BreadcrumbList, 130+ JSON-LD, sitemap, blog 7 posts), cache 3 capas + SW. Lo "90% falso" es el CONTENIDO/alcance, no la infra. **Decisión del dueño: el producto se rehace desde cero; se RESCATA lo relevante** (SEO aprendido, functions útiles, datos reales de las 5 propiedades, análisis de competidores del PR #79). Deploy actual lo ejecuta el DUEÑO (→ renegociar en el nuevo chat: en cars el dueño delegó todo el git+deploy a Claude — replicar ese modelo).
+1. **Repo `altorrainmobiliaria.github.io`** (dominio live `altorrainmobiliaria.co`): técnicamente tiene catálogo Firestore (5 propiedades), admin SPA, 8 Cloud Functions, SEO (13 landings, 43 BreadcrumbList, 130+ JSON-LD, blog) — pero **el dueño lo declaró BASURA de diseño/producto (su primera web) → NADA de esto se reutiliza como base** (regla innegociable ↑). **COSECHA permitida, únicamente**: (a) los DATOS reales (las 5 propiedades, usuarios/solicitudes si existen) migrados al modelo nuevo; (b) el inventario de URLs indexadas → **mapa de redirects 301** al sitio nuevo (no quemar el poco SEO ganado); (c) el análisis de competidores del PR #79 como insumo de R1; (d) lectura de referencia de la lógica vieja SOLO para no olvidar requisitos. Deploy actual lo ejecuta el DUEÑO (→ renegociar en el nuevo chat: en cars delegó todo el git+deploy a Claude — replicar ese modelo).
 2. **Cerebro inmobiliaria** instalado 2026-06-09 (kernel canónico + manifest + githooks + lóbulo `41-MERCADO` con análisis de competidores). Joven (7 lecciones), con `_legacy/AVANCES.md` (3420 líneas de historia destilable). Payload de sinapsis PENDIENTE: `~/.claude/skills/sinapsis-cerebros/references/import-inmobiliaria-2026-07-10.md` (5 lecciones Firebase/dinero listas para pegar).
 3. **Documentos maestros del dueño** (`C:\Users\romad\Downloads\ALTORRA Company (Legal)\`): ALTORRA_Sistema_Operativo_Integral (v1 y v2) · Protocolo Maestro v2 · Configuración WA + Biblioteca de Scripts v4 · Capacitación PROTOCOLO DE ATENCIÓN DE LEADS (PDF/PPTX) · **DOCUMENTOS FALTANTES** (lista curada: contrato de intermediación, ficha técnica, autorización de comercialización, ACM, calificación BANT, promesa de compraventa, seguimiento post-visita D0-D8, docs de arrendamiento…) · contratos REALES de administración y arrendamiento + otrosíes · fichas técnicas/inventarios Excel · cotizaciones · evidencias. **`all_docx_content.txt` (690KB) = todos los docx ya parseados a texto** — mina de oro para R2/R3. El dueño advierte: incompletos y sin validar → la investigación los AUDITA, no los asume.
 4. **Cerebro compartido ×4**: skills globales (auditoria-financiera · caza-bugs §2b · comite-expertos · sinapsis-cerebros · proceso-decision-fuerte · crm-architect con vertical real-estate · **HUB de visibilidad completo: ssg-static-prerender/semantic-schema-aeo/ga4-lead-tracking/maps-gbp-local/search-console/product-feeds/image-pipeline — con vertical RealEstateAgent vía tenant_config** · optimizacion-rendimiento-web · wompi-colombia-api-v1 · legal-colombia · opus-interino-protocolo) + W-11 flujo fuerte + doctrina de panel (cars `43-UX §Doctrina-panel`) + lecciones CRM de cars (L-26..L-34, dataScope, RBAC 82 flags, supresión Ley 1581).
@@ -63,9 +71,9 @@ Fuente: `C:\Users\romad\Downloads\ALTORRA Company (Legal)\RUT y Cámara de Comer
 > Regla: cada fase produce un ARTEFACTO en el cerebro de inmobiliaria (lóbulo/spec), con fuentes citadas
 > y claims verificados (doctrina §3.3 + minería bersaglio §183: premisa-primero + spot-check propio).
 
-- **R0 · Auditoría de lo existente** (1 sesión): repo actual (qué se rescata: functions, SEO, datos) + documentos maestros del dueño (auditarlos, completarlos, mapear al producto) + estado real Firebase (proyectos, billing, quotas) + estado matrícula de arrendador. Artefacto: inventario rescate/descarte.
-- **R1 · Competencia Colombia** (deep-research + navegación real): los 6 declarados + los que aparezcan (Habi, La Haus, Properati CO…). Por cada uno: modelo de negocio, features públicas/planes de pago, UX de búsqueda/ficha/publicación, SEO (estructura de URLs, schema), portal de aliados, debilidades explotables. Partir del `41-MERCADO` existente (PR #79) — actualizar, no repetir. Artefacto: matriz competitiva + oportunidades.
-- **R2 · Referentes mundiales**: Zillow/Idealista/Rightmove/QuintoAndar/Airbnb — qué features definen "nivel top" (estimador de valor, tours virtuales, verificación de identidad, firma digital, scoring de inquilino SIN codeudor, mapas/polígonos, alertas guardadas). Artefacto: catálogo de features nivel-mundo con juicio adopt/adapt/discard para Cartagena.
+- **R0 · Inventario de COSECHA + estado real** (1 sesión): datos reales a migrar (5 propiedades, usuarios/solicitudes) + censo de URLs indexadas → mapa de redirects 301 + documentos maestros del dueño (auditarlos, completarlos, mapear al producto) + estado real Firebase (proyectos, billing, quotas) + estado matrícula de arrendador. NADA del código/diseño viejo entra al plan como base. Artefacto: inventario de cosecha + plan de migración de datos.
+- **R1 · Competencia Colombia — con TRES lentes por portal** (mandato del dueño): **(a)** deep-research/fuentes; **(b)** análisis desde código (SEO, estructura de URLs, schema, stack detectable); **(c)** **NAVEGACIÓN LIVE vía la extensión Claude-in-Chrome** — recorrer de verdad búsqueda, ficha de inmueble, flujo de publicación, registro y planes de pago de cada uno. Portales: los 6 declarados + los que aparezcan (Habi, La Haus, Properati CO…). Por cada uno: modelo de negocio, features/planes, UX, SEO, portal de aliados, debilidades explotables. Partir del `41-MERCADO` existente (PR #79) — actualizar, no repetir. Artefacto: matriz competitiva + oportunidades.
+- **R2 · Referentes mundiales** (mismas TRES lentes, incluida la navegación live): Zillow/Redfin/Idealista/Rightmove/QuintoAndar/Airbnb — qué features definen "nivel top" (estimador de valor, tours virtuales, verificación de identidad, firma digital, scoring de inquilino SIN codeudor, mapas/polígonos, alertas guardadas). Artefacto: catálogo de features nivel-mundo con juicio adopt/adapt/discard para Cartagena.
 - **R3 · Legal + seguridad + documental Colombia** (skill `legal-colombia`, fuentes .gov.co, gate abogado): Ley 820 (arriendo vivienda urbana + matrícula arrendador), corretaje/comisiones usos mercantiles, avalúos (registro RAA/Ley 1673 — QUIÉN puede avaluar), Habeas Data Ley 1581 (portal maneja PII masiva), corta estancia (RNT obligatorio, Ley 2068, reglamentos PH), SIC/protección al consumidor para marketplace, contratos digitales/firma electrónica (Ley 527), prevención de lavado (SARLAFT básico inmobiliario — sector obligado UIAF). Artefacto: lóbulo 42-LEGAL de inmobiliaria + checklist de cumplimiento del portal.
 - **R4 · Operación + marketing**: destilar los docs maestros del dueño (protocolo de leads, scripts WA) + benchmarks de conversión inmobiliaria + SEO local Cartagena (keywords, GBP) + estrategia de contenido. Artefacto: playbook operativo v2 + plan de visibilidad (skills del HUB).
 - **R5 · Síntesis → MEGA-PLAN**: producto (MVP → olas), arquitectura (sella stack §6 vía W-11 COMPLETO: comité + Gemini + verificación), modelo de datos, roadmap por olas con gates de dueño (dinero/legal). Artefacto: `specs/MEGA-PLAN-INMOBILIARIA` en su repo = SSoT de ejecución para Opus.
@@ -136,33 +144,50 @@ Estado actual: operador-cars = escritor único del kernel/§G (L-31 ×cerebros).
 ## §10 · PROMPT DE ARRANQUE del chat nuevo (pegar tal cual en el chat de altorrainmobiliaria)
 
 ```
-ARRANQUE ALTORRA INMOBILIARIA (Fable 5). Soy el dueño. Este chat ASUME desde hoy: (a) el liderazgo
-del cerebro multi-proyecto (kernel + §G, antes en cars) y (b) la misión de construir el mejor portal
-inmobiliario: altorrainmobiliaria.co, desde cero, rescatando lo valioso de lo existente.
+ARRANQUE ALTORRA INMOBILIARIA (Fable 5). Soy el dueño, Daniel. Este chat ASUME desde hoy:
+(a) el LIDERAZGO del cerebro multi-proyecto (kernel + §G, antes en cars), y
+(b) la misión: construir el MEJOR portal inmobiliario — altorrainmobiliaria.co — DESDE CERO ABSOLUTO.
 
-Tu paquete de arranque completo (SSoT de la misión) está en:
-..\altorracars.github.io\specs\2026-07-10-INMOBILIARIA-KICKOFF-fable5.md
-Léelo PRIMERO y cópialo a tu repo como spec madre. Viene del chat de cars (su ADR §302).
+Lee PRIMERO, en este orden (rutas cross-repo, solo lectura), y copia ambos a tu repo como specs madre:
+1. ..\altorracars.github.io\specs\2026-07-10-INMOBILIARIA-KICKOFF-fable5.md      ← paquete de arranque (SSoT operativa)
+2. ..\altorracars.github.io\specs\2026-07-10-INMOBILIARIA-MANDATO-DUENO-verbatim.md ← mi mandato completo en MIS palabras
+
+REGLA INNEGOCIABLE — DESDE CERO DE VERDAD: del sitio actual NO me gusta NADA (diseño anticuado y
+genérico, fue mi primera web). NO se reutiliza ni código, ni diseño, ni arquitectura del sitio viejo.
+Greenfield total: infraestructura excelente y todo bien pensado de inicio a fin. Lo ÚNICO que se
+cosecha: DATOS reales (propiedades/usuarios), historial SEO (URLs viejas → redirects 301), documentos
+legales/operativos y el APRENDIZAJE del cerebro.
 
 Ejecuta en orden:
-0. Boot de tu cerebro + aplica tu payload de sinapsis
-   (~/.claude/skills/sinapsis-cerebros/references/import-inmobiliaria-2026-07-10.md) + brain:check.
-1. Asume el liderazgo del kernel según el §7 del kickoff (y actualiza la skill sinapsis-cerebros).
-2. Página de mantenimiento LIVE según el §9 (copy ya aprobado) — con redirects, sin quemar el SEO.
-3. Potencia tu cerebro (§7.3): auditoría Nivel-2 + destilar _legacy + re-verificar 05 vs realidad.
-4. Programa de investigación R0→R5 (§5) — deep-research + workflows acotados; artefactos al cerebro.
-5. Sella el stack (§6) con el flujo W-11 COMPLETO (comité + consejo externo + verificación).
-6. MEGA-PLAN del portal (R5) → Opus 4.8 implementa por olas; Fable 5 audita al cierre de cada ola.
+0. Boot de tu cerebro + aplica tu payload de sinapsis (~/.claude/skills/sinapsis-cerebros/references/
+   import-inmobiliaria-2026-07-10.md) + brain:check en verde.
+1. Asume el liderazgo del kernel (§7 del kickoff) y actualiza la skill sinapsis-cerebros.
+2. Página de mantenimiento LIVE en el dominio actual (§9, copy ya aprobado) + redirects 301/302 —
+   sin 404 masivos, sin quemar el SEO, sin perder leads (CTA a WhatsApp).
+3. Potencia tu cerebro (§7.3): auditoría Nivel-2 + destilar _legacy + re-verificar tu 05 vs realidad.
+4. Investigación R0→R5 (§5). Para CADA portal competidor y referente mundial usa TRES lentes:
+   (a) deep-research/fuentes · (b) análisis desde código (SEO/URLs/schema/stack) · (c) NAVEGACIÓN
+   LIVE vía la extensión Claude-in-Chrome (recorre búsqueda, ficha, publicación, registro y planes
+   de: ciencuadras, metrocuadrado, fincaraiz, coninsa, araujoysegovia, arenasinmobiliaria + Zillow/
+   Idealista/QuintoAndar/Airbnb y los que encuentres). Artefactos al cerebro; skills inmobiliarias
+   nuevas cuando la investigación esté VERIFICADA (no antes).
+5. Sella el stack (§6 candidato: Cloudflare Pages + Astro + Firebase + R2 + Wompi + MapLibre) con el
+   flujo fuerte W-11 COMPLETO: comité de expertos + consejo externo (Gemini) + verificación de cada claim.
+6. MEGA-PLAN del portal por olas (R5) → Opus 4.8 implementa; Fable 5 audita al cierre de cada ola
+   (protocolo Fable-audita-Opus, cars §300).
 
-Reglas: Fable planifica/investiga/audita, Opus implementa. Yo solo decido dinero/legal/go-no-go.
-Trabaja en español. Mi checklist de registros está en el §8 del kickoff — pídeme lo que te falte.
+Reglas permanentes: Fable 5 planifica/investiga/audita · Opus 4.8 implementa (tag por commit) · yo
+solo decido dinero/legal/go-no-go. Español SIEMPRE. Autonomía total: no me preguntes opciones
+técnicas ni de diseño — decide tú bajo tu propia recomendación y ejecuta. Mi checklist de registros
+está en el §8 del kickoff — pídeme lo que te falte de ahí.
 ```
 
 ## Checklist
 
 - [x] Identidad legal validada contra PDFs reales (Cámara: ALTORRA COMPANY S.A.S, NIT 902063965-4, matrícula 10011978, objeto social inmobiliario — pdftotext 2026-07-10)
 - [x] Gate legal detectado: matrícula de arrendador EN TRÁMITE con observaciones (oficio AMC-OFI-0074376-2026, Ley 820 art. 28)
-- [x] Activos inventariados: repo dinámico live + cerebro instalado 2026-06-09 + docs maestros + all_docx_content.txt (§4)
+- [x] Activos inventariados: cosecha de datos/SEO/docs + cerebro instalado 2026-06-09 + all_docx_content.txt (§4; greenfield total confirmado por el dueño 2026-07-10)
+- [x] Mandato del dueño preservado VERBATIM (`2026-07-10-INMOBILIARIA-MANDATO-DUENO-verbatim.md`)
 - [ ] Chat inmobiliaria arrancado con el prompt §10
 - [ ] Payload sinapsis aplicado en inmobiliaria
 - [ ] Liderazgo del kernel transferido (§7) y constancias ×4 actualizadas

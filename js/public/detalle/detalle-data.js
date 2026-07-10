@@ -60,7 +60,7 @@
             const precio = v.precioOferta || v.precio;
             const precioText = precio ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(precio) : '';
             const desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. ' + capitalizar(v.tipo || '') + ', ' + capitalizar(v.transmision || '') + ', ' + formatKilometers(v.kilometraje || 0) + '. Disponible en ALTORRA CARS, Cartagena.';
-            const image = v.imagen || 'https://altorracars.github.io/multimedia/logo-placeholder.png';
+            const image = v.imagen || 'https://altorracars.github.io/multimedia/apple-touch-icon-180.png';
             const fullImage = image.startsWith('http') ? image : 'https://altorracars.github.io/' + image;
             // Use shareable URL (static page with pre-baked OG tags)
             const url = getShareableUrl();

@@ -119,6 +119,10 @@
         modal.classList.remove('closing'); // reset close animation if mid-flight
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+        // §PERF perf-v2 — cargar GIS on-demand aquí (ya no en el arranque): solo
+        // quien abre el login descarga ~97KB de accounts.google.com/gsi/client, y
+        // el boot queda sin los 3 errores FedCM del One Tap auto. Idempotente.
+        if (typeof window.loadGisLibrary === 'function') window.loadGisLibrary();
         if (tab) switchTab(tab);
 
         // Pre-fill last successful email — returning users only need to

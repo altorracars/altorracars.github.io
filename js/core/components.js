@@ -334,18 +334,13 @@ function loadAuthSystem() {
     // No cargar en admin.html — tiene su propia auth
     if (window.location.pathname.indexOf('admin') !== -1) return;
 
-    // §PERF Fase 2.4 — Diferir GSI (accounts.google.com/gsi/client, ~50-96KB)
-    // fuera de la ventana crítica del LCP. GSI solo alimenta el flujo Google
-    // Sign-In (One Tap de returning-users + "Continuar como X" +
-    // signInWithCredential). En idle: One Tap sigue auto-mostrándose (~1-2s
-    // más tarde, imperceptible) y auth.js espera vía _onGisReady si el usuario
-    // pulsa login antes. FedCM NO se toca (lo exige One Tap en Chrome moderno;
-    // sus errores son solo de localhost). Fallo de red = fallback legacy popup.
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(function () { loadGisLibrary(); }, { timeout: 3000 });
-    } else {
-        setTimeout(loadGisLibrary, 1800);
-    }
+    // §PERF perf-v2 — GIS (accounts.google.com/gsi/client, ~97KB) ya NO se carga
+    // en el arranque. Se difería a idle, pero el One Tap auto disparaba 3 errores
+    // de consola (GSI_LOGGER FedCM NetworkError + 403 + "Not signed in") en CADA
+    // página, y GIS solo se necesita si el usuario abre el login. Ahora auth.js lo
+    // carga on-demand al abrir el modal (openAuthModal → loadGisLibrary): cero JS
+    // de GIS en páginas donde nadie abre login, cero errores de consola en el boot.
+    // loadGisLibrary sigue disponible + idempotente; el flujo _onGisReady intacto.
 
     // 1. Lucide Icons CDN (misma versión que admin)
     // §PERF Fase 2.5 — En el HOME, diferir Lucide (82KB UMD) a idle: el home NO

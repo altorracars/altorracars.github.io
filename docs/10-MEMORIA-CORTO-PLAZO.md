@@ -63,6 +63,7 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
+- **18/07 ⟦FABLE-5⟧ sinapsis inmobiliaria**: payload liderazgo aplicado (`60-WORKFLOWS`: escritor único → inmob.) + 15 skills re-sync con verdad de producción SEO (Offer-sin-price inválido · FAQPage sin rich result · AEM muerto · objetivo Mensajes retirado; detalle inmob. ADR §33-§37). Catalogables: paid-ads v2.2/ad-creative v2.8 (+ nuevas video/offers/marketing-loops/image en inmob.).
 - **10/07 ⟦FABLE-5⟧ §302 PIVOTE**: cars EN PAUSA; kickoff inmobiliaria emitido (legal validado: ALTORRA COMPANY S.A.S, NIT 902063965-4; matrícula de arrendador EN TRÁMITE = gate; stack candidato Cloudflare+Astro+Firebase). Liderazgo del cerebro → inmobiliaria (traspaso §7 del kickoff).
 - **10/07 ⟦FABLE-5⟧ §299-§301**: sinapsis ×4 — cars importó (L-73/74/75 · W-13 · panel→`43-UX` · meta-ads); payloads bersaglio/inmob en `sinapsis-cerebros/references/` (harness bloquea writes cross-repo → aplica cada operador). Resta §G/W (TODO-28).
 - **09/07 ⟦OPUS⟧ perf-v2**: §297 fuentes + §298 Ola 1 — detalle en ADRs + foco↑. Skill `optimizacion-rendimiento-web` ×4.

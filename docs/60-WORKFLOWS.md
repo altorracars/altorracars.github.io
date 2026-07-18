@@ -66,4 +66,4 @@
 - Cuando un proceso de revisión/detección **se repite** o demuestra valor (atrapó un error que se habría
   escapado), **regístralo aquí** con: disparador · qué detecta · cómo se corre.
 - Recetas **accionables y cortas** (la receta, no la teoría); el detalle de un caso vive en su `30 §L-NN`/ADR.
-- El reflejo always-on equivalente lo origina **cars-operador en `§G`** (L-31, escritor único del kernel/§G).
+- El reflejo always-on equivalente lo origina **el escritor único del kernel/§G = inmobiliaria-operador** desde 2026-07-10 (traspaso §302 + kickoff §7; antes cars-operador, L-31). Cars = peer EN PAUSA, NO edita el kernel.

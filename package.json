@@ -11,6 +11,7 @@
     "brain:check": "node scripts/brain-check.mjs",
     "brain:diff": "node scripts/brain-diff.mjs",
     "brain:index": "node scripts/brain-index.mjs",
+    "brain:pull": "node ../brain-private/kernel/pull.mjs",
     "orphans:scan": "node scripts/storage-orphans.mjs",
     "deadcode:check": "firebase functions:list --json > .deadcode-fns.json && node scripts/deadcode-check.mjs .deadcode-fns.json",
     "skills:desc-check": "node scripts/skill-desc-check.mjs skills"

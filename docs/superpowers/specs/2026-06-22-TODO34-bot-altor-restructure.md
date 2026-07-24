@@ -297,21 +297,21 @@ marca anónima segura `!userId && !historicalUserKey` + closed + idle>30d; FASE 
 messages-subcol = fase 2; idempotente/capado/auditado; pend deploy). **wiring `engine:'v2'` ✅** (`concierge.js`: cohorte `V2_ROLLOUT_PCT`, default 100; fuera del cohorte → Free Core; inerte hasta el enable). **Merge #917 ✅ + `firebase deploy` ✅** (2026-06-23: chatLLM v2 + anonymizeIdleAnonChats en prod; bot DORMIDO, `_brain.enabled=false`; drift code↔deployed resuelto). 🔜 **ENABLE = único paso restante**: dueño pone `_brain.enabled=true` en el portal (Cerebro→Activo) → verificación eyes-on (kill-switch instantáneo + $15 cap + fallback Free Core). Rampa opcional: bajar `V2_ROLLOUT_PCT`.
 
 ## Checklist
-- [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe.
+- [x] Diagnóstico verificado en código (2026-06-22): bot NO conectado al CRM (`grep`=0), `chatLLM` existe. (TODO-34)
 - [x] Red-team Gemini ✅ (2026-06-22) → Plan FINAL (crudo bóveda `22d52a9`).
 - [x] Comité ACOTADO #1 ✅ (2026-06-22): costo-Anthropic · Ley 1581 · breaker-vaporware · premisa-híbrida. Crudo `242bc41`.
-- [x] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ✅ 2026-06-23: claim de colisión REFUTADO; GAP real = anónimos se PIERDEN; consent ya plomeado.
-- [x] Diagnóstico ARQUITECTURA verificado ✅ 2026-06-23 (`dual-core.js`): el híbrido viejo = Free Core determinista 5,600L (lo que falló); chatLLM sin AppCheck + inventario-en-prompt + sin tool-use.
-- [x] Comité ACOTADO #2 (arquitectura) ✅ 2026-06-23: convergencia 4/4 en **B-moderno** (router=UI + LLM+tools); captcha-UI=cosmético→App Check enforce; tope $12-15/mes; F1-primero.
-- [x] **Capa 3 — Gemini red-team ✅ 2026-06-23**: recomendó A (no B); verificado por-claim (precio refutado: Haiku 4.5 = $1/$5, no $0.25/$1.25). Crudo bóveda `2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
+- [x] Re-verificar contratos reales (`sanitizeContactId`/`onSolicitudCreated`) ✅ 2026-06-23: claim de colisión REFUTADO; GAP real = anónimos se PIERDEN; consent ya plomeado. (TODO-34)
+- [x] Diagnóstico ARQUITECTURA verificado ✅ 2026-06-23 (`dual-core.js`): el híbrido viejo = Free Core determinista 5,600L (lo que falló); chatLLM sin AppCheck + inventario-en-prompt + sin tool-use. (TODO-34)
+- [x] Comité ACOTADO #2 (arquitectura) ✅ 2026-06-23: convergencia 4/4 en **B-moderno** (router=UI + LLM+tools); captcha-UI=cosmético→App Check enforce; tope $12-15/mes; F1-primero. (TODO-34)
+- [x] **Capa 3 — Gemini red-team ✅ 2026-06-23**: recomendó A (no B); verificado por-claim (precio refutado: Haiku 4.5 = $1/$5, no $0.25/$1.25). Crudo bóveda `research-archive/2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
 - [x] **VEREDICTO FINAL ✅: Opción A** (solo-LLM + Tool Calling + botones tontos de navegación), guards-first. A↔B parcialmente semántica; con guards las ventajas de B son marginales; A gana por mantenibilidad + corte limpio + honra el instinto del dueño. Evidencia: ADJUDICACIÓN en `research-archive/2026-06-23-TODO34-gemini-redteam-CRUDO.md`.
-- [x] **EPIC expandido + Comité #3 (captura/UX/qualifier) ✅ 2026-06-23** + **Gemini red-team del EPIC ✅** (reorden captura↔bot + 4 guardrails). Pipeline completo = 3 comités + 2 Gemini, verificado por-claim. Crudos bóveda.
-- [x] **Confirmación dueño ✅ 2026-06-23**: plan EPIC + techo $15 · App Check MONITOR · TTL anonimizar@30d · **GO al flip**.
-- [x] **Client wiring `engine:'v2'` ✅ 2026-06-23** (`concierge.js` cohorte `V2_ROLLOUT_PCT`; inerte hasta enable).
-- [x] **Merge #917 + deploy functions ✅ 2026-06-23** (chatLLM v2 + anonymizeIdleAnonChats en prod; bot dormido). 🔜 **ENABLE** `_brain.enabled=true` (portal) = bot v2 live + verif eyes-on.
-- [x] **Implementación: F1.a ✅ · F2.a ✅ · F2.b ✅** (2026-06-23, en `dev`): techo gasto + memoria corta · cédula fuera · WhatsApp en gate + voz Colombia + 3 botones tontos en la bienvenida (reusan `data-quick-reply`).
-- [x] **F3 diseño execution-ready ✅ 2026-06-23** (§F3 arriba: tools + system-prompt rewrite + tool-loop en `callAnthropic` + flag `engine:'v2'` + gate App Check). Pend GO dueño.
-- [x] **F3-a ✅ 2026-06-23** (Tool Calling read-only `search_inventory` + `engine:'v2'` dormiente + v1 intacto, en `dev`; pend deploy). GO dueño resuelto: techo $15 · AppCheck monitor · TTL anonimizar@30d.
-- [x] **F3-b ✅ 2026-06-23** (`submit_lead`: escribe `solicitudes` origen 'bot' reusando `onSolicitudCreated`; validación backend + `lead_quality` + consent conservador `consentGiven=false` Ley-1581-safe; cero-pérdida; dormiente en `dev`). Consent EXPRESO = gate P4 antes del flip.
-- [x] **TTL ✅ 2026-06-23** (`anonymizeIdleAnonChats`: scheduled diario, DRY-RUN por defecto; anonimiza chats anónimos `!userId&&!historicalUserKey` cerrados >30d, FASE 1 PII del parent; idempotente/capado/auditado; pend deploy). Owner revisa dry-run en auditLog → `config/altorTTL.enabled=true`. Messages-subcol = fase 2.
+- [x] **EPIC expandido + Comité #3 (captura/UX/qualifier) ✅ 2026-06-23** + **Gemini red-team del EPIC ✅** (reorden captura↔bot + 4 guardrails). Pipeline completo = 3 comités + 2 Gemini, verificado por-claim. Crudos en bóveda `research-archive/`. (TODO-34)
+- [x] **Confirmación dueño ✅ 2026-06-23**: plan EPIC + techo $15 · App Check MONITOR · TTL anonimizar@30d · **GO al flip**. (TODO-34)
+- [x] **Client wiring `engine:'v2'` ✅ 2026-06-23** (`concierge.js` cohorte `V2_ROLLOUT_PCT`; inerte hasta enable). (TODO-34)
+- [x] **Merge #917 + deploy functions ✅ 2026-06-23** (chatLLM v2 + anonymizeIdleAnonChats en prod; bot dormido). 🔜 **ENABLE** `_brain.enabled=true` (portal) = bot v2 live + verif eyes-on. (TODO-34)
+- [x] **Implementación: F1.a ✅ · F2.a ✅ · F2.b ✅** (2026-06-23, en `dev`): techo gasto + memoria corta · cédula fuera · WhatsApp en gate + voz Colombia + 3 botones tontos en la bienvenida (reusan `data-quick-reply`). (TODO-34)
+- [x] **F3 diseño execution-ready ✅ 2026-06-23** (§F3 arriba: tools + system-prompt rewrite + tool-loop en `callAnthropic` + flag `engine:'v2'` + gate App Check). Pend GO dueño. (TODO-34)
+- [x] **F3-a ✅ 2026-06-23** (Tool Calling read-only `search_inventory` + `engine:'v2'` dormiente + v1 intacto, en `dev`; pend deploy). GO dueño resuelto: techo $15 · AppCheck monitor · TTL anonimizar@30d. (TODO-34)
+- [x] **F3-b ✅ 2026-06-23** (`submit_lead`: escribe `solicitudes` origen 'bot' reusando `onSolicitudCreated`; validación backend + `lead_quality` + consent conservador `consentGiven=false` Ley-1581-safe; cero-pérdida; dormiente en `dev`). Consent EXPRESO = gate P4 antes del flip. (TODO-34)
+- [x] **TTL ✅ 2026-06-23** (`anonymizeIdleAnonChats`: scheduled diario, DRY-RUN por defecto; anonimiza chats anónimos `!userId&&!historicalUserKey` cerrados >30d, FASE 1 PII del parent; idempotente/capado/auditado; pend deploy). Owner revisa dry-run en auditLog → `config/altorTTL.enabled=true`. Messages-subcol = fase 2. (TODO-34)
 - [ ] Implementar F1→F6 (plan arriba), verificación por fase §G.4. **F1 (candados + frenar hemorragia + TTL) primero** — bajo riesgo, valor inmediato.

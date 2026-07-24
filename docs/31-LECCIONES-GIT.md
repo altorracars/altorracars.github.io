@@ -20,7 +20,8 @@
 - **Causa**: el cron de `main` (`Auto-generate vehicle pages + bump cache version`) bumpea `APP_VERSION`/`CACHE_VERSION` mientras la rama tiene esos archivos movidos/modificados → modify-en-main vs move/modify-nuestro.
 - **Receta**: en la rama → `git merge origin/main --no-edit`. La estrategia **`ort` detecta el rename y aplica el bump del cron al archivo movido AUTOMÁTICAMENTE** (cero conflicto manual). Verificar después: `node -c`, 0 refs viejas.
 - **Cómo evitarlo**: NO fusionar cada micro-paso a `main` (ver L-03). Sincronizar `main`→rama tras cada merge si se insiste en fusionar por paso.
-- *Doctrina relacionada: `CLAUDE.md §4` (cache bump). Vivido en §119.*
+- **Con cars EN PAUSA + cron vivo (23/07)**: el drift del `05` es ESTRUCTURAL entre sesiones (13 días de desfase vivido) → cada merge L-02 TERMINA sincronizando la fila de cache del `05` en el MISMO turno (el gate #4 bloquea el commit si no). Si los 4 archivos del conflicto solo los tocó el cron en ambas ramas (`git log <base>..rama -- <archivos> | grep -v Auto-generate` vacío), resolver = `git checkout --theirs` a la versión más NUEVA.
+- *Doctrina relacionada: `CLAUDE.md §4` (cache bump). Vivido en §119; ampliado §303.*
 
 ### L-03 · No fusionar cada micro-paso a `main` durante un refactor largo
 - **Síntoma**: conflictos en bucle, un PR tras otro.

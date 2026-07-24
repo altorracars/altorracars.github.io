@@ -76,11 +76,12 @@
     }
   ],
   "deepAudit": {
-    "last": "2026-07-06",
-    "coveredHeaderCount": 313,
+    "last": "2026-07-23",
+    "coveredHeaderCount": 336,
     "maxAdrGap": 12,
     "maxDays": 30,
-    "_que": "comite v6 = linea base; N2 #1 = item U (§206); N2 #2 = falencias del lazo (§207, M-16, TODO-29); N2 #3 = §226 (maquinaria/L-50); N2 #4 = §239 (post F-2: boot-cap reincidente M-10 + gap source/dist); N2 #5 = §281 (post OLA 3.3-3.5: 05 auto-expiry+contradiccion curados, boot-cap reincidente x4 -> TODO-40, deuda cache falsa dissuelta L-65)"
+    "_que": "comite v6 = linea base; N2 #1 = item U (§206); N2 #2 = falencias del lazo (§207, M-16, TODO-29); N2 #3 = §226 (maquinaria/L-50); N2 #4 = §239 (post F-2: boot-cap reincidente M-10 + gap source/dist); N2 #5 = §281 (post OLA 3.3-3.5); N2 #6 = §303 (resonancia post-pausa: S3/S7 REALES por 1a vez, drill 3/4 curado, S7-F1 confirmado -> TODO-40c, F2 refutado)"
   },
+  "lastOffsiteBackup": "2026-07-23",
   "orphanAllowlist": []
 }

@@ -10,9 +10,9 @@
 
 ## 🎯 Foco actual
 
-> **⏸️ PIVOTE 10/07 (dueño, ADR §302): CARS EN PAUSA — prioridad #1 = ALTORRA INMOBILIARIA**, que además ASUME el liderazgo del cerebro ×4. Paquete de arranque (SSoT) = **`specs/2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`** (identidad legal VALIDADA · activos · programa R0-R5 · stack candidato · traspaso kernel §7 · checklist dueño §8 · página mantenimiento §9 · prompt de arranque §10). El dueño abre el chat de inmobiliaria con ese prompt; este cerebro queda en modo mantenimiento.
+> **⏸️ PIVOTE 10/07 (dueño, ADR §302): CARS EN PAUSA — prioridad #1 = ALTORRA INMOBILIARIA**, que **YA LIDERA el cerebro ×4** (traspaso ejecutado 18/07; su chat ACTIVO, ADRs §33+ en su 99; el kernel se consume de su canónico). Kickoff (SSoT) = **`specs/2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`**. Este cerebro = modo mantenimiento (resonancia §303).
 >
-> **REANUDAR CARS (solo cuando el dueño lo diga)**: ⭐(A) fotos de vehículos = win móvil REAL (Firebase Storage 2.5-4.4MB; lazy agresivo + srcset) · (B) Ola 2 reCAPTCHA — GATE: App Check MONITOR confirmado en Firebase Console (§41) · (C) TODO-52 CRM (leer `43-UX §Doctrina-panel` primero). Detalle perf → §297/§298; gates dueño aparcados → §283-298 (MFA · App Check · cutover 2.12b · GSC · saldo bot · purga). **Auditoría-de-Opus OFRECIDA sigue en pie (§300)**. Cache: SWR sin bump (L-65); `dist/` por bloque.
+> **REANUDAR CARS (solo cuando el dueño lo diga)**: ⭐(A) fotos de vehículos = win móvil REAL (Firebase Storage 2.5-4.4MB; lazy agresivo + srcset) · (B) Ola 2 reCAPTCHA — GATE: App Check MONITOR confirmado en Firebase Console (§41) · (C) TODO-52 CRM (leer `43-UX §Doctrina-panel` primero). Perf → §297/§298; gates dueño → §283-298. **Auditoría-de-Opus OFRECIDA sigue en pie (§300)**. Cache: SWR sin bump (L-65).
 >
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
@@ -29,7 +29,7 @@
 
 | ID | Item | Estado | Bloqueo |
 |---|---|---|---|
-| **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — OLA 0-3 ✅ (§267-282); Directiva Permanente (brief `2026-06-29-crm-overhaul…`). Próximo=P0-CAPTURE. | 🔄 permanente | pulir |
+| **TODO-52** | **🟣 EPIC #1 — CRM Overhaul ⟦OPUS⟧** — OLA 0-3 ✅ (§267-282); Directiva Permanente (brief `2026-06-29-crm-overhaul…`). Próximo=P0-CAPTURE. | ⏸️ (§302; era permanente) | orden dueño |
 | **TODO-53** | **🔎 AUDITORÍA HOLÍSTICA ⟦OPUS⟧** — ✅✅ LIVE (§283-295; LCP 662ms). RESTA: barrido visual P4. | 🔄 | menor |
 | **TODO-54** | **⚡ PageSpeed perf v2 ⟦OPUS⟧** — ✅ LIVE búsqueda 40→65 · home 55→61; §297 fuentes; **§298 Ola 1 (logo 412KB + GSI diferido)**. Diagnóstico LH: ord 95/móvil 57 (Artifact). RESTA: **Ola 2 reCAPTCHA/AppCheck (GATE Firebase Console)** · re-medir · unsized-images. 🚫 techo home=Cloudflare. | 🔄 | perf/gate-App-Check |
 | **TODO-01/02·03·06·07/08·09-13·15·18** | Legacy diferidos/opcionales/absorbidos (Cloudflare+Vite·CSS·SEO·CSAT·deuda·skills·blindaje→E5). **Detalle §109**. | 🔮/✅ | varios |
@@ -41,14 +41,14 @@
 | **TODO-24** | **Comité BORRADORES** §202.5 — f1+2+3 ✅(§230). Resta: barrido recurrente → futuro. | 🔄 | futuro |
 | **TODO-26** | **FACTURACIÓN + super-CRM ⟦OPUS⟧** (financiero/contable en panel; consultar Bersaglio). Bóveda `…restructura-comercial…` §8. | 🔒 ÚLTIMA | al final |
 | **TODO-27** | **Alta usuarios = invite flow seguro ⟦OPUS⟧** (token+tx, anti-enumeración). Diseño→bóveda `2026-06-14-…cms-plan §6.4`. Skill portable. | 🔮 | tras dinamismo |
-| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); `00a`/`32` shardeados ✅ 03/07; **00→00a ampliado a §1–§190 ✅ 10/07 (§299)**. Resta: 99a/99b · `ignoreDirs` · `33` over cap. | 🔄 | — |
+| **TODO-29** | **Endurecer el lazo ⟦OPUS⟧** — range-shard ✅ (§258); `00a`/`32` shardeados ✅ 03/07; **00→00a ampliado a §1–§190 ✅ 10/07 (§299)**. Resta: 99a/99b · `ignoreDirs` · `33` over cap · `40-LOBULOS` ≥90% (pre-shard). | 🔄 | — |
 | **TODO-30** | **Despliegue-DINERO "Doble Llave + Staging" (§208.3) ⟦OPUS⟧** — gate IA (tests/invariantes en CI) + acceptance Kary en STAGING + dueño autoriza prod. Cars+bersaglio. | 🔮 | Staging (dueño) |
 | **TODO-32** | **ESCALABILIDAD cerebro** — §228+§229 ✅. RESTA (YAGNI): genoma frontmatter + tiering 100x. | 🔮 | YAGNI |
 | **TODO-34** | **EPIC bot LLM ⟦OPUS⟧** Opción A; F1-F3+wiring ✅ DORMIENTE (#917). FLIP=saldo. Bot v2→TODO-46. | 🔄 | dueño: saldo |
 | **TODO-42** | **HUB de Visibilidad ⟦OPUS⟧ (§244)** — 7 skills + agente `seo-auditor` ✅ (25/06). RESTA: Core JS `visibility-core/` + `tenant_config`. | 🔄 | por-proyecto |
 | **TODO-45** | **Cleanups §257 ⟦OPUS⟧** — functions residuales · `brands.saveBrand` desc · `kb.edit` editor · coment stale (detalle §257). | 🔮 | bajo |
 | **TODO-43** | **MFA portal nuevo ⟦OPUS⟧ (§253)** — nuevo=email+pass only; SMS-MFA viejo (2FA/trusted/backup/TG) NO portado. Reimplementar TOTP+recovery si el dueño quiere. | 🔮 | dueño |
-| **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS⟧** — (a) freno boot-budget linter (M-10); (b) gate drift source↔dist (AUD-04). | 🔮 | bajo |
+| **TODO-40** | **Curas auditoría N2 §239 ⟦OPUS⟧** — (a) freno boot-budget linter (M-10); (b) gate drift source↔dist (AUD-04); (c) freno CI 05-stale: step del cron compara `CACHE_VERSION` main vs `05` + commits main−dev → flag en 05 (S7-F1 §303). | 🔮 | bajo |
 | **TODO-44** | **Fiabilidad cerebro ⟦OPUS⟧** — §257+M-22 (check #16 ×4 ✅). RESTA: adopción `verificado-vivo:`. Absorbe TODO-33. | 🔄 | adopción |
 | **TODO-46** | **Bot v2 flujo + chat vivo ⟦OPUS⟧** — B1/B2/B3 LIVE + 3 bugs FIXED. RESTA: roundtrip chat + iter-2 (marca·FAQ·ARIA) → luego FLIP. **🔲 DUEÑO 09/07: lanzar v2 = NECESARIO pero DESPUÉS (prioridad = VELOCIDAD).** ⚠️ v1/v2 difieren por-dispositivo (flag localStorage `?altorbot=v2`) = NO bug (cutover F-1; reales=v1). | 🔄 aparcado | tras velocidad |
 | **TODO-48** | **Drift CRM del cutover ⟦OPUS⟧** — MF4.x admin viejo NO portadas (360°/KPIs/masivas/NPS) + doc-fixes. Bóveda `…barrido-drift…`. | 🔵 | tras bot |
@@ -63,8 +63,7 @@ Detalle ampliado de pendientes legacy → `99-HISTORIAL-ADR.md` §109.
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **18/07 ⟦FABLE-5⟧ sinapsis inmobiliaria**: payload liderazgo aplicado (`60-WORKFLOWS`: escritor único → inmob.) + 15 skills re-sync con verdad de producción SEO (Offer-sin-price inválido · FAQPage sin rich result · AEM muerto · objetivo Mensajes retirado; detalle inmob. ADR §33-§37). Catalogables: paid-ads v2.2/ad-creative v2.8 (+ nuevas video/offers/marketing-loops/image en inmob.).
-- **10/07 ⟦FABLE-5⟧ §302 PIVOTE**: cars EN PAUSA; kickoff inmobiliaria emitido (legal validado: ALTORRA COMPANY S.A.S, NIT 902063965-4; matrícula de arrendador EN TRÁMITE = gate; stack candidato Cloudflare+Astro+Firebase). Liderazgo del cerebro → inmobiliaria (traspaso §7 del kickoff).
-- **10/07 ⟦FABLE-5⟧ §299-§301**: sinapsis ×4 — cars importó (L-73/74/75 · W-13 · panel→`43-UX` · meta-ads); payloads bersaglio/inmob en `sinapsis-cerebros/references/` (harness bloquea writes cross-repo → aplica cada operador). Resta §G/W (TODO-28).
-- **09/07 ⟦OPUS⟧ perf-v2**: §297 fuentes + §298 Ola 1 — detalle en ADRs + foco↑. Skill `optimizacion-rendimiento-web` ×4.
-- **Pendientes vivos perf/voz** (histórico §283-297): RESTA voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar). 🚫 NO quitar Poppins/`admin-calendar-config`. **Cloudflare BLOQUEADO — no re-preguntar.**
+- **23/07 ⟦FABLE-5⟧ mantenimiento-general §303**: merge cron L-02 (dev==main `14dae0c1`) · 05 re-sync a la versión del cron 23/07 (ver `05`) · 33 ticks de 6 specs ANCLADOS (gate #13 v1.3 endureció evidencia) · auditoría N2 #6 + resonancia (backups ×5 + brain:pull).
+- **18/07 ⟦FABLE-5⟧ sinapsis inmobiliaria**: payload liderazgo aplicado (`60-WORKFLOWS`: escritor único → inmob.) + 15 skills re-sync con verdad de producción SEO (detalle inmob. ADR §33-§37).
+- **10/07 ⟦FABLE-5⟧ §299-§302**: sinapsis ×4 (L-73/74/75 · W-13 · `43-UX` · meta-ads; payloads hermanos → skill `sinapsis-cerebros §4`; resta §G/W TODO-28) + PIVOTE §302 (kickoff inmobiliaria; legal validado; matrícula arrendador = gate).
+- **Pendientes perf/voz** (§283-297): voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar); 🚫 NO quitar Poppins/`admin-calendar-config`.

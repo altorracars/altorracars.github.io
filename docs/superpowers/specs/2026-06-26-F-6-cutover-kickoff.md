@@ -109,9 +109,9 @@ vehicles · workflows). Paridad de secciones ✅. **GAPS detectados (decidir ant
 - [x] **Paridad §3 auditada**: 19/19 secciones ✅
 - [x] **FCM/Web-Push PORTADO** (2026-06-25, §251): `fcm.js`+`fcm.css`+wiring, build+boot+render verificados; PEND validación live end-to-end (device real)
 - [x] **Premisa §2 SW corregida** (no hay SW de admin separado → script unregister DESCARTADO; zombie cubierto por network-first+redirect+cache-bump)
-- [x] **Banner re-login BUILT** (2026-06-25, login.js): auto-detecta marcadores localStorage del admin viejo (self-contained, no necesita el redirect); dismiss persistente + auto-dismiss tras login. Verificado en preview.
+- [x] **Banner re-login BUILT** (2026-06-25, login.js): auto-detecta marcadores localStorage del admin viejo (self-contained, no necesita el redirect); dismiss persistente + auto-dismiss tras login. Verificado en preview. (cutover §255)
 - [x] **Hub detalle validado LIVE ✅ (26/06, §254)** — E2E conducido por mí con la extensión: escala→aparece en Hub→claim→responder→llega al visitante (✓✓), consola 0-err. PEND menor: typing + push FCM en device.
-- [x] **Gap plantillas = NO-GAP (26/06)**: el editor del admin viejo ya estaba oculto (`display:none`) → aceptar, cero regresión.
+- [x] **Gap plantillas = NO-GAP (26/06)**: el editor del admin viejo ya estaba oculto (`display:none`) → aceptar, cero regresión (cutover §255).
 - [x] **Gap perfil RESUELTO — módulo `perfil` PORTADO + VERIFICADO (26/06, §253)**: `admin-app/src/modules/perfil/`
   (`perfil.ui.js`+`perfil.data.js`) + `styles/perfil.css`, accesible desde el **menú de usuario** (topbar → `#/perfil`,
   no sidebar). Subset que encaja en el auth nuevo: avatar (Storage `avatars/{uid}.webp`) · nombre/teléfono/prefijo ·

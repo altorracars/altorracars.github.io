@@ -53,7 +53,7 @@ Legal: consent timestamp + versión-de-texto server-side (audit trail anti-SIC);
 > El TEXTO del consentimiento sigue gate P4 (abogado); aquí solo se persiste el FLAG (audit trail).
 
 ## Checklist
-- [x] Verificación de causa raíz — `js/concierge/concierge.js:2712` (gate→update) + `firestore.rules:773` (update solo-admin) + `js/concierge/concierge.js:1236` (catch mudo)
+- [x] Verificación de causa raíz — `js/concierge/concierge.js:2712` (gate→update) + `firestore.rules:773` (update solo-admin) + `js/concierge/concierge.js:1236` (catch mudo) — fix consolidado §235
 - [x] Comité acotado (3 expertos) capturado — síntesis §3 + agentIds `a1f890f32c7c1de42`/`ab9aa324dbf7930d0`/`a6ad4676a43e357fe`
 - [x] Consejo externo Gemini verificado — §4 (confirmó C+D; corregí claim claims→lookup `firestore.rules:21`; divergencia App Check razonada)
 - [x] Veredicto final — §4 (C+D, regla intacta, App Check diferido con mitigaciones, consent server-side)

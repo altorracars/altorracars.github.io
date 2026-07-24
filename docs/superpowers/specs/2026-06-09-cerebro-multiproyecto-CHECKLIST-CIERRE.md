@@ -12,8 +12,8 @@
 ---
 
 ## ✅ HECHO (referencia — no re-hacer)
-- [x] **Mandato 1** — Inventario + preservación (`2026-06-09-inventario-preservacion-cerebros.md`)
-- [x] **Mandato 2** — Comité ×3 + Gemini → plan v5 (`2026-06-09-plan-mejora-cerebro-v4-comite.md`)
+- [x] **Mandato 1** — Inventario + preservación (`docs/superpowers/specs/2026-06-09-inventario-preservacion-cerebros.md`)
+- [x] **Mandato 2** — Comité ×3 + Gemini → plan v5 (`docs/superpowers/specs/2026-06-09-plan-mejora-cerebro-v4-comite.md`)
 - [x] **PRE-PASO-0** — caps líneas→chars + linter `--boot`/`--full` (cars `0450b0b`/`de5c905`)
 - [x] **PASO 0** — linter canónico byte-idéntico cars+bersaglio + manifest por-repo (cars `19d6648`, bersaglio `9f7bdfd`)
 - [x] **PASO 2** — cerebro neuronal instalado en inmobiliaria, cero-pérdida verificada (inmobiliaria `0a9c9e0`)
@@ -45,15 +45,15 @@
 - [ ] Doctrina §G.5 (caps) actualizada a chars en el texto (el linter ya lo hace; falta la prosa). **Aceptación**: §G.5 menciona chars + manifest.
 
 ## ⏳ Skills (§R6 — ortogonal, se puede hacer en paralelo)
-- [x] `arquitecto-software` desacoplado (2026-06-09): bloque "En el proyecto Bersaglio" → domain-neutral ("consulta el cerebro del proyecto activo"). SKILL.md sin rutas `docs/NN-` de un repo. ✅
-- [x] `comite-expertos` parametrizado: fuera "Daniel"→cliente + paths `skills/*` inexistentes. ✅
+- [x] `arquitecto-software` desacoplado (2026-06-09): bloque "En el proyecto Bersaglio" → domain-neutral ("consulta el cerebro del proyecto activo"). SKILL.md sin rutas `docs/NN-` de un repo. ✅ (§171)
+- [x] `comite-expertos` parametrizado: fuera "Daniel"→cliente + paths `skills/*` inexistentes. ✅ (§171)
 - [x] `legal-colombia` parametrizado: ruta `docs/42` generalizada + ref `§3.7` corregida (en cars es Cloudflare); jurisdicción CO se queda. ✅
 - [x] **Durabilidad por VERSIONADO**: las 4 skills portables ahora viven git-trackeadas en `skills/` de los 3 repos (byte-idénticas), no solo en `~/.claude/skills`. Inventario cars actualizado. Commits: cars `db346c2` · bersaglio `3bca0c0` · inmobiliaria `9916aa6`. *(El "manifest reinstalable" = el propio `skills/` versionado; install manual = copiar repo→`~/.claude/skills`.)*
 - [ ] (Opcional) Linter de capa skill: escanea `~/.claude/skills/*/SKILL.md` por `docs/NN-`/nombres propios. · ⏳ inmobiliaria sin `docs/skills-inventory.md` (check #6 omitido) — crear si se quiere catálogo.
 
 ## 🚩 MANDATO 3 — Comité de VALIDACIÓN FINAL (gate de cierre — bloquea declarar "completo")
 - [x] Convocado `comite-expertos` #2 (Mandato 3, **11 agentes**) contra el inventario del Mandato 1 — crudo → `research-archive/2026-06-09-mandato3-validacion-final-deliberacion.json`.
-- [x] Dimensiones certificadas EN DISCO: cero-pérdida ✅ · aislamiento INSTANCE ✅ · saturación/boot ✅ · lectura fluida ✅ · riesgos no estimados ✅. (Veredicto inicial **NO_CERTIFICA** por 2 bloqueantes → resueltos+verificados con grep.)
+- [x] Dimensiones certificadas EN DISCO: cero-pérdida ✅ · aislamiento INSTANCE ✅ · saturación/boot ✅ · lectura fluida ✅ · riesgos no estimados ✅. (Veredicto inicial **NO_CERTIFICA** por 2 bloqueantes → resueltos+verificados con grep — cierre §172.)
 - [~] 7 preguntas abiertas: resueltas/diferidas por §171 (Q6b documento-copiado, Q-namespace por slug, secrets→nodo-config) o tracked como opcionales en §172.4; cliente ratificó el rumbo (2026-06-09).
 - [x] **Sign-off → ADR §172 en `99`** + este checklist actualizado. **CERTIFICADO** (alcance §171, cars; cura aterrizada+verificada en §G.4; Opción C diferida; propagación a bersaglio/inmob = follow-up). ⚠️ NO se declara "100% de la visión original": el KERNEL compartido fue **descopado** por §171 (sobreingeniería), no completado.
 

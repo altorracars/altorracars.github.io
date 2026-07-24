@@ -15,16 +15,17 @@ description: Usar ANTES de re-investigar un problema TRANSVERSAL (Firebase/Fires
 
 ## 1. Mapa de los 4 cerebros (mismo disco, rutas hermanas)
 
-> ⚠️ **LIDERAZGO EN TRASPASO (2026-07-10, cars §302, mandato del dueño)**: el líder/constructor del
-> cerebro ×4 (kernel + §G) pasa de **cars → inmobiliaria** (prioridad #1 del negocio). El chat de
-> inmobiliaria lo asume ejecutando el §7 de su kickoff (`..\altorracars.github.io\specs\2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`)
-> y actualiza esta tabla al completarlo. Cars queda EN PAUSA como peer.
+> 🏛️ **LIDERAZGO ASUMIDO (2026-07-10, cars §302 + kickoff §7 — mandato del dueño)**: el líder/constructor
+> del cerebro ×4 (kernel `brain-check/diff/index.mjs` + §G cross-repo) es **INMOBILIARIA** (operador-inmobiliaria;
+> specs madre en `altorrainmobiliaria.github.io/specs/`). Cars queda EN PAUSA como peer y NO escribe el kernel.
+> Propagación desde inmobiliaria: byte-idéntica ×4; si el harness bloquea el write cross-repo (regla 5),
+> payload en `references/` + aplicación por el operador local de cada repo.
 
 | Cerebro | Repo en `C:\Users\romad\Documents\GitHub\` | Lecciones | Fuerte en |
 |---|---|---|---|
 | **cars** (canon histórico, EN PAUSA) | `altorracars.github.io` | `docs/30-LECCIONES.md` + hijas `31` (git) · `32` (meta M-NN) · `33` (frontend) | SSG/cron/SW · CRM Firestore · workflows/subagentes · a11y/perf · meta-gobernanza del cerebro |
 | **bersaglio** | `bersagliojewelry.github.io` | `docs/30-LECCIONES.md` + `31-…FIRESTORE` · `32-…CARGA` · `34-…META` | **DINERO** (POS/caja/pasarela Wompi/arqueos/idempotencia) · rules adversariales · functions gen2 · LCP/carga CMS |
-| **inmobiliaria** (🏛️ NUEVO LÍDER, prioridad #1) | `altorrainmobiliaria.github.io` | `docs/30-LECCIONES.md` (joven: 7 + payload pendiente) | arranque Firebase/presence · (asumirá kernel/§G/TODO-28) |
+| **inmobiliaria** (🏛️ LÍDER desde 2026-07-10, prioridad #1) | `altorrainmobiliaria.github.io` | `docs/30-LECCIONES.md` (12: L-01..L-12) | **kernel/§G/TODO-28 (escritor único)** · arranque Firebase/presence · portal greenfield (kickoff 2026-07-10) |
 | **insema** | `insemastereo.github.io` | `docs/30-LECCIONES.md` (joven: 7) | sitio estático user-site / GitHub Pages |
 
 ## 2. Cómo consultar (barato — 2 pasos, en el hilo PRINCIPAL)
@@ -73,17 +74,33 @@ esperando un permiso que nadie aprueba (cars L-50). Shell en foreground funciona
   su L-84 (detached HEAD) + sus M-09/M-10 (grep≠semántica · maquinaria-simple-a-la-mano), con anclas
   exactas y en SU convención. Aplicar en 3 pegas + brain:check + commit en `Desarrollo`; luego marcar ✅ aquí
   y borrar el archivo. Opcional: converger su copia repo de `meta-ads-diagnostico` desde el global.
-- **inmobiliaria** (mayor ganancia — mismo stack Firebase): 🟡 **PAYLOAD LISTO** (2026-07-10, ídem) →
-  **`references/import-inmobiliaria-2026-07-10.md`**: sus L-08..L-12 (rules campo-ausente-LANZA ·
-  upsert/merge trampa doble · GET público no muta · 3 gotchas functions gen2 · método del dinero),
-  redactadas en SU convención `### L-NN — título` con anclas. Aplicar en 1 pega + brain:check + commit;
-  luego marcar ✅ aquí y borrar el archivo.
+  **⚠️ 2026-07-18 (sinapsis FABLE-5): aplicación BLOQUEADA — su `30-LECCIONES` está a 1 char del tope
+  duro del kernel (43.999c; >44.000 = warn→exit 1 en pre-commit; su TODO-77 shard va primero) y su
+  M-09 ya fue tomado localmente (2026-07-17, "muestrear≠contar") → tras el shard, aplicar renumerando
+  el payload: M-09→M-10 y M-10→M-11 (nota dejada en el payload). `meta-ads-diagnostico` repo ya
+  convergido desde el global (sync skills 2026-07-18).**
+- **inmobiliaria**: ✅ **APLICADO** (2026-07-10, operador-inmobiliaria): L-08..L-12 insertadas en su
+  `docs/30-LECCIONES.md` + brain:check verde + commit; payload borrado.
+- **×3 CONSTANCIA DE LIDERAZGO (cars ✅ · bersaglio ✅ · insema ✅ — COMPLETA 2026-07-18)**: payloads preparados 2026-07-10
+  por inmobiliaria como nuevo escritor único (el write cross-repo lo bloquea el harness,
+  regla 5). **cars ✅ APLICADO** (2026-07-18, sinapsis FABLE-5 + no-verify autorizado por Daniel; commit `6a26ba83` en `dev` — su payload borrado): re-apuntar
+  "escritor único del kernel/§G = cars" → "= inmobiliaria (traspaso 2026-07-10, cars §302)". Cada
+  operador local aplica su pega + brain:check + commit; luego marca ✅ aquí y borra su archivo.
+  **insema ✅ APLICADO** (2026-07-18, sinapsis FABLE-5): `60-WORKFLOWS` re-apuntado + 15 skills
+  re-sincronizadas + brain:check SANO + commit `a042494` pushed (`cerebro/todo-32`); payload borrado.
+  **bersaglio ✅ APLICADO** (2026-07-18, sinapsis FABLE-5): `60-WORKFLOWS` W-10 + `34-LECCIONES-META`
+  L-31.3 re-apuntados + 15 skills re-sincronizadas + brain:check SANO + commit `486640f` pushed
+  (`Desarrollo`); payload liderazgo borrado (el de LECCIONES queda BLOQUEADO — ver su bullet arriba).
 - **insema**: bajo valor hoy (sitio estático sin Firebase ni dinero); su doctrina §3.3 ya cubre
   la esencia de proceso. Revisar si el stack crece.
+
+## 4b. Propuestas al escritor del kernel (inmobiliaria) — bandeja cross-repo
+
+- **De cars N2 #6 (2026-07-23, su §303)**: (a) las skills compartidas de `~/.claude/skills/` (este canal) NO tienen peer-hash/integridad — un `git add -A` ajeno (clase L-48) podría corromper payloads ×4 sin que ningún gate lo vea; evaluar hash de skills críticas en el kernel. (b) Anti-engorde: fusionar el check BFS-huérfanas-2º-orden con el de 1er orden en un solo check de conectividad. Al resolverlas, borrar esta entrada.
 
 ## 5. Qué NO es esta skill
 
 - NO reemplaza las lecciones locales — lo repo-específico se queda en su cerebro.
 - NO es excusa para leer 4 cerebros enteros "por si acaso": grep de títulos + tramo puntual.
-- La alineación de GOBERNANZA (§G ×4, TODO-28 de cars) es del escritor único del kernel
-  (operador-cars), no de esta skill.
+- La alineación de GOBERNANZA (§G ×4, TODO-28) es del escritor único del kernel
+  (**operador-inmobiliaria** desde 2026-07-10; antes operador-cars), no de esta skill.

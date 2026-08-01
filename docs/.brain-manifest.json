@@ -11,7 +11,7 @@
   "_caps_trinquete": "ADR §173: caps bajados al tamaño post-GC + headroom (trinquete: bajar libre; SUBIR exige ADR citado). ADR §228: 00 elevado 36000→48000 (índice ON-DEMAND, no boot → NO se comprime con pérdida; si crece se tiera/sharda).",
   "caps": {
     "CLAUDE.md": {
-      "lines": 320,
+      "lines": 270,
       "chars": 24000
     },
     "docs/05-ESTADO-GLOBAL.md": {
@@ -19,11 +19,11 @@
       "chars": 2800
     },
     "docs/10-MEMORIA-CORTO-PLAZO.md": {
-      "lines": 110,
+      "lines": 70,
       "chars": 8000
     },
     "docs/20-MEMORIA-ESPACIAL.md": {
-      "lines": 280,
+      "lines": 170,
       "chars": 14000
     },
     "docs/30-LECCIONES.md": {
@@ -31,23 +31,23 @@
       "chars": 60000
     },
     "docs/33-LECCIONES-FRONTEND.md": {
-      "lines": 320,
+      "lines": 180,
       "chars": 34000
     },
     "docs/00-INDICE.md": {
-      "lines": 450,
+      "lines": 220,
       "chars": 48000
     },
     "docs/40-LOBULOS-DOMINIO.md": {
-      "lines": 280,
+      "lines": 210,
       "chars": 14000
     },
     "docs/31-LECCIONES-GIT.md": {
-      "lines": 90,
+      "lines": 110,
       "chars": 16000
     },
     "docs/32-LECCIONES-META.md": {
-      "lines": 170,
+      "lines": 150,
       "chars": 29000
     },
     "docs/00a-INDICE.md": {
@@ -85,6 +85,10 @@
     "docs/60-WORKFLOWS.md": {
       "lines": 100,
       "chars": 14000
+    },
+    "docs/11-PENDIENTES-CONGELADOS.md": {
+      "lines": 80,
+      "chars": 8000
     }
   },
   "archiveDir": "../brain-private/altorracars/research-archive",
@@ -133,7 +137,7 @@
     ".estado-auto.md"
   ],
   "_orphanAllowlist_que": "Sidecars GENERADOS por session-handoff (gitignored). Van en allowlist porque el gate #10 NO PUEDE verlos: su regex de aristas exige que el nombre empiece por caracter de palabra y estos empiezan por punto. El RUTEO real si existe: fila en el §0 de CLAUDE.md. Arreglo de fondo (kernel #17-bis): admitir el punto inicial en edgeRe.",
-  "_caps_que": "Topes por-repo. Cada neurona tiene cap MEDIDO (tamano real + ~35% de holgura) o entrada en noCap CON RAZON — nunca por omision (chequeo #23, kernel v1.7.0). Los caps NO se inventan: inmobiliaria ADR §74.3/§75.4 documenta como una cifra a ojo creo dos veces un gate bloqueante falso.",
+  "_caps_que": "Topes por-repo. Cada neurona tiene cap MEDIDO (tamano real + ~35% de holgura) o entrada en noCap CON RAZON — nunca por omision (chequeo #23, kernel v1.7.0). Los caps NO se inventan: inmobiliaria ADR §74.3/§75.4 documenta como una cifra a ojo creo dos veces un gate bloqueante falso. Los dos ejes se derivan uno del otro (lines = chars/densidad-real) para que ambos aprieten en el mismo punto: un par incoherente hace que dispare el eje equivocado (N2-13 de la auditoria de insemastereo, inmobiliaria §77.5). El cap de CHARS es el vinculante y NO se toca.",
   "noCap": {
     "docs/99-HISTORIAL-ADR.md": "Largo Plazo: NUNCA se lee entero, solo offset/limit vía el índice. Un cap aquí no significaría nada.",
     "docs/altor-hub-cirugia-execution-plan.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",

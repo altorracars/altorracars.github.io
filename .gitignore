@@ -65,3 +65,8 @@ _fnlist.json
 
 # Cuarentena de legacy (no se sirve; ver _legacy/README.md)
 # _legacy/  <- se MANTIENE versionado a propósito, comentado aquí solo como nota
+
+# Sidecars GENERADOS por session-handoff.mjs (estado derivable, §52) — nunca fuente
+docs/.handoff-auto.md
+docs/.boot-marker
+docs/.estado-auto.md

@@ -41,6 +41,14 @@
     "docs/40-LOBULOS-DOMINIO.md": {
       "lines": 280,
       "chars": 14000
+    },
+    "docs/31-LECCIONES-GIT.md": {
+      "lines": 90,
+      "chars": 16000
+    },
+    "docs/32-LECCIONES-META.md": {
+      "lines": 170,
+      "chars": 29000
     }
   },
   "archiveDir": "../brain-private/altorracars/research-archive",
@@ -88,5 +96,6 @@
     ".handoff-auto.md",
     ".estado-auto.md"
   ],
-  "_orphanAllowlist_que": "Sidecars GENERADOS por session-handoff (gitignored). Van en allowlist porque el gate #10 NO PUEDE verlos: su regex de aristas exige que el nombre empiece por caracter de palabra y estos empiezan por punto. El RUTEO real si existe: fila en el §0 de CLAUDE.md. Arreglo de fondo (kernel #17-bis): admitir el punto inicial en edgeRe."
+  "_orphanAllowlist_que": "Sidecars GENERADOS por session-handoff (gitignored). Van en allowlist porque el gate #10 NO PUEDE verlos: su regex de aristas exige que el nombre empiece por caracter de palabra y estos empiezan por punto. El RUTEO real si existe: fila en el §0 de CLAUDE.md. Arreglo de fondo (kernel #17-bis): admitir el punto inicial en edgeRe.",
+  "_caps_que": "Topes por-repo. Los de 31/32 se declararon el 2026-08-01: las hojas existian desde antes y NINGUN gate las vigilaba porque la tabla de §G.5 las listaba a mano en vez de declararlas aqui. El de 32 se fijo desde su tamano REAL medido (27.4k) + holgura, no de una cifra inventada."
 }

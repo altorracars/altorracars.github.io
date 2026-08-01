@@ -6,8 +6,7 @@
 | Señal | Valor (última actualización: **2026-07-23**) |
 |---|---|
 | **Build** | ⏸️ **CARS EN PAUSA (pivote §302): prioridad #1 = INMOBILIARIA**, que **LIDERA el cerebro ×4** (traspaso ejecutado 18/07; kernel Cerebro-v2 se CONSUME de su canónico vía `brain:pull`). Kickoff → **`specs/2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`**. Último estado cars: 🟢 código @ `5e8c4762`; perf-v2 Ola 1 LIVE (§298: ord 95 · móvil 57 · LCP 662ms); dev==main sync 23/07 (§303). **Reanudar = caminos A/B/C (§298.7 y `10`)**; gates dueño aparcados (§283-298); Cloudflare 🚫 solo-cars. |
-| **Cache version vigente** | **`v20260801024429`** (cron-CI; sync L-02 al fusionar — cron DUEÑO del bump, NO bump manual en rama; Ctrl+Shift+R). ⚠️ Esta fila se copia A MANO y por eso reincide: el dueño del dato es el cron, no el `05` — inmobiliaria lo resolvió derivándolo en cada boot (su §52). Migrar → TODO del `10`. SW == cache-manager ✅. |
-| **Branch activa** | 🟢 **Rama ÚNICA `dev`** (§231): **commit+push+merge `dev`→`main` = Claude** (dueño delegó el merge 27/06, §2); sync al arrancar. Deploys firebase=Claude (§1). |
+| **Cache / branch** | ⚙️ **Valores → `docs/.estado-auto.md`** (heartbeat, cada boot): rama, HEAD, sucios, cache del SW, deuda de consolidación. Copiarlos aquí es lo que hacía reincidir L-02 — su dueño es el cron y git, no el `05`. Reglas: rama ÚNICA `dev` (§231) · **merge `dev`→`main` y deploys = Claude** (delegado 27/06, §1-2) · **NUNCA bump manual de cache en rama**. |
 | **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
 
 ## ⚠️ Flags de riesgo activos

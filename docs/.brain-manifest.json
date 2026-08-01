@@ -54,7 +54,8 @@
   "kernelFiles": [
     "scripts/brain-check.mjs",
     "scripts/brain-diff.mjs",
-    "scripts/brain-index.mjs"
+    "scripts/brain-index.mjs",
+    "scripts/session-handoff.mjs"
   ],
   "ssotFacts": [
     {
@@ -83,5 +84,9 @@
     "_que": "comite v6 = linea base; N2 #1 = item U (§206); N2 #2 = falencias del lazo (§207, M-16, TODO-29); N2 #3 = §226 (maquinaria/L-50); N2 #4 = §239 (post F-2: boot-cap reincidente M-10 + gap source/dist); N2 #5 = §281 (post OLA 3.3-3.5); N2 #6 = §303 (resonancia post-pausa: S3/S7 REALES por 1a vez, drill 3/4 curado, S7-F1 confirmado -> TODO-40c, F2 refutado)"
   },
   "lastOffsiteBackup": "2026-07-23",
-  "orphanAllowlist": []
+  "orphanAllowlist": [
+    ".handoff-auto.md",
+    ".estado-auto.md"
+  ],
+  "_orphanAllowlist_que": "Sidecars GENERADOS por session-handoff (gitignored). Van en allowlist porque el gate #10 NO PUEDE verlos: su regex de aristas exige que el nombre empiece por caracter de palabra y estos empiezan por punto. El RUTEO real si existe: fila en el §0 de CLAUDE.md. Arreglo de fondo (kernel #17-bis): admitir el punto inicial en edgeRe."
 }

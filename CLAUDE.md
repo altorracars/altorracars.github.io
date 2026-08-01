@@ -32,6 +32,7 @@ El cerebro se divide en **nodos**. Auto-cargas SOLO `CLAUDE.md` + `05` + `10` (�
 |---|---|---|---|
 | 🧠 **Tronco Encefálico** | `CLAUDE.md` (este) | ✅ Siempre | Router + identidad + doctrinas + gobernanza. |
 | 🩺 **Estado Global (signos vitales)** | `docs/05-ESTADO-GLOBAL.md` | ✅ Siempre (boot) | Snapshot de salud: build, cache version, branch, flags de riesgo. "¿Dónde estoy parado?" antes de tocar nada. |
+| 💓 **Estado DERIVABLE (heartbeat)** | `docs/.estado-auto.md` | ✅ Lo imprime el hook en el boot | La mitad del estado que **se genera sola** en cada arranque: rama, HEAD, sucios, cache del SW, costo del cerebro, deuda de consolidación. **Gitignored y NO se edita**: si contradice al `05`, manda ESTE (el 05 solo guarda JUICIO, no datos volátiles). |
 | ⚡ **Corto Plazo (WIP)** | `docs/10-MEMORIA-CORTO-PLAZO.md` | ✅ Siempre (2ª lectura) | Sprint actual, pendientes (TODO-NN), bitácora. (El estado técnico vive en 05.) |
 | 🛰️ **Consejo Externo (Antigravity)** | `docs/15-CONSEJO-EXTERNO.md` | ❌ on-demand | Trigger de Decisión Fuerte: antes de algo caro de revertir (arquitectura, datos, seguridad/legal, fork 50/50, op irreversible), pedir crítica adversarial a Gemini. Cuándo + selección de modelo ahí. |
 | 🗺️ **Espacial** | `docs/20-MEMORIA-ESPACIAL.md` | ❌ on-demand | Trigger de Desorientación: dónde vive un componente, flujos, arquitectura, SEO, migración. Hija: `21-ESPACIAL-ADMIN.md` (portal admin `admin-app/`). |

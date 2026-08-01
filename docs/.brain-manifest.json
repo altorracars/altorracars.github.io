@@ -49,6 +49,42 @@
     "docs/32-LECCIONES-META.md": {
       "lines": 170,
       "chars": 29000
+    },
+    "docs/00a-INDICE.md": {
+      "lines": 320,
+      "chars": 31000
+    },
+    "docs/15-CONSEJO-EXTERNO.md": {
+      "lines": 150,
+      "chars": 12000
+    },
+    "docs/21-ESPACIAL-ADMIN.md": {
+      "lines": 60,
+      "chars": 7000
+    },
+    "docs/41-SEGURIDAD.md": {
+      "lines": 30,
+      "chars": 2000
+    },
+    "docs/42-LEGAL.md": {
+      "lines": 270,
+      "chars": 27000
+    },
+    "docs/43-UX.md": {
+      "lines": 380,
+      "chars": 25000
+    },
+    "docs/46-ESCALABILIDAD.md": {
+      "lines": 150,
+      "chars": 11000
+    },
+    "docs/48-ACCESIBILIDAD.md": {
+      "lines": 150,
+      "chars": 12000
+    },
+    "docs/60-WORKFLOWS.md": {
+      "lines": 100,
+      "chars": 14000
     }
   },
   "archiveDir": "../brain-private/altorracars/research-archive",
@@ -97,5 +133,17 @@
     ".estado-auto.md"
   ],
   "_orphanAllowlist_que": "Sidecars GENERADOS por session-handoff (gitignored). Van en allowlist porque el gate #10 NO PUEDE verlos: su regex de aristas exige que el nombre empiece por caracter de palabra y estos empiezan por punto. El RUTEO real si existe: fila en el §0 de CLAUDE.md. Arreglo de fondo (kernel #17-bis): admitir el punto inicial en edgeRe.",
-  "_caps_que": "Topes por-repo. Los de 31/32 se declararon el 2026-08-01: las hojas existian desde antes y NINGUN gate las vigilaba porque la tabla de §G.5 las listaba a mano en vez de declararlas aqui. El de 32 se fijo desde su tamano REAL medido (27.4k) + holgura, no de una cifra inventada."
+  "_caps_que": "Topes por-repo. Cada neurona tiene cap MEDIDO (tamano real + ~35% de holgura) o entrada en noCap CON RAZON — nunca por omision (chequeo #23, kernel v1.7.0). Los caps NO se inventan: inmobiliaria ADR §74.3/§75.4 documenta como una cifra a ojo creo dos veces un gate bloqueante falso.",
+  "noCap": {
+    "docs/99-HISTORIAL-ADR.md": "Largo Plazo: NUNCA se lee entero, solo offset/limit vía el índice. Un cap aquí no significaría nada.",
+    "docs/altor-hub-cirugia-execution-plan.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
+    "docs/altor-hub-rediseno-defectos.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
+    "docs/crm-handoff.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
+    "docs/dependency-map.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
+    "docs/MANUAL-CRM-USO.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
+    "docs/PLAN-MIGRACION-ALTORRA.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
+    "docs/SETUP-LLM.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
+    "docs/SITEMAP-FIX.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
+    "docs/skills-inventory.md": "Registro 1:1 con las carpetas de skills/ — su tamaño lo fija el inventario real, no una decisión editorial. Lo vigila el gate #6."
+  }
 }

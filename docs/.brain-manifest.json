@@ -99,6 +99,8 @@
     "../altorrainmobiliaria.github.io",
     "../insemastereo.github.io"
   ],
+  "harnessCanary": true,
+  "_harnessCanary_que": "v1.10.3 (#24, inmobiliaria ADR 85 U-13): declara que ESTE repo debe tener el hook SessionStart (session-handoff) cableado en .claude/settings.json. Antes el gate se lo preguntaba al propio archivo vigilado, asi que borrar el hook lo apagaba en silencio (fallo ABIERTO). Verificado 2026-08-03: los 4 repos lo tienen cableado. Un repo nuevo del brain-kit pone false CON su razon.",
   "kernelFiles": [
     "scripts/brain-check.mjs",
     "scripts/brain-diff.mjs",

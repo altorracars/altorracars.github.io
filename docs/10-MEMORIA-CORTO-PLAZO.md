@@ -34,5 +34,5 @@
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
 - **23/07 · 18/07 · 10/07 ⟦FABLE-5⟧** — mantenimiento §303 · sinapsis desde inmobiliaria (escritor único de §G/kernel → inmob.) · sinapsis ×4 y PIVOTE §302. Detalle → §299-§303 y skill `sinapsis-cerebros §4`.
-- **01/08 ⟦OPUS-5⟧** — heartbeat instalado: el `05` deja de declarar caché y rama (las genera `docs/.estado-auto.md`) → mata la reincidencia de L-02. Kernel v1.7.2. Detalle → inmobiliaria §72-§77.
+- **01/08 ⟦OPUS-5⟧** — heartbeat instalado: el `05` deja de declarar caché y rama (las genera `docs/.estado-auto.md`) → mata la reincidencia de L-02. Detalle → inmobiliaria §72-§77. (La versión del kernel la dice su stamp, no esta pizarra.)
 - **Pendientes perf/voz** (§283-297): voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar); 🚫 NO quitar Poppins/`admin-calendar-config`.

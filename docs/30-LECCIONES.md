@@ -91,7 +91,7 @@
 
 ### L-53 · Receta de "port de módulo al portal `admin-app/` (Vite)" — el patrón repetible del PLAN-UNIFICADO F-2..F-4 → detalle en `33-LECCIONES-FRONTEND.md`
 
-### L-54 · Módulo en blanco SIN error de consola = `render()` post-`await` lanza en un `load()` fire-and-forget → unhandled rejection silenciosa ⟦OPUS-4.8⟧
+### L-77 · Módulo en blanco SIN error de consola = `render()` post-`await` lanza en un `load()` fire-and-forget → unhandled rejection silenciosa ⟦OPUS-4.8⟧
 **Disparador**: un módulo de `admin-app/` (o cualquier `mount(root){ …; load(); return cleanup }`) monta su shell pero queda VACÍO, y la consola NO muestra error. **Causa**: el `render()` que corre *después* del `await` está fuera del `try/catch` de `load()`; como `load()` se invoca sin `.catch` (fire-and-forget), un throw ahí (ej. leer `m.pending.length` cuando `compute()` no devuelve `pending`) se vuelve **unhandled rejection** — invisible salvo con un listener `window.addEventListener('unhandledrejection', …)`. **Receta**: (1) al depurar un módulo en blanco, inyecta primero el listener de `unhandledrejection` vía `preview_eval` ANTES de teorizar; (2) cuida que el modelo de `compute()` contenga TODO lo que `render()` lee (desajuste de forma = el bug clásico); (3) opcional: `load().catch(…)` o envolver el `render()` final en try. F-3 §246.
 
 ---
@@ -253,7 +253,7 @@
 - **Síntoma (evitado)**: dealers (§204) deriva docId del nombre. El portal ya tenía `brands.slugify()` que normaliza tildes (NFD) — reusarlo habría dado un docId DISTINTO para nombres acentuados que el clásico (`replace(/[^a-z0-9]/g,'-')`, sin NFD) → durante el doble-admin, crear el mismo aliado en cada admin produce DOS docs y rompe el join `vehiculos.concesionario`.
 - **Receta**: en todo port con interop (clásico ↔ portal coexistiendo), la clave del doc es un CONTRATO — replicar su generación byte a byte, no "mejorarla". Igual con `_version`: si las rules del módulo NO exigen `validVersion()`, NO escribirlo (rompería al clásico que escribe sin él). El crítico adversarial del workflow lo cazó antes de codear.
 
-### L-53 · Clean-slate de datos CRM = barrer el lead-lifecycle completo (no las colecciones literales de la vista); Admin-SDK+ADC + backup→delete ⟦OPUS-4.8⟧
+### L-76 · Clean-slate de datos CRM = barrer el lead-lifecycle completo (no las colecciones literales de la vista); Admin-SDK+ADC + backup→delete ⟦OPUS-4.8⟧
 - **Causa**: "purgar Bandeja/Reportes" parece `leads`+`deals`, pero borrar solo eso deja huérfanos (`activities`/`contacts` en Dashboard/Contactos) y peor: las `solicitudes` **resucitan** los leads en un reproceso (la ingestión las lee). Conjunto coherente = `leads·deals·activities·contacts·solicitudes·dedup·failedIngestions` (dedup va PAREADO con contacts: si no, un lead real futuro se dedup-ea contra un contacto borrado).
 - **Receta**: data-op server-side con script `firebase-admin`+**ADC** (salta las rules; el client-SDK del repo NO puede leer/borrar `leads`). SIEMPRE **backup→delete** gated tras `--delete` (backup a `backups/`, gitignored) y verificar 0 al final. El **clasificador bloquea el mass-delete de prod = segunda llave** (alinea TODO-30 Doble-Llave) → confirmar ALCANCE con el dueño antes (no inferir scope ancho de una orden general). Patrón portable ×4 cerebros.
 

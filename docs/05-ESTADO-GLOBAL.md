@@ -5,15 +5,15 @@
 
 | Señal | Valor (última actualización: **2026-07-23**) |
 |---|---|
-| **Build** | ⏸️ **CARS EN PAUSA (pivote §302): prioridad #1 = INMOBILIARIA**, que **LIDERA el cerebro ×4** (traspaso ejecutado 18/07; kernel Cerebro-v2 se CONSUME de su canónico vía `brain:pull`). Kickoff → **`specs/2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`**. Último estado cars: 🟢 código @ `5e8c4762`; perf-v2 Ola 1 LIVE (§298: ord 95 · móvil 57 · LCP 662ms); dev==main sync 23/07 (§303). **Reanudar = caminos A/B/C (§298.7 y `10`)**; gates dueño aparcados (§283-298); Cloudflare 🚫 solo-cars. |
+| **Build** | ⏸️ **CARS EN PAUSA (pivote §302): prioridad #1 = INMOBILIARIA**, que **LIDERA el cerebro ×4** (traspaso ejecutado 18/07; kernel Cerebro-v2 se CONSUME de su canónico vía `brain:pull`). Kickoff → **`specs/2026-07-10-INMOBILIARIA-KICKOFF-fable5.md`**. Último estado cars: 🟢 código @ `5e8c4762`; perf-v2 Ola 1 LIVE (§298: ord 95 · móvil 57 · LCP 662ms); dev y main **DIVERGIDOS** (27-ago, tras `fetch`): main +24 del bot de vehículos · dev +10 solo de `docs/`+`scripts/`. Es el reparto de este repo, no un fallo (§303). **Reanudar = caminos A/B/C (§298.7 y `10`)**; gates dueño aparcados (§283-298); Cloudflare 🚫 solo-cars. |
 | **Cache / branch** | ⚙️ **Valores → `docs/.estado-auto.md`** (heartbeat): rama, HEAD, sucios, caché del SW, deuda de consolidación. Copiarlos aquí hacía reincidir L-02 — el dueño es el cron y git. Reglas: rama ÚNICA `dev` (§231) · **merge `dev`→`main` y deploys = Claude** (§1-2) · **NUNCA bump manual de caché en rama**. |
-| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). |
+| **Producción (`main`+functions)** | Portal CRM v2: Pipeline v3 + Post-venta · SLA+rotación · calendario · CRUD · daily/hourly jobs · 23 functions CRM (**retry ×6** + reprocesador DLQ F-5) · Rules E5 LIVE. App Check MONITOR (enforce DIFERIDO — riesgo lead-block + tráfico bajo, §41). 🌐 Web pública `verificado-vivo: 2026-08-27` (curl 200 + título). El sello cubre **solo la web**: functions/Rules necesitan credenciales. |
 
 ## ⚠️ Flags de riesgo activos
-- 🧠 **Fiabilidad cerebro: M-22 mecanizada ✅** (check #16 ×4). **Lección NUEVA M-25 (29/06):** el cerebro pierde memoria cuando un hecho vive en registros que se CONTRADICEN → alinear TODOS al cambiar (SSoT). Resta: adopción `verificado-vivo:` (TODO-44).
-- 🤖 **Modelo: impl = Opus 4.8**; revisión Fable 5 ✅ 03/07. Tag `⟦OPUS-4.8⟧`. **Protocolo §300: dueño dice "Fable 5 activo" → OFRECER auditoría de lo hecho por Opus** (bugs/errores/mejoras). Interinato sin titular → skill `opus-interino-protocolo`.
+- 🧠 **Fiabilidad cerebro: M-22 mecanizada ✅** (check #16 ×4). **Lección NUEVA M-25 (29/06):** el cerebro pierde memoria cuando un hecho vive en registros que se CONTRADICEN → alinear TODOS al cambiar (SSoT). Adopción `verificado-vivo:` ✅ en los 4 repos (27-ago).
+- 🤖 **Modelo: OPUS 5 para TODO** (Daniel 19/08; el reparto «Fable planifica / Opus implementa» quedó DEROGADO, y este nodo lo seguía ordenando). Los tags `⟦OPUS-4.8⟧` históricos NO se reescriben.
 - 🔒 **Blindaje** (canónico → `41-SEGURIDAD §Runbook`): SEC-03/04 LIVE ✅ · App Check monitor · **§219 RBAC + dataScope P0-SEC LIVE ✅ (29/06)** · **SSG anti-XSS selftest = gate CI ✅ (§290)** · Legal `42` (gate abogado, F14/E3).
-- 🔴 **Billing GCP cayó ~2h el 09/06** (recuperado, L-38; causa SIN identificar → puede repetirse).
+- 🔴 Billing GCP cayó ~2h el 09/06; causa SIN identificar, puede repetirse → [[L-38]].
 - 📊 App Check: 403 reCAPTCHA al bot del E2E = esperado (monitor OK); gate de enforce con tráfico humano → `41`.
 - ⚖️ Texto legal PÚBLICO supresión/privacidad = gate P4 (abogado, `42-LEGAL`); mecanismo F14 ya live.
 - cron↔cache = patrón conocido (L-02, hija `31`).

@@ -14,6 +14,8 @@
 >
 > **REANUDAR CARS (solo cuando el dueño lo diga)**: ⭐(A) fotos de vehículos = win móvil REAL (Firebase Storage 2.5-4.4MB; lazy agresivo + srcset) · (B) Ola 2 reCAPTCHA — GATE: App Check MONITOR confirmado en Firebase Console (§41) · (C) TODO-52 CRM (leer `43-UX §Doctrina-panel` primero). Perf → §297/§298; gates dueño → §283-298. **Auditoría-de-Opus OFRECIDA sigue en pie (§300)**. Cache: SWR sin bump (L-65).
 >
+> ⚠️ **DOS CIFRAS PUBLICADAS SIN FUENTE, VIVAS** (censo cruzado 26/08 desde ALTORRA Inmobiliaria §216) → **`42-LEGAL` LEGAL-08/09**: `4.9 · 247 reseñas` en el pie de **65 páginas** (sin enlace al perfil) y las stats de `nosotros.html` que el propio spec dejó «a confirmar» en may-2026. **No congelado**: es exposición legal en producción.
+>
 > 🗄️ **Durable**: **⚖️ Gate P4** — legal público NO sin abogado (§42).
 >
 > **🚫 Callejones (NO reintentar; detalle en el §/L citado)**:

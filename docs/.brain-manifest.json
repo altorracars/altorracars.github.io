@@ -99,6 +99,8 @@
     "../altorrainmobiliaria.github.io",
     "../insemastereo.github.io"
   ],
+  "harnessCanary": true,
+  "_harnessCanary_que": "v1.10.3 (#24, inmobiliaria ADR 85 U-13): declara que ESTE repo debe tener el hook SessionStart (session-handoff) cableado en .claude/settings.json. Antes el gate se lo preguntaba al propio archivo vigilado, asi que borrar el hook lo apagaba en silencio (fallo ABIERTO). Verificado 2026-08-03: los 4 repos lo tienen cableado. Un repo nuevo del brain-kit pone false CON su razon.",
   "kernelFiles": [
     "scripts/brain-check.mjs",
     "scripts/brain-diff.mjs",
@@ -108,24 +110,16 @@
   "ssotFacts": [
     {
       "regex": "v?\\d{14}",
-      "owner": "docs/05-ESTADO-GLOBAL.md",
+      "owner": "service-worker.js",
       "scan": [
         "docs/10-MEMORIA-CORTO-PLAZO.md"
       ],
-      "_que": "la version de cache vive SOLO en 05 (la clase App-Check/§4, ADR §173)"
-    },
-    {
-      "regex": "esperando site key|espera site key",
-      "owner": "docs/41-SEGURIDAD.md",
-      "scan": [
-        "docs/05-ESTADO-GLOBAL.md",
-        "docs/10-MEMORIA-CORTO-PLAZO.md"
-      ],
-      "_que": "estado de App Check: dueño = 41"
+      "_que": "la version de cache vive SOLO en `service-worker.js` (CACHE_VERSION); el heartbeat la refleja en el sidecar y el 05 solo APUNTA. | 2026-08-26: el dueno declarado era el 05, y el 05 dejo de contenerla cuando los valores se mudaron al sidecar — el gate llevaba degradado desde entonces, vigilando un hecho en un fichero que ya no lo tiene (ADR 226)."
     },
     {
       "regex": "[Kk]ernel\\s*\\**\\s*v?\\d+\\.\\d+\\.\\d+",
       "owner": "scripts/.kernel-version.json",
+      "ownerRegex": "\"version\"\\s*:\\s*\"\\d+\\.\\d+\\.\\d+\"",
       "scan": [
         "CLAUDE.md",
         "docs/05-ESTADO-GLOBAL.md",
@@ -160,5 +154,15 @@
     "docs/SETUP-LLM.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
     "docs/SITEMAP-FIX.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
     "docs/skills-inventory.md": "Registro 1:1 con las carpetas de skills/ — su tamaño lo fija el inventario real, no una decisión editorial. Lo vigila el gate #6."
-  }
+  },
+  "delibAnchorBaseline": 15,
+  "_delibAnchorBaseline_que": "Chequeo 7c del kernel (ADR 220 de inmobiliaria): 15 ADRs declaran comite/consejo externo/subagentes y no enlazan su crudo en el archiveDir. Son de antes de que el gate existiera; congelados con el contrato de siempre: solo puede BAJAR y una DECIMOSEXTA bloquea el commit. NO se reescriben para inventarles un crudo que nunca existio — eso falsificaria el archivo. Se pagan capturando de aqui en adelante.",
+  "_ssotFactsRetirados": [
+    {
+      "_RETIRADO": true,
+      "regex": "esperando site key|espera site key",
+      "owner": "docs/41-SEGURIDAD.md",
+      "_que": "RETIRADO 2026-08-26 (ADR 226). Vigilaba el estado TRANSITORIO «esperando site key» de App Check, que ya termino: hoy corre en modo monitor. Un ssotFact sobre un estado que va a cambiar se degrada solo el dia que avanza, y entonces el gate deja de comparar nada mientras el resumen sigue diciendo que vigila. Un hecho SSoT tiene que ser DURABLE (donde vive un dato), no una fase."
+    }
+  ]
 }

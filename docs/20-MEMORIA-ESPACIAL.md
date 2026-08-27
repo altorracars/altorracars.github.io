@@ -35,7 +35,7 @@
 - **Páginas generadas** (CI cada 4h desde Firestore vía `scripts/generate-vehicles.mjs`): `vehiculos/*.html`, `marcas/*.html`, `sitemap.xml`.
 - **Panel admin**: portal nuevo `admin-app/dist/` (Vite). El clásico `admin.html` (+`js/admin/*`) está CUARENTENADO en `_legacy/` (F-6 §255); `admin.html` raíz = redirect.
 - **Bot ALTOR Hub**: cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`.
-- **CSS**: ~31 archivos en `/css/` (planos). Hojas cinematic page-specific en `css/home/`: `cinematic.css` (tokens `--cin-*`), `soft-redesign.css`, `comparar-cinematic.css`, **`detalle-cinematic.css` (cuerpo de `detalle-vehiculo`, §140)**.
+- **CSS**: ~31 archivos en `/css/` (planos). Hojas cinematic page-specific en `css/home/`: `css/home/cinematic.css` (tokens `--cin-*`), `soft-redesign.css`, `comparar-cinematic.css`, **`detalle-cinematic.css` (cuerpo de `detalle-vehiculo`, §140)**.
 - **Backend**: Firebase (Auth, Firestore, RTDB, Storage, FCM, Analytics). Project ID `altorra-cars`. **Cloud Functions V2 = 57** (reconciliado EN VIVO 22/06, TODO-33; antes "27"/"59" stale): **~42 vivas-core** (CRM/ingestión ×25 · RBAC-usuarios ×9 · señales-SSG ×8) + **13 del bot** (concierge/telegram/summarize/`chatLLM` → reestructura TODO-34, NO podar suelto) + 2 migraciones (`backfillNivelesRBAC` parqueada-RBAC④b · `seedSystemRoles` semilla); `migrateLegacyUsers` + `proactiveEngagement` ya BORRADAS 22/06. Regiones mezcladas (5 en `southamerica-east1`).
 - **Hosting**: GitHub Pages (`altorracars.github.io`). Push a `main` → auto-deploy.
 
@@ -71,7 +71,7 @@ admin-auth.js → admin-sync.js → admin-activity.js
 admin-crm.js / admin-appointments.js / admin-inbox.js → comm-schema.js
 ```
 
-**Módulos de alto blast radius** (tocar con IAP §37 obligatorio): `firebase-config.js` (todo), `comm-schema.js` (8+), `admin-state.js` (22 admin), `toast.js`, `auth.js`, `database.js`.
+**Módulos de alto blast radius** (tocar con IAP §37 obligatorio): `firebase-config.js` (todo), `comm-schema.js` (8+), `admin-state.js` (22 admin), `js/core/toast.js`, `js/core/auth.js`, `database.js`. ⚠️ **Tienen gemelo en otra app**: `admin-app/src/core/toast.js` y `admin-app/src/core/auth.js`. Al citarlos va la RUTA, no el nombre — con el nombre solo, un lector no puede saber cuál de los dos.
 
 ---
 

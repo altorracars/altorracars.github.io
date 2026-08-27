@@ -33,6 +33,10 @@
 - **Norma**: **Ley 1480 de 2011**. **Autoridad: SIC**.
 - **Clave**: **Garantía legal** (art. 7-8) — **usados pueden venderse SIN garantía si el consumidor lo acepta POR ESCRITO**; si no se pacta, aplican **3 meses**. **Derecho de RETRACTO** (art. 47) — ventas a distancia/e-commerce: **5 días hábiles** desde la entrega; devolución total ≤30 días calendario (excepciones: personalizados). **Reversión del pago** (art. 51) — solo si hay pago en línea con tarjeta. **Información mínima** (art. 23-24) en español y pesos. **Ventas a distancia** (art. 49-50): identidad, características, precio total, retracto, canal de reclamo.
 - **Altorra DEBE**: (1) **T&C** que aclaren si el sitio solo capta leads (la compraventa se perfecciona presencial) vs. venta a distancia real (define si aplica retracto art. 47); (2) si vende usados sin garantía → **aceptación POR ESCRITO** en el contrato (si no, responde 3 meses); (3) info mínima en cada ficha (precio en pesos, características); (4) página de identificación del comerciante (razón social, NIT, dirección) + canal **PQR**.
+- ⚠️ **PUBLICIDAD ENGAÑOSA (arts. 29-30)** — añadido 2026-08-26 desde el censo cruzado de ALTORRA
+  Inmobiliaria (su ADR §216). **El anunciante responde de la veracidad de TODA cifra que publica**, y la
+  **prueba social fabricada** (reseñas, calificaciones, conteos de clientes, promedios de venta) cae aquí.
+  Regla operativa: **toda cifra publicada enlaza a su fuente o se retira**. Ver LEGAL-08 y LEGAL-09.
 - Fuentes: funcionpublica.gov.co (Ley 1480), sic.gov.co/estatutos-consumidor.
 
 ### 3. Compraventa de usados: traspaso / tradición / RUNT — ✅ verificado
@@ -63,6 +67,8 @@
 | **LEGAL-05** | Confirmar con contador: RNBD (100.000 UVT) y SAGRILAFT (40.000 SMMLV) — ¿Altorra obligada? | contador |
 | **LEGAL-06** | Due diligence RUNT/Certificado de Tradición + estado SOAT/RTM por vehículo antes de publicar | proceso interno |
 | **LEGAL-07** | **Cláusula Habeas Data del CONTRATO DE CONSIGNACIÓN (TODO-50)** — autorización del consignante por FINALIDADES + política de tratamiento → **abogado ratifica** antes de uso con clientes (borrador ↓) | revisión abogado |
+| **LEGAL-08** | ⭐ **`4.9 · 247 reseñas Google` en el pie de 65 páginas VIVAS** (`snippets/footer.html:75-76`, inyectado por `js/core/components.js:152`) — texto plano, **sin enlace al perfil de Google** y sin registro en el cerebro. Si la cifra es real: **enlazarla al perfil** (un `<a href>`; la cifra pasa a ser de Google, no nuestra). Si no lo es o no se puede comprobar hoy: **retirarla**. Ley 1480 arts. 29-30. | dueño (¿es real?) |
+| **LEGAL-09** | 📊 **Stats de `nosotros.html` sin medición**: `2.400+ Clientes desde 2017`, `21 días Promedio para vender`, `+500 vehículos verificados`. ⚠️ **El propio spec ya lo decía**: `docs/superpowers/specs/2026-05-26-rediseno-index-fase1-design.md` §12 — *«cifras de marketing … confirmar valores»*, escrito el 26-may-2026, nunca confirmado, en producción. Confirmar contra registros ⇒ dejarlas; si no ⇒ sustituir por lo contable (`16 Marcas`, `5 Bancos` sí lo son). | dueño (registros) |
 
 ## Consignación (TODO-50) — autorización Habeas Data del consignante ⟦OPUS-4.8⟧
 > **Insumo del flujo fuerte (comité legal + Gemini, 28/06).** El consignante es persona natural cuyos

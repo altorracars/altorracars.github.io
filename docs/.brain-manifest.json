@@ -162,5 +162,7 @@
     "docs/SETUP-LLM.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
     "docs/SITEMAP-FIX.md": "No es neurona: documento de trabajo (plan/manual/handoff) que se abre dirigido, no por trigger del router. Candidato a mudarse fuera de docs/.",
     "docs/skills-inventory.md": "Registro 1:1 con las carpetas de skills/ — su tamaño lo fija el inventario real, no una decisión editorial. Lo vigila el gate #6."
-  }
+  },
+  "delibAnchorBaseline": 15,
+  "_delibAnchorBaseline_que": "Chequeo 7c del kernel (ADR 220 de inmobiliaria): 15 ADRs declaran comite/consejo externo/subagentes y no enlazan su crudo en el archiveDir. Son de antes de que el gate existiera; congelados con el contrato de siempre: solo puede BAJAR y una DECIMOSEXTA bloquea el commit. NO se reescriben para inventarles un crudo que nunca existio — eso falsificaria el archivo. Se pagan capturando de aqui en adelante."
 }

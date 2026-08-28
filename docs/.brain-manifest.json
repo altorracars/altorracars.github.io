@@ -164,5 +164,7 @@
       "owner": "docs/41-SEGURIDAD.md",
       "_que": "RETIRADO 2026-08-26 (ADR 226). Vigilaba el estado TRANSITORIO «esperando site key» de App Check, que ya termino: hoy corre en modo monitor. Un ssotFact sobre un estado que va a cambiar se degrada solo el dia que avanza, y entonces el gate deja de comparar nada mientras el resumen sigue diciendo que vigila. Un hecho SSoT tiene que ser DURABLE (donde vive un dato), no una fase."
     }
-  ]
+  ],
+  "skillDriftBaseline": 14,
+  "_skillDriftBaseline_que": "Deuda CONGELADA de skills portables con contenido DERIVADO de la copia que se carga (~/.claude), medida el 2026-08-27 con el fin de linea NORMALIZADO —como la mide el gate 6b desde v1.24.0—. Trinquete: solo puede bajar; una NUEVA bloquea. Al tocar una skill portable re-copia AMBAS (§33) y baja este numero: subirlo es rendirse."
 }

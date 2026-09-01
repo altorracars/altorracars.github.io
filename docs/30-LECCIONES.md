@@ -18,7 +18,7 @@
 
 ## 🔧 Operaciones de Git / refactor → **`31-LECCIONES-GIT.md`** (neurona hija, shard §G.5 2026-06-09)
 
-### L-01 · `sed -i` corrompe CRLF→LF → detalle en `31-LECCIONES-GIT.md`
+### L-01 · `sed -i` corrompe CRLF→LF → detalle en `31-LECCIONES-GIT.md` ⇒ **migrada al maestro**: [[CARS:L-01]]
 ### L-02 · Conflicto cron↔cache al fusionar → detalle en `31-LECCIONES-GIT.md`
 ### L-03 · No fusionar micro-pasos a `main` → detalle en `31-LECCIONES-GIT.md`
 ### L-04 · Receta para mover un JS sin romper → detalle en `31-LECCIONES-GIT.md`
@@ -41,7 +41,7 @@
 
 ### L-13 · Módulos lazy-loaded — guards `typeof` en click-time + event delegation → detalle en `33-LECCIONES-FRONTEND.md`
 
-### L-14 · SW stale-while-revalidate puede servir JS viejo en critical-path post-deploy → detalle en `33-LECCIONES-FRONTEND.md`
+### L-14 · SW stale-while-revalidate puede servir JS viejo en critical-path post-deploy → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-14]]
 
 ### L-15 · Self-contained read patterns eliminan races de estado en memoria → detalle en `33-LECCIONES-FRONTEND.md`
 

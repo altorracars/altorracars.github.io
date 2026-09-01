@@ -14,6 +14,7 @@
 | `admin-components.html` | "Storybook" de componentes (T.3), `noindex,nofollow` | Galería de componentes de desarrollo. |
 | `theme-switcher.js` | Conmutador de tema light/dark/contrast (T.4) | **MUERTO — validado §119.** `admin.html:3721` dice "theme-switcher.js eliminado — tema dark permanente". 0 cargas funcionales (solo menciones en comentarios). El admin usa tema dark fijo + el motor cromático §115 (admin-theme-picker.js) para las 6 paletas. |
 | `auth-header.css` | Estilos del header de auth (Header Loading Sprint, 2026-05-03) | **MUERTO — validado §119 Fase 3.** Su contenido fue MERGEADO dentro de `css/style.css` (comentario "MERGED FROM css/auth-header.css" en style.css:6917). 0 `<link>` y 0 `.href` que lo carguen. |
+| `LECCIONES-MIGRADAS-MAESTRO.md` | Cuerpo íntegro de las lecciones que se mudaron al **cerebro maestro** (F2 lote 2, 2026-09-01): `L-01` (`sed -i`/CRLF) y `L-14` (SW stale-while-revalidate). | **NO es código muerto ni un destilado**: es el **punto de retorno** del lote. Su copia consultable vive en `brain-private/maestro/lecciones/migradas/CARS/`; aquí queda el original byte a byte para que el ABORT lo reconstruya **sin `git checkout`**. Titular en `docs/30-LECCIONES.md`, stub en `docs/31-LECCIONES-GIT.md` / `docs/33-LECCIONES-FRONTEND.md`. |
 
 ## Cómo revertir un archivo
 

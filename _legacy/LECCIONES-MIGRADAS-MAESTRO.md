@@ -224,3 +224,151 @@
 - **Zona horaria (gotcha)**: para agrupar eventos por día NO uses `date.toISOString().slice(0,10)` — convierte a UTC y en Colombia (UTC-5) un evento de las 23:00 local cae al día siguiente. Construye la clave de los **componentes locales**: `` `${getFullYear()}-${pad(getMonth()+1)}-${pad(getDate())}` ``. Misma trampa al calcular el rango del mes.
 - **Índices**: una query con **filtro de rango + `orderBy` sobre EL MISMO campo** (`where('dueAt','>=',a).where('dueAt','<',b).orderBy('dueAt')`) usa el **índice de campo único AUTOMÁTICO** de Firestore → NO necesita índice compuesto ni `firebase deploy --only firestore:indexes`. (Solo se necesita compuesto si filtras/ordenas por campos DISTINTOS.) Ojo: un range query **excluye** docs que no tengan el campo (los `activities` sin `dueAt` no aparecen) — justo lo que queremos para "solo citas".
 - **Meta**: gap de dato real — el canónico no guardaba fecha/hora de cita; la solución MVP fue una acción "Agendar" que escribe `activities{dueAt}`, no reescribir la ingestión. Construir la fuente del dato donde el flujo lo produce, no forzar el esquema viejo.
+
+> Lote 7 · migrado 2026-09-01 · 20 lecciones.
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §165 (CRM Fase 4, Reportes), el único §NN que cita su cuerpo · migrado 2026-09-01 lote 7
+
+### L-32 · Dashboard de reportes: agregación CLIENTE $0 + SVG namespaced + dominio reusado (sin librería)
+- **Disparador**: construir un tablero de KPIs/Reportes sobre el canónico (CRM Fase 4, §165).
+- **Agregación (no backend de entrada)**: para volumen bajo-medio NO metas rollups/BigQuery. **`getDocs` acotado** (`orderBy('createdAt','desc')` + `limit` → índice de campo único AUTOMÁTICO, L-30) + **agregación en memoria** = $0, sin reglas/índices, sin realtime (un tablero es snapshot + botón "Actualizar", no `onSnapshot`). Filtra el período en memoria. Avisa en UI si tocaste el `limit` (`capped`). Rollups = enhancement cuando el volumen lo pida.
+- **Charts sin librería (gotcha SVG)**: `el()` (core/dom) usa `document.createElement` → **NO crea SVG** (namespace equivocado → render invisible/roto). Para SVG: helper propio con `document.createElementNS('http://www.w3.org/2000/svg', tag)`. Barras = CSS puro (div `width:%`), accesibles por texto; línea/área = `polyline`+`polygon` con `vector-effect:non-scaling-stroke` + `preserveAspectRatio:none`. Acompaña cada chart con su **tabla** (a11y + fuente del CSV).
+- **Determinismo (cero drift)**: reusa el dominio PURO existente (`forecast`/`channelOf`/`scoreLead`/`dayKey`/`format`) en vez de reimplementar. **Embudo monotónico**: define cada paso como "alcanzó al menos este hito" (subconjunto del anterior); "ganado" por **join** lead→deal (`convertedTo.dealId` ∈ deals `won`), no por estado del lead. Un lead `convertido` cuyo deal termina `perdido` NO es ganado (caso real a testear).
+- **Detalles**: `dayKey` LOCAL para buckets de tiempo (no UTC, L-30). **CSV** RFC-4180: entrecomilla `" , \n \r`, comilla doble escapada, BOM `﻿`, fin de línea CRLF; en **es-CO entrecomilla también `;`** (Excel lo usa de separador de lista). **Cero cache bump** si el cambio vive solo en `admin-app/` (Vite hash-busting, L-27) y no toca el sitio público.
+- **Meta**: KPIs de "período" (intake/resultado) vs "estado actual" (pipeline/SLA) son scopes distintos → etiquétalos, no los mezcles en un solo número. Verifica el tablero reconciliando la aritmética A MANO en `?mock=1` (snapshot+eval, L-28) — extiende el mock con casos cerrados (won/lost/convertido/perdido) o el embudo/win-rate salen vacíos.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §165 (Reportes) y §166 (Contactos), los dos §NN que cita su cuerpo · migrado 2026-09-01 lote 7
+
+### L-34 · Triar hallazgos de review/comité contra el CÓDIGO REAL (la mayoría de "high" son falsos positivos)
+- **Disparador**: recibes findings de una revisión adversarial (workflow `adversarial-review`, comité de expertos, reviewer externo) con severidades.
+- **Patrón observado (§165 Reportes + §166 Contactos)**: los reviewers marcan varios "high" que, al LEER el código real, son **falsos positivos** — el guard ya existía (`if(!alive) return` ya sale de la función), el error ya se maneja (`e.code` ya distingue permission-denied), la colisión no ocurre (solo un módulo montado a la vez), 'suscriptor' no es un `type` canónico, etc. Aceptarlos a ciegas = trabajo inútil + posible regresión.
+- **Receta**: ningún hallazgo se aplica sin **confrontarlo con el código real ESE turno** (§19/§3.3). Clasifica: **REAL** (aplica) · **FALSO POSITIVO** (el reviewer no vio X → anótalo con evidencia) · **FUERA-DE-ALCANCE** (pre-existente/global → no lo arregla este cambio). Aplica solo los REALES; documenta por qué descartaste el resto.
+- **Por qué pasa**: el reviewer ve un subconjunto y asume lo peor (es su trabajo, y es bueno). Tu ventaja: ves el sistema completo. El valor de la revisión NO es obedecerla, es que te OBLIGA a mirar cada punto.
+- **Meta**: este triage ES lo que hará valioso al comité de expertos (skill futura) — síntesis crítica, no voto ciego. Doctrina del workflow `.claude/workflows/adversarial-review.js`.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §173 (comité v6) · migrado 2026-09-01 lote 7
+
+### L-35 · Verifica el MECANISMO antes de construir sobre él (el "hook que bloqueaba" no existía) + escape del pre-commit
+- **Disparador**: vas a diseñar/decidir basándote en un comportamiento del tooling ("el hook bloquea X", "el linter valida Y").
+- **Caso (comité v6, §173)**: el HANDOFF afirmaba "hook de seguridad bloquea Write con execSync" → verificado `.claude/settings.json`: solo existe el hook de SessionStart; el bloqueo observado era una intervención advisory del harness, NO un gate configurado. La decisión sin-child_process del linter sigue siendo correcta, pero por portabilidad + byte-identidad ×3, no por un veto inexistente. **Receta**: antes de citar un mecanismo como restricción, léelo (settings/hook/código) ESE turno.
+- **Escape del pre-commit (blast radius ×3)**: el kernel `brain-check.mjs` corre en pre-commit de los 3 repos; un kernel con bug los bloquea a la vez. Diagnóstico primero (correr `node scripts/brain-check.mjs` suelto); `git commit --no-verify` SOLO con pedido explícito del cliente (§2) y dejando TODO-NN para arreglar el kernel.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · verificada en CARS §173 · migrado 2026-09-01 lote 7
+
+### L-36 · La deliberación "perdida" NO es irrecuperable: transcripts JSONL del harness (ruta de salvamento)
+- **Disparador**: una sesión cerró sin capturar la deliberación (comité/workflow/Gemini) → crees que el conocimiento se perdió.
+- **Realidad (verificada §173)**: el harness persiste TODO por-máquina en `~/.claude/projects/<proyecto>/<sesión>/` (transcripts + `subagents/workflows/*.jsonl`). Es deuda RECUPERABLE: localizar la sesión por fecha, extraer el crudo, archivarlo en `archiveDir` (manifest) + síntesis retroactiva.
+- **Prevención**: el PRIMER acto tras un workflow de deliberación = copiar el resultado a `research-archive/` (Reflejo de Captura §G.4); el runner no puede escribir disco (sandbox sin fs) → la copia la hace el agente `[HONOR]` + el check de integridad (kernel v1.2) detecta JSON sin indexar.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · observada en CARS §175 (el outage de billing del 2026-06-09) · migrado 2026-09-01 lote 7
+
+### L-38 · `billing disabled` tumba las 27 functions — pero Eventarc RE-ENTREGA al recuperarse (outage corto ≠ pérdida)
+- **Síntoma**: logs de TODAS las functions con "The request failed because billing is disabled" (crons + triggers). La web sigue viva (reads/writes directos a Firestore OK) pero ingestión CRM, emails, Telegram y LLM muertos.
+- **Observado (§175, 2026-06-09)**: outage ~21:00→23:03 UTC; al volver el billing, **Eventarc RE-ENTREGÓ los eventos fallidos solo** (la solicitud de las 22:50 se ingirió a las 23:03, `_ingestedAt` tardío, sin pérdida ni duplicados). La retención de reintentos es limitada (~horas) — un outage LARGO sí pierde eventos → revisar `failedIngestions` + backfill manual.
+- **Receta**: ante "la ingestión no corre": (1) `functions_get_logs` ANTES de tocar código — puede ser billing/cuota, no un bug; (2) al recuperarse, buscar `_ingestedAt` para ver si Eventarc ya re-procesó ANTES de re-disparar a mano (evita duplicados); (3) la causa de billing-disabled es del dueño del proyecto (tarjeta/cuenta GCP) — escalar al cliente, no "arreglar" código.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · cazada en la review de CARS §184, antes de producción · migrado 2026-09-01 lote 7
+
+### L-39 · Un GET público linkeado por WhatsApp/email JAMÁS debe mutar estado (los previews lo disparan solos)
+- **Síntoma**: "el cliente confirmó sin abrir el link" — WhatsApp genera la vista previa haciendo fetch del link DESDE el remitente al componer; Outlook SafeLinks/antivirus hacen lo mismo con emails. Cazado por review §184 ANTES de producción: el flujo entero de confirmación se auto-confirmaba.
+- **Receta**: GET = página intersticial con botón; SOLO el POST muta (`req.method === 'POST'`). Aplica a todo magic-link (confirmar/cancelar/unsubscribe). De paso: escapar TODO dato reflejado (XSS) + header CSP.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · cazada en la review de CARS §184 · migrado 2026-09-01 lote 7
+
+### L-40 · Firestore `set(..., {merge:true})` NO borra claves de mapas omitidas — y liberar recursos compartidos exige verificar PROPIEDAD
+- **Gotcha 1**: para quitar una clave de un mapa con merge se necesita `deleteField()` (tombstone) o `update()` del campo completo; omitirla la deja viva → "lo borré y sigue ahí" (review §184: 'Quitar ausencia' era un no-op).
+- **Gotcha 2**: en pools de reservas (slots/bloques) sin dueño por entrada, liberar "mis" recursos al cancelar puede borrar los de OTRO si mi doc nunca los reservó (estados que no retienen) — gate de propiedad ANTES de liberar (`holdsTuple` §184) o persistir qué se reservó exactamente.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §188 y reincidida en §209 · migrado 2026-09-01 lote 7
+
+### L-41 · El "censo literal de escritores" para una whitelist de Rules debe incluir los escritores INTERNOS (admin/staff), no solo los públicos
+- **Síntoma**: E5 censó los 5 forms públicos de `solicitudes` y su whitelist rompió en silencio al 6º escritor — la cita interna del clásico firmaba con `createdBy` (permission-denied desde el deploy, §188). El `catch` optimista del cliente lo enterraba.
+- **Receta**: el censo = grep de TODOS los `collection('X').add/set` en js/ + admin-app/ + bots, no solo los flujos "del usuario". Y cada escritor legítimo entra a la suite con su payload LITERAL (el test del payload interno habría reventado en E5).
+- **REINCIDENCIA §209 (17/06) ⟦OPUS-4.8⟧**: 3er escritor admin olvidado — `createManualLead` (`admin-app/.../capture/capture.data.js`→`solicitudes`) daba permission-denied para TODOS. La lección EXISTÍA pero ni el censo SEC-06 §187 ni el barrido §188-0.3 (que la parió) grepearon `admin-app/.../capture`. **Endurecer a MECÁNICO**: tras CUALQUIER cambio a un `hasOnly`, correr `grep -rn "collection('solicitudes')" js/ admin-app/src/ functions/` y exigir que CADA escritor tenga test de emulador con su payload literal (el de createManualLead no existía → reventó silencioso en el portal-prod). Fix = rama admin dedicada (`crm.edit` + `_createdByUid==auth.uid`), NO aflojar el público (ADR §209).
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · evitada en CARS §204 (port de dealers) · migrado 2026-09-01 lote 7
+
+### L-42 · Al portar un módulo cuyo docId es un slug derivado, REPLICAR el regex EXACTO del clásico (no el slugify "mejorado" del portal) ⟦OPUS-4.8⟧
+- **Síntoma (evitado)**: dealers (§204) deriva docId del nombre. El portal ya tenía `brands.slugify()` que normaliza tildes (NFD) — reusarlo habría dado un docId DISTINTO para nombres acentuados que el clásico (`replace(/[^a-z0-9]/g,'-')`, sin NFD) → durante el doble-admin, crear el mismo aliado en cada admin produce DOS docs y rompe el join `vehiculos.concesionario`.
+- **Receta**: en todo port con interop (clásico ↔ portal coexistiendo), la clave del doc es un CONTRATO — replicar su generación byte a byte, no "mejorarla". Igual con `_version`: si las rules del módulo NO exigen `validVersion()`, NO escribirlo (rompería al clásico que escribe sin él). El crítico adversarial del workflow lo cazó antes de codear.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · verificada en CARS §215 · migrado 2026-09-01 lote 7
+
+### L-43 · La ADC de esta máquina está ligada a `bersaglio-jewelry` → scripts Admin SDK contra `altorra-cars` dan `PERMISSION_DENIED` (IAM, NO rules) ⟦OPUS-4.8 · rev-Fable⟧
+- **Síntoma**: `node functions/<script>.mjs` (Admin SDK + ADC) contra altorra-cars aborta con `7 PERMISSION_DENIED: Missing or insufficient permissions`, aunque el MISMO patrón corre bien en bersaglio (`backfill-claims.mjs`).
+- **Causa (verificada §215)**: `~/AppData/Roaming/gcloud/application_default_credentials.json` trae `quota_project_id: bersaglio-jewelry` y `gcloud auth list` = sin cuentas → la ADC se montó SOLO para bersaglio; ese principal no es IAM-member con acceso Firestore en altorra-cars. El Admin SDK **BYPASSA las security rules** → un `PERMISSION_DENIED` del Admin SDK es SIEMPRE IAM del principal, jamás reglas.
+- **3 planos de auth (no confundir, L-23)**: (1) `firebase login` (CLI deploys, `altorracarssale@`) ≠ (2) **ADC** (lo que usa el Admin SDK en scripts `node`) ≠ (3) security rules (irrelevante para Admin SDK). Un script `node` standalone usa (2), no (1).
+- **Receta**: para correr un script admin contra altorra-cars desde esta máquina, el dueño re-autentica ADC con cuenta autorizada: `gcloud auth application-default login` + `gcloud auth application-default set-quota-project altorra-cars`. **Alternativa preferible** para mutaciones de prod (callejón e + precedente `seedSystemRoles`): empaquetar el backfill como **callable 1-clic** (corre con la SA de Functions, sin ADC ni terminal).
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §222 · migrado 2026-09-01 lote 7
+
+### L-47 · En reglas Firestore, `resource.data.X` de un campo AUSENTE **LANZA** (no es null) — guardar con `('X' in resource.data)` ⟦OPUS-4.8⟧
+- **Síntoma (§222)**: un test rules-unit de `marcas` dio `PERMISSION_DENIED: Property _version is undefined on object` al ACTUALIZAR un doc sin `_version` (los seed/legacy). En prod no se notó porque el dueño edita como **super-admin** (que bypassa `validVersion()`); un `brands.edit` no-super SÍ lo dispara.
+- **Causa**: `validVersion()` = `request…_version == resource.data._version + 1 || (resource.data._version == null && …)`. El PRIMER operando accede a `resource.data._version`; si el doc no lo tiene, **lanza evaluation error** → la `||` ni evalúa el fallback `== null`. Acceder a un campo ausente en reglas es un ERROR, NO `null`.
+- **Receta**: antes de leer un campo OPCIONAL de `resource.data`, **guardar con `('X' in resource.data)`** (o `.get('X', default)` donde exista), ANTES de la operación que lo accede. En `request.resource.data` (create) el cliente siempre lo manda; el riesgo es leer `resource.data` (el doc previo, que puede ser seed/legacy sin el campo). Aplica a cualquier helper que compare versión/timestamp de docs que pueden no tenerlos.
+
+> Origen: CARS `docs/31-LECCIONES-GIT.md` (titular en `docs/30-LECCIONES.md`) · vivida en CARS §223; el hazard inverso, en §288 · migrado 2026-09-01 lote 7
+
+### L-48 · Sesión concurrente: un `git add` amplio en otro chat arrastra tu edit sin commitear
+- **Síntoma**: editas un archivo (p.ej. `CLAUDE.md`) en el repo R; al volver, `git status` muestra archivos `M` que NO tocaste, y minutos después desaparecen (otro proceso commiteó); tu archivo queda con un diff inesperado vs HEAD.
+- **Causa**: OTRA sesión/chat trabaja R en paralelo y al cerrar su tarea hizo `git add -A` / `commit -a`, **arrastrando tu edit sin commitear** dentro de SU commit (por eso jamás `git add -A` — M-12).
+- **Receta**: (1) ANTES de operar git en cualquiera de los 4 cerebros, `git status`: si hay `M` ajenos = sesión viva → NO hagas branch/commit/checkout (carrera). (2) Si tu edit ya fue arrastrado a HEAD, verifica byte-identidad (`grep … | sha256sum`) y `git checkout -- <archivo>` para alinear tu working-tree a HEAD; NO re-commitees. (3) `git add` SIEMPRE archivos específicos, nunca `-A`.
+- **⚠️ Hazard INVERSO (2026-07-07, §288)**: un `git checkout -- <archivo>` para revertir TU edit accidental **también borra el trabajo SIN COMMITEAR de otra sesión** que esté en el MISMO archivo (working-tree, no en HEAD → irrecuperable, no es blob colgante salvo que lo hubieran `git add`eado). Pasó: reverti `docs/99` para deshacer mi §288 mal-ubicado y destruí el §288-carrusel sin commitear de otra sesión (su CÓDIGO sí estaba salvo en `76b01728`). **Receta**: antes de `checkout -- <file>`, `git diff <file>` — si hay adiciones que NO escribiste (trabajo ajeno vivo), NO hagas checkout ciego; **quita quirúrgicamente TUS líneas con Edit** y deja las suyas. El checkout blunt es un martillo; el working-tree ajeno no tiene red.
+- *Vivido en §223 (propagación §G.4 Caza-bugs ×4; en insema lo arrastró la sesión de ADR-C → `348f80d`). Hazard inverso vivido en §288 (esta sesión).*
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §225 · migrado 2026-09-01 lote 7
+
+### L-49 · Swap de backend de un script CI sin regresión: SDK-dual con fallback + `npm ci` exige lock en sync ⟦OPUS-4.8 · rev-Fable⟧
+- **Patrón SDK-dual con fallback (§225)**: NO reemplazar el backend — `connectDb()` ELIGE por entorno (`FIREBASE_SA_KEY` → admin; ausente → cliente histórico) y un wrapper unifica la lectura (client y Admin SDK exponen la MISMA interfaz `snap.docs[].id/.data()/.forEach` → consumidor INTACTO). Secret ausente = byte-idéntico al original → cero-regresión verificable corriendo el fallback EN VIVO; la ruta admin (no-testeable) se valida por revisión adversarial.
+- **SA en GitHub Actions ≠ ADC (L-43)**: secret → env var (`cert(JSON.parse(env))`), NO la ADC local (ligada a bersaglio). **GOTCHA `npm ci`**: aborta si `package.json`↔`package-lock.json` desync (rompe el CI en silencio) → SIEMPRE `npm install <dep> --save` (sincroniza el lock) y commitear AMBOS.
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §226 · migrado 2026-09-01 lote 7
+
+### L-50 · Workflow de subagentes en background: se CUELGA en herramientas gateadas por permiso; ultracode lo agrava ⟦OPUS-4.8 · rev-Fable⟧
+- **Causa+receta**: subagente DETACHED que llama tool con prompt de permiso (`Bash git`, `Read` fuera-cwd como vault `../brain-private`) → cuelgue infinito esperando aprobación; ultracode+MCP densos lo agravan (§226; Bersaglio ~4.7M tok/2h30). Perfil seguro = read-only IN-cwd (`Grep`/`Read`), SIN git/fuera-cwd, o comité ACOTADO (pocos, sin tools, sobre diagnóstico verificado). Si cuelga: `TaskStop` + cosechar `StructuredOutput` del `.jsonl` (L-61). **SSoT = skill global `comité-expertos §ACOTADO`** (×5 sha `5651c53b`); TODO-31 ✅; revalidado 28/06 (L-57).
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §227 (TODO-24); familia §107/§202 · migrado 2026-09-01 lote 7
+
+### L-51 · Recuperación de borradores "pro" SIN reabrir un autosave ya rechazado: separar borrador-deliberado de red-de-seguridad-local (opt-in, scoped por uid) ⟦OPUS-4.8⟧
+- **Síntoma/contexto (§227/TODO-24)**: el dueño pide "borradores profesionales con autosave/recuperación" PERO en el pasado (§107) quitó el autosave porque reaparecía y restauraba solo ("no me restaures automáticamente"). El pedido literal ⊥ el historial verificado.
+- **Causa/insight**: "profesional" = el **RESULTADO** (nunca perder trabajo, sin bugs), NO el **mecanismo** (autosave-restore) ya rechazado. Un autosave que persiste drafts crea fantasmas que reaparecen en la galería = **§107 disfrazado** ("nunca re-pregunta ≠ nunca resucita").
+- **Receta**: (1) separa DOS conceptos — borrador **DELIBERADO** (botón → backend → galería → retomar) vs **RED DE SEGURIDAD** local (localStorage debounce, efímera, **NO** en la galería). (2) recuperación = **OFRECER** (barra opt-in al reabrir), NUNCA autorestaurar (form vacío hasta que el usuario pulse). (3) el buffer local va **scoped por `uid`** (localStorage es por-navegador → en equipo compartido cruza cuentas si no). (4) los datos REALES se aíslan a nivel **SERVIDOR** (rules `path/{uid}/`), no por código. (5) **guard anti-resurrección**: un write optimista que aterriza tras un delete recrea el doc → flag `_dead` + cancelar timers en close/discard/publish.
+- **Familia**: §107 (drafts por cuenta) · §202 (V4 port verbatim por interop) · §227 (este rediseño) · M-17 (la meta: pedido literal ⊥ historial → interpretar por evidencia).
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §229 · migrado 2026-09-01 lote 7
+
+### L-52 · Antes de replicar un script de KERNEL acoplado a convenciones ×cerebros, VERIFICA la convención de cada destino — un copy byte-idéntico que no aplica = no-op silencioso = falsa cobertura (M-10) ⟦OPUS-4.8⟧
+- **Disparador**: vas a propagar un script del cerebro (índice/linter/generador) a los otros repos "byte-idéntico ×N".
+- **Síntoma (§229)**: `brain-index.mjs` (auto-reconcilia §→línea) está acoplado a (a) headers `## NN.` numéricos y (b) índice con columna de nº de línea. bersaglio (headers fecha-leading) e insema (índice por-proveniencia) NO cumplen → un copy correría, diría "0 reconciliadas", saldría 0 y *parecería instalado*. Solo cars/inmob cumplen.
+- **Receta**: (1) lee el `99`+`00` de cada destino y arma la **matriz de compatibilidad ANTES de copiar**; (2) instala SOLO donde aplica; donde no, un ADR que documenta el N/A + el pre-requisito (NO código muerto); (3) **verifica los hashes del kernel ANTES de añadir un peer** al manifest (si no, metes un warn en #11); (4) referencia una `L-/M-` solo si existe en ESE repo (un `M-10` de cars es ref colgante en bersaglio → pásalo a texto plano). Byte-identidad del kernel es un INVARIANTE a defender, NO una meta a forzar sobre convenciones divergentes.
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §251 (F-6, tarjeta FCM) · migrado 2026-09-01 lote 7
+
+### L-54 · Un elemento `position:fixed`/`absolute` en `display:flex` SIN `width` y anclado a UN solo borde COLAPSA a su contenido — `max-width` no OTORGA ancho ⟦OPUS-4.8⟧
+- **Síntoma (F-6 FCM card §251)**: tarjeta anclada `right`+`bottom` con `max-width:360px` pero **sin `width`** → render a **34px** de ancho, texto en columna de 1 char, off-screen. En mobile NO pasaba: la media query la anclaba `left`+`right` → los dos bordes le daban el ancho.
+- **Causa**: `max-width` LIMITA, no OTORGA ancho. Un flex `fixed` sin `width` toma su `max-content`; un hijo flex con `min-width:0` deja al texto encogerse casi a 0; anclado a un solo borde nada lo estira. Cara OPUESTA de L-23 (allá un `*{max-width:100%}` colapsa un width explícito; aquí FALTA el width).
+- **Receta**: `width` explícito en desktop (`width:340px; max-width:calc(100vw - 2*var(--s-5))`); en la media query mobile que usa `left`+`right`, `width:auto` para que los dos bordes manden. **Verifica con un viewport de ancho REAL** (`preview_resize {width:1280,height:800}`) — el "native size" del preview headless da `innerWidth:0` → activa la media query mobile y TODO colapsa (falso bug que te manda a perseguir la CSS equivocada). NO `preview_screenshot` tras `resize` (L-28).
+- **Familia**: L-23 (max-width universal colapsa width) · L-28 (no screenshot tras resize) · L-53 (DS tokens admin-app).
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (titular en `docs/30-LECCIONES.md`) · sin §NN de ADR citado ni en su titular ni en su cuerpo (cita `W-11 F1(c)` y la doctrina §3.8 del `CLAUDE.md`, que no son ADRs) · migrado 2026-09-01 lote 7
+
+### L-55 · UI con `transition` en preview headless: el valor animado queda CONGELADO en el inicio → verifica end-states neutralizando transiciones; y tabulabilidad por-breakpoint = CSS `visibility`, no `inert` ⟦OPUS-4.8⟧
+- **Síntoma (W-11 F1(c) drawer)**: drawer abierto (clase + foco + `box-shadow` del override SÍ aplicados) pero `getComputedStyle(.sidebar).transform`/`getBoundingClientRect().left` reportan el valor CERRADO indefinidamente — el headless NO avanza la transición CSS (la regla específica gana: el `box-shadow`, sin transición, lo prueba).
+- **Receta verificación**: para UI con `transition`, inyecta `*{transition:none !important; animation:none !important}` y lee los END-STATES del cascade (no el valor animado). Confirma con un `transition:none` inline → si salta al target, la lógica es correcta = artefacto headless. Familia: L-20/L-23/L-28.
+- **Arquitectura (§3.8) `visibility` > `inert`**: para nav off-canvas que NO debe tabularse cerrado-en-móvil, usa CSS `visibility:hidden` (sale del tab-order, lo maneja la media query) en vez de `inert` por JS+`matchMedia change`. `inert` por evento tiene fallo latente GRAVE: si el `change` no dispara al cruzar a desktop, el nav entero queda MUERTO; el CSS lo elimina por construcción. Transiciona `visibility` junto al `transform` (visible durante el deslizado de cierre).
+- **Familia**: L-20/L-23/L-28 (quirks del preview headless) · L-53 (admin-app DS).
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (titular en `docs/30-LECCIONES.md`) · sin §NN citado ni en su titular ni en su cuerpo · migrado 2026-09-01 lote 7
+
+### L-56 · Sidebar de filtros ALTO: `sticky` sin tope RECORTA su mitad inferior; toggle-bp ≠ colapso-bp = franja muerta sin botón ⟦OPUS-4.8⟧
+- **Síntoma (busqueda)**: los filtros ("Aplicar" incluido) caen bajo el viewport, INALCANZABLES (no es visual: no puedes aplicar).
+- **Causa #1 (recorte)**: `.filters-sidebar{position:sticky;top:96px}` SIN `max-height`; el panel mide ~1106px (medido), lo que excede `viewport-96` cae fuera y un sticky NO scrollea por dentro. Cap+`overflow-y:auto` mete barra (el dueño la vetó). **Fix**: `position:static` → fluye, la página scrollea entera (coste: no "sigue"). MEDIR lo reveló (estimé 810, real 1106; L-20/L-23/L-54).
+- **Causa #2 (franja muerta 901–1024)**: `style.css` colapsa+toggle a ≤1024 pero el cinematic a ≤900 → en 901–1024 filtros `max-height:0` SIN botón (cazado midiendo `filtersReachable:false`). **Fix**: alinear cinematic a ≤1024. **Regla**: DOS hojas sobre un componente responsive → los breakpoints de "toggle" y "colapsar" DEBEN coincidir.
+- **Compartido**: `marca-cinematic.css` viste 24 páginas → corrige todas. **Familia**: L-23/L-54 · L-16/L-21 · L-55.
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (sin titular en `docs/30-LECCIONES.md`: nace y vive en la hoja hija) · sin §NN de ADR citado: su cuerpo remite a un brief (`…crm-overhaul… §PASE-1`) y al §3.3 del `CLAUDE.md`, que es doctrina, no ADR · migrado 2026-09-01 lote 7
+
+### L-58 · `parent.append(null)` nativo pinta el literal `"null"` (≠ `el()` que filtra) ⟦OPUS-4.8⟧
+- `append(a, panel(), b)` con `null` → text-node "null" (NO era campo Firestore ausente; A.1 adivinó §3.3). Fix: helper `core/dom.js` `appendAll()`. Detalle → brief `…crm-overhaul…` §PASE-1.

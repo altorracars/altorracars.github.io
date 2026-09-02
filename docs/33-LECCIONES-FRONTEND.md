@@ -105,10 +105,7 @@
 - **Familia**: L-07 (SSG template-driven) · L-45 (DOM horneado).
 
 ### L-51 · Recuperación de borradores "pro" SIN reabrir un autosave ya rechazado: separar borrador-deliberado de red-de-seguridad-local (opt-in, scoped por uid) ⟦OPUS-4.8⟧
-- **Síntoma/contexto (§227/TODO-24)**: el dueño pide "borradores profesionales con autosave/recuperación" PERO en el pasado (§107) quitó el autosave porque reaparecía y restauraba solo ("no me restaures automáticamente"). El pedido literal ⊥ el historial verificado.
-- **Causa/insight**: "profesional" = el **RESULTADO** (nunca perder trabajo, sin bugs), NO el **mecanismo** (autosave-restore) ya rechazado. Un autosave que persiste drafts crea fantasmas que reaparecen en la galería = **§107 disfrazado** ("nunca re-pregunta ≠ nunca resucita").
-- **Receta**: (1) separa DOS conceptos — borrador **DELIBERADO** (botón → backend → galería → retomar) vs **RED DE SEGURIDAD** local (localStorage debounce, efímera, **NO** en la galería). (2) recuperación = **OFRECER** (barra opt-in al reabrir), NUNCA autorestaurar (form vacío hasta que el usuario pulse). (3) el buffer local va **scoped por `uid`** (localStorage es por-navegador → en equipo compartido cruza cuentas si no). (4) los datos REALES se aíslan a nivel **SERVIDOR** (rules `path/{uid}/`), no por código. (5) **guard anti-resurrección**: un write optimista que aterriza tras un delete recrea el doc → flag `_dead` + cancelar timers en close/discard/publish.
-- **Familia**: §107 (drafts por cuenta) · §202 (V4 port verbatim por interop) · §227 (este rediseño) · M-17 (la meta: pedido literal ⊥ historial → interpretar por evidencia).
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-51]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-53 · Receta de "port de un módulo al portal `admin-app/` (Vite)" — patrón repetible del PLAN-UNIFICADO F-2..F-4 (§238/§249) ⟦OPUS-4.8⟧
 - **Receta (6 pasos)**: (1) LEE la fuente `js/admin/admin-X.js` + un módulo análogo YA portado (CRUD-modal→`dealers`; lista-filtro→`contacts.list`) — copia el idioma. (2) `src/modules/X/X.data.js` (modular SDK desde `core/firebase.js`) + `X.ui.js` (`mountX(root)→cleanup`; `el/clear`·`store`·`toast`·`hasPermission`·`writeAudit`). (3) `X.css` con tokens (`--s-*`/`--surface-*`/`--ink-*`, sin hex; filas-grid como `contactos.css`, NO `<table>`). (4) Cablea `router.js` ROUTES + `shell.js` NAV (`perm:'X.read'`=GATE) + TITLES + `main.js` (mount+CSS+`MODULES`). (5) mock: `MOCK_*` + rama `store.get().mock` → visible en `?mock=1` sin Firebase. (6) `vite build` + preview `?mock=1#/X` (snapshot+eval, NO screenshot L-28).
@@ -118,25 +115,16 @@
 - **Familia**: §202 · §204 · §238 · L-28.
 
 ### L-54 · Un elemento `position:fixed`/`absolute` en `display:flex` SIN `width` y anclado a UN solo borde COLAPSA a su contenido — `max-width` no OTORGA ancho ⟦OPUS-4.8⟧
-- **Síntoma (F-6 FCM card §251)**: tarjeta anclada `right`+`bottom` con `max-width:360px` pero **sin `width`** → render a **34px** de ancho, texto en columna de 1 char, off-screen. En mobile NO pasaba: la media query la anclaba `left`+`right` → los dos bordes le daban el ancho.
-- **Causa**: `max-width` LIMITA, no OTORGA ancho. Un flex `fixed` sin `width` toma su `max-content`; un hijo flex con `min-width:0` deja al texto encogerse casi a 0; anclado a un solo borde nada lo estira. Cara OPUESTA de L-23 (allá un `*{max-width:100%}` colapsa un width explícito; aquí FALTA el width).
-- **Receta**: `width` explícito en desktop (`width:340px; max-width:calc(100vw - 2*var(--s-5))`); en la media query mobile que usa `left`+`right`, `width:auto` para que los dos bordes manden. **Verifica con un viewport de ancho REAL** (`preview_resize {width:1280,height:800}`) — el "native size" del preview headless da `innerWidth:0` → activa la media query mobile y TODO colapsa (falso bug que te manda a perseguir la CSS equivocada). NO `preview_screenshot` tras `resize` (L-28).
-- **Familia**: L-23 (max-width universal colapsa width) · L-28 (no screenshot tras resize) · L-53 (DS tokens admin-app).
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-54]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-55 · UI con `transition` en preview headless: el valor animado queda CONGELADO en el inicio → verifica end-states neutralizando transiciones; y tabulabilidad por-breakpoint = CSS `visibility`, no `inert` ⟦OPUS-4.8⟧
-- **Síntoma (W-11 F1(c) drawer)**: drawer abierto (clase + foco + `box-shadow` del override SÍ aplicados) pero `getComputedStyle(.sidebar).transform`/`getBoundingClientRect().left` reportan el valor CERRADO indefinidamente — el headless NO avanza la transición CSS (la regla específica gana: el `box-shadow`, sin transición, lo prueba).
-- **Receta verificación**: para UI con `transition`, inyecta `*{transition:none !important; animation:none !important}` y lee los END-STATES del cascade (no el valor animado). Confirma con un `transition:none` inline → si salta al target, la lógica es correcta = artefacto headless. Familia: L-20/L-23/L-28.
-- **Arquitectura (§3.8) `visibility` > `inert`**: para nav off-canvas que NO debe tabularse cerrado-en-móvil, usa CSS `visibility:hidden` (sale del tab-order, lo maneja la media query) en vez de `inert` por JS+`matchMedia change`. `inert` por evento tiene fallo latente GRAVE: si el `change` no dispara al cruzar a desktop, el nav entero queda MUERTO; el CSS lo elimina por construcción. Transiciona `visibility` junto al `transform` (visible durante el deslizado de cierre).
-- **Familia**: L-20/L-23/L-28 (quirks del preview headless) · L-53 (admin-app DS).
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-55]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-56 · Sidebar de filtros ALTO: `sticky` sin tope RECORTA su mitad inferior; toggle-bp ≠ colapso-bp = franja muerta sin botón ⟦OPUS-4.8⟧
-- **Síntoma (busqueda)**: los filtros ("Aplicar" incluido) caen bajo el viewport, INALCANZABLES (no es visual: no puedes aplicar).
-- **Causa #1 (recorte)**: `.filters-sidebar{position:sticky;top:96px}` SIN `max-height`; el panel mide ~1106px (medido), lo que excede `viewport-96` cae fuera y un sticky NO scrollea por dentro. Cap+`overflow-y:auto` mete barra (el dueño la vetó). **Fix**: `position:static` → fluye, la página scrollea entera (coste: no "sigue"). MEDIR lo reveló (estimé 810, real 1106; L-20/L-23/L-54).
-- **Causa #2 (franja muerta 901–1024)**: `style.css` colapsa+toggle a ≤1024 pero el cinematic a ≤900 → en 901–1024 filtros `max-height:0` SIN botón (cazado midiendo `filtersReachable:false`). **Fix**: alinear cinematic a ≤1024. **Regla**: DOS hojas sobre un componente responsive → los breakpoints de "toggle" y "colapsar" DEBEN coincidir.
-- **Compartido**: `marca-cinematic.css` viste 24 páginas → corrige todas. **Familia**: L-23/L-54 · L-16/L-21 · L-55.
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-56]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-58 · `parent.append(null)` nativo pinta el literal `"null"` (≠ `el()` que filtra) ⟦OPUS-4.8⟧
-- `append(a, panel(), b)` con `null` → text-node "null" (NO era campo Firestore ausente; A.1 adivinó §3.3). Fix: helper `core/dom.js` `appendAll()`. Detalle → brief `…crm-overhaul…` §PASE-1.
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-58]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-59 · Recorte/scroll del shell sin romper los auto-scroll (TODO-52) ⟦OPUS-4.8⟧
 - Módulos FLUJO se recortan/encogen/pegan bajo `.outlet{overflow:hidden}`. Fix: `.outlet`→`overflow-y:auto` + `.outlet>*{min-width:100%}` + `padding-inline` flow, **manteniendo `display:flex` ROW (no `column` → rompe los auto-scroll)**. Receta → brief §PASE-1.

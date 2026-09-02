@@ -29,11 +29,7 @@
 5. Probar en localhost · `commit`.
 
 ### L-48 · Sesión concurrente: un `git add` amplio en otro chat arrastra tu edit sin commitear
-- **Síntoma**: editas un archivo (p.ej. `CLAUDE.md`) en el repo R; al volver, `git status` muestra archivos `M` que NO tocaste, y minutos después desaparecen (otro proceso commiteó); tu archivo queda con un diff inesperado vs HEAD.
-- **Causa**: OTRA sesión/chat trabaja R en paralelo y al cerrar su tarea hizo `git add -A` / `commit -a`, **arrastrando tu edit sin commitear** dentro de SU commit (por eso jamás `git add -A` — M-12).
-- **Receta**: (1) ANTES de operar git en cualquiera de los 4 cerebros, `git status`: si hay `M` ajenos = sesión viva → NO hagas branch/commit/checkout (carrera). (2) Si tu edit ya fue arrastrado a HEAD, verifica byte-identidad (`grep … | sha256sum`) y `git checkout -- <archivo>` para alinear tu working-tree a HEAD; NO re-commitees. (3) `git add` SIEMPRE archivos específicos, nunca `-A`.
-- **⚠️ Hazard INVERSO (2026-07-07, §288)**: un `git checkout -- <archivo>` para revertir TU edit accidental **también borra el trabajo SIN COMMITEAR de otra sesión** que esté en el MISMO archivo (working-tree, no en HEAD → irrecuperable, no es blob colgante salvo que lo hubieran `git add`eado). Pasó: reverti `docs/99` para deshacer mi §288 mal-ubicado y destruí el §288-carrusel sin commitear de otra sesión (su CÓDIGO sí estaba salvo en `76b01728`). **Receta**: antes de `checkout -- <file>`, `git diff <file>` — si hay adiciones que NO escribiste (trabajo ajeno vivo), NO hagas checkout ciego; **quita quirúrgicamente TUS líneas con Edit** y deja las suyas. El checkout blunt es un martillo; el working-tree ajeno no tiene red.
-- *Vivido en §223 (propagación §G.4 Caza-bugs ×4; en insema lo arrastró la sesión de ADR-C → `348f80d`). Hazard inverso vivido en §288 (esta sesión).*
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-48]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-68 · Ancla de `.replace()` que cruza `\n` falla EN SILENCIO en Windows (CRLF)
 - **Síntoma**: `SSG_SELFTEST=1 node scripts/generate-vehicles.mjs` falla SOLO en Windows local (`marca: esperaba 2 global(es) PRERENDERED, encontro 0`); en CI (Linux/LF) pasa y las páginas reales (`marcas/toyota.html`) SÍ tienen los globals. Falla idéntico en `dev` limpio → **no es tu cambio, es el entorno.**

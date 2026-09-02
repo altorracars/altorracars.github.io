@@ -5,9 +5,7 @@
 > nodo de Largo Plazo. Se consulta on-demand (Trigger de Error/Historia, ver
 > `CLAUDE.md §G`).
 >
-> **Cerebro completo**: 🧠 `CLAUDE.md` (router/identidad) · 🩺 `05-ESTADO-GLOBAL.md` (signos vitales)
-> · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP) · ⚡ `11-PENDIENTES-CONGELADOS.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura; hija 🚗 `21-ESPACIAL-ADMIN.md` = portal admin)
-> · 🧪 `30-LECCIONES.md` (experiencia/recetas; hijas 🔧 `31-LECCIONES-GIT.md` · 🪞 `32-LECCIONES-META.md`) · 🔁 `60-WORKFLOWS.md` (workflows W-01..W-11; **W-11 = flujo fuerte**) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
+> **El mapa de nodos del cerebro vive en `CLAUDE.md §0`**, que se auto-carga: no se copia aquí (esta copia ya mentía — omitía `33-LECCIONES-FRONTEND.md` entre las hijas del `30`).
 >
 > **Cómo se usa** → la regla de oro anti-saturación de `CLAUDE.md §0`, que se auto-carga: busca aquí la línea y lee SOLO ese tramo del `99`, jamás el fichero entero.
 
@@ -177,6 +175,7 @@
 | §304 | **Lote 2 del CEREBRO MAESTRO ⟦OPUS-5⟧** — `L-01`+`L-14` mudan su CUERPO a la bóveda (`maestro/…/CARS/`); titular de `30` intacto + marca, stub en `31`/`33` → `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`. Censo sha 5/5 · MIGRADO, no SELLADO. | 44785 |
 | §305 | **Deuda propia saldada: kernel v1.29.0 + auditoría N2 #7 PARCIAL ⟦OPUS-5⟧** — se paga lo que bloqueaba el §304, **jamás `--no-verify`**. Sondas 0/1/2/5/6 corridas; **3/4/7 PENDIENTES** (exigen agente frío). C-01 el sello del `05` mentía (5 commits después); C-03 el sidecar `.estado-auto` sin gate de frescura → TODO-40(d); C-02 `verificado-vivo` era 3/4 repos. B-10 CERRADO (boot 35.4k→30040c, fin de reincidencia ×5). GC −65c · `brain:check` SANO. | 44804 |
 | §306 | **Lote 6 del CEREBRO MAESTRO ⟦OPUS-5⟧** — **20** lecciones de cars (`L-03`…`L-30`; frontend/CSS/Firebase) mudan su CUERPO a la bóveda. Censo sha **20/20** ×3 vías · **`33` sale de su exceso** 36261→23968c. MIGRADO, no SELLADO. | 44827 |
+| §307 | **Lote 7 del CEREBRO MAESTRO ⟦OPUS-5⟧** — otras **20** lecciones de cars mudan su CUERPO a la bóveda (de `L-32` en adelante; 15 con el cuerpo en el propio `30`). Censo sha **20/20** ×3 vías · `33` sale de pre-shard. MIGRADO, no SELLADO. | 44846 |
 | §243 | **F-2 (5/6) `auditoria` visor en admin-app ⟦OPUS⟧** — LECTOR read-only de `auditLog`: lista cronológica (onSnapshot 200) + buscador + filtro; inmutable. | 44069 |
 | §242 | **F-2 (4/6) `workflows`/Automatización en admin-app ⟦OPUS⟧** — port admin-automation: NO CRUD (verificar-no-asumir) sino 4 reglas FIJAS toggle + visor `automationLog`; motor sigue legacy client-side (→TODO-41) + gap RBAC `workflows.edit`. dist gateado. | 44057 |
 | §241 | **F-2 (3/6) `departamentos` en admin-app ⟦OPUS⟧** — catálogo ④a `departments/{id}` (grid+modal, id slug `dept_<slug>`). Guard §66 (no borrar con userCount>0, UI+rules). Port admin-departments. dist gateado. | 44045 |

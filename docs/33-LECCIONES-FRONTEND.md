@@ -11,7 +11,7 @@
 ---
 
 ### L-05 · `<base href="/">` hace que TODA ruta sea raíz-relativa idéntica
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-05]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-05]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-06 · `js/core/components.js` es un CARGADOR DINÁMICO (refs ocultas)
 - Inyecta ~25 scripts por ruta hardcodeada (`script.src = 'js/...'`): `auth`, `solicitudes-watcher`, `comm-schema`, todo `js/ai/*`, `concierge`, `cookies`, `contact-forms`, `admin-calendar-config`. **Al mover cualquiera de esos, hay que actualizar components.js además del HTML.** No son `<script src>` visibles → fáciles de olvidar.
@@ -26,28 +26,28 @@
 - **Meta-lección**: un `grep` de "CSS dinámico" puede dar **falso negativo** por comillas mal escapadas. **SIEMPRE verificar archivo-por-archivo los de 0 refs** antes de asumir "es estático" o "está muerto". (Confirmado §119 Fase 3 — casi asumo mal.)
 
 ### L-11 · PORTs JSX→vanilla — class-name fidelity (JS-emit ≡ CSS-define)
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-11]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-11]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-12 · Re-render por `onChange` acumula listeners en el padre — teardown explícito siempre
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-12]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-12]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-13 · Módulos lazy-loaded — guards `typeof` en click-time + event delegation
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-13]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-13]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-14 · SW stale-while-revalidate puede servir JS viejo en critical-path post-deploy
-⇒ **Migrada al maestro** (F2 lote 2): [[CARS:L-14]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 2): [[CARS:L-14]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-15 · Self-contained read patterns eliminan races de estado en memoria
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-15]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-15]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-16 · Inyectar chrome/CSS nuevo en páginas con tema viejo → guerra de especificidad + scope de tokens
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-16]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-16]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-17 · Vestir un módulo legacy con tema nuevo: remapear sus tokens `:root`, no reescribir markup
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-17]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-17]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-18 · El chrome compartido (header/footer) puede depender de clases de un CSS que NO se inyecta en legacy
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-18]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-18]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-19 · Recomendación por similitud SIN backend — content-based con el rastro local
 - **Patrón (§138)**: para "autos semejantes a los vistos" NO hace falta GA API ni ML. Basta: (1) perfil agregado del rastro local (categorías/precio/marca/features ponderados por recencia), (2) score de similitud multi-dimensional ponderado por candidato, (3) fallback a destacados+nuevos (nunca vacío). Todo client-side con `vehicleHistory` + `vehicleDB`.
@@ -55,16 +55,16 @@
 - **Disparador**: ante "recomendaciones / relacionados / similares", evaluar content-based local ANTES de meter analytics/backend (menos acoplamiento, sin reglas Firestore).
 
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots)
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-20]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-20]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color`
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-21]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-21]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-22 · "Un azul que no sé de dónde sale" — paleta oscura FRÍA con hardcodeados dispersos (§150)
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-22]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-22]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-23 · La regla universal `* { max-width:100% }` (style.css:6450) COLAPSA el `width` explícito de elementos `position:absolute`
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-23]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-23]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-24 · Un enlace `?param=` solo filtra si la página destino LEE el param — y el filtro puede YA existir con otro nombre
 - **Disparador**: un enlace de nav/dropdown apunta a `pagina.html?x=y` para "pre-filtrar", pero la página ignora el param y muestra todo (§150.f: el dropdown enviaba a `busqueda.html?tipo=nuevo`/`?tipo=usado` y salían los 27).
@@ -74,10 +74,10 @@
 - **Decisión**: en vez de cablear `?tipo=` (esfuerzo + casi no hay autos "nuevo" en un negocio de usados), se eligió **eliminar los enlaces rotos** y dejar el filtrado en el panel (que ya funciona). Menos código, menos superficie de bug.
 
 ### L-25 · Un `<footer>`/`<header>` de sección hereda chrome GLOBAL por selector de ELEMENTO
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-25]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-25]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-28 · Verificación de UI: `preview_screenshot` se cuelga tras `preview_resize`, con `backdrop-filter` pesado, **o con un modal/overlay abierto** — verifica con snapshot + eval
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-28]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-28]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-37 · Un rediseño que ELIMINA/renombra clases rompe los callsites JS que las buscan (catch real de §3.2)
 - **Síntoma**: form de contacto en vivo: el write a `solicitudes` OK pero spinner "Enviando..." ETERNO + `_inFlight` atascado (el visitante no puede reenviar) — y CERO errores en consola (§175).
@@ -105,7 +105,7 @@
 - **Familia**: L-07 (SSG template-driven) · L-45 (DOM horneado).
 
 ### L-51 · Recuperación de borradores "pro" SIN reabrir un autosave ya rechazado: separar borrador-deliberado de red-de-seguridad-local (opt-in, scoped por uid) ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-51]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-51]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-53 · Receta de "port de un módulo al portal `admin-app/` (Vite)" — patrón repetible del PLAN-UNIFICADO F-2..F-4 (§238/§249) ⟦OPUS-4.8⟧
 - **Receta (6 pasos)**: (1) LEE la fuente `js/admin/admin-X.js` + un módulo análogo YA portado (CRUD-modal→`dealers`; lista-filtro→`contacts.list`) — copia el idioma. (2) `src/modules/X/X.data.js` (modular SDK desde `core/firebase.js`) + `X.ui.js` (`mountX(root)→cleanup`; `el/clear`·`store`·`toast`·`hasPermission`·`writeAudit`). (3) `X.css` con tokens (`--s-*`/`--surface-*`/`--ink-*`, sin hex; filas-grid como `contactos.css`, NO `<table>`). (4) Cablea `router.js` ROUTES + `shell.js` NAV (`perm:'X.read'`=GATE) + TITLES + `main.js` (mount+CSS+`MODULES`). (5) mock: `MOCK_*` + rama `store.get().mock` → visible en `?mock=1` sin Firebase. (6) `vite build` + preview `?mock=1#/X` (snapshot+eval, NO screenshot L-28).
@@ -115,31 +115,31 @@
 - **Familia**: §202 · §204 · §238 · L-28.
 
 ### L-54 · Un elemento `position:fixed`/`absolute` en `display:flex` SIN `width` y anclado a UN solo borde COLAPSA a su contenido — `max-width` no OTORGA ancho ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-54]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-54]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-55 · UI con `transition` en preview headless: el valor animado queda CONGELADO en el inicio → verifica end-states neutralizando transiciones; y tabulabilidad por-breakpoint = CSS `visibility`, no `inert` ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-55]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-55]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-56 · Sidebar de filtros ALTO: `sticky` sin tope RECORTA su mitad inferior; toggle-bp ≠ colapso-bp = franja muerta sin botón ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-56]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-56]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-58 · `parent.append(null)` nativo pinta el literal `"null"` (≠ `el()` que filtra) ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-58]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-58]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-59 · Recorte/scroll del shell sin romper los auto-scroll (TODO-52) ⟦OPUS-4.8⟧
 - Módulos FLUJO se recortan/encogen/pegan bajo `.outlet{overflow:hidden}`. Fix: `.outlet`→`overflow-y:auto` + `.outlet>*{min-width:100%}` + `padding-inline` flow, **manteniendo `display:flex` ROW (no `column` → rompe los auto-scroll)**. Receta → brief §PASE-1.
 
 ### L-60 · SVG inline **hijo-flex directo** colapsa a `width:0` sin `flex:0 0 auto` (TODO-52 P1) ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-60]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-60]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-66 · Contraste/rol a11y: mide la cascada viva (≠ el token que dice la spec) · `role=menu` es un contrato (TODO-53 P1) ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-66]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-66]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-67 · Hero de CSS `background-image` = TRAMPA de LCP → usar `<img>`/`<picture>` (TODO-53 P3) ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-67]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-67]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-69 · Grid-gap (§283) = void DENTRO de la tarjeta corta, y el masonry NO generaliza (TODO-53 P0) ⟦OPUS-4.8⟧
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-69]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-69]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

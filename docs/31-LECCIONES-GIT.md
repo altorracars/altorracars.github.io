@@ -8,7 +8,7 @@
 ---
 
 ### L-01 · `sed -i '*.html'` corrompe el fin de línea (CRLF→LF)
-⇒ **Migrada al maestro** (F2 lote 2): [[CARS:L-01]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 2): [[CARS:L-01]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-02 · Conflicto recurrente cron ↔ cache al fusionar a `main`
 - **Síntoma**: el PR de la rama marca conflicto en `js/core/cache-manager.js` (o `service-worker.js`).
@@ -19,7 +19,7 @@
 - *Doctrina relacionada: `CLAUDE.md §4` (cache bump). Vivido en §119; ampliado §303.*
 
 ### L-03 · No fusionar cada micro-paso a `main` durante un refactor largo
-⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-03]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-03]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-04 · Receta canónica para mover un archivo JS sin romper nada
 1. **Mapear refs**: `grep -rl "js/X.js"` en `*.html vehiculos/*.html marcas/*.html` + ¿dinámico en `js/core/components.js` (`.src=`)? + ¿ancla hardcodeada en `scripts/generate-vehicles.mjs`?
@@ -29,13 +29,13 @@
 5. Probar en localhost · `commit`.
 
 ### L-48 · Sesión concurrente: un `git add` amplio en otro chat arrastra tu edit sin commitear
-⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-48]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-48]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-68 · Ancla de `.replace()` que cruza `\n` falla EN SILENCIO en Windows (CRLF)
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-68]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-68]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-71 · Commit en HEAD DESPRENDIDO (tras resume) → queda COLGANTE, no llega a `dev`/`main`
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-71]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-71]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ---
 

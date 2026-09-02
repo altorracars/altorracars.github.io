@@ -7,19 +7,19 @@
 ## 🪞 Meta: fallos del propio cerebro (detalle)
 
 ### M-01 · Una neurona stale me habría engañado (Memoria Espacial)
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-01]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-01]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### M-02 · Un chequeo del cerebro dio falso negativo (casi asumo mal)
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-02]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-02]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### M-03 · El cerebro no se auto-alimentaba sin recordatorio explícito
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-03]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-03]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### M-04 · Iterar fixes sin verificar la fuente de verdad real (no solo el código de aplicación)
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-04]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-04]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### M-05 · El cerebro debe crecer en dominios ESTRATÉGICOS, no solo operacionales
-⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-05]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-05]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### M-06 · Afirmé "sin desplegar" con `git rev-list origin/main..HEAD` SIN `git fetch` → `origin/main` local stale
 - **Defecto**: le dije al cliente que su trabajo (simulador) NO estaba desplegado, basándome en `git rev-list origin/main..HEAD = 1`. Pero el `origin/main` LOCAL estaba desactualizado (no hice `git fetch`); el cliente YA había pusheado. Afirmé un estado de despliegue FALSO; el cliente me corrigió ("esto es falso ya hice todos los commit y git push").

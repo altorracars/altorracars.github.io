@@ -372,3 +372,163 @@
 
 ### L-58 · `parent.append(null)` nativo pinta el literal `"null"` (≠ `el()` que filtra) ⟦OPUS-4.8⟧
 - `append(a, panel(), b)` con `null` → text-node "null" (NO era campo Firestore ausente; A.1 adivinó §3.3). Fix: helper `core/dom.js` `appendAll()`. Detalle → brief `…crm-overhaul…` §PASE-1.
+
+---
+
+> Lote 8 · migrado 2026-09-01 · 20 lecciones.
+
+---
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (titular en `docs/30-LECCIONES.md`) · sin §NN de ADR citado ni en su titular ni en su cuerpo (cita TODO-52 P1 y una re-verificación ×3 del hub) · migrado 2026-09-01 lote 8
+
+### L-60 · SVG inline **hijo-flex directo** colapsa a `width:0` sin `flex:0 0 auto` (TODO-52 P1) ⟦OPUS-4.8⟧
+- **Síntoma**: icono SVG (botón ★→`star`) con `height` correcta (19px) pero `width:0px` (botón colapsa) aunque la regla dice `width:19px` — confirmado midiendo `getComputedStyle`/`getBoundingClientRect` en vivo.
+- **Causa**: un `<svg>` (viewBox, sin attr `width/height`) flex-item directo de un `(inline-)flex`, sin `flex:0 0 auto`, lo encoge `flex-shrink:1` en el **eje principal** (width en row) a 0; el cruzado (height) sí respeta → "height OK, width 0". Los que funcionaban (`.btn svg`/`.chip__ico`) ya traían `flex:0 0 auto`; los nuevos no.
+- **Receta**: todo `<svg>` inline hijo-flex directo lleva `flex:0 0 auto` con su `width/height` (o envuélvelo en un `<span>` flex-item). Mídelo vivo (`eval`). **Familia**: L-23 · L-28 · L-53.
+- **v2 (hub, ×3)**: en flex APRETADO el global `svg{max-width:100%}` (L-23) clampa el svg a ancho-0 → suma **`max-width:none`** al `flex:0 0 auto`. Al medir: svg bajo ancestro `display:none` (lista oculta en mobile) = `0×0` artefacto, mide a ancho desktop (L-28).
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en la MISMA línea) · pagada en CARS §261.5 · migrado 2026-09-01 lote 8
+
+### L-61 · Workflow read-only puede colgar 1 agente en el structured-output (sin tool gateada) → bloquea `parallel()`; cosechar del `journal.jsonl` + `TaskStop` + straggler a mano. → ADR §261.5. ⟦OPUS-4.8⟧
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en la MISMA línea) · pagada en CARS §261.5 · migrado 2026-09-01 lote 8
+
+### L-62 · Audit que clasifica código = FALSOS POSITIVOS (infiere emoji desde `icon('id')` ya presente) → ground-truth = `Grep` content-mode, no el JSON. Hermana §3.3. → ADR §261.5. ⟦OPUS-4.8⟧
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en la MISMA línea) · pagada en CARS §268 · migrado 2026-09-01 lote 8
+
+### L-63 · Emulador Firestore ZOMBI en Windows: tras `emulators:exec` interrumpido, el java queda escuchando en 8081 → la corrida siguiente muere con "port taken". Receta: `Get-NetTCPConnection -LocalPort 8081 -State Listen` → `Stop-Process -Id <pid> -Force` y re-correr. → ADR §268. ⟦FABLE-5⟧
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en la MISMA línea) · pagada en CARS §268 · migrado 2026-09-01 lote 8
+
+### L-64 · En firestore.rules, `resource.data.<campo>` sobre clave AUSENTE = evaluation-error (≠ null): `x == null` NUNCA matchea un campo que no existe → usar `resource.data.get('campo', default)`. Así el `validVersion()` F4.5 tuvo ROTA la migración null→1 por meses sin que nadie lo viera (los tests siempre sembraban el campo). Sembrar docs LEGACY sin el campo en los tests de rules. → ADR §268. ⟦FABLE-5⟧
+
+---
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §280 (TODO-53 P1) · migrado 2026-09-01 lote 8
+
+### L-66 · Contraste/rol a11y: mide la cascada viva (≠ el token que dice la spec) · `role=menu` es un contrato (TODO-53 P1) ⟦OPUS-4.8⟧
+- **Contraste**: mide el `getComputedStyle().color` REAL, bléndeale el alpha sobre el 1er ancestro con bg opaco, y arregla la regla que GANA por especificidad — no la que dice la spec (caso: `style.css .footer-legal a{rgba(255,255,255,0.22)}` = **1.83:1**, no el token faint; fix 0.22→0.62 = 7.81:1 AAA). Gotcha: el SW sirve CSS viejo en preview (`styleSheets`=0.22 vs `fetch(no-store)`=0.62) → unregister SW + `caches.delete()` + hard-reload.
+- **Rol**: `role="menu"` exige hijos `role="menuitem"` (axe `aria-required-children`). Barra de lanzadores/acciones ≠ menú → `role="toolbar"` + `aria-labelledby` + disclosure. **Familia**: L-16/L-21/L-20/L-23/L-54 · §280.
+
+---
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §286 (TODO-53 P3) · migrado 2026-09-01 lote 8
+
+### L-67 · Hero de CSS `background-image` = TRAMPA de LCP → usar `<img>`/`<picture>` (TODO-53 P3) ⟦OPUS-4.8⟧
+- `background-image` se descubre tarde, no admite `fetchpriority` ni el preload responsivo `imagesrcset` → LCP altísimo (**22.6s móvil**), LCP element = el `<div>`. Fix: hero = `<picture>` real (`<source>` AVIF + `<img>` WebP srcset, `fetchpriority=high`) → preload COINCIDE; UN formato (no doble-descarga); `object-fit/position` ≡ `background-size/position`; filtros en el CONTENEDOR. **Verifica el LCP con TRACE real** (el observer del preview dio 0, falso). Detalle → §286.
+
+---
+
+> Origen: CARS `docs/31-LECCIONES-GIT.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §288 — el propio cuerpo declara la colisión de numeración con el §288-carrusel de `dev` · migrado 2026-09-01 lote 8
+
+### L-68 · Ancla de `.replace()` que cruza `\n` falla EN SILENCIO en Windows (CRLF)
+- **Síntoma**: `SSG_SELFTEST=1 node scripts/generate-vehicles.mjs` falla SOLO en Windows local (`marca: esperaba 2 global(es) PRERENDERED, encontro 0`); en CI (Linux/LF) pasa y las páginas reales (`marcas/toyota.html`) SÍ tienen los globals. Falla idéntico en `dev` limpio → **no es tu cambio, es el entorno.**
+- **Causa**: la inyección de marca anclaba en un string con `\n` LITERAL (`'<script>\n        const params...'`). Con `core.autocrlf=true`, `marca.html` se checkoutea con CRLF → los bytes son `<script>\r\n        const params...` → el `\n`-only NO matchea → `.replace()` = **no-op silencioso**, 0 globals. El guard anti-fail-silent (`REQUIRED_ANCHORS_BRAND`) NO lo cazaba: validaba el substring `const params...` SIN el prefijo `<script>\n` → más laxo que el `.replace()` real (agujero del tamaño de un `\r`).
+- **Receta**: todo anchor de `.replace()` con estructura MULTILÍNEA debe (a) tolerar `\r?\n` vía regex capturando `nl`/`indent` para reproducir el original **byte-idéntico en LF** (cero regresión en CI), o (b) anclarse en UNA sola línea (inmune a CRLF — así es la inyección de vehículo, por eso nunca falló). + un guard debe validar el anchor EXACTO del `.replace()`, no un substring suelto. + post-condición ruidosa (`if (html.indexOf('window.X = ')<0) throw`) → el no-op deja de ser silencioso también en generación REAL.
+- *Vivido en el fix del selftest SSG `marca` (rama `claude/practical-franklin`; ADR de cierre §288 — ⚠️ colisión de numeración con el §288-carrusel P3.3 de `dev`/`76b01728`, reconciliar al merge). Primo de L-01 (CRLF+`sed`). El selftest es gate **MANUAL** — NO está en CI (`generate-vehicles.yml` solo corre `npm run generate`).*
+
+---
+
+> Origen: CARS `docs/33-LECCIONES-FRONTEND.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §292; el hueco de grilla venía de §283 (TODO-53 P0) · migrado 2026-09-01 lote 8
+
+### L-69 · Grid-gap (§283) = void DENTRO de la tarjeta corta, y el masonry NO generaliza (TODO-53 P0) ⟦OPUS-4.8⟧
+- `display:grid` (default `stretch`) estira la tarjeta corta a su fila + footer `margin-top:auto` (deliberado) clavado → void interno (NO entre tarjetas). `columns` (masonry §283) SOLO si el orden es irrelevante: reordena columna-mayor → ROMPE listas ordenadas → panel **0/10 APPLY-SAFE**. Fix order-preserving `align-items:start`/`line-clamp` = TRADEOFF visual → render vivo. **Un fix es LOCAL hasta demostrarlo** (re-verifica altura+orden/callsite). §292.
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en la MISMA línea) · pagada en CARS §294 (TODO-52 P0) · migrado 2026-09-01 lote 8
+
+### L-70 · Overflow móvil en filas flex/grid + cómo auditarlo (TODO-52 P0, §294) ⟦OPUS-4.8⟧: en una fila `flex-wrap:wrap` [fijo][main `flex:1;min-width:0`][precio][acciones], flex ENCOGE main a ~0 para meter todo en 1 línea (encoger precede a envolver) → el contenido de main (título) desborda. Fix: `main { flex-basis: calc(100% - <fijo> - gap) }` (o `min-width:%`) → main llena la 1ª fila, el resto envuelve debajo. Análogo: grid con cols FIJAS + col `auto` (no encoge) desborda aunque el contenido sea `minmax(0,1fr)` → achica gap/padding en móvil (§294 Bandeja). **Auditar overflow por DOM**: la señal fiable es `documentElement.scrollWidth-clientWidth` (overflow de PÁGINA); por-elemento da FALSOS POSITIVOS en scrollers intencionales (kanban `overflow-x:auto`) → excluye si un ancestro tiene `overflow-x:auto/scroll`. Mide con viewport EXPLÍCITO (`preview_resize` a WxH concreto; el preset nativo dio 0×0 → todo "desborda").
+
+---
+
+> Origen: CARS `docs/31-LECCIONES-GIT.md` (titular en `docs/30-LECCIONES.md`) · vivida en CARS §294-audit (2026-07-08) · migrado 2026-09-01 lote 8
+
+### L-71 · Commit en HEAD DESPRENDIDO (tras resume) → queda COLGANTE, no llega a `dev`/`main`
+- **Síntoma**: `git commit` imprime `[detached HEAD <hash>]` (no `[dev <hash>]`); luego `git push origin dev` = "Everything up-to-date" y el `git checkout dev` REVIERTE tu edit del working tree (vuelve al estado de `dev`). El commit existe pero es DANGLING (solo alcanzable por hash).
+- **Causa**: la sesión arrancó/quedó en HEAD desprendido (resume, o un pipeline previo `checkout main && merge && checkout dev` que abortó por `&&`). `git rev-parse HEAD` devuelve un hash estés o no en rama → NO revela el detached.
+- **Receta**: (a) ANTES de commitear, verifica `git rev-parse --abbrev-ref HEAD` == `dev` (si imprime `HEAD` = detached → `git checkout dev` primero). (b) Recuperar el colgante: desde `dev`, `git merge --ff-only <hash>` (si su padre es el tip de dev = fast-forward limpio) o `git cherry-pick <hash>`; luego push + merge normal. Vivido 2026-07-08 (§294-audit, `38539b6e` recuperado). Primo operativo de L-48.
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en la MISMA línea) · cazada en la verificación LIVE de CARS §295 · migrado 2026-09-01 lote 8
+
+### L-72 · "¿Este mes/rango tiene datos?" — cuenta lo del rango VISIBLE, no el `length` del store global ⟦OPUS-4.8⟧: un empty-state con `!store.items.length` FALLA si el store RETIENE datos de otros rangos al navegar (Agenda: `ui.events` guarda citas de meses previos; la grid filtra por día → un mes vacío tiene `ui.events.length>0` → el empty no aparecía). Cuenta los que caen en el rango visible (`weeks.some(cell.inMonth && byDay[key].length)`). Bug cazado en la verificación LIVE de §295 (mes vacío mostraba grid en vez del empty). Emparentado con el patrón CSS `:has()`/`:not(.is-out)` para ocultar ítems vacíos (§295).
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · importada de BERS §181 por la sinapsis del 2026-07-10; su gate se evaluó en CARS §299 · migrado 2026-09-01 lote 8
+
+### L-73 · Dinero + listeners = JAMÁS decidir en automático sobre una foto incompleta (origen bersaglio §181, 2026-07-10) ⟦FABLE-5⟧
+- **Síntoma (real, bersaglio)**: traslado a bóveda DUPLICADO ($5.6M fantasma) — al recargar, 4 `onSnapshot` llegaban en DESORDEN y un modal automático decidía "falta trasladar" con las fuentes a medio llegar; encima un `Math.max(0,x)` del formateador escondía un −$5.4M como "$0". Aplica IGUAL a cars (CRM `deals`/comisiones aliados §259, TODO-26 facturación, wompi futuro) e inmobiliaria: el patrón listener-decide-solo es el mismo.
+- **Receta (3 reglas)**: **(a)** toda decisión AUTOMÁTICA (modal/bloqueo/alerta/cálculo) sobre datos remotos exige **gate de fuentes-listas** — o mejor: **agregado denormalizado en UN doc** escrito server-side en la MISMA transacción (una fuente = sin carrera); botones manuales pueden ser optimistas, lo automático NO. **(b)** **deshacer netea TODAS las vistas** del mismo peso (UI estimada · ecuación/sello del server · ledger), no solo una — un descuadre ENTRE vistas es el bug aunque cada una "se vea bien" sola. **(c)** los **formateadores jamás recortan anomalías**: `Math.max(0,x)`/`|| 0`/catch vacío convierten un negativo imposible en "todo bien" → el rojo debe VERSE.
+- **Instrumentos**: skill `caza-bugs §2b` (checklist del dinero: ida-y-vuelta con recarga · foto incompleta · conservación 3-vistas · deshacer-netea-todo · negativos visibles · doble sesión) + skill `auditoria-financiera` (7 invariantes + 4 fases) + **W-13** (`60-WORKFLOWS`).
+- **Gate (evaluado ADR §299)**: el check kernel "diff toca dinero sin test del escenario" NO es mecanizable limpio en `brain-check` (byte-idéntico ×4 + sin child_process → no lee el git diff; y "test del ESCENARIO" no se verifica mecánicamente = invita green-tuning). El gate mecánico real = CI del TODO-30 (Doble Llave). Mientras: **[HONOR]** vía `caza-bugs §2b`.
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · importada por la auditoría cross-cerebros CARS §300 (2026-07-10) · migrado 2026-09-01 lote 8
+
+### L-74 · Sinapsis bersaglio→cars: 4 gotchas Firebase/dinero importados (auditoría cross-cerebros §300, 2026-07-10) ⟦FABLE-5⟧
+- **Callable v2 que devuelve 403 SIN ejecutarse** (cero logs): falta el invoker público — firebase-tools NO lo re-aplica en update → borrar y re-desplegar la function (bersaglio §115). Cars despliega callables seguido (crmSuppressContact, triggerSeoRegeneration…).
+- **`firebase functions:secrets:set` (gen2) NO re-empaqueta `functions/.env`**: tras cambiar env-vars no-secretas, re-deploy COMPLETO de la function o sigue leyendo el `.env` viejo (bersaglio, síntoma real con Wompi). Cars: 57 functions gen2.
+- **MCP `firestore_query_collection` filtrando un campo timestamp con `string_value` devuelve `[]` SIN error** = falso "no hay datos" → usar `firestore_list_documents` con `orderBy` + re-probar con ventana amplia ANTES de concluir 0 (bersaglio; hermana de M-20).
+- **El RENDER sugiere, el CLICK re-valida** (bersaglio §76): toda acción de dinero/decisión disparada desde el contexto PINTADO (NBA, acciones 1-clic de la Bandeja) RE-LEE el doc fuente al ejecutar — un fetch fallido es indistinguible de "no existe" y convierte un blip de red en decisión one-way; y todo `onSnapshot` de una superficie de control lleva error-callback (sin él la cola muere MUDA: "roto" se ve igual que "al día"). Completa L-73. Consulta a los hermanos → skill `sinapsis-cerebros`.
+
+---
+
+> Origen: CARS `docs/30-LECCIONES.md` (titular y cuerpo en el mismo nodo) · pagada en CARS §246 (F-3) · migrado 2026-09-01 lote 8
+
+### L-77 · Módulo en blanco SIN error de consola = `render()` post-`await` lanza en un `load()` fire-and-forget → unhandled rejection silenciosa ⟦OPUS-4.8⟧
+**Disparador**: un módulo de `admin-app/` (o cualquier `mount(root){ …; load(); return cleanup }`) monta su shell pero queda VACÍO, y la consola NO muestra error. **Causa**: el `render()` que corre *después* del `await` está fuera del `try/catch` de `load()`; como `load()` se invoca sin `.catch` (fire-and-forget), un throw ahí (ej. leer `m.pending.length` cuando `compute()` no devuelve `pending`) se vuelve **unhandled rejection** — invisible salvo con un listener `window.addEventListener('unhandledrejection', …)`. **Receta**: (1) al depurar un módulo en blanco, inyecta primero el listener de `unhandledrejection` vía `preview_eval` ANTES de teorizar; (2) cuida que el modelo de `compute()` contenga TODO lo que `render()` lee (desajuste de forma = el bug clásico); (3) opcional: `load().catch(…)` o envolver el `render()` final en try. F-3 §246.
+
+---
+
+> Origen: CARS `docs/32-LECCIONES-META.md` (titular en `docs/30-LECCIONES.md`) · el defecto se vivió tras la reorganización de CARS §119 · migrado 2026-09-01 lote 8
+
+### M-01 · Una neurona stale me habría engañado (Memoria Espacial)
+- **Defecto**: tras reorganizar `js/` (§119), `20-ESPACIAL` siguió describiendo el `js/` plano viejo → una sesión futura habría leído rutas inexistentes y errado.
+- **Causa**: no había regla que obligara a refrescar la memoria espacial al cambiar la estructura.
+- **Corrección**: actualicé `20-ESPACIAL` + nació el **Reflejo de Frescura (§G.4)**. Principio: una neurona vieja es peor que ninguna.
+
+---
+
+> Origen: CARS `docs/32-LECCIONES-META.md` (titular en `docs/30-LECCIONES.md`) · sin §NN de ADR citado ni en su titular ni en su cuerpo (cita la RCA §19 del `CLAUDE.md`) · migrado 2026-09-01 lote 8
+
+### M-02 · Un chequeo del cerebro dio falso negativo (casi asumo mal)
+- **Defecto**: mi `grep` de "CSS dinámico" devolvió 0 por comillas mal escapadas → casi concluyo que todo el CSS era estático (falso: `components.js` carga 4 CSS).
+- **Causa**: confié en un resultado de `0` sin verificar archivo-por-archivo.
+- **Corrección**: regla en L-10 — **un chequeo que devuelve 0 puede ser falso negativo; verificar los 0-ref uno por uno** antes de asumir. Refuerza RCA §19.
+
+---
+
+> Origen: CARS `docs/32-LECCIONES-META.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §123 · migrado 2026-09-01 lote 8
+
+### M-03 · El cerebro no se auto-alimentaba sin recordatorio explícito
+- **Defecto** (reportado por el cliente): los Reflejos §G.4 eran principios descriptivos, no checklist — al cerrar tareas se omitía la consolidación ("lo documento después" → nunca).
+- **Corrección**: **Reflejo de Cierre (§G.4)** — checklist enforzable ANTES de declarar lista una tarea (10/05/99/00/30/cache/brain:check); si falta algo, NO está cerrada (ADR §123). **Principio**: lo crítico se convierte en checklist accionable en el momento exacto donde falla, no en doctrina de arranque.
+
+---
+
+> Origen: CARS `docs/32-LECCIONES-META.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §124 · migrado 2026-09-01 lote 8
+
+### M-04 · Iterar fixes sin verificar la fuente de verdad real (no solo el código de aplicación)
+- **Defecto (SP-5.0)**: 3 rondas iteraron sobre el código de app (`historial-visitas.js`...) asumiendo el bug ahí; la causa real era **el service worker** (stale-while-revalidate servía código viejo). La ronda 4 lo cazó al LEER el SW.
+- **Corrección**: "verificar la fuente de verdad real" (§19 RCA) = NO solo el código de app — también SW/cache/CDN/build. Si el bug persiste tras 2 hipótesis fallidas en un módulo, mira FUERA (infraestructura); el Trigger de Error §G.2 lo incluye. **Principio**: cambia el lente, no la profundidad. ADR §124.
+
+---
+
+> Origen: CARS `docs/32-LECCIONES-META.md` (titular en `docs/30-LECCIONES.md`) · pagada en CARS §125 · migrado 2026-09-01 lote 8
+
+### M-05 · El cerebro debe crecer en dominios ESTRATÉGICOS, no solo operacionales
+- **Defecto**: el cerebro acumulaba memoria operacional pero NO análisis especializado (seguridad/legal/UX/SEO/perf/a11y) — cada sesión re-investigaba esos dominios desde cero.
+- **Corrección (ADR §125)**: Trigger 🔵 + registry de Lóbulos (`40-LOBULOS-DOMINIO`) + skills externas. Skills = framework genérico; lóbulos hijos (`41`, `42`…) = findings proyecto-específicos, nacen on-demand CON contenido real (anti-patrón rechazado: neuronas vacías "para preparar el terreno" — viola anti-fragmentación §G.4).

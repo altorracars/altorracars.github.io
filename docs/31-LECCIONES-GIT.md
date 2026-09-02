@@ -32,15 +32,10 @@
 ⇒ **Migrada al maestro** (F2 lote 7): [[CARS:L-48]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-68 · Ancla de `.replace()` que cruza `\n` falla EN SILENCIO en Windows (CRLF)
-- **Síntoma**: `SSG_SELFTEST=1 node scripts/generate-vehicles.mjs` falla SOLO en Windows local (`marca: esperaba 2 global(es) PRERENDERED, encontro 0`); en CI (Linux/LF) pasa y las páginas reales (`marcas/toyota.html`) SÍ tienen los globals. Falla idéntico en `dev` limpio → **no es tu cambio, es el entorno.**
-- **Causa**: la inyección de marca anclaba en un string con `\n` LITERAL (`'<script>\n        const params...'`). Con `core.autocrlf=true`, `marca.html` se checkoutea con CRLF → los bytes son `<script>\r\n        const params...` → el `\n`-only NO matchea → `.replace()` = **no-op silencioso**, 0 globals. El guard anti-fail-silent (`REQUIRED_ANCHORS_BRAND`) NO lo cazaba: validaba el substring `const params...` SIN el prefijo `<script>\n` → más laxo que el `.replace()` real (agujero del tamaño de un `\r`).
-- **Receta**: todo anchor de `.replace()` con estructura MULTILÍNEA debe (a) tolerar `\r?\n` vía regex capturando `nl`/`indent` para reproducir el original **byte-idéntico en LF** (cero regresión en CI), o (b) anclarse en UNA sola línea (inmune a CRLF — así es la inyección de vehículo, por eso nunca falló). + un guard debe validar el anchor EXACTO del `.replace()`, no un substring suelto. + post-condición ruidosa (`if (html.indexOf('window.X = ')<0) throw`) → el no-op deja de ser silencioso también en generación REAL.
-- *Vivido en el fix del selftest SSG `marca` (rama `claude/practical-franklin`; ADR de cierre §288 — ⚠️ colisión de numeración con el §288-carrusel P3.3 de `dev`/`76b01728`, reconciliar al merge). Primo de L-01 (CRLF+`sed`). El selftest es gate **MANUAL** — NO está en CI (`generate-vehicles.yml` solo corre `npm run generate`).*
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-68]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-71 · Commit en HEAD DESPRENDIDO (tras resume) → queda COLGANTE, no llega a `dev`/`main`
-- **Síntoma**: `git commit` imprime `[detached HEAD <hash>]` (no `[dev <hash>]`); luego `git push origin dev` = "Everything up-to-date" y el `git checkout dev` REVIERTE tu edit del working tree (vuelve al estado de `dev`). El commit existe pero es DANGLING (solo alcanzable por hash).
-- **Causa**: la sesión arrancó/quedó en HEAD desprendido (resume, o un pipeline previo `checkout main && merge && checkout dev` que abortó por `&&`). `git rev-parse HEAD` devuelve un hash estés o no en rama → NO revela el detached.
-- **Receta**: (a) ANTES de commitear, verifica `git rev-parse --abbrev-ref HEAD` == `dev` (si imprime `HEAD` = detached → `git checkout dev` primero). (b) Recuperar el colgante: desde `dev`, `git merge --ff-only <hash>` (si su padre es el tip de dev = fast-forward limpio) o `git cherry-pick <hash>`; luego push + merge normal. Vivido 2026-07-08 (§294-audit, `38539b6e` recuperado). Primo operativo de L-48.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-71]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ---
 

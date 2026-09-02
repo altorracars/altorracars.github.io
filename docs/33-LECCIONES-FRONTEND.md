@@ -130,20 +130,16 @@
 - Módulos FLUJO se recortan/encogen/pegan bajo `.outlet{overflow:hidden}`. Fix: `.outlet`→`overflow-y:auto` + `.outlet>*{min-width:100%}` + `padding-inline` flow, **manteniendo `display:flex` ROW (no `column` → rompe los auto-scroll)**. Receta → brief §PASE-1.
 
 ### L-60 · SVG inline **hijo-flex directo** colapsa a `width:0` sin `flex:0 0 auto` (TODO-52 P1) ⟦OPUS-4.8⟧
-- **Síntoma**: icono SVG (botón ★→`star`) con `height` correcta (19px) pero `width:0px` (botón colapsa) aunque la regla dice `width:19px` — confirmado midiendo `getComputedStyle`/`getBoundingClientRect` en vivo.
-- **Causa**: un `<svg>` (viewBox, sin attr `width/height`) flex-item directo de un `(inline-)flex`, sin `flex:0 0 auto`, lo encoge `flex-shrink:1` en el **eje principal** (width en row) a 0; el cruzado (height) sí respeta → "height OK, width 0". Los que funcionaban (`.btn svg`/`.chip__ico`) ya traían `flex:0 0 auto`; los nuevos no.
-- **Receta**: todo `<svg>` inline hijo-flex directo lleva `flex:0 0 auto` con su `width/height` (o envuélvelo en un `<span>` flex-item). Mídelo vivo (`eval`). **Familia**: L-23 · L-28 · L-53.
-- **v2 (hub, ×3)**: en flex APRETADO el global `svg{max-width:100%}` (L-23) clampa el svg a ancho-0 → suma **`max-width:none`** al `flex:0 0 auto`. Al medir: svg bajo ancestro `display:none` (lista oculta en mobile) = `0×0` artefacto, mide a ancho desktop (L-28).
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-60]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-66 · Contraste/rol a11y: mide la cascada viva (≠ el token que dice la spec) · `role=menu` es un contrato (TODO-53 P1) ⟦OPUS-4.8⟧
-- **Contraste**: mide el `getComputedStyle().color` REAL, bléndeale el alpha sobre el 1er ancestro con bg opaco, y arregla la regla que GANA por especificidad — no la que dice la spec (caso: `style.css .footer-legal a{rgba(255,255,255,0.22)}` = **1.83:1**, no el token faint; fix 0.22→0.62 = 7.81:1 AAA). Gotcha: el SW sirve CSS viejo en preview (`styleSheets`=0.22 vs `fetch(no-store)`=0.62) → unregister SW + `caches.delete()` + hard-reload.
-- **Rol**: `role="menu"` exige hijos `role="menuitem"` (axe `aria-required-children`). Barra de lanzadores/acciones ≠ menú → `role="toolbar"` + `aria-labelledby` + disclosure. **Familia**: L-16/L-21/L-20/L-23/L-54 · §280.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-66]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-67 · Hero de CSS `background-image` = TRAMPA de LCP → usar `<img>`/`<picture>` (TODO-53 P3) ⟦OPUS-4.8⟧
-- `background-image` se descubre tarde, no admite `fetchpriority` ni el preload responsivo `imagesrcset` → LCP altísimo (**22.6s móvil**), LCP element = el `<div>`. Fix: hero = `<picture>` real (`<source>` AVIF + `<img>` WebP srcset, `fetchpriority=high`) → preload COINCIDE; UN formato (no doble-descarga); `object-fit/position` ≡ `background-size/position`; filtros en el CONTENEDOR. **Verifica el LCP con TRACE real** (el observer del preview dio 0, falso). Detalle → §286.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-67]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-69 · Grid-gap (§283) = void DENTRO de la tarjeta corta, y el masonry NO generaliza (TODO-53 P0) ⟦OPUS-4.8⟧
-- `display:grid` (default `stretch`) estira la tarjeta corta a su fila + footer `margin-top:auto` (deliberado) clavado → void interno (NO entre tarjetas). `columns` (masonry §283) SOLO si el orden es irrelevante: reordena columna-mayor → ROMPE listas ordenadas → panel **0/10 APPLY-SAFE**. Fix order-preserving `align-items:start`/`line-clamp` = TRADEOFF visual → render vivo. **Un fix es LOCAL hasta demostrarlo** (re-verifica altura+orden/callsite). §292.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-69]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento: síntoma → causa →
 > receta; solo lo reutilizable. Tope ~350 líneas (§G.5 hojas). Si crece, shard por sub-categoría.

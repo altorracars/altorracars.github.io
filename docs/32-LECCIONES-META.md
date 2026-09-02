@@ -7,26 +7,19 @@
 ## 🪞 Meta: fallos del propio cerebro (detalle)
 
 ### M-01 · Una neurona stale me habría engañado (Memoria Espacial)
-- **Defecto**: tras reorganizar `js/` (§119), `20-ESPACIAL` siguió describiendo el `js/` plano viejo → una sesión futura habría leído rutas inexistentes y errado.
-- **Causa**: no había regla que obligara a refrescar la memoria espacial al cambiar la estructura.
-- **Corrección**: actualicé `20-ESPACIAL` + nació el **Reflejo de Frescura (§G.4)**. Principio: una neurona vieja es peor que ninguna.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-01]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### M-02 · Un chequeo del cerebro dio falso negativo (casi asumo mal)
-- **Defecto**: mi `grep` de "CSS dinámico" devolvió 0 por comillas mal escapadas → casi concluyo que todo el CSS era estático (falso: `components.js` carga 4 CSS).
-- **Causa**: confié en un resultado de `0` sin verificar archivo-por-archivo.
-- **Corrección**: regla en L-10 — **un chequeo que devuelve 0 puede ser falso negativo; verificar los 0-ref uno por uno** antes de asumir. Refuerza RCA §19.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-02]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### M-03 · El cerebro no se auto-alimentaba sin recordatorio explícito
-- **Defecto** (reportado por el cliente): los Reflejos §G.4 eran principios descriptivos, no checklist — al cerrar tareas se omitía la consolidación ("lo documento después" → nunca).
-- **Corrección**: **Reflejo de Cierre (§G.4)** — checklist enforzable ANTES de declarar lista una tarea (10/05/99/00/30/cache/brain:check); si falta algo, NO está cerrada (ADR §123). **Principio**: lo crítico se convierte en checklist accionable en el momento exacto donde falla, no en doctrina de arranque.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-03]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### M-04 · Iterar fixes sin verificar la fuente de verdad real (no solo el código de aplicación)
-- **Defecto (SP-5.0)**: 3 rondas iteraron sobre el código de app (`historial-visitas.js`...) asumiendo el bug ahí; la causa real era **el service worker** (stale-while-revalidate servía código viejo). La ronda 4 lo cazó al LEER el SW.
-- **Corrección**: "verificar la fuente de verdad real" (§19 RCA) = NO solo el código de app — también SW/cache/CDN/build. Si el bug persiste tras 2 hipótesis fallidas en un módulo, mira FUERA (infraestructura); el Trigger de Error §G.2 lo incluye. **Principio**: cambia el lente, no la profundidad. ADR §124.
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-04]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### M-05 · El cerebro debe crecer en dominios ESTRATÉGICOS, no solo operacionales
-- **Defecto**: el cerebro acumulaba memoria operacional pero NO análisis especializado (seguridad/legal/UX/SEO/perf/a11y) — cada sesión re-investigaba esos dominios desde cero.
-- **Corrección (ADR §125)**: Trigger 🔵 + registry de Lóbulos (`40-LOBULOS-DOMINIO`) + skills externas. Skills = framework genérico; lóbulos hijos (`41`, `42`…) = findings proyecto-específicos, nacen on-demand CON contenido real (anti-patrón rechazado: neuronas vacías "para preparar el terreno" — viola anti-fragmentación §G.4).
+⇒ **Migrada al maestro** (F2 lote 8): [[CARS:M-05]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### M-06 · Afirmé "sin desplegar" con `git rev-list origin/main..HEAD` SIN `git fetch` → `origin/main` local stale
 - **Defecto**: le dije al cliente que su trabajo (simulador) NO estaba desplegado, basándome en `git rev-list origin/main..HEAD = 1`. Pero el `origin/main` LOCAL estaba desactualizado (no hice `git fetch`); el cliente YA había pusheado. Afirmé un estado de despliegue FALSO; el cliente me corrigió ("esto es falso ya hice todos los commit y git push").

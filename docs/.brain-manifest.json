@@ -130,13 +130,14 @@
     }
   ],
   "deepAudit": {
-    "last": "2026-07-23",
-    "coveredHeaderCount": 336,
+    "last": "2026-09-01",
+    "coveredHeaderCount": 338,
     "maxAdrGap": 12,
     "maxDays": 30,
-    "_que": "comite v6 = linea base; N2 #1 = item U (§206); N2 #2 = falencias del lazo (§207, M-16, TODO-29); N2 #3 = §226 (maquinaria/L-50); N2 #4 = §239 (post F-2: boot-cap reincidente M-10 + gap source/dist); N2 #5 = §281 (post OLA 3.3-3.5); N2 #6 = §303 (resonancia post-pausa: S3/S7 REALES por 1a vez, drill 3/4 curado, S7-F1 confirmado -> TODO-40c, F2 refutado)"
+    "tableFile": "2026-09-01-auditoria-cerebro-nivel2-crudo.md",
+    "_que": "comite v6 = linea base; N2 #1 = item U (§206); N2 #2 = falencias del lazo (§207, M-16, TODO-29); N2 #3 = §226 (maquinaria/L-50); N2 #4 = §239 (post F-2: boot-cap reincidente M-10 + gap source/dist); N2 #5 = §281 (post OLA 3.3-3.5); N2 #6 = §303 (resonancia post-pausa: S3/S7 REALES por 1a vez, drill 3/4 curado, S7-F1 confirmado -> TODO-40c, F2 refutado); N2 #7 = §305 y es PARCIAL, hay que decirlo: corrida desde la sesion de ALTORRA Inmobiliaria porque el gate llevaba 40 dias vencido y BLOQUEABA el lote 2 del CEREBRO MAESTRO. Sondas 0/1/2/5-ligera/6 CORRIDAS por verificacion directa; sondas 3 (retrieval-drill), 4 (fidelidad de deliberacion) y 7 (voz adversarial) NO CORRIDAS -> exigen un agente FRIO y ajeno, y quien migro y audito no puede ser su propio agente frio. La #8 de cars DEBE empezar por esas tres: hasta entonces nadie ha medido si este cerebro ENTREGA lo que sabe, solo que esta bien ordenado. Hallazgos: C-01 (ALTA) el sello del 05 decia 23-jul con el fichero modificado 5 veces despues -> el gate #10 mide el sello contra si mismo; C-03 (MED) el 05 delego rama/HEAD/cache al sidecar .estado-auto.md, que va 17 commits atras y cuyo `generado:` no mide ningun gate -> TODO-40(d), ABIERTO; C-02 (MED) verificado-vivo era 3 de 4 repos (falta insema); C-04 (LOW) FIXED. C-05 RETIRADO por FALSO: dije que al 10 le faltaba fecha legible y el kernel dice lo contrario en brain-check.mjs:812-819 (la linea de COBERTURA ES el diseno; teclear la fecha seria jugar con el gate, K-04) - la fecha se revirtio en el mismo turno. Cerrados con evidencia: B-08 y B-10 (boot ~35.4k -> 30040c, termina una reincidencia de 5 auditorias). GC pareado: boot 30040c -> 29959c = -81c, con EOL normalizados (read() del kernel hace CRLF->LF)."
   },
-  "lastOffsiteBackup": "2026-07-23",
+  "lastOffsiteBackup": "2026-08-28",
   "orphanAllowlist": [
     ".handoff-auto.md",
     ".estado-auto.md"

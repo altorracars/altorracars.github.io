@@ -6,18 +6,10 @@
 > `CLAUDE.md §G`).
 >
 > **Cerebro completo**: 🧠 `CLAUDE.md` (router/identidad) · 🩺 `05-ESTADO-GLOBAL.md` (signos vitales)
-> · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura; hija 🚗 `21-ESPACIAL-ADMIN.md` = portal admin)
-> · ⚡ `11-PENDIENTES-CONGELADOS.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura; hija 🚗 `21-ESPACIAL-ADMIN.md` = portal admin)
+> · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP) · ⚡ `11-PENDIENTES-CONGELADOS.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura; hija 🚗 `21-ESPACIAL-ADMIN.md` = portal admin)
 > · 🧪 `30-LECCIONES.md` (experiencia/recetas; hijas 🔧 `31-LECCIONES-GIT.md` · 🪞 `32-LECCIONES-META.md`) · 🔁 `60-WORKFLOWS.md` (workflows W-01..W-11; **W-11 = flujo fuerte**) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
 >
-> **Cómo usarlo (regla de oro anti-saturación)**:
-> 1. Busca aquí el § que necesitas y su línea de inicio.
-> 2. Lee SOLO ese tramo: `Read docs/99-HISTORIAL-ADR.md offset=<línea> limit=~150`.
-> 3. NUNCA leas el historial completo (~43k líneas saturan el contexto al instante).
->
-> Ejemplo: para el Plan §61 RBAC → línea 26879 → `Read docs/99-HISTORIAL-ADR.md offset=26879 limit=200`.
->
-> Grep rápido: `grep -n "^## " docs/99-HISTORIAL-ADR.md` regenera este mapa.
+> **Cómo se usa** → la regla de oro anti-saturación de `CLAUDE.md §0`, que se auto-carga: busca aquí la línea y lee SOLO ese tramo del `99`, jamás el fichero entero.
 
 ---
 
@@ -184,6 +176,7 @@
 | §303 | **Resonancia mantenimiento-general + N2 #6 COMPLETA + merge cron L-02 ⟦FABLE-5⟧** — 1ª sesión tras 13d de pausa: PR en conflicto resuelto (solo-cron tocó los 4 → `--theirs` versión nueva; dev==main `14dae0c1`, kernel v1.4-1.6 preservado) · 33 ticks de 6 specs ANCLADOS (gate #13 v1.3) · 05/10 re-sync + GC (masa-neta ≤0) · **N2 #6 con S3/S7 REALES** (drill frío 3/4→curado B-05 callable-403 en 00; S7: F1 confirmado→TODO-40c freno CI 05-stale · F2 REFUTADO canónico-vivo · F5→propuesta inmob sinapsis §4b) · backups ×5 restauración PROBADA · kernel v1.6.0 pulled · hermanos SANOS ×3 · L-02 ampliada. Crudo → bóveda 2026-07-23. | 44773 |
 | §304 | **Lote 2 del CEREBRO MAESTRO ⟦OPUS-5⟧** — `L-01`+`L-14` mudan su CUERPO a la bóveda (`maestro/…/CARS/`); titular de `30` intacto + marca, stub en `31`/`33` → `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`. Censo sha 5/5 · MIGRADO, no SELLADO. | 44785 |
 | §305 | **Deuda propia saldada: kernel v1.29.0 + auditoría N2 #7 PARCIAL ⟦OPUS-5⟧** — se paga lo que bloqueaba el §304, **jamás `--no-verify`**. Sondas 0/1/2/5/6 corridas; **3/4/7 PENDIENTES** (exigen agente frío). C-01 el sello del `05` mentía (5 commits después); C-03 el sidecar `.estado-auto` sin gate de frescura → TODO-40(d); C-02 `verificado-vivo` era 3/4 repos. B-10 CERRADO (boot 35.4k→30040c, fin de reincidencia ×5). GC −65c · `brain:check` SANO. | 44804 |
+| §306 | **Lote 6 del CEREBRO MAESTRO ⟦OPUS-5⟧** — **20** lecciones de cars (`L-03`…`L-30`; frontend/CSS/Firebase) mudan su CUERPO a la bóveda. Censo sha **20/20** ×3 vías · **`33` sale de su exceso** 36261→23968c. MIGRADO, no SELLADO. | 44827 |
 | §243 | **F-2 (5/6) `auditoria` visor en admin-app ⟦OPUS⟧** — LECTOR read-only de `auditLog`: lista cronológica (onSnapshot 200) + buscador + filtro; inmutable. | 44069 |
 | §242 | **F-2 (4/6) `workflows`/Automatización en admin-app ⟦OPUS⟧** — port admin-automation: NO CRUD (verificar-no-asumir) sino 4 reglas FIJAS toggle + visor `automationLog`; motor sigue legacy client-side (→TODO-41) + gap RBAC `workflows.edit`. dist gateado. | 44057 |
 | §241 | **F-2 (3/6) `departamentos` en admin-app ⟦OPUS⟧** — catálogo ④a `departments/{id}` (grid+modal, id slug `dept_<slug>`). Guard §66 (no borrar con userCount>0, UI+rules). Port admin-departments. dist gateado. | 44045 |

@@ -20,14 +20,14 @@
 
 ### L-01 · `sed -i` corrompe CRLF→LF → detalle en `31-LECCIONES-GIT.md` ⇒ **migrada al maestro**: [[CARS:L-01]]
 ### L-02 · Conflicto cron↔cache al fusionar → detalle en `31-LECCIONES-GIT.md`
-### L-03 · No fusionar micro-pasos a `main` → detalle en `31-LECCIONES-GIT.md`
+### L-03 · No fusionar micro-pasos a `main` → detalle en `31-LECCIONES-GIT.md` ⇒ **migrada al maestro**: [[CARS:L-03]]
 ### L-04 · Receta para mover un JS sin romper → detalle en `31-LECCIONES-GIT.md`
 
 ---
 
 ## 🌐 Frontend / runtime / CSS → `33-LECCIONES-FRONTEND.md` (neurona hija · shard A5 §206 — aquí quedan stubs `### L-NN`; algunos dispersos abajo)
 
-### L-05 · `<base href="/">` hace que TODA ruta sea raíz-relativa idéntica → detalle en `33-LECCIONES-FRONTEND.md`
+### L-05 · `<base href="/">` hace que TODA ruta sea raíz-relativa idéntica → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-05]]
 
 ### L-06 · `js/core/components.js` es un CARGADOR DINÁMICO (refs ocultas) → detalle en `33-LECCIONES-FRONTEND.md`
 
@@ -35,23 +35,22 @@
 
 ### L-07 · El generador es TEMPLATE-DRIVEN (cron cada 4h) → detalle en `33-LECCIONES-FRONTEND.md`
 
-### L-11 · PORTs JSX→vanilla — class-name fidelity (JS-emit ≡ CSS-define) → detalle en `33-LECCIONES-FRONTEND.md`
+### L-11 · PORTs JSX→vanilla — class-name fidelity (JS-emit ≡ CSS-define) → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-11]]
 
-### L-12 · Re-render por `onChange` acumula listeners en el padre — teardown explícito siempre → detalle en `33-LECCIONES-FRONTEND.md`
+### L-12 · Re-render por `onChange` acumula listeners en el padre — teardown explícito siempre → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-12]]
 
-### L-13 · Módulos lazy-loaded — guards `typeof` en click-time + event delegation → detalle en `33-LECCIONES-FRONTEND.md`
+### L-13 · Módulos lazy-loaded — guards `typeof` en click-time + event delegation → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-13]]
 
 ### L-14 · SW stale-while-revalidate puede servir JS viejo en critical-path post-deploy → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-14]]
 
-### L-15 · Self-contained read patterns eliminan races de estado en memoria → detalle en `33-LECCIONES-FRONTEND.md`
+### L-15 · Self-contained read patterns eliminan races de estado en memoria → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-15]]
 
 ---
 
 ## 🔥 Firebase / entorno
 
-### L-08 · Los errores `403` de Firebase en `localhost` son NORMALES — y el bloqueo es MÁS amplio que Auth
-- **Causa**: la API key restringe HTTP referrer (solo `altorracars.github.io` + dominios Firebase), no `localhost` → 403 en Auth/Installations/Analytics + tumba **App Check** (`appCheck/throttled`, backoff 1 DÍA). Es seguridad funcionando bien.
-- **Receta (E2E §175)**: E2E de captura/forms = SOLO contra el dominio live (`main`); para lógica de UI sin red, **stubear `window.db`** en el preview (stub de `.add()` resuelto ejercita el handler real). En localhost NO se prueba login/Auth ni writes; SÍ: archivos (0 `404`), Firestore público de LECTURA, render.
+### L-08 · Los errores `403` de Firebase en `localhost` son NORMALES — y el bloqueo es MÁS amplio que Auth ⇒ **migrada al maestro**: [[CARS:L-08]]
+Cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (punto de retorno del ABORT).
 
 ### L-43 · La ADC de esta máquina está ligada a `bersaglio-jewelry` → scripts Admin SDK contra `altorra-cars` dan `PERMISSION_DENIED` (IAM, NO rules) ⟦OPUS-4.8 · rev-Fable⟧
 - **Síntoma**: `node functions/<script>.mjs` (Admin SDK + ADC) contra altorra-cars aborta con `7 PERMISSION_DENIED: Missing or insufficient permissions`, aunque el MISMO patrón corre bien en bersaglio (`backfill-claims.mjs`).
@@ -76,16 +75,14 @@
 
 ## 🗂️ Validación de código muerto
 
-### L-09 · Cómo confirmar que un archivo es código muerto (antes de cuarentenar)
-- Cero refs internas (`grep` en HTML/JS/MJS) + no en `sitemap.xml` + (para herramientas) **sin autenticación** cuando las `firestore.rules` actuales la exigen → no podría funcionar aunque se abriera.
-- Casos validados §119: `admin-upload.html` (sin auth → rules §68 rechazan escrituras), `theme-switcher.js` (comentario "eliminado — tema dark permanente", 0 cargas).
-- **Acción**: cuarentenar a `_legacy/` (reversible) + documentar en `_legacy/README.md`, NO borrar de una.
+### L-09 · Cómo confirmar que un archivo es código muerto (antes de cuarentenar) ⇒ **migrada al maestro**: [[CARS:L-09]]
+Cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (punto de retorno del ABORT).
 
-### L-16 · Inyectar chrome/CSS nuevo en páginas con tema viejo → guerra de especificidad + scope de tokens → detalle en `33-LECCIONES-FRONTEND.md`
+### L-16 · Inyectar chrome/CSS nuevo en páginas con tema viejo → guerra de especificidad + scope de tokens → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-16]]
 
-### L-17 · Vestir un módulo legacy con tema nuevo: remapear sus tokens `:root`, no reescribir markup → detalle en `33-LECCIONES-FRONTEND.md`
+### L-17 · Vestir un módulo legacy con tema nuevo: remapear sus tokens `:root`, no reescribir markup → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-17]]
 
-### L-18 · El chrome compartido (header/footer) puede depender de clases de un CSS que NO se inyecta en legacy → detalle en `33-LECCIONES-FRONTEND.md`
+### L-18 · El chrome compartido (header/footer) puede depender de clases de un CSS que NO se inyecta en legacy → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-18]]
 
 ### L-19 · Recomendación por similitud SIN backend — content-based con el rastro local → detalle en `33-LECCIONES-FRONTEND.md`
 
@@ -125,13 +122,13 @@
 ### M-23 · Mi validación verifica que FUNCIONE, no que se VEA BIEN — Chrome(DOM) + caza-bugs cazaron CERO defectos de diseño; el dueño los cazó TODOS a ojo ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
 ### M-24 · Construí maquinaria NUEVA compleja cuando ya existía una solución simple A LA MANO — el dueño: "tienes las cosas visibles a la mano e hiciste algo mas complejo" ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
 ### M-25 · El cerebro PIERDE MEMORIA cuando el MISMO hecho vive en registros que se CONTRADICEN ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
-### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md`
+### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-20]]
 
-### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md`
+### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-21]]
 
-### L-22 · "Un azul que no sé de dónde sale" — paleta oscura FRÍA con hardcodeados dispersos (§150) → detalle en `33-LECCIONES-FRONTEND.md`
+### L-22 · "Un azul que no sé de dónde sale" — paleta oscura FRÍA con hardcodeados dispersos (§150) → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-22]]
 
-### L-23 · La regla universal `* { max-width:100% }` (style.css:6450) COLAPSA el `width` explícito de elementos `position:absolute` → detalle en `33-LECCIONES-FRONTEND.md`
+### L-23 · La regla universal `* { max-width:100% }` (style.css:6450) COLAPSA el `width` explícito de elementos `position:absolute` → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-23]]
 
 ### L-54 · Un flex `fixed`/`absolute` SIN `width` anclado a un solo borde COLAPSA a su contenido (`max-width` no otorga ancho); verifica con viewport de ancho REAL (headless da `innerWidth:0`) → detalle en `33-LECCIONES-FRONTEND.md`
 
@@ -140,25 +137,15 @@
 
 ### L-24 · Un enlace `?param=` solo filtra si la página destino LEE el param — y el filtro puede YA existir con otro nombre → detalle en `33-LECCIONES-FRONTEND.md`
 
-### L-25 · Un `<footer>`/`<header>` de sección hereda chrome GLOBAL por selector de ELEMENTO → detalle en `33-LECCIONES-FRONTEND.md`
+### L-25 · Un `<footer>`/`<header>` de sección hereda chrome GLOBAL por selector de ELEMENTO → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-25]]
 
-### L-26 · Trigger Firestore de ingestión: `merge:true` pisa campos first-seen + el mark de idempotencia DEBE ir en la transacción
-- **Disparador**: Cloud Function que normaliza un doc de entrada a un modelo canónico haciendo **upsert** de una entidad (contacto/persona) por clave de dedup — capa de ingestión del CRM (Fase 1, §158, `functions/src/ingestion/onSolicitudCreated.js`).
-- **Causa / dos trampas**:
-  1. `batch.set(ref, fullObject, {merge:true})` NO borra campos ausentes, pero SÍ **sobrescribe** los presentes. Si `fullObject` trae `createdAt`/`score`/`ownerId`/`rating` con defaults, un 2º evento del MISMO sujeto **pisa** la fecha de primer-contacto y los campos volátiles que un humano ya editó. Bug latente (inofensivo hasta que algo setea esos campos) → corrupción silenciosa.
-  2. Marcar idempotencia (`_ingestedAt`) en un `update` SEPARADO tras `batch.commit()` deja una **ventana de crash**: si la función muere entre commit y mark, el reintento RE-crea lead/activity (auto-id) → duplicados.
-- **Receta**: **`db.runTransaction`**: `tx.get(ref)` → si NO existe `tx.set(full)`; si existe `tx.update({lastActivityAt,updatedAt})` (NO pisar first-seen/volátiles); + `tx.update(snap.ref,{_ingestedAt})` DENTRO de la misma transacción = todo-o-nada, cero duplicados. La contención de transacción resuelve dos eventos concurrentes del mismo sujeto nuevo (el 2º reintenta y ve "existe").
-- **Meta**: lógica PURA (normalize) → unit-test sin Firebase (rápido); trigger fino (I/O) → emulador. **ACTUALIZADO §177**: Java 25 SÍ está instalado en esta máquina → el emulador corre local (`firebase emulators:exec --only firestore "npm --prefix functions test"`); los tests de rules viven en `functions/src/rules/` con `describe.skipIf(!FIRESTORE_EMULATOR_HOST)` (en `npm test` normal se saltan). La 2ª etapa de revisión (subagent-driven, correctness) cazó ambas trampas ANTES del deploy → revisar SIEMPRE triggers con efectos de datos.
+### L-26 · Trigger Firestore de ingestión: `merge:true` pisa campos first-seen + el mark de idempotencia DEBE ir en la transacción ⇒ **migrada al maestro**: [[CARS:L-26]]
+Cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (punto de retorno del ABORT).
 
-### L-27 · App admin greenfield (Vite + Firebase modular) en paralelo: namespacing + estado compartido entre módulos
-- **Disparador**: construir una app nueva (`admin-app/`) que corre AL LADO del admin viejo en el mismo dominio/projectId, leyendo el mismo Firestore (CRM Fase 2, §159).
-- **Recetas**:
-  1. **Aísla la sesión de auth**: `initializeApp(config, 'altorra-crm')` (app nombrada) → la clave IndexedDB `firebase:authUser:<apiKey>:altorra-crm` no choca con la compat `[DEFAULT]`/`altorra-admin` del sitio/admin viejo. Sin nombre, el modular `[DEFAULT]` colisiona con el compat `[DEFAULT]` en el mismo origen.
-  2. **Auth = réplica del modelo LIVE, no del diseño**: verifiqué que el backend NO setea custom claims y las reglas usan lookup `usuarios/{uid}` → hidraté permisos de ahí (no claims). Construir lo que el diseño *menciona* sin verificar el backend habría roto el login. (verifica-no-asumas §3.3).
-  3. **Estado entre módulos por capas**: si el módulo A (inbox) posee los datos y el módulo B (360) los necesita, A debe **espejarlos al store** (`store.set({leads})`) en cada cambio; B los lee de ahí. Olvidarlo = panel B abre VACÍO (bug real cazado por verificación). No basta tener el dato en una variable local del controlador.
-- **Meta**: `base:'./'` en Vite → el `dist` sirve desde cualquier subruta de Pages (`/admin-app/dist/`) sin CI nuevo, sin tocar el deploy del sitio público. Cache-busting por hash → sin `CACHE_VERSION` manual para el admin.
+### L-27 · App admin greenfield (Vite + Firebase modular) en paralelo: namespacing + estado compartido entre módulos ⇒ **migrada al maestro**: [[CARS:L-27]]
+Cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (punto de retorno del ABORT).
 
-### L-28 · Verificación de UI: `preview_screenshot` se cuelga tras `preview_resize` (o con `backdrop-filter` pesado) — verifica con snapshot + eval → detalle en `33-LECCIONES-FRONTEND.md`
+### L-28 · Verificación de UI: `preview_screenshot` se cuelga tras `preview_resize` (o con `backdrop-filter` pesado) — verifica con snapshot + eval → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-28]]
 
 ### L-29 · CRM: lead ≠ deal (oportunidad) + drag-drop SIEMPRE con alternativa accesible
 - **Disparador**: construir un Pipeline/embudo de ventas (CRM Fase 3, §160).
@@ -167,11 +154,8 @@
 - **Forecast**: ponderado = Σ(monto × probabilidad de la etapa), aritmética pura en el dominio (sin ML). Verificable a mano en `?mock=1` (cazó que el recálculo de probabilidad al mover etapa estuviera bien: 35%→80% sobre $95M = +$42,75M).
 - **Meta**: routing multi-sección = montar/desmontar módulos en el outlet con **cleanup del anterior** (cancela `onSnapshot`) + cerrar overlays (360) al cambiar de sección. En modo mock, un store compartido (`MOCK_DEALS`) hace que la conversión desde la Bandeja persista al navegar al Pipeline.
 
-### L-30 · Calendario: `dayKey` LOCAL (no UTC) + range+orderBy del mismo campo = índice AUTOMÁTICO
-- **Disparador**: construir una vista de calendario/agenda sobre Firestore (CRM Fase 3b, §161).
-- **Zona horaria (gotcha)**: para agrupar eventos por día NO uses `date.toISOString().slice(0,10)` — convierte a UTC y en Colombia (UTC-5) un evento de las 23:00 local cae al día siguiente. Construye la clave de los **componentes locales**: `` `${getFullYear()}-${pad(getMonth()+1)}-${pad(getDate())}` ``. Misma trampa al calcular el rango del mes.
-- **Índices**: una query con **filtro de rango + `orderBy` sobre EL MISMO campo** (`where('dueAt','>=',a).where('dueAt','<',b).orderBy('dueAt')`) usa el **índice de campo único AUTOMÁTICO** de Firestore → NO necesita índice compuesto ni `firebase deploy --only firestore:indexes`. (Solo se necesita compuesto si filtras/ordenas por campos DISTINTOS.) Ojo: un range query **excluye** docs que no tengan el campo (los `activities` sin `dueAt` no aparecen) — justo lo que queremos para "solo citas".
-- **Meta**: gap de dato real — el canónico no guardaba fecha/hora de cita; la solución MVP fue una acción "Agendar" que escribe `activities{dueAt}`, no reescribir la ingestión. Construir la fuente del dato donde el flujo lo produce, no forzar el esquema viejo.
+### L-30 · Calendario: `dayKey` LOCAL (no UTC) + range+orderBy del mismo campo = índice AUTOMÁTICO ⇒ **migrada al maestro**: [[CARS:L-30]]
+Cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (punto de retorno del ABORT).
 
 ### L-31 · Captura manual de leads = REUSAR la ingestión (escribir el doc de entrada), no duplicar dedup/consent en el cliente
 - **Disparador**: agregar entrada MANUAL de leads (canales externos Meta/WhatsApp/TikTok/llamada/walk-in) a un CRM que ya tiene una capa de ingestión automática (CRM §162). El cliente lo señaló: la mayoría de leads de un concesionario NO entran por la web.

@@ -19,9 +19,7 @@
 - *Doctrina relacionada: `CLAUDE.md §4` (cache bump). Vivido en §119; ampliado §303.*
 
 ### L-03 · No fusionar cada micro-paso a `main` durante un refactor largo
-- **Síntoma**: conflictos en bucle, un PR tras otro.
-- **Causa**: el cron mueve `main` entre fusiones (pintar la pared mientras la ensucian).
-- **Receta**: hacer todo el trabajo en la rama (`commit + push` solo guarda en GitHub), **UNA sola fusión final** tras terminar y probar. Un conflicto (o ninguno) en vez de uno por paso.
+⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-03]] · cuerpo íntegro en `_legacy/LECCIONES-MIGRADAS-MAESTRO.md`.
 
 ### L-04 · Receta canónica para mover un archivo JS sin romper nada
 1. **Mapear refs**: `grep -rl "js/X.js"` en `*.html vehiculos/*.html marcas/*.html` + ¿dinámico en `js/core/components.js` (`.src=`)? + ¿ancla hardcodeada en `scripts/generate-vehicles.mjs`?

@@ -80,10 +80,7 @@
 ⇒ **Migrada al maestro** (F2 lote 6): [[CARS:L-28]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-37 · Un rediseño que ELIMINA/renombra clases rompe los callsites JS que las buscan (catch real de §3.2)
-- **Síntoma**: form de contacto en vivo: el write a `solicitudes` OK pero spinner "Enviando..." ETERNO + `_inFlight` atascado (el visitante no puede reenviar) — y CERO errores en consola (§175).
-- **Causa**: el rediseño cinematic de `contacto.html` reemplazó `.form-card` por `.soft-*`; `contact.js` hacía `closest('.form-card')` para pintar el éxito → `null` → `_renderContactSuccess(null)` retorna sin pintar y NADIE restaura el botón. Fallo 100% silencioso: el `.catch` no dispara porque la promesa SÍ resolvió.
-- **Receta**: (1) al rediseñar una página, `grep -r "<clase>" js/` ANTES de eliminar/renombrar clases del markup. (2) Selectores de contenedor en JS con fallback (`closest('.x') || form`). (3) En success-paths, el happy path debe PINTAR algo o restaurar estado — un `return` silencioso en éxito es peor que un throw.
-- **Familia**: L-11 (class fidelity JS↔CSS) — esta es la variante JS↔HTML (comportamiento, no estilo).
+⇒ **Migrada al maestro** (F2 lote 9): [[CARS:L-37]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
 ### L-44 · Añadir un módulo al `admin-app` (SPA modular) toca 4 puntos + rebuild del `dist` versionado ⟦OPUS-4.8⟧
 - **Síntoma**: nuevo módulo registrado en `main.js` (MODULES) y nav en `shell.js`, pero al clickear el nav la URL cambia (`#/contenido`) y **rebota a Bandeja** sin montar el módulo (cero errores en consola).

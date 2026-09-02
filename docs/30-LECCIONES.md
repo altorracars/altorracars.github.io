@@ -98,26 +98,26 @@ Cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo · p
 ### M-03 · El cerebro no se auto-alimentaba sin recordatorio explícito → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-03]]
 ### M-04 · Iterar fixes sin verificar la fuente de verdad real (no solo el código de aplicación) → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-04]]
 ### M-05 · El cerebro debe crecer en dominios ESTRATÉGICOS, no solo operacionales → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-05]]
-### M-06 · Afirmé "sin desplegar" con `git rev-list origin/main..HEAD` SIN `git fetch` → `origin/main` local stale → detalle en `32-LECCIONES-META.md`
-### M-07 · No avisé que el contexto se saturaba — el cliente tuvo que pedirlo al 92% → detalle en `32-LECCIONES-META.md`
-### M-08 · Evaluar propuestas de "mejora del cerebro" con evidencia, no con entusiasmo (§151) → detalle en `32-LECCIONES-META.md`
-### M-09 · La Autocrítica debe vigilar la COBERTURA de los reflejos, no solo los errores de ejecución (§152) → detalle en `32-LECCIONES-META.md`
-### M-10 · Lo verificable va al LINTER que FALLA, no a un reflejo que debo recordar (§153) → detalle en `32-LECCIONES-META.md`
-### M-11 · "Verifica, no asumas" es UNIVERSAL, no solo RCA de código (recidiva 2026-06-03) → detalle en `32-LECCIONES-META.md`
+### M-06 · Afirmé "sin desplegar" con `git rev-list origin/main..HEAD` SIN `git fetch` → `origin/main` local stale → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-06]]
+### M-07 · No avisé que el contexto se saturaba — el cliente tuvo que pedirlo al 92% → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-07]]
+### M-08 · Evaluar propuestas de "mejora del cerebro" con evidencia, no con entusiasmo (§151) → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-08]]
+### M-09 · La Autocrítica debe vigilar la COBERTURA de los reflejos, no solo los errores de ejecución (§152) → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-09]]
+### M-10 · Lo verificable va al LINTER que FALLA, no a un reflejo que debo recordar (§153) → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-10]]
+### M-11 · "Verifica, no asumas" es UNIVERSAL, no solo RCA de código (recidiva 2026-06-03) → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-11]]
 ### M-12 · Claude hace TODO el git (commit + push + MERGE dev→main) — el dueño NO toca git (drift RECURRENTE 19/06·27/06·29/06) → detalle en `32-LECCIONES-META.md`
-### M-13 · Una "cura" se verifica en la capa que el BOOT lee, con grep — no se declara en el historial (recidiva RECURSIVA 2026-06-09) → detalle en `32-LECCIONES-META.md`
-### M-14 · "Sesión fresca" de un plan es heurística de PRESUPUESTO, no gate — el corte lo decide el dueño con números reales → detalle en `32-LECCIONES-META.md`
-### M-15 · Medir el costo de contexto del cerebro = `.length` de JS sobre los bytes crudos, NO `wc -m` ni "líneas × N" ⟦OPUS-4.8 · rev-Fable⟧ → detalle en `32-LECCIONES-META.md`
-### M-16 · El lazo de auto-corrección funciona cuando MECANIZA (gate); es teatro cuando deja el fix en doctrina — la cura de una REINCIDENCIA es un gate, no un reflejo ⟦OPUS-4.8 · rev-Fable⟧ → detalle en `32-LECCIONES-META.md`
-### M-17 · Cuando el pedido LITERAL del dueño contradice el historial verificado, NO construyas a ciegas — interpreta por evidencia (el RESULTADO, no el mecanismo) y prefiere opt-in sobre imponer ⟦OPUS-4.8 · rev-Fable⟧ → detalle en `32-LECCIONES-META.md`
+### M-13 · Una "cura" se verifica en la capa que el BOOT lee, con grep — no se declara en el historial (recidiva RECURSIVA 2026-06-09) → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-13]]
+### M-14 · "Sesión fresca" de un plan es heurística de PRESUPUESTO, no gate — el corte lo decide el dueño con números reales → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-14]]
+### M-15 · Medir el costo de contexto del cerebro = `.length` de JS sobre los bytes crudos, NO `wc -m` ni "líneas × N" ⟦OPUS-4.8 · rev-Fable⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-15]]
+### M-16 · El lazo de auto-corrección funciona cuando MECANIZA (gate); es teatro cuando deja el fix en doctrina — la cura de una REINCIDENCIA es un gate, no un reflejo ⟦OPUS-4.8 · rev-Fable⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-16]]
+### M-17 · Cuando el pedido LITERAL del dueño contradice el historial verificado, NO construyas a ciegas — interpreta por evidencia (el RESULTADO, no el mecanismo) y prefiere opt-in sobre imponer ⟦OPUS-4.8 · rev-Fable⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-17]]
 ### M-18 · Un `firebase deploy` JAMÁS es paso del dueño — los deploys los ejecuto YO (§1); el dueño solo DECIDE ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
-### M-19 · No construyas lo NUEVO encima de lo VIEJO roto sin limpiarlo — TODO-35 deferido ×N → el código viejo rompió EN VIVO ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
-### M-20 · Un HIT de grep/search prueba que el patrón está PRESENTE, no QUÉ HACE el código — leer la semántica del match antes de construir encima ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
-### M-21 · "Validado E2E" del HAPPY-PATH no es validado — un paso que se porta RARO en la validación es señal de bug (no nuisance); entidad con CICLO DE VIDA → frontera obligatoria = cerrar/finalizar/reabrir + REPETIR la acción + ambos lados ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
-### M-22 · El cerebro documenta ESTRUCTURA pero no verifica REALIDAD — "✅" conflaciona DISEÑADO/DECIDIDO/CONSTRUIDO/DESPLEGADO/VERIFICADO-LIVE (auditoría §257) ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
-### M-23 · Mi validación verifica que FUNCIONE, no que se VEA BIEN — Chrome(DOM) + caza-bugs cazaron CERO defectos de diseño; el dueño los cazó TODOS a ojo ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
-### M-24 · Construí maquinaria NUEVA compleja cuando ya existía una solución simple A LA MANO — el dueño: "tienes las cosas visibles a la mano e hiciste algo mas complejo" ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
-### M-25 · El cerebro PIERDE MEMORIA cuando el MISMO hecho vive en registros que se CONTRADICEN ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md`
+### M-19 · No construyas lo NUEVO encima de lo VIEJO roto sin limpiarlo — TODO-35 deferido ×N → el código viejo rompió EN VIVO ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-19]]
+### M-20 · Un HIT de grep/search prueba que el patrón está PRESENTE, no QUÉ HACE el código — leer la semántica del match antes de construir encima ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-20]]
+### M-21 · "Validado E2E" del HAPPY-PATH no es validado — un paso que se porta RARO en la validación es señal de bug (no nuisance); entidad con CICLO DE VIDA → frontera obligatoria = cerrar/finalizar/reabrir + REPETIR la acción + ambos lados ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-21]]
+### M-22 · El cerebro documenta ESTRUCTURA pero no verifica REALIDAD — "✅" conflaciona DISEÑADO/DECIDIDO/CONSTRUIDO/DESPLEGADO/VERIFICADO-LIVE (auditoría §257) ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-22]]
+### M-23 · Mi validación verifica que FUNCIONE, no que se VEA BIEN — Chrome(DOM) + caza-bugs cazaron CERO defectos de diseño; el dueño los cazó TODOS a ojo ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-23]]
+### M-24 · Construí maquinaria NUEVA compleja cuando ya existía una solución simple A LA MANO — el dueño: "tienes las cosas visibles a la mano e hiciste algo mas complejo" ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-24]]
+### M-25 · El cerebro PIERDE MEMORIA cuando el MISMO hecho vive en registros que se CONTRADICEN ⟦OPUS-4.8⟧ → detalle en `32-LECCIONES-META.md` ⇒ **migrada al maestro**: [[CARS:M-25]]
 ### L-20 · Preview local del sitio estático: `http-server` con RUTA ABSOLUTA + valida colores con estilos computados (no screenshots) → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-20]]
 
 ### L-21 · Migrar un cuerpo legacy a cinematic: fija `background` + estados (`:hover`), no solo `color` → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-21]]
@@ -178,7 +178,7 @@ Cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo · p
 ### L-36 · La deliberación "perdida" NO es irrecuperable: transcripts JSONL del harness (ruta de salvamento) ⇒ **migrada al maestro**: [[CARS:L-36]]
 Cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo · punto de retorno del ABORT).
 
-### L-37 · Un rediseño que ELIMINA/renombra clases rompe los callsites JS que las buscan (catch real de §3.2) → detalle en `33-LECCIONES-FRONTEND.md`
+### L-37 · Un rediseño que ELIMINA/renombra clases rompe los callsites JS que las buscan (catch real de §3.2) → detalle en `33-LECCIONES-FRONTEND.md` ⇒ **migrada al maestro**: [[CARS:L-37]]
 
 ### L-45 · El SSG horneado DESPOJA ids del `<head>` (ej. `<title id="pageTitle">`) de los que depende el JS inline → null-deref aborta el render → detalle en `33-LECCIONES-FRONTEND.md`
 

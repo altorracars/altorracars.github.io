@@ -1,6 +1,9 @@
 ---
 name: sinapsis-cerebros
 description: Usar ANTES de re-investigar un problema TRANSVERSAL (Firebase/Firestore/functions/rules, git/CI/CRLF, dinero/caja/CRM, rendimiento web, proceso de verificación) en cualquiera de los 4 proyectos del dueño (altorracars · bersagliojewelry · altorrainmobiliaria · insemastereo) — los 4 cerebros aprenden AISLADOS y ya re-descubrieron la misma lección ≥6 veces. Enruta un grep a las lecciones de los cerebros HERMANOS en el mismo disco. También al PROPAGAR una lección portable entre cerebros (protocolo anti copy-ciego). Triggers — "este síntoma me suena pero no está en mis lecciones", "gotcha de Firebase/git/dinero", "¿otro proyecto ya vivió esto?", "propaga esta lección a los otros cerebros".
+actualizada: 2026-09-02
+reglas: 13
+lecciones: []
 ---
 
 # 🧠🔗 Sinapsis cross-cerebros — consulta a los hermanos antes de re-aprender
@@ -47,8 +50,20 @@ esperando un permiso que nadie aprueba (cars L-50). Shell en foreground funciona
 3. **MÉTODO portable → skill global** (`~/.claude/skills/`), NO 4 copias en 4 cerebros (SSoT;
    así viajaron `caza-bugs`, `auditoria-financiera`, `comite-expertos`, `optimizacion-rendimiento-web`).
 4. **Escribir en un repo hermano** exige: su `git status` limpio (hazard multi-chat, cars L-48) +
-   respetar SU política de ramas (bersaglio = el dueño mergea a main por PR · cars = Claude
-   mergea `dev`→`main`) + su `brain:check` en verde después. Ante la duda, deja la importación
+   respetar SU política de ramas — **verificada repo por repo el 27-ago-2026, porque la que había
+   aquí estaba INVERTIDA en uno y omitía el único que importa**:
+   · **altorra-inmobiliaria** → Claude commitea, pushea, mergea y despliega. ⛔ NUNCA abrir PR sin permiso.
+   · **cars** → Claude commitea, pushea y **mergea `dev`→`main`** (delegado 27/06, M-12). Rama única `dev`.
+   · **bersaglio** → Claude commitea y **mergea a main** (`CLAUDE.md` §Reglas git + `05` «merge a main =
+     Claude»). ⚠️ Antes de mergear, MIRA qué arrastra: `main` despliega una web que factura.
+   · **insema** → desde el **2-sep-2026 Claude TAMBIÉN mergea a `main`** (orden del dueño: «empuja
+     todo a main, que no quede nada pendiente por merge, venga de donde venga»; derogó la excepción
+     en la que él mergeaba). Regla para los CUATRO: al cerrar trabajo, rama de trabajo == `main` ==
+     origin; una rama por delante de `main` es deuda, no entrega. Al mergear, el kernel se resuelve
+     con el CANÓNICO de la bóveda y el sello `.kernel-version.json` PROPIO del repo (lista ficheros
+     distintos por repo: el de otro repo bloquea el commit).
+   *Que una acción esté delegada no la convierte en trivial, y que lo esté en un repo no dice nada
+   del de al lado.*) + su `brain:check` en verde después. Ante la duda, deja la importación
    listada abajo y que la ejecute la próxima sesión de ESE repo.
 5. **⚠️ Verificado 2026-07-10: el harness BLOQUEA los writes cross-repo desde una sesión ajena**
    (el clasificador de permisos deniega Edit/Add-Content sobre el repo hermano; las LECTURAS sí

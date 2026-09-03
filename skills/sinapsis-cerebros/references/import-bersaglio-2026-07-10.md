@@ -1,4 +1,13 @@
-# Payload de importación cars→bersaglio (sinapsis 2026-07-10) — LISTO PARA APLICAR
+# Payload de importación cars→bersaglio (sinapsis 2026-07-10) — ⚠️ BLOQUEADO 2026-07-18, ver nota
+
+> **⚠️ NOTA DEL OPERADOR SINAPSIS (2026-07-18, FABLE-5) — NO aplicar tal cual:**
+> (1) **BLOQUEADO por capacidad**: `docs/30-LECCIONES.md` de bersaglio está a 43.999 chars — el kernel
+> marca problema (warn→exit 1, bloquea pre-commit) por encima de 44.000 (cap 40.000 ×1.1). Su TODO-77
+> (shard de `30`) debe ejecutarse ANTES de pegar L-84 y los stubs.
+> (2) **COLISIÓN de numeración**: bersaglio definió su PROPIO M-09 el 2026-07-17 ("Muestrear ≠ contar",
+> `30:249` + `34:49`). Al aplicar: renumerar las importadas → M-09 del payload pasa a **M-10** y
+> M-10 del payload pasa a **M-11** (precedente de la casa: L-31 "era L-28 dup", L-54 "renum. de L-39 dup").
+> (3) La "Nota extra" (converger `meta-ads-diagnostico`) ya quedó ✅ con la re-sincronización de skills 2026-07-18.
 
 > Preparado por operador-cars (Fable 5). El harness bloquea writes cross-repo desde una sesión
 > ajena → aplícalo TÚ (operador bersaglio) en 3 pegas + `npm run brain:check` + commit en `Desarrollo`.

@@ -107,6 +107,52 @@
     "scripts/brain-index.mjs",
     "scripts/session-handoff.mjs"
   ],
+  "_skillFiles_que": "Las skills GOBERNADAS que este repo consume del canon de la boveda (brain-private/skills/), repartidas por `npm run brain:pull` igual que `kernelFiles` (C4-2 - D-C4-5). La lista es EXPLICITA a proposito: una ausencia aqui es una decision declarada, no un olvido. C4-1 midio 51 ausencias entre las cuatro puntas y ninguna la habia decidido nadie. En C4-2 ningun repo declaro nada fuera de su alcance: las 43 van a los cuatro. Para sacar una, borra su linea Y escribe por que.",
+  "skillFiles": [
+    "acceso-y-autenticacion",
+    "accessibility-audit",
+    "ad-creative",
+    "anti-codigo-muerto",
+    "arquitecto-software",
+    "asesor-critico-honesto",
+    "auditoria-cerebro",
+    "auditoria-financiera",
+    "caza-bugs",
+    "claude-automation-recommender",
+    "claude-md-improver",
+    "cms-dinamico",
+    "comite-expertos",
+    "crm-architect",
+    "ga4-lead-tracking",
+    "image",
+    "image-pipeline",
+    "legal-colombia",
+    "mantenimiento-general",
+    "maps-gbp-local",
+    "marketing-loops",
+    "marketing-psicologico-conversion",
+    "meta-ads-diagnostico",
+    "offers",
+    "optimizacion-rendimiento-web",
+    "opus-interino-protocolo",
+    "paid-ads",
+    "pauta-captacion",
+    "pos-facturacion-retail",
+    "proceso-decision-fuerte",
+    "product-feeds",
+    "publicar-web-produccion",
+    "search-console-setup-y-diagnostico",
+    "semantic-schema-aeo",
+    "session-report",
+    "sinapsis-cerebros",
+    "spec-kit",
+    "ssg-static-prerender",
+    "validacion-live-chrome",
+    "video",
+    "wompi-api-core",
+    "wompi-colombia-api-v1",
+    "wompi-webhooks-validator"
+  ],
   "ssotFacts": [
     {
       "regex": "v?\\d{14}",
@@ -166,6 +212,6 @@
       "_que": "RETIRADO 2026-08-26 (ADR 226). Vigilaba el estado TRANSITORIO «esperando site key» de App Check, que ya termino: hoy corre en modo monitor. Un ssotFact sobre un estado que va a cambiar se degrada solo el dia que avanza, y entonces el gate deja de comparar nada mientras el resumen sigue diciendo que vigila. Un hecho SSoT tiene que ser DURABLE (donde vive un dato), no una fase."
     }
   ],
-  "skillDriftBaseline": 14,
-  "_skillDriftBaseline_que": "Deuda CONGELADA de skills portables con contenido DERIVADO de la copia que se carga (~/.claude), medida el 2026-08-27 con el fin de linea NORMALIZADO —como la mide el gate 6b desde v1.24.0—. Trinquete: solo puede bajar; una NUEVA bloquea. Al tocar una skill portable re-copia AMBAS (§33) y baja este numero: subirlo es rendirse."
+  "skillDriftBaseline": 0,
+  "_skillDriftBaseline_que": "Deuda CONGELADA de skills portables con contenido DERIVADO de la copia que se carga (~/.claude), con el fin de linea NORMALIZADO —como la mide el gate 6b desde v1.24.0—. Trinquete: solo puede bajar; una NUEVA bloquea. Al tocar una skill portable re-copia AMBAS (§33) y baja este numero: subirlo es rendirse. 14 el 2026-08-27; **0 el 2026-09-02**: C4-2 puso el canon en brain-private/skills/ y lo repartio a las seis puntas, asi que la deuda esta PAGADA, no congelada. Desde hoy cualquier derivada es NUEVA y bloquea — que es justo lo que se queria."
 }

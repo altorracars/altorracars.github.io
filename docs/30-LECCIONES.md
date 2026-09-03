@@ -22,6 +22,7 @@
 ### L-02 · Conflicto cron↔cache al fusionar → detalle en `31-LECCIONES-GIT.md`
 ### L-03 · No fusionar micro-pasos a `main` → detalle en `31-LECCIONES-GIT.md` ⇒ **migrada al maestro**: [[CARS:L-03]]
 ### L-04 · Receta para mover un JS sin romper → detalle en `31-LECCIONES-GIT.md`
+### L-78 · Un bot de CI (`contents: write`) mueve `main` SOLO: tu rama queda atrás sin conflicto y sin aviso → `docs/31-LECCIONES-GIT.md`
 
 ---
 

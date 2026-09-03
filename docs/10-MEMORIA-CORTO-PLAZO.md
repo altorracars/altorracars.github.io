@@ -27,15 +27,15 @@
 ## 📋 Pendientes — 🧊 CONGELADOS (§302)
 
 > Los **25 TODO de cars están EN PAUSA, no cerrados** → 🧩 **`docs/11-PENDIENTES-CONGELADOS.md`**.
-> Salieron del boot el 01/08: costaban 4.5k de contexto en CADA sesión para trabajo que nadie va a tomar
-> hasta que el dueño reanude cars. **Al reanudar, vuelven aquí** (el shard fue por PAUSA, no por tamaño).
-> Lo único que sigue vivo en el boot es el **Foco** de arriba (caminos A/B/C) y sus **🚫 callejones**.
+> Salieron del boot el 01/08 (4.5k por sesión para trabajo que nadie toma hasta que el dueño reanude
+> cars): **al reanudar, vuelven aquí** — el shard fue por PAUSA, no por tamaño. En el boot solo sigue
+> vivo el **Foco** de arriba (caminos A/B/C) y sus **🚫 callejones**.
 
 ## 📝 Bitácora (efímera)
 
 > Histórico §184-§256 → `99`/`00`/`30`. Defectos bot UX → `altor-hub-rediseno-defectos.md`.
 
-- **01/09 ⟦OPUS-5⟧** — lote 2 del CEREBRO MAESTRO (§304) · kernel v1.26→**v1.29.0** · auditoría N2 #7 **PARCIAL** (§305; sondas 3/4/7 PENDIENTES: exigen sesión propia de cars).
+- **02/09 · 01/09 ⟦OPUS-5⟧** — **L-78**: un bot de CI mueve `main` SOLO, con el PC apagado (hija `31`) · lote 2 del CEREBRO MAESTRO (§304) · auditoría N2 #7 **PARCIAL** (§305; sondas 3/4/7 exigen sesión propia).
 - **23/07 · 18/07 · 10/07 ⟦FABLE-5⟧** — mantenimiento §303 · sinapsis desde inmobiliaria (escritor único de §G/kernel → inmob.) · sinapsis ×4 y PIVOTE §302. Detalle → §299-§303 y skill `sinapsis-cerebros §4`.
 - **01/08 ⟦OPUS-5⟧** — heartbeat instalado: el `05` deja de declarar caché y rama (las genera `docs/.estado-auto.md`) → mata la reincidencia de L-02. Detalle → inmobiliaria §72-§77. (La versión del kernel la dice su stamp, no esta pizarra.)
 - **Pendientes perf/voz** (§283-297): voz bot `js/ai`+legacy `js/admin` (⚠️ `intent.js` NO tocar); 🚫 NO quitar Poppins/`admin-calendar-config`.

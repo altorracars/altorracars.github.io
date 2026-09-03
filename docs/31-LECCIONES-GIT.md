@@ -37,6 +37,14 @@
 ### L-71 · Commit en HEAD DESPRENDIDO (tras resume) → queda COLGANTE, no llega a `dev`/`main`
 ⇒ **Migrada al maestro** (F2 lote 8): [[CARS:L-71]] · cuerpo íntegro en `/_legacy/LECCIONES-MIGRADAS-MAESTRO.md` (raíz del repo).
 
+### L-78 · Un bot de CI con `contents: write` mueve `main` SOLO — tu rama se queda atrás sin que nadie toque nada
+- **Síntoma**: cierras dejando `dev` == `main` == origin (regla del dueño 2-sep-2026) y más tarde `dev` está **detrás** de `origin/main` por un commit sin autor humano: `Auto-generate vehicle pages + bump cache version [skip ci]` (2026-09-02: `8e36fcdc`; antes `2865a363`). Nadie hizo nada — la divergencia aparece sola, y hubo que adelantar `dev` y `main` a mano.
+- **Causa**: `.github/workflows/generate-vehicles.yml` corre con `permissions: contents: write` y termina en `git commit … [skip ci]` + `git push` **sobre `main`**. Sus disparadores NO dependen de ti: `push` a `main`, **`cron: '0 */4 * * *'`** y **`repository_dispatch: [vehicle-changed]`** (lo lanza una Cloud Function al cambiar un vehículo) ⇒ `main` avanza con el PC apagado y sin sesión abierta. El `[skip ci]` corta el BUCLE, no la divergencia.
+- **Receta** (al abrir Y al cerrar): `git fetch origin` → `git rev-list --left-right --count dev...origin/main`. Derecha > 0 = te lleva ventaja el bot → `git merge --ff-only origin/main` (siempre es fast-forward: el bot solo apila encima). Izquierda > 0 = trabajo tuyo sin mergear, eso sí es deuda. Luego `git push origin dev` y, si tocaba, el merge `dev`→`main` de siempre.
+- **Cómo evitarlo**: «rama de trabajo == `main` == origin» **caduca**: es cierta en el instante en que la mides y falsa 4 horas después. No la afirmes desde refs locales — `origin/*` es una FOTO, y el heartbeat te dice de cuándo (`origin visto hace: N h`); se mide con `fetch` en ESE turno (§3.3).
+- **Hermana de L-02, no duplicado**: mismo bot, la otra cara. En L-02 el bot te da un CONFLICTO al fusionar (ruidoso, ya tiene receta); aquí no hay conflicto ninguno — por eso pasa desapercibida.
+- *Vivido el 2026-09-02 por la sesión que repartió las skills ×4 (C4-3 del programa CEREBRO MAESTRO). Mismo patrón en inmobiliaria (`bump-version.yml`) → su `L-85`; medido que bersaglio e insema NO tienen bots que commiteen. Regla enmendada en la skill `sinapsis-cerebros` §3 regla 6; candidata al maestro en `brain-private/maestro/_inbox/2026-09-02-sinapsis-bot-mueve-main.md`.*
+
 ---
 
 > Hija de `30-LECCIONES.md` (puntero allá). Misma doctrina de crecimiento:

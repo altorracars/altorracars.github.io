@@ -6,8 +6,8 @@ viejo. Lee el **modelo canónico** que la Fase 1 ya archiva (`leads` / `contacts
 urgencia, con score/temperatura confiable, NBA y acciones de 1 clic — sin
 depender de ALTOR ni de ningún LLM (motor heurístico **determinista**).
 
-> Diseño: `docs/superpowers/specs/2026-06-05-crm-fase2-bandeja-design.md`
-> Blueprint maestro: `docs/superpowers/specs/2026-06-05-crm-rebuild-design.md`
+> Diseño: `../brain-private/altorracars/docs/superpowers/specs/2026-06-05-crm-fase2-bandeja-design.md` (cerebro en la bóveda, F8)
+> Blueprint maestro: `../brain-private/altorracars/docs/superpowers/specs/2026-06-05-crm-rebuild-design.md`
 
 ## Stack
 - **Vite** (bundler + cache-busting por hash → sin ritual `CACHE_VERSION` aquí).

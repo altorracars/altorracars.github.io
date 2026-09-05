@@ -82,19 +82,18 @@ Detalle de un subsistema → `docs/00-INDICE.md` + tramo del historial.
 ### Dónde documentar
 
 - **WIP / tarea en curso**: se registra en el Corto Plazo (`docs/10-MEMORIA-CORTO-PLAZO.md`).
-- **NUEVOS ADRs (§118 en adelante)**: al cerrar una tarea, se APENDEN al final del Largo Plazo (`docs/99-HISTORIAL-ADR.md`) + fila en `docs/00-INDICE.md` (consolidación §G.3). NUNCA a este CLAUDE.md.
-- **Este CLAUDE.md**: solo se edita cuando cambia algo always-on (una doctrina, el esquema de nodos, una regla de gobernanza). NUNCA historial ni pendientes ni cache version.
+- **NUEVOS ADRs (§118 en adelante)**: al cerrar una tarea, se APENDEN al final del Largo Plazo (`docs/99-HISTORIAL-ADR.md`) + fila en `docs/00-INDICE.md` (consolidación §G.3).
+- **Este CLAUDE.md**: solo se edita cuando cambia algo always-on (una doctrina, el esquema de nodos, una regla de gobernanza).
 
 ### Cómo documentar (formato canónico ADR)
 
 Encabezado `## NN. ADR-NNN — <título>` (+ cita del cliente si reportó) y 7 puntos: **.1** causa raíz (RCA §19) · **.2** solución estructural · **.3** no-regresión · **.4** tests · **.5** anti-patterns · **.6** archivos mod/INTACTOS · **.7** doctrina + cache bump. Deliberación → línea-ancla `Deliberación: <crudo> · <síntesis>`.
 
-### Reglas git (de §commit del proyecto)
+### Reglas git
 
-- **Claude commitea, PUSHEA y MERGEA `dev`→`main`** al cerrar trabajo verificado (dueño delegó el merge 27/06, M-12).
-- `git add` archivos específicos (NUNCA `git add -A` / `.`).
-- Footer `Co-Authored-By: Claude <noreply@anthropic.com>` + `Modelo:`. Árbol sucio sin commitear+pushear = **turno incompleto** (M-12). NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
-- NUNCA commitear secrets (.env, credentials.json).
+- **Git delegado a Claude — C0 orden nº 2 (4-sep-2026): commit + push + merge + deploy en los CUATRO repos, INSEMA incluido.** Aquí: `dev`→`main` al cerrar trabajo verificado (M-12). NUNCA abrir PR sin permiso.
+- `git add` específico (NUNCA `-A` / `.`); NUNCA secrets (.env, credentials.json); NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
+- Footer `Co-Authored-By: Claude <noreply@anthropic.com>` + `Modelo:`. Árbol sucio sin commitear+pushear = **turno incompleto** (M-12).
 - Al cerrar un pendiente, marcar su `TODO-NN` como ✅ + link al §X. Mantén este CLAUDE.md liviano.
 
 ---

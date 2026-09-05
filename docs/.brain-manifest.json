@@ -243,8 +243,8 @@
     "127.0.0.1"
   ],
   "_egressAllowlist_que": "B2 (falencia F-14): hosts a los que el hook PreToolUse `scripts/guard-destructivo.mjs` deja ESCRIBIR por red. Todo lo demas se DENIEGA con motivo y se registra en docs/.guard-log. Leer no se toca: un GET no exfiltra.",
-  "ejecutorBaseline": 21,
-  "_ejecutorBaseline_que": "B4 (falencia F-13, chequeo #31): deuda CONGELADA de vinetas imperativas de CLAUDE.md sin ejecutor declarado (#NN / brain:check / pre-commit / verify- / gate) ni [HONOR]. MEDIDA en ESTE repo el 2026-09-03: 21 imperativas = 0 con gate + 0 [HONOR] + 21 sin declarar. TRINQUETE: solo puede BAJAR. INFORMATIVO en v1.33.0 — la decision de hacerlo bloqueante se toma con las cuatro cifras delante.",
+  "ejecutorBaseline": 18,
+  "_ejecutorBaseline_que": "B4 (falencia F-13, chequeo #31): deuda CONGELADA de vinetas imperativas de CLAUDE.md sin ejecutor declarado (#NN / brain:check / pre-commit / verify- / gate) ni [HONOR]. MEDIDA en ESTE repo el 2026-09-03: 21 imperativas = 0 con gate + 0 [HONOR] + 21 sin declarar. TRINQUETE: solo puede BAJAR — bajado a 18 el 2026-09-04 (B13: el bloque git del router paso de 5 vinetas a 4 al adoptar la orden n2 del C0). INFORMATIVO en v1.33.0 — la decision de hacerlo bloqueante se toma con las cuatro cifras delante.",
   "indexSemanticRowOverLimitBaseline": 1,
   "_indexSemanticRowOverLimitBaseline_que": "Deuda CONGELADA de filas SEMANTICAS del indice (las que NO empiezan por `| §NN`: la capa sintoma->neurona que lee un agente FRIO) por encima del RUIDO de 260c, objetivo 200c. Trinquete APARTE del `indexRowOverLimitBaseline` a proposito: son dos poblaciones con duenos distintos y mezclarlas dejaria que una financiara la deuda de la otra. Congelado el 2026-09-04 en lo MEDIDO en ESTE repo al repartir el kernel v1.34.0 (R-02): 1 de 45 filas semanticas — `docs/00-INDICE.md:54` (665c). Solo puede BAJAR; subirlo para dejar de ver el aviso es M-05.",
   "anclaBaseline": 1,

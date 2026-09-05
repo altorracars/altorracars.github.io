@@ -7,6 +7,10 @@
 #
 # OJO: definir 'exclude' REEMPLAZA la lista por defecto de Jekyll — por eso node_modules va aqui.
 # Los HTML del sitio NO llevan front matter, asi que Jekyll los copia verbatim: no cambian.
+#
+# F8 (5-sep-2026): el cerebro documental ya NO vive en este repo (esta en ../brain-private/altorracars/,
+# privado). Las entradas de abajo se QUEDAN como cinturon y tirantes: si algun dia vuelve a entrar un
+# CLAUDE.md o un docs/ por error, Pages sigue sin servirlo.
 
 exclude:
   # --- cerebro documental (memoria de Claude, no es el sitio) ---

@@ -99,6 +99,13 @@
     "../altorrainmobiliaria.github.io",
     "../insemastereo.github.io"
   ],
+  "staleCommits": 30,
+  "_staleCommits_que": "Eje de COMMITS del #12 (kernel v1.34.0 · R-03), en la unidad que ESTE repo puede ALCANZAR antes que el eje de dias (staleDays=10). El implicito viejo era 120 y en 3 de 4 repos no llegaba nunca. Ritmo MEDIDO aqui el 2026-09-04 con `git rev-list --count --since='10 days ago' HEAD`: 51 commits en la ventana (5,1 al dia), asi que con 30 el eje de commits dispara el dia ~5,9 — en CARS llega ANTES que el de dias (10d), que es justo lo que se buscaba. Re-medir si el ritmo cambia de orden de magnitud.",
+  "staleNodes": [
+    "docs/05-ESTADO-GLOBAL.md",
+    "docs/10-MEMORIA-CORTO-PLAZO.md"
+  ],
+  "_staleNodes_que": "Que nodos vigila el gate de frescura (#12). Estaba hardcodeado en el kernel COMPARTIDO; desde v1.34.0 lo decide cada cerebro, y se declara AUNQUE coincida con el default para que sea una decision y no un silencio (§G.3, regla de ADMISION). Son los dos always-on que caducan por diseno: `05` (signos vitales) y `10` (WIP). Cuidado al ampliar: el gate toma el sello MAS VIEJO de la lista, asi que meter un nodo que nadie sella lo pone permanentemente al frente — la COBERTURA lo publica ('n/N nodos aportan fecha legible').",
   "harnessCanary": true,
   "_harnessCanary_que": "v1.10.3 (#24, inmobiliaria ADR 85 U-13): declara que ESTE repo debe tener el hook SessionStart (session-handoff) cableado en .claude/settings.json. Antes el gate se lo preguntaba al propio archivo vigilado, asi que borrar el hook lo apagaba en silencio (fallo ABIERTO). Verificado 2026-08-03: los 4 repos lo tienen cableado. Un repo nuevo del brain-kit pone false CON su razon.",
   "kernelFiles": [
@@ -236,8 +243,10 @@
     "127.0.0.1"
   ],
   "_egressAllowlist_que": "B2 (falencia F-14): hosts a los que el hook PreToolUse `scripts/guard-destructivo.mjs` deja ESCRIBIR por red. Todo lo demas se DENIEGA con motivo y se registra en docs/.guard-log. Leer no se toca: un GET no exfiltra.",
-  "ejecutorBaseline": 21,
-  "_ejecutorBaseline_que": "B4 (falencia F-13, chequeo #31): deuda CONGELADA de vinetas imperativas de CLAUDE.md sin ejecutor declarado (#NN / brain:check / pre-commit / verify- / gate) ni [HONOR]. MEDIDA en ESTE repo el 2026-09-03: 21 imperativas = 0 con gate + 0 [HONOR] + 21 sin declarar. TRINQUETE: solo puede BAJAR. INFORMATIVO en v1.33.0 — la decision de hacerlo bloqueante se toma con las cuatro cifras delante.",
+  "ejecutorBaseline": 18,
+  "_ejecutorBaseline_que": "B4 (falencia F-13, chequeo #31): deuda CONGELADA de vinetas imperativas de CLAUDE.md sin ejecutor declarado (#NN / brain:check / pre-commit / verify- / gate) ni [HONOR]. MEDIDA en ESTE repo el 2026-09-03: 21 imperativas = 0 con gate + 0 [HONOR] + 21 sin declarar. TRINQUETE: solo puede BAJAR — bajado a 18 el 2026-09-04 (B13: el bloque git del router paso de 5 vinetas a 4 al adoptar la orden n2 del C0). INFORMATIVO en v1.33.0 — la decision de hacerlo bloqueante se toma con las cuatro cifras delante.",
+  "indexSemanticRowOverLimitBaseline": 1,
+  "_indexSemanticRowOverLimitBaseline_que": "Deuda CONGELADA de filas SEMANTICAS del indice (las que NO empiezan por `| §NN`: la capa sintoma->neurona que lee un agente FRIO) por encima del RUIDO de 260c, objetivo 200c. Trinquete APARTE del `indexRowOverLimitBaseline` a proposito: son dos poblaciones con duenos distintos y mezclarlas dejaria que una financiara la deuda de la otra. Congelado el 2026-09-04 en lo MEDIDO en ESTE repo al repartir el kernel v1.34.0 (R-02): 1 de 45 filas semanticas — `docs/00-INDICE.md:54` (665c). Solo puede BAJAR; subirlo para dejar de ver el aviso es M-05.",
   "anclaBaseline": 1,
   "_anclaBaseline_que": "B5 (falencias F-01/F-08, chequeo #16b): deuda CONGELADA de parrafos de docs/05, docs/10 y el ULTIMO ADR de docs/99 con vocabulario de verificacion SIN ancla resoluble en su parrafo. MEDIDA el 2026-09-03: 1 sin ancla. TRINQUETE: solo puede BAJAR. Mide PRESENCIA DE ANCLA, NO EL ACTO de verificar."
 }

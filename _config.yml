@@ -1,0 +1,33 @@
+# _config.yml — este repo publica el SITIO, no el cerebro documental que vive a su lado.
+#
+# GitHub Pages sirve la rama tal cual: sin esta lista, /CLAUDE.md, /docs/*.md y /scripts/*.mjs
+# se descargaban desde el dominio publico (medido 2026-09-05: 200 OK). Al retirar .nojekyll,
+# Jekyll vuelve a correr y aplica este 'exclude'; ademas deja de publicar lo que empieza por
+# '_' (p.ej. _legacy/, la cuarentena) o por '.'.
+#
+# OJO: definir 'exclude' REEMPLAZA la lista por defecto de Jekyll — por eso node_modules va aqui.
+# Los HTML del sitio NO llevan front matter, asi que Jekyll los copia verbatim: no cambian.
+
+exclude:
+  # --- cerebro documental (memoria de Claude, no es el sitio) ---
+  - CLAUDE.md
+  - docs/
+  - scripts/
+  - skills/
+  - specs/
+  # --- utillaje e infraestructura (backend, build y reglas: no es el sitio) ---
+  - githooks/
+  - functions/
+  - node_modules/
+  - package.json
+  - package-lock.json
+  - bun.lock
+  - biome.json
+  - eslint.config.js
+  - tsconfig.json
+  - firebase.json
+  - firestore.rules
+  - firestore.indexes.json
+  - database.rules.json
+  - storage.rules
+  - "*.log"

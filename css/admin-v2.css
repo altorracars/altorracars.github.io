@@ -1,0 +1,1363 @@
+/**
+ * ALTORRA ADMIN V2 — Layout core (Sprint V2-1)
+ * =====================================================
+ * Capa final que ANCLA el layout para que NUNCA scrollee el body.
+ * Solo el <main> scrollea. Sidebar fija 100vh siempre visible.
+ *
+ * Estándar: Apple macOS Sonoma + HarmonyOS NEXT
+ *
+ * Carga ÚLTIMA en <head> para ganar especificidad sobre todas las
+ * capas anteriores (admin.css legacy + NOVA + Visionary).
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   1. VARIABLES V2
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+    --av2-sidebar-w-expanded:  268px;
+    --av2-sidebar-w-collapsed: 76px;
+    --av2-sidebar-w:           var(--av2-sidebar-w-expanded);
+    --av2-sidebar-margin:      14px;
+    --av2-radius-island:       20px;
+    --av2-radius-card:         16px;
+    --av2-radius-pill:         999px;
+    --av2-blur-island:         48px;
+    --av2-saturate-island:     200%;
+
+    --av2-spring:  cubic-bezier(0.22, 1, 0.36, 1);
+    --av2-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --av2-d-quick:  180ms;
+    --av2-d-fast:   240ms;
+    --av2-d-base:   360ms;
+
+    --av2-bg-base:        #0a0a0c;
+    --av2-bg-island:      rgba(20, 20, 22, 0.72);
+    --av2-bg-island-2:    rgba(15, 15, 17, 0.68);
+    --av2-border-glass:   1px solid rgba(255, 255, 255, 0.08);
+    --av2-border-glow:    1px solid rgba(var(--ak-rgb), 0.30);
+    --av2-shadow-island:
+        0 8px 32px rgba(0, 0, 0, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. ROOT — body NO scrollea (FIX scroll bug)
+   ═══════════════════════════════════════════════════════════════════ */
+html, body {
+    height: 100% !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+body {
+    background: var(--av2-bg-base);
+    /* Mesh gradient sutil */
+    background-image:
+        radial-gradient(ellipse 1200px 800px at 10% 0%,
+            rgba(var(--ak-rgb), 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 900px 600px at 90% 100%,
+            rgba(139, 92, 246, 0.04) 0%, transparent 60%);
+    background-attachment: fixed;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. ADMIN LAYOUT — Grid inquebrantable
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel.admin-layout {
+    display: grid !important;
+    grid-template-columns: var(--av2-sidebar-w) 1fr !important;
+    grid-template-rows: 100vh !important;
+    grid-template-areas: "sidebar main" !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    overflow: hidden !important;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    /* Smooth transition al colapsar */
+    transition: grid-template-columns var(--av2-d-base) var(--av2-spring);
+}
+
+.admin-panel.admin-layout.is-sidebar-collapsed,
+body.is-sidebar-collapsed .admin-panel.admin-layout {
+    --av2-sidebar-w: var(--av2-sidebar-w-collapsed) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. SIDEBAR — siempre visible, jamás desaparece
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    grid-area: sidebar !important;
+    position: relative !important;
+    /* Sticky no necesario porque el contenedor padre ya es 100vh */
+    height: 100vh !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: var(--av2-sidebar-margin) 0 var(--av2-sidebar-margin) var(--av2-sidebar-margin) !important;
+    /* §35 FIX scroll bloqueado: el sidebar DEBE scrollear cuando los menus
+       son largos. `overflow: visible` legacy bloqueaba el scroll vertical. */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    box-shadow: none !important;
+    border-right: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transition: padding var(--av2-d-base) var(--av2-spring);
+    z-index: 100;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-panel.is-sidebar-collapsed .sidebar,
+body.is-sidebar-collapsed .sidebar {
+    padding: var(--av2-sidebar-margin) 8px var(--av2-sidebar-margin) 8px !important;
+}
+
+/* La sidebar viejita ya tiene contenido — lo envolvemos visualmente
+   en una "isla" via ::before y ::after o aplicando estilos al primer
+   hijo que sea container */
+.admin-panel .sidebar > .sidebar-logo {
+    margin: 0 !important;
+}
+
+/* Crear la "isla" usando un wrapper interior virtual via background
+   en el .sidebar mismo */
+.admin-panel .sidebar::before {
+    content: '';
+    position: absolute;
+    top: var(--av2-sidebar-margin);
+    left: var(--av2-sidebar-margin);
+    right: 0;
+    bottom: var(--av2-sidebar-margin);
+    background:
+        linear-gradient(180deg,
+            var(--av2-bg-island) 0%,
+            var(--av2-bg-island-2) 100%);
+    backdrop-filter: blur(var(--av2-blur-island)) saturate(var(--av2-saturate-island));
+    -webkit-backdrop-filter: blur(var(--av2-blur-island)) saturate(var(--av2-saturate-island));
+    border: var(--av2-border-glass);
+    border-radius: var(--av2-radius-island);
+    box-shadow: var(--av2-shadow-island);
+    pointer-events: none;
+    z-index: -1;
+    transition: border-radius var(--av2-d-base) var(--av2-spring);
+}
+
+/* Sidebar contenido por encima del ::before */
+.admin-panel .sidebar > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Padding interior del contenido (después del wrapper visual) */
+.admin-panel .sidebar {
+    padding-top: calc(var(--av2-sidebar-margin) + 14px) !important;
+    padding-bottom: calc(var(--av2-sidebar-margin) + 14px) !important;
+    padding-left: calc(var(--av2-sidebar-margin) + 14px) !important;
+    padding-right: 14px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+.admin-panel.is-sidebar-collapsed .sidebar,
+body.is-sidebar-collapsed .sidebar {
+    padding-left: calc(8px + 8px) !important;
+    padding-right: 8px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. MAIN — único elemento que scrollea
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .admin-main,
+.admin-panel #adminMain,
+.admin-panel .admin-content,
+.admin-panel main {
+    grid-area: main !important;
+    height: 100vh !important;
+    width: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    scroll-behavior: smooth;
+    box-sizing: border-box;
+    /* Performance — el navegador puede saltar render off-screen */
+    contain: layout style;
+}
+
+/* Si NO existe un elemento main wrapper (solo .section), envolver
+   las sections en grid-area main via fallback */
+.admin-panel > .section,
+.admin-panel > .admin-section,
+.admin-panel.admin-layout > .section,
+.admin-panel.admin-layout > .admin-section {
+    grid-area: main;
+}
+
+/* Cuando hay múltiples sections como children directos del grid,
+   apilarlas dentro del grid-area main */
+.admin-panel.admin-layout > .section:not(:first-of-type),
+.admin-panel.admin-layout > .admin-section:not(:first-of-type) {
+    grid-area: main;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   6. SECTIONS — fluid layout SIN max-width limitante
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section,
+.admin-panel .admin-section {
+    padding: clamp(20px, 2vw, 36px) clamp(20px, 2.6vw, 48px) !important;
+    max-width: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* En monitores 4K+ centrar ligeramente el contenido para legibilidad */
+.admin-panel .section > .section-inner,
+.admin-panel .section > .av2-section-inner {
+    max-width: 1680px;
+    margin: 0 auto;
+}
+
+/* Section padding override agresivo sobre legacy */
+.admin-panel #sec-dashboard,
+.admin-panel #sec-vehicles,
+.admin-panel #sec-brands,
+.admin-panel #sec-dealers,
+.admin-panel #sec-banners,
+.admin-panel #sec-reviews,
+.admin-panel #sec-crm,
+.admin-panel #sec-appointments,
+.admin-panel #sec-calendar,
+.admin-panel #sec-workflows,
+.admin-panel #sec-templates,
+.admin-panel #sec-kb,
+.admin-panel #sec-unmatched,
+.admin-panel #sec-concierge,
+.admin-panel #sec-users,
+.admin-panel #sec-audit,
+.admin-panel #sec-settings,
+.admin-panel #sec-reports,
+.admin-panel #sec-lists {
+    padding: clamp(20px, 2vw, 36px) clamp(20px, 2.6vw, 48px) !important;
+    max-width: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+}
+
+/* Eliminar el wrapper .admin-content max-width legacy */
+.admin-panel .admin-content {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. SCROLLBARS premium — invisible by default, visible on hover
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.admin-panel ::-webkit-scrollbar-track {
+    background: transparent;
+}
+.admin-panel ::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.18s ease;
+}
+.admin-panel:hover ::-webkit-scrollbar-thumb,
+.admin-panel *:hover > ::-webkit-scrollbar-thumb,
+.admin-panel *:focus-within > ::-webkit-scrollbar-thumb {
+    background: rgba(var(--ak-rgb), 0.35);
+    background-clip: padding-box;
+}
+.admin-panel ::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--ak-rgb), 0.65);
+    background-clip: padding-box;
+}
+.admin-panel ::-webkit-scrollbar-corner {
+    background: transparent;
+}
+/* Firefox — thin transparent → gold on hover */
+.admin-panel * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+.admin-panel:hover *,
+.admin-panel *:hover {
+    scrollbar-color: rgba(var(--ak-rgb), 0.35) transparent;
+}
+
+/* HTML/body root scrollbar también invisible */
+html, body {
+    scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. MOBILE drawer — sidebar slide-in
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .admin-panel.admin-layout {
+        grid-template-columns: 1fr !important;
+        grid-template-areas: "main" !important;
+    }
+
+    .admin-panel .sidebar,
+    .admin-panel #adminSidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        width: min(290px, 86vw) !important;
+        z-index: 9999;
+        transform: translateX(-100%);
+        transition: transform var(--av2-d-base) var(--av2-spring);
+        padding: var(--av2-sidebar-margin) 0 var(--av2-sidebar-margin) var(--av2-sidebar-margin) !important;
+        overflow-y: auto;
+        overflow-x: hidden;
+        box-shadow: 32px 0 64px rgba(0, 0, 0, 0.55);
+    }
+    .admin-panel.is-sidebar-open .sidebar,
+    body.is-sidebar-open .sidebar,
+    body.sidebar-open .sidebar,
+    .admin-panel .sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    .admin-panel .sidebar::before {
+        top: var(--av2-sidebar-margin);
+        right: var(--av2-sidebar-margin);
+        bottom: var(--av2-sidebar-margin);
+        left: 0;
+    }
+
+    /* Backdrop scrim cuando sidebar abierto */
+    body.is-sidebar-open::before,
+    body.sidebar-open::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+        z-index: 9998;
+        animation: av2ScrimIn 0.24s ease-out;
+    }
+    @keyframes av2ScrimIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    .admin-panel .section,
+    .admin-panel .admin-section {
+        padding: 16px !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9. ANIMATION cuando sidebar colapsa — labels fade
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .sidebar .nav-item,
+.admin-panel .sidebar .nav-group-header,
+.admin-panel .sidebar-quicksearch {
+    transition:
+        background var(--av2-d-quick) var(--av2-spring),
+        color var(--av2-d-quick) var(--av2-spring),
+        padding var(--av2-d-fast) var(--av2-spring),
+        opacity var(--av2-d-fast) var(--av2-spring);
+}
+
+.admin-panel.is-sidebar-collapsed .nav-item span,
+.admin-panel.is-sidebar-collapsed .nav-group-label,
+.admin-panel.is-sidebar-collapsed .sidebar-quicksearch input,
+.admin-panel.is-sidebar-collapsed .sidebar-quicksearch-kbd,
+.admin-panel.is-sidebar-collapsed .nav-badge,
+.admin-panel.is-sidebar-collapsed .nav-group-chevron,
+.admin-panel.is-sidebar-collapsed .sidebar-logo h2,
+.admin-panel.is-sidebar-collapsed .sidebar-logo small,
+body.is-sidebar-collapsed .nav-item span,
+body.is-sidebar-collapsed .nav-group-label,
+body.is-sidebar-collapsed .sidebar-quicksearch input,
+body.is-sidebar-collapsed .sidebar-quicksearch-kbd,
+body.is-sidebar-collapsed .nav-badge,
+body.is-sidebar-collapsed .nav-group-chevron,
+body.is-sidebar-collapsed .sidebar-logo h2,
+body.is-sidebar-collapsed .sidebar-logo small {
+    opacity: 0;
+    width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap;
+    pointer-events: none;
+}
+.admin-panel.is-sidebar-collapsed .nav-item,
+body.is-sidebar-collapsed .nav-item {
+    justify-content: center !important;
+    padding: 10px 8px !important;
+    gap: 0 !important;
+}
+.admin-panel.is-sidebar-collapsed .sidebar-quicksearch,
+body.is-sidebar-collapsed .sidebar-quicksearch {
+    padding: 10px !important;
+    justify-content: center !important;
+}
+.admin-panel.is-sidebar-collapsed .sidebar-logo,
+body.is-sidebar-collapsed .sidebar-logo {
+    padding-bottom: 8px !important;
+    text-align: center;
+}
+.admin-panel.is-sidebar-collapsed .nav-group-header,
+body.is-sidebar-collapsed .nav-group-header {
+    padding: 8px 0 4px !important;
+    justify-content: center !important;
+}
+.admin-panel.is-sidebar-collapsed .nav-group-icon,
+body.is-sidebar-collapsed .nav-group-icon {
+    margin: 0 auto;
+}
+
+/* En collapsed, mostrar tooltip al hover de cada nav-item */
+.admin-panel.is-sidebar-collapsed .nav-item[data-section]:hover::after,
+body.is-sidebar-collapsed .nav-item[data-section]:hover::after {
+    content: attr(data-tooltip-text);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(20, 20, 22, 0.95);
+    backdrop-filter: blur(16px);
+    color: rgba(255, 255, 255, 0.95);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 100;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   10. PURGE — Override de propiedades legacy peligrosas
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Eliminar overflow-y: scroll del body que causaba el bug */
+body {
+    overflow-y: hidden !important;
+}
+
+/* Eliminar transitions: all que son caras */
+.admin-panel *:not(.alt-toggle):not(.alt-toggle *) {
+    /* No usamos universal selector aquí porque rompería transitions
+       específicas. Solo gateamos casos peligrosos puntualmente. */
+}
+
+/* prefers-reduced-motion — desactiva todas las animaciones de V2 */
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel *,
+    .admin-panel *::before,
+    .admin-panel *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-v2.css — Layout V2 Sprint V2-1
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   V2-5 — Fluid sections final + Purga inline styles common patterns
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Override de inline styles MUY comunes en HTML legacy ─── */
+.admin-panel [style*="max-width: 1280px"],
+.admin-panel [style*="max-width: 1200px"],
+.admin-panel [style*="max-width:1280px"],
+.admin-panel [style*="max-width:1200px"] {
+    max-width: 100% !important;
+}
+.admin-panel [style*="margin: 0 auto"]:not(.section-inner):not(.av2-section-inner),
+.admin-panel [style*="margin:0 auto"]:not(.section-inner):not(.av2-section-inner) {
+    margin: 0 !important;
+}
+
+/* ─── Section header padding fluid ─── */
+.admin-panel .section .page-header,
+.admin-panel .admin-section .page-header {
+    padding: clamp(20px, 2vw, 32px) clamp(20px, 2.4vw, 40px) clamp(16px, 1.6vw, 24px) !important;
+    margin-bottom: clamp(16px, 1.6vw, 24px) !important;
+    box-sizing: border-box;
+}
+
+/* ─── Tabla containers full width ─── */
+.admin-panel .table-container,
+.admin-panel .table-wrapper,
+.admin-panel .data-table,
+.admin-panel #vehiclesTable,
+.admin-panel #brandsTable,
+.admin-panel #usersTable {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* ─── Grid layout responsive en tarjetas ─── */
+.admin-panel .stats-grid,
+.admin-panel .kpis-grid,
+.admin-panel .reports-kpis,
+.admin-panel .hero-kpis,
+.admin-panel .cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)) !important;
+    gap: clamp(12px, 1vw, 18px) !important;
+    max-width: none !important;
+    width: 100% !important;
+}
+
+/* ─── Topbar refinement (si existe) ─── */
+.admin-panel .admin-header,
+.admin-panel .av2-topbar {
+    grid-area: main;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.85) 0%,
+            rgba(15, 15, 17, 0.78) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Sidebar collapse btn refinado ─── */
+.admin-panel .sidebar-collapse-btn {
+    position: absolute !important;
+    top: 22px !important;
+    right: 18px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    color: rgba(255, 255, 255, 0.62) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer;
+    transition: all 0.18s var(--av2-spring) !important;
+    z-index: 10;
+}
+.admin-panel .sidebar-collapse-btn:hover {
+    background: rgba(var(--ak-rgb), 0.12) !important;
+    border-color: rgba(var(--ak-rgb), 0.40) !important;
+    color: var(--ak-light,#d4ad6e) !important;
+}
+.admin-panel.is-sidebar-collapsed .sidebar-collapse-btn,
+body.is-sidebar-collapsed .sidebar-collapse-btn {
+    right: 50% !important;
+    transform: translateX(50%) !important;
+}
+
+/* ─── Mobile topbar (cuando hay) ─── */
+@media (max-width: 768px) {
+    .admin-panel .mobile-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background:
+            linear-gradient(180deg,
+                rgba(20, 20, 22, 0.92) 0%,
+                rgba(15, 15, 17, 0.85) 100%);
+        backdrop-filter: blur(28px) saturate(200%);
+        -webkit-backdrop-filter: blur(28px) saturate(200%);
+        border-bottom: 1px solid rgba(var(--ak-rgb), 0.20);
+        padding: 12px 16px;
+    }
+}
+
+/* ─── PERFORMANCE: contain en sections inactivas ─── */
+.admin-panel .section:not(.active),
+.admin-panel .admin-section:not(.active) {
+    content-visibility: hidden !important;
+    contain: strict !important;
+}
+.admin-panel .section.active,
+.admin-panel .admin-section.active {
+    content-visibility: auto !important;
+    contain: layout style !important;
+    contain-intrinsic-size: auto 600px !important;
+}
+
+/* ─── Cards content-visibility ─── */
+.admin-panel .kpi-card,
+.admin-panel .stat-card,
+.admin-panel .reports-kpi-card,
+.admin-panel .workflow-card,
+.admin-panel .pipeline-card,
+.admin-panel .nba-dash-item {
+    contain: layout style !important;
+    content-visibility: auto !important;
+    contain-intrinsic-size: auto 200px !important;
+}
+
+/* ─── Tabla rows con contain ─── */
+.admin-panel #vehiclesTable tbody tr,
+.admin-panel #brandsTable tbody tr,
+.admin-panel #usersTable tbody tr,
+.admin-panel .data-table tbody tr,
+.admin-panel .admin-table tbody tr {
+    contain: layout style !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   §34 — CARDS COMPONENTS (replaces .data-table arcaica en
+   Vehículos / Marcas / Reseñas)
+
+   Patrón: HarmonyOS NEXT + Apple macOS Sonoma.
+   Performance: cada .av2-card con contain + content-visibility.
+   Cero !important salvo donde compite con admin.css legacy.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.av2-card-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    padding: 4px 2px;
+    width: 100%;
+}
+
+.av2-card-list--gallery {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.av2-card-list--reviews {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 16px;
+}
+
+.av2-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--av2-bg-island);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: var(--av2-border-glass);
+    border-radius: var(--av2-radius-card);
+    overflow: hidden;
+    contain: layout style;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+    transition: transform 0.32s var(--av2-spring),
+                box-shadow 0.32s var(--av2-spring),
+                border-color 0.24s var(--av2-spring);
+    will-change: transform;
+}
+
+.av2-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.32),
+        0 0 0 1px rgba(var(--ak-rgb), 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-color: rgba(var(--ak-rgb), 0.22);
+}
+
+.av2-card:focus-within {
+    box-shadow: 0 0 0 3px rgba(var(--ak-rgb), 0.28);
+}
+
+/* Thumb / Hero image */
+.av2-card-thumb {
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.03);
+    display: block;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.av2-card-thumb-wrap {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+}
+.av2-card-thumb-wrap .av2-card-thumb {
+    aspect-ratio: auto;
+    width: 100%;
+    height: 100%;
+}
+
+.av2-card-thumb--logo {
+    aspect-ratio: 16 / 10;
+    object-fit: contain;
+    padding: 18px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+}
+
+/* Body */
+.av2-card-body {
+    padding: 14px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+}
+
+.av2-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: rgba(255, 255, 255, 0.96);
+    line-height: 1.3;
+    margin: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.av2-card-meta {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.62);
+    letter-spacing: 0.01em;
+}
+
+.av2-card-meta strong { color: rgba(255, 255, 255, 0.85); font-weight: 600; }
+
+.av2-card-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ak-light,#d4ad6e);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    margin-top: 2px;
+}
+.av2-card-price-old {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.40);
+    text-decoration: line-through;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.av2-card-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.7rem;
+    color: rgba(var(--ak-rgb), 0.85);
+    background: rgba(var(--ak-rgb), 0.10);
+    border: 1px solid rgba(var(--ak-rgb), 0.22);
+    border-radius: 6px;
+    padding: 2px 7px;
+    display: inline-block;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.av2-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+/* Status pill (estados de vehiculo) */
+.av2-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: var(--av2-radius-pill);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+}
+.av2-card-status--disponible { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
+.av2-card-status--apartado   { color: #f59e0b; background: rgba(245, 158, 11, 0.12); } /* E4 §186 */
+.av2-card-status--reservado  { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+.av2-card-status--vendido    { color: #f87171; background: rgba(248, 113, 113, 0.12); }
+.av2-card-status--borrador   { color: #9ca3af; background: rgba(156, 163, 163, 0.12); }
+
+.av2-card-badge-featured {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, var(--ak-light,#d4ad6e), var(--ak-primary,#b89658));
+    color: var(--ak-on-accent, #1a1310);
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-radius: var(--av2-radius-pill);
+    box-shadow: 0 4px 12px rgba(var(--ak-rgb), 0.40);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.av2-card-badge-featured i { width: 11px !important; height: 11px !important; }
+
+.av2-card-badge-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.74rem;
+    font-weight: 600;
+    border-radius: var(--av2-radius-pill);
+}
+
+/* Stars (reviews) */
+.av2-card-stars {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+}
+.av2-card-stars svg { width: 14px; height: 14px; }
+
+/* Avatar (reviews) */
+.av2-card-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ak-primary,#b89658), #916652);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(var(--ak-rgb), 0.32);
+}
+
+.av2-card-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+/* Actions footer */
+.av2-card-actions {
+    display: flex;
+    gap: 4px;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.18);
+    flex-wrap: wrap;
+}
+
+.av2-card-actions .v-act,
+.av2-card-actions .btn {
+    flex-shrink: 0;
+}
+
+.av2-card-actions--right {
+    justify-content: flex-end;
+}
+
+/* Reviews / text body */
+.av2-card-quote {
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.78);
+    margin: 6px 0 4px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    font-style: italic;
+}
+
+/* Empty state */
+.av2-card-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 56px 24px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.92rem;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: var(--av2-radius-island);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.av2-card-empty i {
+    width: 40px !important;
+    height: 40px !important;
+    opacity: 0.35;
+    margin-bottom: 10px;
+}
+
+/* Reorder mode (vehiculos): grip handle in card header */
+.av2-card-grip {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: grab;
+}
+.av2-card.av2-card--dragging {
+    opacity: 0.6;
+    transform: scale(0.97);
+    cursor: grabbing;
+}
+
+/* Header de toolbar para card lists (count + paginación inline) */
+.av2-card-list-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    padding: 0 4px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+    .av2-card-list {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .av2-card-list--gallery {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    .av2-card-thumb { aspect-ratio: 16/10; }
+    .av2-card-actions { padding: 8px 10px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .av2-card,
+    .av2-card:hover {
+        transition: none !important;
+        transform: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   §100 — Toggle Tarjetas ↔ Lista + Vista LISTA densa (HarmonyOS)
+   Patrón Linear/Notion/Stripe: lista por default para gestión de
+   inventario, cards via 1 click. Cero box-clutter en la lista.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Segmented control (toggle de vista) */
+.av2-view-toggle {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    padding: 2px;
+    gap: 2px;
+}
+.av2-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+.av2-view-btn i { width: 16px; height: 16px; }
+.av2-view-btn:hover { color: rgba(255, 255, 255, 0.85); }
+.av2-view-btn--active {
+    background: rgba(var(--ak-rgb), 0.18);
+    color: var(--ak-light,#d4ad6e);
+}
+
+/* ── Vista LISTA — contenedor ── */
+.av2-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--av2-radius-card);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.015);
+}
+
+/* Fila de vehículo: grid de columnas para lectura escaneable */
+.av2-row {
+    display: grid;
+    grid-template-columns: 28px 52px 116px minmax(150px, 1fr) 88px 116px 132px max-content;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background-color 0.16s ease;
+}
+.av2-row:last-child { border-bottom: none; }
+.av2-row:hover { background: rgba(var(--ak-rgb), 0.05); }
+
+.av2-row-cb { width: 16px; height: 16px; cursor: pointer; }
+
+.av2-row-thumb {
+    position: relative;
+    width: 52px;
+    height: 40px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.03);
+}
+.av2-row-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.av2-row-star {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 13px !important;
+    height: 13px !important;
+    color: var(--ak-light,#d4ad6e);
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+}
+
+.av2-row-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.7rem;
+    color: rgba(var(--ak-rgb), 0.85);
+    letter-spacing: 0.03em;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.av2-row-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.av2-row-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.av2-row-meta {
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.av2-row-tipo {
+    justify-self: start;
+    font-size: 0.66rem !important;
+}
+
+/* Estado: texto coloreado SIN box (HarmonyOS — sin burbuja) */
+.av2-row-status {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: capitalize;
+    justify-self: start;
+}
+.av2-row-status::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background: currentColor;
+    vertical-align: middle;
+}
+/* La fila reusa los colores de .av2-card-status--* pero SIN box/burbuja */
+.av2-row-status.av2-card-status--disponible,
+.av2-row-status.av2-card-status--apartado,
+.av2-row-status.av2-card-status--reservado,
+.av2-row-status.av2-card-status--vendido,
+.av2-row-status.av2-card-status--borrador {
+    background: transparent;
+    border: none;
+    padding: 0;
+    text-transform: capitalize;
+}
+
+.av2-row-price {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--ak-light,#d4ad6e);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+.av2-row-price .av2-card-price-old {
+    display: block;
+    font-size: 0.7rem;
+    margin-left: 0;
+}
+
+.av2-row-actions {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    justify-self: end;
+}
+
+/* ── Vista LISTA marcas ── */
+.av2-row--brand {
+    grid-template-columns: 52px 120px minmax(140px, 1fr) 80px max-content;
+}
+.av2-row-thumb--logo {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+}
+.av2-row-thumb--logo img { object-fit: contain; padding: 5px; }
+.av2-row-nologo {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+    color: rgba(255,255,255,0.3); font-size: 0.8rem;
+}
+.av2-row-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    justify-self: start;
+}
+.av2-row-count i { width: 13px; height: 13px; opacity: 0.7; }
+
+/* ── HarmonyOS card cleanup: menos peso visual en el footer ── */
+.av2-card-actions { background: transparent; border-top: 1px solid rgba(255,255,255,0.05); }
+
+/* ── Responsive lista ── */
+@media (max-width: 1100px) {
+    .av2-row { grid-template-columns: 28px 52px minmax(140px,1fr) 110px 120px max-content; }
+    .av2-row-code, .av2-row-tipo { display: none; }
+}
+@media (max-width: 700px) {
+    .av2-row {
+        grid-template-columns: 48px 1fr max-content;
+        gap: 10px;
+        padding: 10px 12px;
+    }
+    .av2-row-cb { display: none; }
+    .av2-row-status, .av2-row-price { grid-column: 2; justify-self: start; }
+    .av2-row-price { font-size: 0.86rem; }
+    .av2-row-actions { grid-column: 3; grid-row: 1 / span 3; align-self: start; flex-wrap: wrap; max-width: 120px; justify-content: flex-end; }
+    .av2-row--brand { grid-template-columns: 48px 1fr max-content; }
+    .av2-row--brand .av2-row-code, .av2-row--brand .av2-row-count { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .av2-row, .av2-view-btn { transition: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   §101 — CARD VIEW LIMPIA Y CORPORATIVA (vehiculos + marcas)
+   Elimina exceso de pills/cajas apiladas. Jerarquia plana escaneable.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Codigo como texto plano mono (sin pill box) */
+.av2-card-codeflat {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.68rem;
+    color: rgba(var(--ak-rgb), 0.78);
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Subline: tipo · concesionario (texto plano muted, sin pills) */
+.av2-card-subline {
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.52);
+    letter-spacing: 0.01em;
+    margin-top: 2px;
+}
+
+/* Estado como overlay sobre la imagen (patron Kavak/CarGurus) */
+.av2-card-status-ov {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    z-index: 2;
+    padding: 3px 9px;
+    border-radius: var(--av2-radius-pill);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.av2-card-status-ov.av2-card-status--disponible { color: #052e16; background: rgba(74, 222, 128, 0.92); }
+.av2-card-status-ov.av2-card-status--apartado   { color: #451a03; background: rgba(245, 158, 11, 0.92); } /* E4 §186 */
+.av2-card-status-ov.av2-card-status--reservado  { color: #422006; background: rgba(251, 191, 36, 0.92); }
+.av2-card-status-ov.av2-card-status--vendido    { color: #fff; background: rgba(220, 38, 38, 0.88); }
+.av2-card-status-ov.av2-card-status--borrador   { color: #fff; background: rgba(82, 82, 91, 0.88); }
+
+/* Checkbox como overlay top-left sobre la imagen */
+.av2-card-cb-ov {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 3;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color 0.18s var(--av2-spring);
+}
+.av2-card-cb-ov:hover { background: rgba(0, 0, 0, 0.62); }
+.av2-card-cb-ov input { cursor: pointer; width: 15px; height: 15px; accent-color: var(--ak-primary,#b89658); }
+
+/* ── MARCA: card centrada, logo prominente, nombre una sola vez ── */
+.av2-card--brand {
+    text-align: center;
+}
+.av2-card--brand .av2-card-thumb--logo {
+    aspect-ratio: 16 / 9;
+    padding: 22px 24px 14px;
+}
+.av2-card-brandlogo--empty {
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.30);
+    font-size: 0.8rem;
+    padding: 22px 24px 14px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+}
+.av2-card-body--brand {
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px 16px;
+}
+.av2-card-title--brand {
+    font-size: 1.02rem;
+    -webkit-line-clamp: 1;
+}
+.av2-card-subline--brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+}
+.av2-card-subline--brand i { width: 13px; height: 13px; opacity: 0.7; }
+.av2-card-branddesc {
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   §103 — REORDER por inserción en vista LISTA (estándar Shopify/Notion)
+   Grip de arrastre + número de posición + línea indicadora de drop.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Primera columna más ancha para alojar grip + posición */
+.av2-list--reorder .av2-row--reorder {
+    grid-template-columns: 56px 52px 116px minmax(150px, 1fr) 88px 116px 132px max-content;
+    cursor: grab;
+}
+.av2-list--reorder .av2-row--reorder:active { cursor: grabbing; }
+
+/* Celda líder: grip + posición en 1 sola celda del grid */
+.av2-row-lead {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.av2-row-grip {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.35);
+    cursor: grab;
+    flex-shrink: 0;
+}
+.av2-row-grip:active { cursor: grabbing; }
+.av2-row-grip i { width: 16px; height: 16px; }
+.av2-row--reorder:hover .av2-row-grip { color: var(--admin-gold, var(--ak-primary,#b89658)); }
+.av2-row-pos {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--admin-gold, var(--ak-primary,#b89658));
+    font-variant-numeric: tabular-nums;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Estado durante el arrastre */
+.av2-row--dragging { opacity: 0.4; }
+
+/* Línea indicadora de drop (inset box-shadow → no afecta layout) */
+.av2-row--drag-over-top { box-shadow: inset 0 2px 0 0 var(--admin-gold, var(--ak-primary,#b89658)); }
+.av2-row--drag-over-bottom { box-shadow: inset 0 -2px 0 0 var(--admin-gold, var(--ak-primary,#b89658)); }
+
+/* Responsive: en mobile el grid de reorder colapsa pero conserva grip+pos */
+@media (max-width: 1100px) {
+    .av2-list--reorder .av2-row--reorder {
+        grid-template-columns: 56px 52px minmax(140px, 1fr) 120px max-content;
+    }
+}
+@media (max-width: 700px) {
+    .av2-list--reorder .av2-row--reorder {
+        grid-template-columns: 48px 1fr max-content;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .av2-row--reorder, .av2-row--dragging { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-v2.css — V2-5 fluid sections + perf + §34 Cards + §100 Lista + §101 Card limpia + §103 Reorder inserción
+   ═══════════════════════════════════════════════════════════════════ */

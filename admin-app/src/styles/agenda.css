@@ -1,0 +1,134 @@
+/* ============================================================
+   AGENDA — vista de mes (un solo calendario del portal).
+   ============================================================ */
+
+.agenda { display: flex; flex-direction: column; width: 100%; min-width: 0; height: 100%; }
+
+.agenda__head {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
+  padding: var(--s-4) var(--s-6) var(--s-3);
+}
+.agenda__title { font-family: var(--font-display); font-size: var(--t-subtitle); text-transform: capitalize; }
+
+.agenda__weekdays {
+  flex: 0 0 auto; display: grid; grid-template-columns: repeat(7, 1fr);
+  padding: 0 var(--s-6);
+}
+.agenda__wd { text-align: center; padding: var(--s-1) 0; font-size: var(--t-caption); font-weight: 700; color: var(--ink-text-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.agenda__grid {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  margin: 0 var(--s-6) var(--s-6);
+  display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(94px, 1fr);
+  gap: 1px; background: var(--surface-stroke);
+  border: 1px solid var(--surface-stroke); border-radius: var(--r-lg); overflow: hidden;
+}
+.agenda__grid { overflow-y: auto; }
+
+.agenda__day {
+  background: var(--surface-card); padding: var(--s-2);
+  display: flex; flex-direction: column; gap: var(--s-1); min-height: 0; min-width: 0;
+}
+.agenda__day.is-out { background: var(--surface-card-2); }
+.agenda__day.is-out .agenda__daynum { color: var(--ink-text-faint); }
+.agenda__day.is-today { box-shadow: inset 0 0 0 2px var(--gold-400); }
+.agenda__daynum { font-size: var(--t-caption); font-weight: 700; color: var(--ink-text-muted); align-self: flex-start; }
+.agenda__day.is-today .agenda__daynum {
+  background: var(--grad-gold); color: var(--ink-950);
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-content: center;
+}
+
+.agenda__events { display: flex; flex-direction: column; gap: 2px; overflow: hidden; min-width: 0; }
+.agenda__chip {
+  display: flex; align-items: center; gap: 4px; width: 100%;
+  padding: 2px var(--s-2); border: 0; border-radius: var(--r-xs);
+  background: var(--gold-100); color: var(--gold-800);
+  font-size: 11px; font-weight: 600; cursor: pointer; text-align: left;
+  transition: background var(--dur-1) var(--ease-fluent);
+}
+.agenda__chip:hover { background: var(--gold-200); }
+:root[data-theme="dark"] .agenda__chip { background: rgba(184,146,74,0.22); color: var(--gold-200); }
+.agenda__chip-time { font-variant-numeric: tabular-nums; opacity: 0.8; flex: 0 0 auto; }
+.agenda__more {
+  border: 0; background: transparent; cursor: pointer; text-align: left;
+  font-size: 11px; font-weight: 600; color: var(--ink-text-muted); padding: 1px var(--s-2);
+}
+.agenda__more:hover { color: var(--gold-700); }
+
+@media (max-width: 720px) { /* OLA-1.3: breakpoint canónico */
+  .agenda__head, .agenda__weekdays { padding-left: var(--s-3); padding-right: var(--s-3); }
+  .agenda__grid { margin-left: var(--s-3); margin-right: var(--s-3); grid-auto-rows: minmax(72px, 1fr); }
+  .agenda__chip span:not(.agenda__chip-time) { display: none; }
+  /* El cluster de controles (Hoy/Disponibilidad/Exportar…) medía 472px y con
+     flex nowrap desbordaba ~155px → el último control quedaba fuera de pantalla.
+     Dejamos que la cabecera y el cluster envuelvan en angosto (scope al agenda). */
+  .agenda__head { flex-wrap: wrap; }
+  .agenda__head .u-row--tight { flex-wrap: wrap; row-gap: var(--s-2); }
+}
+
+/* Base: nombre de día y estado-vacío ocultos en desktop (la cuadrícula del mes
+   no los usa; los activa la vista día/lista móvil de abajo). */
+.agenda__dayname { display: none; }
+.agenda__empty { display: none; align-items: center; justify-content: center; gap: var(--s-2); padding: var(--s-8) var(--s-4); color: var(--ink-text-muted); }
+
+/* ── Vista día/lista en móvil (≤560, §294 continuación) ─────────────────────
+   La cuadrícula de mes (7 col) recortaba la hora de las citas en el teléfono.
+   Aquí se vuelve una LISTA vertical solo de los días CON citas (+ hoy): cada
+   día = cabecera (nº + "mié") + sus citas full-width con hora/cliente/estado
+   legibles. Order-preserving (por fecha, igual que la data). ────────────────*/
+@media (max-width: 560px) {
+  .agenda__weekdays { display: none; }
+  .agenda__grid {
+    display: flex; flex-direction: column; gap: 0;
+    background: none; border: 0; border-radius: 0;
+    margin: 0 var(--s-3) var(--s-4); overflow-y: auto;
+  }
+  .agenda__day {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2);
+    background: none; padding: var(--s-3) 0; box-shadow: none;
+    border-bottom: 1px solid var(--surface-stroke);
+  }
+  .agenda__day.is-out { display: none; }
+  .agenda__day:not(.is-today):not(:has(.agenda__events > *)) { display: none; }
+  .agenda__daynum { font-size: 1.05rem; font-weight: 700; color: var(--ink-text); }
+  .agenda__dayname { display: inline; font-size: var(--t-caption); color: var(--ink-text-muted); text-transform: capitalize; }
+  .agenda__events { flex-basis: 100%; gap: 4px; overflow: visible; margin-top: 6px; }
+  .agenda__chip { width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 0 var(--r-sm) var(--r-sm) 0; gap: var(--s-2); }
+  .agenda__chip span:not(.agenda__chip-time) { display: inline; }
+  .agenda__chip-time { font-weight: 700; }
+  .agenda__more { padding: 4px 0; }
+  .agenda__empty { display: flex; }
+}
+
+/* F18 §184 — estado de la cita visible en el chip */
+.agenda__chip--pendiente { border-left: 3px solid var(--warning, #d9a014); }
+.agenda__chip--confirmada { border-left: 3px solid var(--success, #2f9e63); }
+.agenda__chip--reprogramada { border-left: 3px solid var(--info, #3a7bd5); }
+.agenda__chip.is-closed { opacity: 0.45; }
+.agenda__chip--cancelada, .agenda__chip--no_show { text-decoration: line-through; }
+
+/* Dialogo de cita (cita-dialog.js) */
+.cita-info { display: flex; flex-direction: column; gap: 4px; }
+.cita-row { display: flex; gap: var(--s-2); align-items: baseline; }
+.cita-row__k { flex: 0 0 84px; }
+.cita-row__v { min-width: 0; overflow-wrap: anywhere; }
+.cita-conflict {
+  padding: 8px 10px; border-radius: 8px; font-size: 0.85rem;
+  border: 1px solid var(--warning, #d9a014);
+  background: color-mix(in srgb, var(--warning, #d9a014) 12%, transparent);
+}
+.cita-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+/* Chooser "Nueva cita" (gap 5 F23-7) */
+.cita-pick { display: flex; flex-direction: column; }
+.cita-pick__row {
+  display: flex; align-items: baseline; gap: var(--s-2);
+  padding: 6px 8px;
+  border: 0; border-bottom: 1px solid var(--surface-stroke);
+  background: none; color: inherit;
+  text-align: left; cursor: pointer;
+  border-radius: var(--r-md);
+}
+.cita-pick__row:hover { background: color-mix(in srgb, var(--gold-500) 10%, transparent); }
+.cita-pick__row:last-child { border-bottom: 0; }
+.cita-pick__sep { text-align: center; padding: 2px 0; }

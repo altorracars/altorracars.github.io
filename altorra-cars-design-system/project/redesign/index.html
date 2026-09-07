@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Altorra Cars · Concesionario premium · Cartagena</title>
+<link rel="icon" href="logo-wheel.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Manrope:wght@200;300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="cinematic.css">
+<link rel="stylesheet" href="modals.css">
+<link rel="stylesheet" href="altor.css">
+<link rel="stylesheet" href="quicktools.css">
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="data.js"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="Modals.jsx"></script>
+<script type="text/babel" src="Home.jsx"></script>
+<script type="text/babel" src="Search.jsx"></script>
+<script type="text/babel" src="Detail.jsx"></script>
+<script type="text/babel" src="Pages.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "#D4A85A",
+  "accentPalette": ["#D4A85A","#FFFFFF","#0E0E14"],
+  "density": "comfortable",
+  "radius": 18,
+  "glass": 28,
+  "anim": "fluent",
+  "shadows": true,
+  "headerStyle": "floating",
+  "cardStyle": "glass",
+  "logoAnim": true
+}/*EDITMODE-END*/;
+
+function AltorraTweaks() {
+  const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+
+  React.useEffect(() => {
+    const r = document.documentElement;
+    // Accent
+    r.style.setProperty('--gold-500', tweaks.accent);
+    r.style.setProperty('--gold-400', tweaks.accent);
+    r.style.setProperty('--gold-300', tweaks.accent);
+    // Radius scale
+    const rad = tweaks.radius;
+    r.style.setProperty('--r-md', (rad*0.6)+'px');
+    r.style.setProperty('--r-lg', rad+'px');
+    r.style.setProperty('--r-xl', (rad*1.3)+'px');
+    r.style.setProperty('--r-2xl', (rad*1.7)+'px');
+    // Glass blur
+    r.style.setProperty('--blur-thick', `blur(${tweaks.glass}px) saturate(180%)`);
+    // Density
+    r.style.setProperty('--density', tweaks.density);
+    document.body.dataset.density = tweaks.density;
+    // Animation profile
+    document.body.dataset.anim = tweaks.anim;
+    // Shadows
+    document.body.dataset.shadows = tweaks.shadows ? 'on' : 'off';
+    // Header style
+    document.body.dataset.header = tweaks.headerStyle;
+    // Card style
+    document.body.dataset.cards = tweaks.cardStyle;
+    // Logo anim
+    document.body.dataset.logoanim = tweaks.logoAnim ? 'on' : 'off';
+  }, [tweaks]);
+
+  return (
+    <window.TweaksPanel title="Tweaks · Altorra UX">
+      <window.TweakSection title="Identidad">
+        <window.TweakColor label="Color de acento" value={tweaks.accent} onChange={v=>setTweak('accent',v)}
+          options={['#D4A85A','#C9A24A','#E8B86E','#B8893E','#F0C674','#9C7B3D']} />
+        <window.TweakToggle label="Animación de la llanta" checked={tweaks.logoAnim} onChange={v=>setTweak('logoAnim',v)} />
+      </window.TweakSection>
+
+      <window.TweakSection title="Layout & Header">
+        <window.TweakRadio label="Header" value={tweaks.headerStyle} onChange={v=>setTweak('headerStyle',v)}
+          options={[{value:'floating',label:'Flotante'},{value:'flat',label:'Pegado'}]} />
+        <window.TweakRadio label="Densidad" value={tweaks.density} onChange={v=>setTweak('density',v)}
+          options={[{value:'compact',label:'Compacto'},{value:'comfortable',label:'Cómodo'},{value:'spacious',label:'Amplio'}]} />
+        <window.TweakSlider label="Radius" value={tweaks.radius} onChange={v=>setTweak('radius',v)} min={6} max={28} step={2} suffix="px" />
+      </window.TweakSection>
+
+      <window.TweakSection title="Glass & Motion">
+        <window.TweakSlider label="Intensidad del glass" value={tweaks.glass} onChange={v=>setTweak('glass',v)} min={8} max={48} step={2} suffix="px" />
+        <window.TweakRadio label="Animaciones" value={tweaks.anim} onChange={v=>setTweak('anim',v)}
+          options={[{value:'subtle',label:'Sutil'},{value:'fluent',label:'Fluent'},{value:'spring',label:'Spring'}]} />
+        <window.TweakToggle label="Sombras profundas" checked={tweaks.shadows} onChange={v=>setTweak('shadows',v)} />
+      </window.TweakSection>
+
+      <window.TweakSection title="Tarjetas de vehículo">
+        <window.TweakRadio label="Estilo" value={tweaks.cardStyle} onChange={v=>setTweak('cardStyle',v)}
+          options={[{value:'glass',label:'Glass'},{value:'solid',label:'Solid'},{value:'minimal',label:'Minimal'}]} />
+      </window.TweakSection>
+    </window.TweaksPanel>
+  );
+}
+
+function App() {
+  const { useState, useEffect, useCallback } = React;
+  const [route, setRoute] = useState('home');
+  const [routeArg, setRouteArg] = useState(null);
+  const [theme, setTheme] = useState(()=>localStorage.getItem('alt-theme')||'light');
+  const [favorites, setFavorites] = useState(()=>JSON.parse(localStorage.getItem('alt-fav')||'[]'));
+  const [comparing, setComparing] = useState([]);
+  const [toasts, setToasts] = useState([]);
+  const [auth, setAuth] = useState(false);
+
+  useEffect(()=>{document.documentElement.setAttribute('data-theme',theme);localStorage.setItem('alt-theme',theme);},[theme]);
+  useEffect(()=>localStorage.setItem('alt-fav',JSON.stringify(favorites)),[favorites]);
+
+  const toast = useCallback((msg,kind='info')=>{
+    const id=Date.now()+Math.random();
+    setToasts(t=>[...t,{id,msg,kind}]);
+    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),3200);
+  },[]);
+
+  const navigate = useCallback((r,arg=null)=>{
+    setRoute(r); setRouteArg(arg);
+    window.scrollTo({top:0,behavior:'smooth'});
+  },[]);
+
+  const onFav = (id)=>{
+    setFavorites(f=>f.includes(id)?f.filter(x=>x!==id):[...f,id]);
+    toast(favorites.includes(id)?'Quitado de favoritos':'Agregado a favoritos','success');
+  };
+  const onCompare = (id)=>{
+    setComparing(c=>{
+      if (c.includes(id)) { toast('Quitado del comparador'); return c.filter(x=>x!==id); }
+      if (c.length>=3) { toast('Máximo 3 vehículos','danger'); return c; }
+      toast('Agregado al comparador','success'); return [...c,id];
+    });
+  };
+
+  // route parsing
+  let view;
+  if (route==='home') view = <Home navigate={navigate} favorites={favorites} onFav={onFav} onCompare={onCompare} toast={toast} />;
+  else if (route==='busqueda') view = <Search navigate={navigate} favorites={favorites} onFav={onFav} onCompare={onCompare} initialFilter={routeArg} toast={toast} />;
+  else if (route.startsWith('detail:')) view = <Detail vid={route.split(':')[1]} navigate={navigate} favorites={favorites} onFav={onFav} onCompare={onCompare} toast={toast} />;
+  else if (route.startsWith('cat:')) view = <CatPage navigate={navigate} slug={route.split(':')[1]} favorites={favorites} onFav={onFav} onCompare={onCompare} toast={toast} />;
+  else if (route==='simulador') view = <Simulador navigate={navigate} toast={toast} />;
+  else if (route.startsWith('simulador:')) view = <Simulador vid={route.split(':')[1]} navigate={navigate} toast={toast} />;
+  else if (route==='comparar') view = <Comparar navigate={navigate} comparing={comparing} setComparing={setComparing} favorites={favorites} onFav={onFav} onCompare={onCompare} />;
+  else if (route==='nosotros') view = <Nosotros navigate={navigate} />;
+  else if (route==='contacto') view = <Contacto navigate={navigate} toast={toast} />;
+  else if (route==='resenas') view = <Resenas navigate={navigate} toast={toast} />;
+  else if (route==='favoritos') view = <Favoritos navigate={navigate} favorites={favorites} onFav={onFav} onCompare={onCompare} toast={toast} />;
+  else if (route==='marcas') view = <Marcas navigate={navigate} />;
+  else if (route==='perfil') view = <Perfil navigate={navigate} favorites={favorites} />;
+  else if (['terminos','privacidad','cookies'].includes(route)) view = <LegalPage navigate={navigate} kind={route} />;
+  else view = <NotFound navigate={navigate} />;
+
+  return (
+    <>
+      <Nav route={route} navigate={(r,arg)=>navigate(r,arg)} theme={theme} setTheme={setTheme} favorites={favorites} openAuth={()=>setAuth(true)} />
+      {view}
+      <Footer navigate={navigate} />
+      <ToastHost toasts={toasts} />
+      <AuthModal open={auth} onClose={()=>setAuth(false)} toast={toast} />
+      <AltorraTweaks />
+      {comparing.length>0 && route!=='comparar' && (
+        <div style={{position:'fixed',bottom:24,left:24,zIndex:90}}>
+          <button className="btn btn-primary btn-lg acrylic-hi" style={{boxShadow:'var(--shadow-32)'}} onClick={()=>navigate('comparar')}>
+            ⚖ Comparar ({comparing.length})
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+<script type="text/babel" src="Altor.jsx"></script>
+<script type="text/babel" src="QuickTools.jsx"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="description" content="Reseñas y testimonios de clientes satisfechos de ALTORRA CARS. Conoce las experiencias de quienes ya compraron su vehículo con nosotros.">
+    <title>Reseñas de Clientes | ALTORRA CARS</title>
+    <link rel="canonical" href="https://altorracars.github.io/resenas.html">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://altorracars.github.io/resenas.html">
+    <meta property="og:title" content="Reseñas de Clientes | ALTORRA CARS">
+    <meta property="og:description" content="Reseñas y testimonios de clientes satisfechos de ALTORRA CARS. Conoce las experiencias de quienes ya compraron su vehículo con nosotros.">
+    <meta property="og:image" content="https://altorracars.github.io/multimedia/hero-car.jpg">
+    <meta property="og:site_name" content="ALTORRA CARS">
+    <meta property="og:locale" content="es_CO">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://altorracars.github.io/resenas.html">
+    <meta name="twitter:title" content="Reseñas de Clientes | ALTORRA CARS">
+    <meta name="twitter:description" content="Reseñas y testimonios de clientes satisfechos de ALTORRA CARS.">
+    <meta name="twitter:image" content="https://altorracars.github.io/multimedia/hero-car.jpg">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/multimedia/favicon-32.png">
+    <link rel="apple-touch-icon" href="/multimedia/apple-touch-icon-180.png">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/reviews.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/performance-fixes.css">
+
+    <!-- Google Fonts -->
+    <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
+         para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
+         DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->
+    <link rel="stylesheet" data-altorra-fonts href="css/fonts.css">
+
+    <style>
+        /* cinematic layout — .soft-section handles spacing */
+        .reviews-container { background: transparent; }
+    </style>
+    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
+         unauthenticated header buttons when the user is already logged in.
+         Sets html.auth-authenticated or html.auth-guest based on the
+         localStorage flag persisted by auth.js (updateHeaderAuthState).
+         CSS in style.css uses these classes to hide/show login buttons. -->
+    <script>
+    (function () {
+        try {
+            var hint = localStorage.getItem('altorra_auth_hint');
+            document.documentElement.classList.add(
+                hint === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+            );
+        } catch (e) {
+            document.documentElement.classList.add('auth-guest');
+        }
+    })();
+    </script>
+    <!-- Critical header CSS — inlined for first-paint stability.
+         (1) Reserves 80px for the header so layout doesn't shift when
+             components.js injects the fetched header HTML.
+         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
+             prevents the sequential paint of favoritos→login→register→bell).
+         (3) Auth hint rules duplicated here so they apply even before
+             style.css finishes parsing (defense-in-depth).
+         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <style>
+    #header-placeholder{min-height:80px;display:block}
+    header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
+    header .nav-actions.hdr-ready{opacity:1;visibility:visible}
+    html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
+    html.auth-guest #headerUserArea{display:none!important}
+    html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+    @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
+    </style>
+
+    <!-- Page Loader — Critical Inline CSS (cross-browser) -->
+    <style>
+    #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:24px;-webkit-transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}
+    #page-loader.pl-done{opacity:0;visibility:hidden;pointer-events:none;}
+    .pl-logo{width:68px;height:68px;-o-object-fit:contain;object-fit:contain;-webkit-animation:plPulse 2s ease-in-out infinite;animation:plPulse 2s ease-in-out infinite;}
+    .pl-ring{width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;-webkit-animation:plSpin .8s linear infinite;animation:plSpin .8s linear infinite;}
+    @-webkit-keyframes plPulse{0%,100%{opacity:1;-webkit-transform:scale(1);transform:scale(1)}50%{opacity:.6;-webkit-transform:scale(.93);transform:scale(.93)}}
+    @keyframes plPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.93)}}
+    @-webkit-keyframes plSpin{to{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}
+    @keyframes plSpin{to{transform:rotate(360deg)}}
+    </style>
+    <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
+
+    <noscript>
+        </noscript>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
+        <img src="/multimedia/logo-wheel-128.webp" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
+        <div class="pl-ring" aria-hidden="true"></div>
+    </div>
+
+    <!-- Header Component -->
+    <div id="header-placeholder"></div>
+
+    <main class="soft-page" data-cin="on">
+        <section class="soft-hero">
+            <div class="soft-hero-bg" aria-hidden="true"></div>
+            <div class="soft-hero-inner">
+                <span class="cin-eyebrow">Reseñas verificadas</span>
+                <h1 class="soft-hero-h">Las cuentan <span class="soft-hero-h-accent">ellos</span>.</h1>
+                <p class="soft-hero-sub">Clientes reales que ya forman parte de la familia ALTORRA.</p>
+            </div>
+        </section>
+        <section class="soft-section">
+            <div class="reviews-container">
+                <div id="reviewsContent"><!-- reviews.js renderFullReviewsPage llena esto --></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Component -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Scripts -->
+    <script src="js/core/firebase-config.js" defer></script>
+    <script src="js/core/components.js" defer></script>
+    <script src="js/public/reviews.js" defer></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Renderizar página de reseñas
+            if (typeof reviewsSystem !== 'undefined') {
+                reviewsSystem.renderFullReviewsPage('reviewsContent');
+            }
+        });
+    </script>
+
+        <script src="js/core/page-loader.js"></script>
+    <!-- Cache Manager -->
+    <script src="js/core/cache-manager.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#0a0a0a;padding:24px;display:flex;flex-direction:column;gap:16px;}
+.title{color:#b89658;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.6;}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+/* Gold filled */
+.btn-gold{display:inline-flex;align-items:center;gap:6px;padding:0.75rem 2rem;background:linear-gradient(135deg,#d4af37,#b89658);color:#0a0a0a;font-weight:700;font-size:0.95rem;border-radius:8px;border:none;cursor:pointer;transition:all 0.3s ease;position:relative;overflow:hidden;}
+.btn-gold::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent);transform:translateX(-100%);transition:transform 0.55s ease;}
+.btn-gold:hover::after{transform:translateX(100%);}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(212,175,55,0.52);}
+/* Pill CTA */
+.btn-pill{display:inline-flex;align-items:center;gap:6px;padding:0.85rem 2.2rem;background:linear-gradient(135deg,#d4af37,#b89658);color:#0a0a0a;font-weight:700;font-size:0.95rem;border-radius:100px;border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.38);}
+/* Outline */
+.btn-outline{display:inline-flex;align-items:center;gap:6px;padding:0.7rem 1.5rem;background:transparent;color:#d4af37;font-weight:600;font-size:0.9rem;border-radius:8px;border:2px solid #d4af37;cursor:pointer;}
+/* Dark filled */
+.btn-dark{display:inline-flex;align-items:center;gap:6px;padding:0.6rem 1.5rem;background:#1d1b19;color:#fff;font-weight:500;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;}
+/* Small header button */
+.btn-hdr{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 14px;font-size:0.8rem;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;border-radius:4px;border:1.5px solid #d4af37;background:#d4af37;color:#0a0a0a;cursor:pointer;}
+.btn-hdr-outline{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 14px;font-size:0.8rem;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;border-radius:4px;border:1.5px solid rgba(255,255,255,0.38);background:transparent;color:rgba(255,255,255,0.92);cursor:pointer;}
+/* Icon button */
+.btn-fav{width:40px;height:40px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.1);cursor:pointer;border:none;}
+.label{color:#9c9997;font-size:0.62rem;text-align:center;margin-top:4px;}
+.col{display:flex;flex-direction:column;align-items:center;gap:4px;}
+</style></head><body>
+<div class="title">Buttons</div>
+<div class="row">
+  <div class="col"><button class="btn-gold">Ver Vehículos</button><div class="label">Gold Filled</div></div>
+  <div class="col"><button class="btn-pill">Ver Vehículos →</button><div class="label">Pill CTA (Hero)</div></div>
+  <div class="col"><button class="btn-outline">Ver todos</button><div class="label">Gold Outline</div></div>
+  <div class="col"><button class="btn-dark">Ver Detalles</button><div class="label">Dark Filled</div></div>
+</div>
+<div class="title">Header Buttons</div>
+<div class="row" style="background:#0a0a0a;padding:10px 0;">
+  <div class="col"><button class="btn-hdr-outline">♥ Favoritos <span style="background:#d4af37;color:#fff;font-size:0.65rem;padding:1px 5px;border-radius:8px;">2</span></button><div class="label">Outline</div></div>
+  <div class="col"><button class="btn-hdr-outline">→ Ingresar</button><div class="label">Outline</div></div>
+  <div class="col"><button class="btn-hdr">+ Registrarse</button><div class="label">Gold Filled</div></div>
+  <div class="col"><button class="btn-fav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="label">Favorite (circle)</div></div>
+</div>
+</body></html>

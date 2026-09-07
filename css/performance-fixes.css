@@ -1,0 +1,483 @@
+/* ═══════════════════════════════════════════════════════════
+   PERFORMANCE FIXES — ALTORRA CARS
+   Phase P1: Eliminate backdrop-filter on scroll-affected
+   elements. backdrop-filter forces full GPU recomposition
+   every scroll frame — even at blur(4px) it costs ~3-6ms
+   per frame on integrated GPUs. We replace with high-opacity
+   solid backgrounds (visually nearly identical, GPU-free).
+
+   Modals, toasts and notification center KEEP their blur —
+   they only render when active, so no scroll cost.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1. HEADER: kill backdrop-filter on the fixed top bar ─
+   The header is `position: fixed` + visible always. With
+   backdrop-filter, every scroll frame triggers a full-width
+   GPU recomposite of the area behind it. Replace with a
+   high-opacity solid background — visually almost identical.
+   ──────────────────────────────────────────────────────── */
+body #header {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(8, 9, 14, 0.97) !important;
+    will-change: transform;
+}
+
+/* ── 2. VEHICLE CARDS: kill blur ──────────────────────────
+   Card grids can have 10-30 visible cards at once. Each
+   blurred card = its own composite layer. On scroll, all
+   layers must re-composite. Removing blur is a 60-80% paint
+   reduction on grid pages.
+   ──────────────────────────────────────────────────────── */
+body .vehicle-card,
+body .vehicles-grid .vehicle-card,
+body .featured-section .vehicle-card,
+body .new-vehicles-section .vehicle-card,
+body .used-vehicles-section .vehicle-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 3. DROPDOWN MENUS: kill blur ─────────────────────────
+   When a dropdown is open and the user scrolls, the blur
+   recomposites the area behind on every frame. With ~5-8
+   nav dropdowns, this compounds.
+   ──────────────────────────────────────────────────────── */
+body .dropdown-menu {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(13, 13, 13, 0.97) !important;
+}
+
+/* ── 4. COOKIE BANNER: kill blur (fixed at bottom) ───────
+   Visible until user accepts. Fixed-position element with
+   blur = compositing tax on every scroll frame.
+   ──────────────────────────────────────────────────────── */
+body .cookie-banner {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(8, 9, 14, 0.97) !important;
+    will-change: transform, opacity;
+}
+
+/* ── 5. HERO SEARCH BOX + BADGE: kill blur ───────────────
+   The hero-search-inner is a large surface (full-width
+   pill) at the top of the homepage. Even at rest it costs
+   GPU; on scroll it's worse.
+   ──────────────────────────────────────────────────────── */
+body .hero-search-inner {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(13, 13, 13, 0.86) !important;
+}
+
+body .hero-search-dropdown {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+}
+
+body .hero-badge,
+body .gradient-hero .hero-badge {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 6. FEATURED WEEK BANNER internals ──────────────────── */
+body .fw-data-rail,
+body .fw-nav,
+body .fw-blueprint-panel {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 7. SEARCH RESULTS HEADER (sticky) ──────────────────── */
+body .results-header {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(13, 13, 13, 0.95) !important;
+}
+
+/* ── 8. FAVORITES PAGE: stat cards + sticky controls ────
+   .fav-controls-section is sticky at top:70px. Sticky +
+   backdrop-filter = repaint every scroll frame.
+   ──────────────────────────────────────────────────────── */
+body .fav-stat,
+body .fav-controls-section,
+body .fav-controls,
+body .fav-skeleton-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body .fav-controls-section {
+    background: rgba(10, 10, 10, 0.97) !important;
+}
+
+body .fav-stat {
+    background: rgba(255, 255, 255, 0.045) !important;
+}
+
+/* ── 9. AUTH GATE buttons + secondary buttons (small) ──── */
+body .no-favorites--auth .btn-catalog-secondary,
+body .btn-hero.btn-secondary {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 10. RESULTS / DESTACADO HUD elements ─────────────── */
+body .dest-hud-meter,
+body .dest-nav {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 11. HISTORIAL VISITAS arrows ───────────────────────── */
+body .rv-arrow {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 12. TINY badges over images ─────────────────────────
+   blur(4px) on a tiny badge looks the same as solid bg.
+   ──────────────────────────────────────────────────────── */
+body .badge {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ───────────────────────────────────────────────────────
+   ↑↑↑ END P1 (backdrop-filter elimination on scroll-paths)
+   ───────────────────────────────────────────────────────
+   Modals, overlays, toasts and notification center KEEP
+   their blur — they only render when active (no scroll cost):
+     - .modal-overlay, .modal-container
+     - .financing-modal-overlay
+     - .appointment-modal-overlay
+     - .cookie-modal-overlay, .cookie-modal
+     - .altorra-notify, .altorra-notify-center
+   No override needed; their existing CSS stays as-is.
+   ─────────────────────────────────────────────────────── */
+
+/* ── 13. SHINE EFFECTS: animate transform, not left ───────
+   Animating `left` triggers layout on every frame of a hover
+   transition. With ~10-30 cards in a grid, even one hover
+   pulse forces N layout passes. Use translateX (compositable,
+   GPU-only) — same visual, ~100x cheaper.
+   ──────────────────────────────────────────────────────── */
+body .vehicle-card::after {
+    left: 0 !important;
+    transform: translateX(-100%);
+    transition: transform 0.7s !important;
+    will-change: transform;
+}
+
+body .vehicle-card:hover::after {
+    left: 0 !important;
+    transform: translateX(100%);
+}
+
+/* Commercial card top accent line (.commercial-card::before).
+   Original: animates `left` AND `right` (two layout-triggering
+   props per frame, narrow line → wider on hover). Replace
+   with transform: scaleX — preserves the "60% → 80% width"
+   visual but pure GPU. Fixed left/right at 0/0 + scaleX
+   recreates the original's centered horizontal extent. */
+.commercial-card::before {
+    left: 0 !important;
+    right: 0 !important;
+    transform: scaleX(0.6);
+    transform-origin: center;
+    transition: transform 0.35s ease, opacity 0.35s ease !important;
+    will-change: transform, opacity;
+}
+
+.commercial-card:hover::before {
+    transform: scaleX(0.8);
+}
+
+/* ── 14. TRANSITION OPTIMIZATION ─────────────────────────
+   Never transition `all` — animates every property
+   including layout-triggering ones. Be explicit.
+   ──────────────────────────────────────────────────────── */
+body .vehicle-card {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ── 15. HERO AMBIENT ORBS: GPU layer hint ──────────────
+   blur(70px) on animating elements is expensive.
+   will-change + contain promotes to own layer.
+   ──────────────────────────────────────────────────────── */
+.hero-ambient::before,
+.hero-ambient::after {
+    will-change: transform;
+    contain: layout style;
+}
+
+/* §92 — Sección 16 (HERO PARTICLES) ELIMINADA completamente.
+   Las 8 particles por hero × N heros consumían GPU layers
+   permanentes con animation:infinite. Decisión cliente: eliminar
+   todo rastro. Gradient + ambient orbs son suficiente atmósfera. */
+
+/* ── 17. LAZY IMAGE: opacity-only transition ─────────────
+   filter: blur() transition = repaint every frame.
+   Opacity-only is compositable and smooth.
+   ──────────────────────────────────────────────────────── */
+.lazy-image {
+    opacity: 0;
+    filter: none !important;
+    transition: opacity 0.35s ease !important;
+}
+
+.lazy-image.loaded {
+    opacity: 1;
+    filter: none !important;
+}
+
+/* ── 18. FW BANNER SCANLINE: transform not top ───────────
+   Animating `top` triggers layout on every frame.
+   Use translateY (compositable).
+   ──────────────────────────────────────────────────────── */
+.fw-hud-scanline {
+    top: 0 !important;
+    will-change: transform, opacity !important;
+    animation-name: fw-depth-scan-fixed !important;
+}
+
+@keyframes fw-depth-scan-fixed {
+    0%   { transform: translateY(calc(5vh));   opacity: 0;  }
+    3%   { transform: translateY(calc(5vh));   opacity: .9; }
+    10%  { transform: translateY(calc(12vh));  }
+    28%  { transform: translateY(calc(32vh));  }
+    50%  { transform: translateY(calc(54vh));  }
+    73%  { transform: translateY(calc(76vh)); opacity: .70; }
+    87%  { transform: translateY(calc(90vh)); opacity: .40; }
+    92%  { transform: translateY(calc(94vh)); opacity: 0;   }
+    93%  { transform: translateY(calc(5vh));  opacity: 0;   }
+    100% { transform: translateY(calc(5vh));  opacity: 0;   }
+}
+
+/* ── 19. CONTENT-VISIBILITY: skip rendering off-screen ──
+   Tells the browser to skip rendering sections until they're
+   near the viewport. The #1 modern technique for buttery
+   scroll performance.
+   contain-intrinsic-size: estimate size so the scrollbar
+   doesn't jump when content materializes.
+
+   Index sections (P3 expansion):
+   - hero/fw-banner stay above-fold (NOT included)
+   - all others get content-visibility
+   ──────────────────────────────────────────────────────── */
+.categories-section,
+.brands-section,
+.featured-section,
+.commercial-section,
+.recently-viewed-section,
+.promo-banner-section,
+#testimonials-section,
+.footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
+}
+/* Note: .search-results-section, .catalog-section, .favorites-section
+   intentionally NOT included — they're the primary viewport on those
+   pages. The cards INSIDE them (rule 19b) handle per-card visibility. */
+
+/* ── 19b. CONTENT-VISIBILITY on individual vehicle cards ──
+   Apple/Stripe's trick for long lists: each card opts into
+   content-visibility independently. The browser only paints
+   cards near the viewport. With 20+ cards in a grid, this
+   reduces initial paint from O(N) to O(visible). Below-fold
+   cards skip layout entirely until scrolled into range.
+
+   contain-intrinsic-size: an estimate of card height (380px
+   is the typical .vehicle-card visual height including
+   image + info block + actions).
+   ──────────────────────────────────────────────────────── */
+.vehicles-grid > .vehicle-card,
+.vehicles-grid > .fw-skeleton-card,
+.vehicles-grid > .fav-skeleton-card {
+    content-visibility: auto;
+    contain-intrinsic-size: 320px 460px;
+}
+
+/* ── 19c. LAYOUT/STYLE CONTAINMENT on cards ──────────────
+   `contain: layout style` isolates the card's layout/style
+   work from the rest of the page. A hover or class change
+   on one card doesn't trigger layout recalc elsewhere.
+
+   We avoid `paint` containment on .vehicle-card because
+   .favorite-btn--burst extends an 18px ring shadow that
+   would get clipped by paint containment.
+   ──────────────────────────────────────────────────────── */
+.vehicle-card,
+.brand-card,
+.category-card,
+.fav-stat,
+.rv-card,
+.fw-slide {
+    contain: layout style;
+}
+
+/* ── 19d. ISOLATE EXPENSIVE COMPLEX SECTIONS ─────────────
+   Hero (8 particles + ambient orbs + animations) and the
+   Featured Week banner (600px tall, 5 layered gradients,
+   HUD scanline, glows) are the heaviest sections on the
+   homepage. Containment isolates their paint work so it
+   doesn't bleed into siblings.
+   ──────────────────────────────────────────────────────── */
+.hero,
+.fw-section {
+    contain: layout style;
+}
+
+/* ── 20. DESTINATION HUD: GPU promotion ─────────────────── */
+.dest-hud-ring::after,
+.dest-hud-ring-arc {
+    will-change: transform;
+}
+
+.dest-visual-glow {
+    will-change: transform, opacity;
+}
+
+/* ── 21. BRAND HEROES: GPU promotion ────────────────────── */
+.brand-hero-bg,
+.marcas-hero-bg {
+    will-change: transform;
+}
+
+/* ── 22. PAUSE OFF-SCREEN ANIMATIONS (JS class toggle) ──
+   When .anim-paused is added by IntersectionObserver,
+   pause all child and pseudo-element animations.
+   ──────────────────────────────────────────────────────── */
+.anim-paused,
+.anim-paused *,
+.anim-paused::before,
+.anim-paused::after,
+.anim-paused *::before,
+.anim-paused *::after {
+    animation-play-state: paused !important;
+}
+
+/* ── 23. REDUCE MOTION ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ── 24. LAYOUT CONTAINMENT on grids ─────────────────────
+   Contain layout so adding/removing cards doesn't trigger
+   global reflow. Premium sites scroll smoothly even with
+   complex grids because of this.
+   ──────────────────────────────────────────────────────── */
+.vehicles-grid,
+.categories-grid,
+.brands-carousel-wrapper {
+    contain: layout style;
+}
+
+/* ── 25. IMAGE RENDERING HINTS ─────────────────────────── */
+img[loading="lazy"] {
+    content-visibility: auto;
+    decoding: async;
+}
+
+/* ── 26. SMOOTH SCROLL ANCHORING ─────────────────────────
+   Prevents unexpected scroll jumps when off-screen content
+   loads and changes height (lazy images, dynamic lists).
+   ──────────────────────────────────────────────────────── */
+body {
+    overflow-anchor: auto;
+}
+
+/* ── 27. FONT RENDERING HINTS ────────────────────────── */
+body {
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   L2.1 — STAGGER FADE-IN on vehicle card grids
+   ============================================
+   When vehicle cards render into a .vehicles-grid (homepage carousel,
+   search results, favorites, brand pages), the first 6 cards animate
+   in with a 60ms stagger so they don't all "pop in" at once. Mimics
+   the cinematic reveal pattern of Apple/Stripe product grids.
+
+   Cards 7+ are NOT animated — they're below-fold and would have their
+   animation consumed by content-visibility while off-screen. Showing
+   them immediately is the right behavior for scroll users (they've
+   already seen the entire pattern via the first 6).
+*/
+.vehicles-grid > .vehicle-card:nth-child(-n+6) {
+    opacity: 0;
+    animation: vehicle-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.vehicles-grid > .vehicle-card:nth-child(1) { animation-delay: 0ms;   }
+.vehicles-grid > .vehicle-card:nth-child(2) { animation-delay: 70ms;  }
+.vehicles-grid > .vehicle-card:nth-child(3) { animation-delay: 140ms; }
+.vehicles-grid > .vehicle-card:nth-child(4) { animation-delay: 210ms; }
+.vehicles-grid > .vehicle-card:nth-child(5) { animation-delay: 280ms; }
+.vehicles-grid > .vehicle-card:nth-child(6) { animation-delay: 350ms; }
+
+@keyframes vehicle-card-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vehicles-grid > .vehicle-card:nth-child(-n+6) {
+        opacity: 1;
+        transform: none;
+        animation: none !important;
+    }
+}
+
+/* ============================================
+   L2.2 — AUTO-REVEAL on scroll (IntersectionObserver)
+   ============================================
+   Landmark elements (section headers, commercial cards, etc.) fade
+   up when they enter the viewport. JS applies .auto-reveal to hide
+   them initially, then .is-revealed when IntersectionObserver fires.
+   For elements ALREADY in viewport on initial load, IO fires
+   immediately and they fade in once (~600ms).
+
+   Pattern works in conjunction with L2.1 (card stagger) and content-
+   visibility: auto — no double animations, no FOUC for users with JS
+   disabled (the .auto-reveal class is added BY JS, so without JS the
+   elements stay visible normally).
+
+   Properties chosen for GPU-only animation: opacity + transform.
+*/
+.auto-reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+        opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+}
+
+.auto-reveal.is-revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger inside commercial-section: each card a bit delayed */
+.commercial-section .commercial-card.auto-reveal:nth-child(2) { transition-delay: 80ms; }
+.commercial-section .commercial-card.auto-reveal:nth-child(3) { transition-delay: 160ms; }
+.commercial-section .commercial-card.auto-reveal:nth-child(4) { transition-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+    .auto-reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}

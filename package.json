@@ -1,0 +1,36 @@
+{
+  "name": "html-js-css",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "bunx biome lint --write",
+    "format": "bunx biome format --write",
+    "generate": "node scripts/generate-vehicles.mjs",
+    "selftest": "SSG_SELFTEST=1 node scripts/generate-vehicles.mjs",
+    "orphans:scan": "node scripts/storage-orphans.mjs",
+    "deadcode:check": "firebase functions:list --json > .deadcode-fns.json && node scripts/deadcode-check.mjs .deadcode-fns.json",
+    "verify:secretos": "node scripts/verify-secretos.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@eslint/js": "^9.18.0",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-import-resolver-typescript": "^3.7.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.2.2",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.10",
+    "sharp": "^0.34.5",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.20.0",
+    "vite": "^6.0.5"
+  },
+  "dependencies": {
+    "firebase": "^12.9.0",
+    "firebase-admin": "^14.0.0"
+  }
+}

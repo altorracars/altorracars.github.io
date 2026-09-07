@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALTORRA CARS — Panel Admin</title>
+    <!-- PLAN-UNIFICADO F-6 (cutover, ADR §255): el panel admin se unificó en el
+         portal nuevo `/admin-app/dist/`. Este `admin.html` quedó como REDIRECT
+         para bookmarks / PWA instalada que aún peguen al viejo. El admin clásico
+         está cuarentenado en la bóveda privada (`../brain-private/altorracars/_legacy/admin.html`, F8 5-sep-2026) y en la historia de este repo (rollback = git restore desde el commit anterior a F8). -->
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <!-- Fallback sin JS: redirige al portal nuevo de inmediato. -->
+    <meta http-equiv="refresh" content="0; url=/admin-app/dist/">
+    <link rel="canonical" href="/admin-app/dist/">
+    <style>
+        html, body { margin: 0; height: 100%; }
+        body {
+            background: #0a0a0c; color: #b89658;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            display: grid; place-items: center; text-align: center;
+        }
+        .box { max-width: 340px; padding: 24px; }
+        .spin {
+            width: 34px; height: 34px; margin: 0 auto 18px;
+            border: 3px solid rgba(184, 150, 88, 0.25);
+            border-top-color: #b89658; border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        p { line-height: 1.5; margin: 8px 0; }
+        a { color: #d4ad6e; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="spin" aria-hidden="true"></div>
+        <p>Renovamos el panel de Altorra. Te llevamos al portal nuevo…</p>
+        <p><a href="/admin-app/dist/">Entrar al panel nuevo</a></p>
+    </div>
+    <script>
+        // Redirect robusto: `replace` NO deja este stub en el historial → el botón
+        // "atrás" del navegador no rebota de vuelta aquí (sin loop). El portal
+        // nuevo (/admin-app/dist/) NO redirige a admin.html → cero ciclo.
+        location.replace('/admin-app/dist/');
+    </script>
+</body>
+</html>

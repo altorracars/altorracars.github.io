@@ -1,0 +1,816 @@
+// Admin Panel — Users CRUD (via Cloud Functions)
+(function() {
+    'use strict';
+    var AP = window.AP;
+    var $ = AP.$;
+
+    // §61.R3 — Cache de roles disponibles + listener
+    var _rolesCache = [];
+    var _rolesUnsub = null;
+    var _rolesFilter = '';   // filtro por roleId (o '' = todos)
+
+    // §61.R3 — Map legacy: dado un role doc, retorna el campo `rol` legacy
+    // que mantiene retrocompat con los 154 callsites + las callables
+    // createManagedUserV2/updateUserRoleV2 (que esperan super_admin/editor/viewer).
+    function mapRoleToLegacy(role) {
+        if (!role) return 'editor';
+        // Si tiene wildcard '*', es acceso total
+        if (Array.isArray(role.permissions) && role.permissions.indexOf('*') !== -1) {
+            return 'super_admin';
+        }
+        // System roles tienen mapeo directo
+        if (role.id === 'system_super_admin') return 'super_admin';
+        if (role.id === 'system_editor') return 'editor';
+        if (role.id === 'system_viewer') return 'viewer';
+        // Custom roles: si solo tienen permissions read-only → viewer, sino editor
+        if (Array.isArray(role.permissions)) {
+            var nonRead = role.permissions.filter(function(p) {
+                return p && p.indexOf('.read') === -1 && p.indexOf('.view') === -1 && p !== 'settings.theme';
+            });
+            if (nonRead.length === 0) return 'viewer';
+        }
+        return 'editor';
+    }
+
+    // §61.R3 — Listener real-time de roles para popular dropdowns
+    function startRolesListener() {
+        if (_rolesUnsub) return;
+        if (!window.db) return;
+        _rolesUnsub = window.db.collection('roles')
+            .onSnapshot(function(snap) {
+                _rolesCache = [];
+                snap.forEach(function(doc) {
+                    var data = doc.data() || {};
+                    data._docId = doc.id;
+                    _rolesCache.push(data);
+                });
+                _rolesCache.sort(function(a, b) {
+                    if (a.isSystem !== b.isSystem) return a.isSystem ? -1 : 1;
+                    return (a.name || '').localeCompare(b.name || '');
+                });
+                console.log('[AdminUsers] §61.R3 roles cache:', _rolesCache.length);
+                // Re-popular dropdown si modal abierto
+                if ($('userModal') && $('userModal').classList.contains('active')) {
+                    populateRolesDropdown();
+                }
+                // Re-render filter + tabla
+                renderRolesFilter();
+                if (AP.users && AP.users.length) renderUsersTable();
+            }, function(err) {
+                if (window.auth && !window.auth.currentUser) return;
+                console.warn('[AdminUsers] §61.R3 roles listener error:', err && err.code);
+            });
+    }
+
+    function stopRolesListener() {
+        if (_rolesUnsub) {
+            try { _rolesUnsub(); } catch (e) {}
+            _rolesUnsub = null;
+        }
+    }
+
+    // §61.R3 — Popular dropdown #uRoleId con roles disponibles
+    // §73 R8 — texto corto en option vacía + disable botón Guardar cuando
+    // no hay roles disponibles. Esto evita el error del browser
+    // "Selecciona un elemento de la lista" al intentar guardar con select
+    // requerido vacío.
+    function populateRolesDropdown(selectedRoleId) {
+        var sel = $('uRoleId');
+        if (!sel) return;
+        if (_rolesCache.length === 0) {
+            // Catálogo no sembrado todavía. Mostrar fallback corto.
+            sel.innerHTML = '<option value="">— Sin roles configurados —</option>';
+            updateSaveButtonState();
+            return;
+        }
+        var html = '';
+        // §69 R7 — Solo CEO (system_super_admin) aparece como system role.
+        // system_editor y system_viewer legacy se filtran del dropdown
+        // (no se ofrecen como opciones para nuevos users). Sin embargo,
+        // §72 R7.2 — CEO ELIMINADO del dropdown de creación.
+        // El cliente confirmó: "el CEO es el DIOS del sistema, no se
+        // puede crear, modificar, ni eliminar". Solo existe UN CEO
+        // (el actual super_admin). El dropdown de Crear/Editar usuario
+        // NO ofrece CEO como opción para asignar a otros usuarios.
+        //
+        // Excepción retrocompat: si el user que estoy editando YA tiene
+        // roleId='system_super_admin' (el CEO actual), la opción CEO
+        // aparece para preservar selectedRoleId match. Pero §70 ya
+        // bloquea editar al CEO desde sec-users con guard, así que esta
+        // rama es defensiva.
+        var customs = _rolesCache.filter(function(r) {
+            return !r.isSystem &&
+                r._docId !== 'system_super_admin' &&
+                r._docId !== 'system_editor' &&
+                r._docId !== 'system_viewer';
+        });
+
+        // Caso especial: si selectedRoleId es CEO (defensive, debería
+        // estar bloqueado por §70 guard), permitir mostrarlo
+        var includeCEOForEdit = selectedRoleId === 'system_super_admin';
+        if (includeCEOForEdit) {
+            var ceoRole = _rolesCache.find(function(r) { return r._docId === 'system_super_admin'; });
+            if (ceoRole) {
+                html += '<optgroup label="Rol del sistema">';
+                html += '<option value="' + AP.escapeHtml(ceoRole._docId) + '">CEO</option>';
+                html += '</optgroup>';
+            }
+        }
+
+        if (customs.length) {
+            html += '<optgroup label="Roles personalizados">';
+            for (var j = 0; j < customs.length; j++) {
+                var c = customs[j];
+                html += '<option value="' + AP.escapeHtml(c._docId) + '">' + AP.escapeHtml(c.name || c._docId) + '</option>';
+            }
+            html += '</optgroup>';
+        }
+
+        // §73 R8 — Mensaje corto si no hay roles personalizados creados aún.
+        // El botón Guardar quedará disabled con hint claro (ver updateSaveButtonState).
+        if (!customs.length && !includeCEOForEdit) {
+            html = '<option value="">— Sin roles disponibles —</option>';
+        }
+
+        sel.innerHTML = html;
+        if (selectedRoleId) {
+            sel.value = selectedRoleId;
+        } else {
+            // Default: primer custom role marcado como default, o el primero disponible
+            var defaultRole = _rolesCache.find(function(r) { return r.isDefault && !r.isSystem; }) ||
+                              customs[0];
+            if (defaultRole) sel.value = defaultRole._docId;
+        }
+        // Sync hidden uRol legacy
+        syncLegacyRolFromDropdown();
+        // §73 R8 — Update Guardar button state según disponibilidad de roles
+        updateSaveButtonState();
+    }
+
+    // §73 R8 — Disable botón Guardar cuando no hay roles disponibles + hint visible.
+    // Esto evita el error del browser "Selecciona un elemento de la lista" al
+    // intentar guardar un user sin role válido (que dejaría al user huérfano
+    // bloqueado del login por el guard de §69).
+    function updateSaveButtonState() {
+        var sel = $('uRoleId');
+        var saveBtn = $('saveUser');
+        if (!sel || !saveBtn) return;
+        var hasValidOption = false;
+        for (var i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value && sel.options[i].value.trim() !== '') {
+                hasValidOption = true;
+                break;
+            }
+        }
+        // Buscar/crear hint container
+        var hintEl = document.getElementById('saveUserHint');
+        if (!hintEl) {
+            hintEl = document.createElement('small');
+            hintEl.id = 'saveUserHint';
+            hintEl.style.cssText = 'display:block;margin-top:8px;color:rgba(248,81,73,0.85);font-size:0.78rem;line-height:1.4;';
+            if (saveBtn.parentNode) {
+                saveBtn.parentNode.insertBefore(hintEl, saveBtn.nextSibling);
+            }
+        }
+        if (!hasValidOption) {
+            saveBtn.disabled = true;
+            saveBtn.title = 'Primero creá un rol personalizado en Configuración → Roles';
+            hintEl.textContent = 'Primero creá un rol en Configuración → Roles';
+            hintEl.style.display = 'block';
+        } else {
+            saveBtn.disabled = false;
+            saveBtn.title = '';
+            hintEl.style.display = 'none';
+        }
+    }
+
+    function syncLegacyRolFromDropdown() {
+        var sel = $('uRoleId');
+        var hidden = $('uRol');
+        if (!sel || !hidden) return;
+        var roleId = sel.value;
+        var role = _rolesCache.find(function(r) { return r._docId === roleId; });
+        hidden.value = mapRoleToLegacy(role);
+    }
+
+    // §61.R3 — Render filtro por rol arriba de la tabla
+    function renderRolesFilter() {
+        var container = document.getElementById('usersRoleFilterContainer');
+        if (!container) return; // no creado aún (lo agregamos vía JS abajo si falta)
+
+        if (_rolesCache.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        var html = '<label class="users-role-filter-label" for="usersRoleFilter">Filtrar por rol:</label>' +
+            '<select id="usersRoleFilter" class="form-select form-select--sm">' +
+            '<option value="">Todos los roles</option>';
+
+        // §72 R7.2 — Filter dropdown alineado con populateRolesDropdown:
+        //   1. CEO siempre visible (uno solo en el sistema)
+        //   2. Editor/Viewer system roles legacy ELIMINADOS del filtro
+        //      (no se ofrecen como filtros para crear nuevos users)
+        //   3. Custom roles visibles
+        //   4. "Sin rol asignado" para usuarios huérfanos (sin label confuso)
+        var ceo = _rolesCache.find(function(r) { return r._docId === 'system_super_admin'; });
+        if (ceo) {
+            var ceoSel = (ceo._docId === _rolesFilter) ? ' selected' : '';
+            html += '<option value="' + AP.escapeHtml(ceo._docId) + '"' + ceoSel + '>CEO</option>';
+        }
+        for (var i = 0; i < _rolesCache.length; i++) {
+            var r = _rolesCache[i];
+            // Skip CEO (ya agregado) + system roles legacy (editor/viewer)
+            if (r._docId === 'system_super_admin' ||
+                r._docId === 'system_editor' ||
+                r._docId === 'system_viewer') continue;
+            var selFlag = (r._docId === _rolesFilter) ? ' selected' : '';
+            html += '<option value="' + AP.escapeHtml(r._docId) + '"' + selFlag + '>' + AP.escapeHtml(r.name || r._docId) + '</option>';
+        }
+        // Usuarios sin rol asignado (huérfanos por roleId borrado o nuevos sin asignar)
+        html += '<option value="__legacy__"' + (_rolesFilter === '__legacy__' ? ' selected' : '') + '>Sin rol asignado</option>';
+        html += '</select>';
+        container.innerHTML = html;
+
+        var filterEl = document.getElementById('usersRoleFilter');
+        if (filterEl) {
+            filterEl.addEventListener('change', function() {
+                _rolesFilter = this.value;
+                if (AP.users && AP.users.length) renderUsersTable();
+            });
+        }
+    }
+
+    // §61.R3 — Inyectar contenedor del filtro arriba de la tabla si no existe
+    function ensureRolesFilterContainer() {
+        if (document.getElementById('usersRoleFilterContainer')) return;
+        var section = document.getElementById('sec-users');
+        if (!section) return;
+        var pageHeader = section.querySelector('.page-header');
+        if (!pageHeader) return;
+        var rolesInfo = section.querySelector('.roles-info');
+        var container = document.createElement('div');
+        container.id = 'usersRoleFilterContainer';
+        container.className = 'users-role-filter-container';
+        if (rolesInfo && rolesInfo.parentNode) {
+            rolesInfo.parentNode.insertBefore(container, rolesInfo.nextSibling);
+        } else {
+            pageHeader.parentNode.insertBefore(container, pageHeader.nextSibling);
+        }
+    }
+
+    // ========== USERS TABLE ==========
+    function renderUsersTable() {
+        if (!AP.users.length) {
+            $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No hay usuarios registrados</td></tr>';
+            if (AP.renderPagination) AP.renderPagination('usersPagination', 'users', 0);
+            return;
+        }
+
+        // Check loginAttempts for each user to detect cross-device blocks
+        var emailsToCheck = AP.users.filter(function(u) { return u.email; }).map(function(u) { return u.email; });
+        var blockPromises = emailsToCheck.map(function(email) {
+            var hash = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            return window.db.collection('loginAttempts').doc(hash).get()
+                .then(function(doc) {
+                    return { email: email.toLowerCase(), blocked: doc.exists && doc.data().bloqueado };
+                })
+                .catch(function() { return { email: email.toLowerCase(), blocked: false }; });
+        });
+
+        Promise.all(blockPromises).then(function(blockResults) {
+            var blockMap = {};
+            blockResults.forEach(function(r) { blockMap[r.email] = r.blocked; });
+            _renderUsersTableWithBlocks(blockMap);
+        }).catch(function() {
+            _renderUsersTableWithBlocks({});
+        });
+    }
+
+    function _renderUsersTableWithBlocks(blockMap) {
+        var sorted = AP.users.slice();
+
+        // §61.R3 + §73 R8 — Aplicar filtro por roleId si está activo.
+        // "__legacy__" ahora incluye TODOS los huérfanos: sin roleId,
+        // o con roleId apuntando a system_editor/system_viewer (legacy
+        // que ya no existe en el catálogo).
+        if (_rolesFilter) {
+            sorted = sorted.filter(function(u) {
+                if (_rolesFilter === '__legacy__') {
+                    return !u.roleId ||
+                           u.roleId === 'system_editor' ||
+                           u.roleId === 'system_viewer';
+                }
+                return u.roleId === _rolesFilter;
+            });
+        }
+
+        if (AP._sorting && AP._sorting.users && AP._sorting.users.col) {
+            sorted = AP.sortData(sorted, 'users');
+        }
+        var totalUsers = sorted.length;
+        if (AP.paginate) sorted = AP.paginate(sorted, 'users');
+
+        var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : '';
+        var html = '';
+        sorted.forEach(function(u) {
+            // §72 R7.2 — Detectar CEO via 3 vías independientes (defense-in-depth).
+            // El display "CEO" se renderiza HARDCODED en frontend, ignorando
+            // u.roleName denormalizado (que puede estar stale como
+            // "Super Administrador" si el cliente no ejecutó "Resembrar sistema"
+            // del §70). Esto desacopla la UI del estado del seeder backend.
+            var isCEORow = u.roleId === 'system_super_admin' ||
+                           u.rol === 'super_admin' ||
+                           (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+
+            // §61.R3 — Mostrar roleName real si existe, fallback a label legacy
+            // §73 R8 — Detectar usuarios huérfanos (sin role válido) y mostrar
+            // "Sin asignar" en gris neutral. Esto cubre 3 casos:
+            //   1. roleId apunta a system_editor o system_viewer (legacy del §69
+            //      que ya NO existen en el catálogo dinámico ni deberían existir
+            //      en Firestore tras R8 cleanup)
+            //   2. roleId === null (orphan tras eliminar role custom)
+            //   3. Sin roleId pero con rol legacy 'editor'/'viewer' (sin migrar)
+            var isOrphanRow = u.roleId === 'system_editor' ||
+                              u.roleId === 'system_viewer' ||
+                              (!u.roleId && (u.rol === 'editor' || u.rol === 'viewer'));
+
+            var rolLabel, rolClass, roleColor;
+            if (isCEORow) {
+                // §72 — CEO siempre se muestra como "CEO" (no depende del backend)
+                rolLabel = 'CEO';
+                roleColor = '#b89658';
+                rolClass = 'badge-destacado';
+            } else if (isOrphanRow) {
+                // §73 R8 — User legacy o huérfano se muestra como "Sin asignar"
+                // en gris neutral. El CEO debe asignarle un custom role real.
+                rolLabel = 'Sin asignar';
+                roleColor = '#9ca3af';
+                rolClass = 'badge-warning';
+            } else if (u.roleId && u.roleName) {
+                // User con custom role válido
+                rolLabel = u.roleName;
+                var roleDoc = _rolesCache.find(function(r) { return r._docId === u.roleId; });
+                roleColor = roleDoc && roleDoc.color ? roleDoc.color : '#b89658';
+                rolClass = 'badge-nuevo';
+            } else {
+                // Sin rol asignado en absoluto
+                rolLabel = 'Sin asignar';
+                roleColor = '#9ca3af';
+                rolClass = 'badge-warning';
+            }
+            // Check both usuarios.bloqueado AND loginAttempts
+            var isBlocked = !!u.bloqueado || !!(u.email && blockMap[u.email.toLowerCase()]);
+            var estadoLabel = isBlocked ? 'BLOQUEADO' : (u.estado || 'activo');
+            var estadoClass = isBlocked ? 'badge-danger' : (u.estado === 'activo' ? 'badge-nuevo' : 'badge-usado');
+            var isSelf = u._docId === currentUid;
+
+            var twoFaBadge = u.habilitado2FA ? ' <span class="badge badge-destacado" style="font-size:0.65rem;" title="2FA activo">2FA</span>' : '';
+
+            // §70 R7.1 — Detectar CEO via 3 vías (defense-in-depth):
+            //   1. roleId === 'system_super_admin' (R4 migrated)
+            //   2. rol === 'super_admin' legacy (pre-R4)
+            //   3. permissions contiene wildcard '*' (custom role con todo)
+            var isCEO = u.roleId === 'system_super_admin' ||
+                        u.rol === 'super_admin' ||
+                        (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+
+            var actionsHtml = '<div class="v-actions">';
+            if (isCEO) {
+                // §70 R7.1 — CEO no editable desde sec-users.
+                // Solo se gestiona desde Mi Perfil. Cero botones de acción
+                // (edit/delete) — solo un indicador visual de lock.
+                actionsHtml += '<span class="v-act v-act--locked" title="El CEO solo se gestiona desde Mi Perfil. Su rol no es modificable.">' +
+                               '<i data-lucide="lock"></i></span>';
+            } else {
+                actionsHtml += '<button class="v-act v-act--success" data-action="editUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Editar"><i data-lucide="pencil"></i></button>';
+                if (isBlocked && !isSelf) {
+                    actionsHtml += '<button class="v-act v-act--warning" data-action="unlockUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Desbloquear"><i data-lucide="lock-open"></i></button>';
+                }
+                if (!isSelf) {
+                    actionsHtml += '<span class="v-act-sep"></span>';
+                    actionsHtml += '<button class="v-act v-act--danger" data-action="deleteUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
+                }
+            }
+            actionsHtml += '</div>';
+
+            // §61.R3 — Badge con color custom del role si aplica
+            var rolBadgeStyle = roleColor ? ' style="background:' + roleColor + '20;color:' + roleColor + ';border:1px solid ' + roleColor + '40;"' : '';
+            // §73 R8 — Eliminado el tag "·legacy" que confundía. Ahora la
+            // columna ROL muestra "Sin asignar" para usuarios huérfanos
+            // (sin tag adicional). El CEO debe asignar un role custom real.
+
+            html += '<tr' + (isBlocked ? ' style="opacity:0.7;background:rgba(248,81,73,0.05);"' : '') + '>' +
+                '<td><strong>' + (u.nombre || '-') + '</strong>' + (isSelf ? ' <small style="color:var(--admin-gold);">(tu)</small>' : '') + twoFaBadge + '</td>' +
+                '<td>' + (u.email || '-') + '</td>' +
+                '<td><span class="badge ' + rolClass + '"' + rolBadgeStyle + '>' + AP.escapeHtml(rolLabel) + '</span></td>' +
+                '<td><span class="badge ' + estadoClass + '">' + estadoLabel + '</span></td>' +
+                '<td>' + actionsHtml + '</td>' +
+            '</tr>';
+        });
+
+        $('usersTableBody').innerHTML = html;
+
+        document.querySelectorAll('th[data-table="users"][data-sort]').forEach(function(th) {
+            var col = th.getAttribute('data-sort');
+            var si = th.querySelector('.sort-icon'); if (si) si.remove(); var text = th.textContent.trim();
+            th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('users', col) : '');
+        });
+
+        if (AP.renderPagination) AP.renderPagination('usersPagination', 'users', totalUsers);
+        AP.refreshIcons();
+    }
+
+    // ========== USER MODAL ==========
+    function openUserModal() { $('userModal').classList.add('active'); }
+
+    function closeUserModalFn() {
+        $('userModal').classList.remove('active');
+        $('userForm').reset();
+        $('uOriginalUid').value = '';
+        $('uPasswordGroup').style.display = '';
+        $('uPassword').required = true;
+        $('uEmail').readOnly = false;
+        $('saveUser').textContent = 'Crear Usuario';
+        // F12.3: Reset 2FA fields
+        $('uHabilitar2FA').checked = false;
+        $('u2FAPhoneGroup').style.display = 'none';
+    }
+
+    // §61.R5 — Helper local con la API canónica AP.hasPermission() (reemplaza
+    // AP.canManageUsers() @deprecated). Ejemplo del patrón a aplicar masivamente
+    // en R8 cleanup. Custom roles con permission users.create OR users.edit
+    // pasan correctamente. Wildcard '*' (super_admin) también pasa por la
+    // implementación interna de hasPermission.
+    function _canManageUsers() {
+        return AP.hasPermission('users.create') || AP.hasPermission('users.edit');
+    }
+
+    $('btnAddUser').addEventListener('click', function() {
+        // §61.R5 — Refactor demostración: usar _canManageUsers() en vez de AP.canManageUsers() @deprecated
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        $('userModalTitle').textContent = 'Crear Usuario';
+        $('uOriginalUid').value = '';
+        $('userForm').reset();
+        $('uPasswordGroup').style.display = '';
+        $('uPassword').required = true;
+        $('uEmail').readOnly = false;
+        $('saveUser').textContent = 'Crear Usuario';
+        // §61.R3 — Popular dropdown dinámico de roles
+        populateRolesDropdown();
+        // §193.4 ④a PASO 4 — depto/nivel/scope (defaults para alta)
+        populateDepartmentsDropdown('');
+        $('uNivel').value = '';
+        $('uDataScope').value = 'all';
+        openUserModal();
+    });
+
+    $('closeUserModal').addEventListener('click', closeUserModalFn);
+    $('cancelUserModal').addEventListener('click', closeUserModalFn);
+    $('userForm').addEventListener('submit', function(e) { e.preventDefault(); });
+    $('userForm').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
+
+    // F12.3: Toggle 2FA phone fields visibility
+    var u2faCheck = $('uHabilitar2FA');
+    if (u2faCheck) {
+        u2faCheck.addEventListener('change', function() {
+            $('u2FAPhoneGroup').style.display = this.checked ? '' : 'none';
+        });
+    }
+
+    // §193.4 ④a PASO 4 — pobla el dropdown de departamentos desde departments/.
+    // DOM-safe (createElement/textContent, sin innerHTML). data-name lleva el nombre
+    // para espejar departmentName en el doc del usuario al guardar.
+    function populateDepartmentsDropdown(selectedId) {
+        var sel = $('uDepartmentId');
+        if (!sel) return;
+        sel.length = 1; // conserva solo "— Sin departamento —"
+        if (!window.db) return;
+        window.db.collection('departments').limit(50).get().then(function (snap) {
+            var depts = [];
+            snap.forEach(function (d) {
+                var x = d.data() || {};
+                if (x.active !== false) { x._docId = d.id; depts.push(x); }
+            });
+            depts.sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'es'); });
+            depts.forEach(function (d) {
+                var opt = document.createElement('option');
+                opt.value = d._docId;
+                opt.textContent = d.name || d._docId;
+                opt.setAttribute('data-name', d.name || '');
+                sel.appendChild(opt);
+            });
+            if (selectedId) sel.value = selectedId;
+        }).catch(function (e) { console.warn('[AdminUsers] §193.4 populateDepartmentsDropdown:', e && e.code); });
+    }
+
+    // ========== EDIT USER ==========
+    function editUser(uid) {
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        var u = AP.users.find(function(x) { return x._docId === uid; });
+        if (!u) return;
+        // §70 R7.1 — Defense-in-depth: el CEO no se edita desde sec-users.
+        // Solo desde Mi Perfil. Aunque en el render filtramos el botón
+        // Editar, este guard previene invocación programática.
+        var isCEO = u.roleId === 'system_super_admin' ||
+                    u.rol === 'super_admin' ||
+                    (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+        if (isCEO) {
+            AP.toast('El CEO solo se edita desde Mi Perfil', 'info');
+            return;
+        }
+
+        $('userModalTitle').textContent = 'Editar Usuario';
+        $('uOriginalUid').value = uid;
+        $('uNombre').value = u.nombre || '';
+        $('uEmail').value = u.email || '';
+        $('uEmail').readOnly = true;
+        $('uRol').value = u.rol || 'editor';
+        // §61.R3 — Popular dropdown dinámico + seleccionar el roleId actual
+        // Si el user es legacy (sin roleId), se selecciona el system role correspondiente
+        var selectedRoleId = u.roleId || null;
+        if (!selectedRoleId && u.rol && window.AltorraRBACCatalog) {
+            selectedRoleId = window.AltorraRBACCatalog.legacyMapping[u.rol] || null;
+        }
+        populateRolesDropdown(selectedRoleId);
+        // §193.4 ④a PASO 4 — poblar depto/nivel/scope del doc (CEO nunca llega aquí, guard arriba)
+        populateDepartmentsDropdown(u.departmentId || '');
+        $('uNivel').value = (u.nivel == null ? '' : u.nivel);
+        $('uDataScope').value = u.dataScope || 'all';
+        $('uPasswordGroup').style.display = 'none';
+        $('uPassword').required = false;
+        $('saveUser').textContent = 'Guardar Cambios';
+
+        // F12.3: Populate 2FA fields
+        var has2fa = !!u.habilitado2FA;
+        $('uHabilitar2FA').checked = has2fa;
+        $('u2FAPhoneGroup').style.display = has2fa ? '' : 'none';
+        $('u2FAPais').value = u.prefijo2FA || '+57';
+        $('u2FAPhone').value = u.telefono2FA || '';
+
+        openUserModal();
+    }
+
+    // ========== SAVE USER ==========
+    $('saveUser').addEventListener('click', function() {
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+
+        var form = $('userForm');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        var originalUid = $('uOriginalUid').value;
+        var isEdit = !!originalUid;
+        var nombre = $('uNombre').value.trim();
+        var email = $('uEmail').value.trim();
+        // §61.R3 — Sync legacy `rol` desde el dropdown dinámico antes de leer
+        syncLegacyRolFromDropdown();
+        var rol = $('uRol').value;
+        var roleId = $('uRoleId').value || '';
+        var roleData = _rolesCache.find(function(r) { return r._docId === roleId; });
+        var password = $('uPassword').value;
+
+        // §61.R3 — Validar que se haya elegido un role
+        if (!roleId || !roleData) {
+            AP.toast('Seleccioná un rol válido. Si la lista está vacía, sembrá los roles desde Configuración → Roles.', 'error');
+            return;
+        }
+
+        var btn = $('saveUser');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+        if (!window.functions) {
+            AP.toast('Cloud Functions no disponibles. Verifica que esten desplegadas.', 'error');
+            btn.disabled = false;
+            btn.textContent = isEdit ? 'Guardar Cambios' : 'Crear Usuario';
+            return;
+        }
+
+        // F12.3: Collect 2FA settings
+        var habilitado2FA = $('uHabilitar2FA').checked;
+        var prefijo2FA = $('u2FAPais').value;
+        var telefono2FA = $('u2FAPhone').value.trim();
+
+        // §61.R3 — Datos denormalizados del role (escritura adicional al doc del user)
+        // §114 — cargo = roleName: el CARGO del perfil es espejo read-only del
+        // rol del sistema, auto-asignado al crear/asignar el rol. La Cloud
+        // Function onUserRoleAssigned/onRoleUpdated lo mantiene autoritativo.
+        // §193.4 ④a PASO 4 — campos de fundación departamental (write directo, vía admin).
+        // NO están en el self-update whitelist de las rules → solo el admin los escribe.
+        var deptSel = $('uDepartmentId');
+        var deptId = deptSel ? deptSel.value : '';
+        var deptOpt = (deptSel && deptSel.selectedOptions) ? deptSel.selectedOptions[0] : null;
+        var deptName = (deptId && deptOpt) ? (deptOpt.getAttribute('data-name') || deptOpt.textContent || '') : '';
+        var nivelRaw = parseInt($('uNivel').value, 10);
+        var nivelVal = isNaN(nivelRaw) ? 10 : Math.max(0, Math.min(100, nivelRaw));
+        var dataScopeVal = $('uDataScope').value || 'all';
+
+        var rbacData = {
+            roleId: roleId,
+            roleName: roleData.name || roleId,
+            cargo: roleData.name || roleId,
+            permissions: Array.isArray(roleData.permissions) ? roleData.permissions.slice() : [],
+            permissionsUpdatedAt: new Date().toISOString(),
+            // §193.4 ④a — fundación departamental
+            departmentId: deptId || null,
+            departmentName: deptName,
+            nivel: nivelVal,
+            dataScope: dataScopeVal
+        };
+
+        if (isEdit) {
+            // Save 2FA settings directly to Firestore profile
+            var twoFaData = { habilitado2FA: habilitado2FA };
+            if (habilitado2FA && telefono2FA) {
+                twoFaData.prefijo2FA = prefijo2FA;
+                twoFaData.telefono2FA = telefono2FA;
+            } else {
+                twoFaData.prefijo2FA = '';
+                twoFaData.telefono2FA = '';
+                twoFaData.habilitado2FA = false;
+            }
+            window.db.collection('usuarios').doc(originalUid).update(twoFaData).catch(function() {});
+
+            var updateUserRole = window.functions.httpsCallable('updateUserRoleV2');
+            updateUserRole({ uid: originalUid, nombre: nombre, rol: rol })
+                .then(function(result) {
+                    // §61.R3 — Escritura adicional con datos denormalizados RBAC
+                    return window.db.collection('usuarios').doc(originalUid).update(rbacData)
+                        .catch(function(err) {
+                            console.warn('[AdminUsers] §61.R3 RBAC denorm write failed (no crítico):', err && err.code);
+                        })
+                        .then(function() { return result; });
+                })
+                .then(function(result) {
+                    AP.toast(result.data.message || 'Usuario actualizado');
+                    AP.writeAuditLog('user_update', 'usuario ' + nombre, 'rol: ' + rol + ' (roleId: ' + roleId + ')');
+                    closeUserModalFn();
+                    AP.loadUsers();
+                })
+                .catch(function(err) {
+                    AP.toast(AP.parseCallableError(err), 'error');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = 'Guardar Cambios';
+                });
+        } else {
+            var createManagedUser = window.functions.httpsCallable('createManagedUserV2');
+            createManagedUser({ nombre: nombre, email: email, password: password, rol: rol })
+                .then(function(result) {
+                    // §61.R3 — Escritura adicional con datos denormalizados RBAC al doc recién creado
+                    var newUid = result && result.data && result.data.uid;
+                    if (newUid) {
+                        return window.db.collection('usuarios').doc(newUid).update(rbacData)
+                            .catch(function(err) {
+                                console.warn('[AdminUsers] §61.R3 RBAC denorm write failed (no crítico):', err && err.code);
+                            })
+                            .then(function() { return result; });
+                    }
+                    return result;
+                })
+                .then(function(result) {
+                    AP.toast(result.data.message || 'Usuario creado exitosamente');
+                    AP.writeAuditLog('user_create', 'usuario ' + nombre, email + ' — rol: ' + rol + ' (roleId: ' + roleId + ')');
+                    closeUserModalFn();
+                    AP.loadUsers();
+                })
+                .catch(function(err) {
+                    AP.toast(AP.parseCallableError(err), 'error');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = 'Crear Usuario';
+                });
+        }
+    });
+
+    // ========== DELETE USER ==========
+    function deleteUserFn(uid) {
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (AP._deletingUser) { AP.toast('Ya hay una eliminacion en curso...', 'info'); return; }
+
+        var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : '';
+        if (uid === currentUid) {
+            AP.toast('No puedes eliminar tu propia cuenta', 'error');
+            return;
+        }
+
+        // §70 R7.1 — Defense-in-depth: el CEO no se elimina desde sec-users.
+        // Aunque en el render filtramos el botón Eliminar, este guard
+        // previene invocación programática (DevTools, scripts maliciosos).
+        var u = AP.users.find(function(x) { return x._docId === uid; });
+        if (u) {
+            var isCEO = u.roleId === 'system_super_admin' ||
+                        u.rol === 'super_admin' ||
+                        (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+            if (isCEO) {
+                AP.toast('El CEO no se puede eliminar', 'error');
+                return;
+            }
+        }
+
+        if (!window.functions) {
+            AP.toast('Cloud Functions no disponibles. Verifica que esten desplegadas.', 'error');
+            return;
+        }
+
+        var u = AP.users.find(function(x) { return x._docId === uid; });
+        if (!u) return;
+
+        if (!confirm('Eliminar usuario "' + (u.nombre || u.email) + '"?\n\nSe eliminara tanto su perfil como su cuenta de autenticacion. Esta accion no se puede deshacer.')) {
+            return;
+        }
+
+        AP._deletingUser = true;
+        AP.toast('Eliminando usuario...', 'info');
+
+        document.querySelectorAll('#usersTableBody .btn-danger').forEach(function(b) { b.disabled = true; });
+
+        var deleteManagedUser = window.functions.httpsCallable('deleteManagedUserV2');
+        deleteManagedUser({ uid: uid })
+            .then(function(result) {
+                AP.toast(result.data.message || 'Usuario eliminado completamente');
+                AP.writeAuditLog('user_delete', 'usuario ' + (u.nombre || u.email), u.email);
+                AP.loadUsers();
+            })
+            .catch(function(err) {
+                AP.toast(AP.parseCallableError(err), 'error');
+            })
+            .finally(function() {
+                AP._deletingUser = false;
+                document.querySelectorAll('#usersTableBody .btn-danger').forEach(function(b) { b.disabled = false; });
+            });
+    }
+
+    // F6.4: Event delegation for user actions
+    var usersBody = $('usersTableBody');
+    if (usersBody) {
+        usersBody.addEventListener('click', function(e) {
+            var btn = AP.closestAction(e);
+            if (!btn) return;
+            var id = btn.getAttribute('data-id');
+            if (btn.getAttribute('data-action') === 'editUser') editUser(id);
+            else if (btn.getAttribute('data-action') === 'deleteUser') deleteUserFn(id);
+            else if (btn.getAttribute('data-action') === 'unlockUser') unlockUserFn(id);
+        });
+    }
+
+    // ========== UNLOCK USER ==========
+    function unlockUserFn(uid) {
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        var u = AP.users.find(function(x) { return x._docId === uid; });
+        if (!u) return;
+        if (!confirm('¿Desbloquear la cuenta de "' + (u.nombre || u.email) + '"?\n\nEl usuario podra iniciar sesion nuevamente.')) return;
+        AP.unblockUser(uid).then(function() {
+            AP.toast('Usuario desbloqueado: ' + (u.nombre || u.email), 'success');
+            AP.writeAuditLog('user_unlock', 'usuario ' + (u.nombre || u.email), u.email);
+            AP.loadUsers();
+        }).catch(function(err) {
+            AP.toast('Error al desbloquear: ' + err.message, 'error');
+        });
+    }
+
+    // §61.R3 — Sync legacy `rol` cuando cambia el dropdown dinámico
+    var uRoleIdEl = $('uRoleId');
+    if (uRoleIdEl) {
+        uRoleIdEl.addEventListener('change', syncLegacyRolFromDropdown);
+    }
+
+    // §61.R3 — Arrancar listener de roles + filter container al cargar
+    function initR3() {
+        ensureRolesFilterContainer();
+        startRolesListener();
+        // Cleanup hook si AltorraSectionCleanup existe
+        if (window.AltorraSectionCleanup && !initR3._cleanupRegistered) {
+            initR3._cleanupRegistered = true;
+            // Mantenemos el listener globalmente activo (no se cancela on section change)
+            // porque populateRolesDropdown() puede ser invocado desde modal que abre
+            // desde sec-users → si cancelamos al salir, al volver el dropdown estaría vacío
+        }
+    }
+
+    // Trigger init cuando AP esté listo
+    if (window.AP && window.db) {
+        initR3();
+    } else {
+        var pollR3 = setInterval(function() {
+            if (window.AP && window.db) {
+                clearInterval(pollR3);
+                initR3();
+            }
+        }, 250);
+    }
+
+    // ========== EXPOSE ==========
+    AP.renderUsersTable = renderUsersTable;
+    AP.editUser = editUser;
+    AP.deleteUser = deleteUserFn;
+    // §61.R3 — Helpers expuestos para debug y otros módulos
+    AP.usersR3 = {
+        rolesCache: function() { return _rolesCache.slice(); },
+        mapRoleToLegacy: mapRoleToLegacy,
+        startRolesListener: startRolesListener,
+        stopRolesListener: stopRolesListener,
+        populateRolesDropdown: populateRolesDropdown
+    };
+})();

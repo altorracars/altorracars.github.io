@@ -1,0 +1,186 @@
+// ============================================================
+// Capa de DATOS de la Bandeja (Firestore modular).
+// Reglas de oro (P4 / Consejo Externo §15.R3): SIEMPRE paginado + limit,
+// onSnapshot acotado, y unsubscribe al cambiar de vista. Cero full-scan.
+// Índices usados (Fase 1): leads(status,createdAt) · leads(ownerId,lastActivityAt).
+// ============================================================
+
+import {
+  collection, query, where, orderBy, limit, startAfter, onSnapshot, getDocs,
+  doc, updateDoc, addDoc, increment,
+} from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { db, fns } from '../../core/firebase.js';
+import { store } from '../../core/store.js';
+import { isAllScope } from '../../core/auth.js';
+
+const nowISO = () => new Date().toISOString();
+// §dataScope (opción A): el asesor (scope 'own') solo consulta SUS leads; el dueño/
+// gerente (scope 'all') sin filtro. Espejo de scopeAllowsOwn() en firestore.rules.
+const scopeCons = () => (isAllScope() ? [] : [where('ownerId', '==', currentUid())]);
+const withId = (d) => ({ id: d.id, ...d.data() });
+
+/**
+ * Suscripción en tiempo real a la primera página de leads (orden createdAt desc).
+ * Devuelve { unsubscribe, getLastDoc } para paginar y limpiar.
+ */
+export function subscribeLeads({ pageSize = 40, onData, onError }) {
+  let lastDoc = null;
+  const q = query(collection(db, 'leads'), ...scopeCons(), orderBy('createdAt', 'desc'), limit(pageSize));
+  const unsubscribe = onSnapshot(
+    q,
+    (snap) => {
+      const rows = snap.docs.map(withId);
+      lastDoc = snap.docs[snap.docs.length - 1] || null;
+      onData(rows, { hasMore: snap.size >= pageSize });
+    },
+    (err) => { if (onError) onError(err); }
+  );
+  return { unsubscribe, getLastDoc: () => lastDoc };
+}
+
+/** Página siguiente (no realtime) a partir de un cursor. */
+export async function loadMoreLeads({ pageSize = 40, after }) {
+  if (!after) return { rows: [], lastDoc: null, hasMore: false };
+  const q = query(collection(db, 'leads'), ...scopeCons(), orderBy('createdAt', 'desc'), startAfter(after), limit(pageSize));
+  const snap = await getDocs(q);
+  return {
+    rows: snap.docs.map(withId),
+    lastDoc: snap.docs[snap.docs.length - 1] || null,
+    hasMore: snap.size >= pageSize,
+  };
+}
+
+/** Equipo (para asignar). Lectura puntual, cacheada en el store. */
+export async function fetchTeam() {
+  // OLA-2.3: cap de sanidad — el equipo de un tenant es chico (hoy 1-5); a 100+
+  // usuarios este selector necesita búsqueda server-side, no un scan mayor.
+  const snap = await getDocs(query(collection(db, 'usuarios'), limit(100)));
+  const team = snap.docs
+    .map((d) => {
+      const u = d.data();
+      return { uid: d.id, nombre: u.nombre || u.email || 'Usuario', cargo: u.cargo || u.roleName || '' };
+    })
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  store.set({ team });
+  return team;
+}
+
+// ───────── Mutaciones (admin-only por reglas Fase 1: super_admin / crm.edit) ─────────
+
+export async function assignLead(leadId, owner) {
+  await updateDoc(doc(db, 'leads', leadId), {
+    ownerId: owner ? owner.uid : null,
+    ownerName: owner ? owner.nombre : null,
+    updatedAt: nowISO(),
+    updatedBy: currentUid(),
+    _version: increment(1),
+  });
+}
+
+export async function setLeadStatus(leadId, status, lead = {}, extra = {}) {
+  // F1 (ADR §176): lead convertido = status inmutable. Las Rules lo rechazan
+  // server-side; este guard evita el intento y da el mensaje correcto.
+  if (lead && lead.convertedTo && lead.convertedTo.dealId) {
+    throw new Error('Este lead ya es un negocio: gestiónalo en el Pipeline.');
+  }
+  const ts = nowISO();
+  await updateDoc(doc(db, 'leads', leadId), {
+    ...extra, // v3 §181: 'descartado' viaja con su discardReason (rules lo exigen)
+    status,
+    lastActivityAt: ts,
+    updatedAt: ts,
+    updatedBy: currentUid(),
+    _version: increment(1),
+  });
+  // Deja rastro en el timeline (activity outbound).
+  await addDoc(collection(db, 'activities'), {
+    type: 'status_change',
+    subject: 'Cambio de estado → ' + status,
+    body: '',
+    status: 'closed',
+    direction: 'outbound',
+    relatedTo: { type: 'lead', id: leadId, name: lead.fullName || '' },
+    ownerId: currentUid(),
+    createdAt: ts,
+    _version: 1,
+  });
+}
+
+/** Registra una actividad manual (ej. "WhatsApp enviado"). */
+export async function logActivity(leadId, { type = 'nota', subject = '', body = '', direction = 'outbound', name = '' }) {
+  await addDoc(collection(db, 'activities'), {
+    type, subject, body, status: 'closed', direction,
+    relatedTo: { type: 'lead', id: leadId, name },
+    ownerId: currentUid(), createdAt: nowISO(), _version: 1,
+  });
+}
+
+/**
+ * P2.b (ADR §178) — tarea de PRÓXIMO PASO con vencimiento: lo que llena
+ * "Pendientes hoy" y mata el contactado-y-olvidado.
+ */
+export async function scheduleTask(leadId, { subject, dueAt, name = '' }) {
+  await addDoc(collection(db, 'activities'), {
+    type: 'tarea', subject, body: '', status: 'open', direction: 'outbound',
+    dueAt,
+    relatedTo: { type: 'lead', id: leadId, name },
+    ownerId: currentUid(), createdAt: nowISO(), _version: 1,
+  });
+}
+
+/**
+ * P2 (ADR §178) — "Pendientes hoy + vencidos": tareas/citas abiertas con
+ * dueAt hasta el fin de HOY (local). Rango sobre un solo campo → índice
+ * automático (L-30); status/type se filtran en memoria (volumen pequeño).
+ */
+export async function fetchPendingTasks() {
+  const end = new Date(); end.setHours(23, 59, 59, 999);
+  const q = query(
+    collection(db, 'activities'),
+    where('dueAt', '<=', end.toISOString()),
+    orderBy('dueAt', 'desc'),
+    limit(80),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(withId)
+    .filter((a) => a.status === 'open' && (a.type === 'tarea' || a.type === 'cita'))
+    .sort((a, b) => String(a.dueAt).localeCompare(String(b.dueAt)));
+}
+
+export async function completeTask(activityId) {
+  await updateDoc(doc(db, 'activities', activityId), {
+    status: 'closed', closedAt: nowISO(), closedBy: currentUid(),
+  });
+}
+
+/**
+ * F13 (ADR §180) — ARCHIVAR: el soft-delete del día a día. Reversible;
+ * sale de todas las vistas (Bandeja, Reportes). Las Rules ya lo permiten
+ * (update con crm.edit; no toca `status` → F1 no estorba ni en convertidos).
+ */
+export async function archiveLead(leadId, archived = true) {
+  await updateDoc(doc(db, 'leads', leadId), {
+    archived,
+    archivedAt: archived ? nowISO() : null,
+    updatedAt: nowISO(),
+    updatedBy: currentUid(),
+    _version: increment(1),
+  });
+}
+
+/**
+ * F15 (ADR §180) — ELIMINAR DEFINITIVO (solo super admin, solo prueba/spam):
+ * callable server-side con cascada completa (activities + deals + doc de
+ * entrada + contact huérfano). Requiere RED (transaccional, no offline).
+ */
+export async function purgeLead(leadId) {
+  const call = httpsCallable(fns, 'crmPurgeLead');
+  const res = await call({ leadId });
+  return res.data;
+}
+
+function currentUid() {
+  const u = store.get().user;
+  return u ? u.uid : null;
+}

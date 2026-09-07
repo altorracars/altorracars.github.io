@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#0a0a0a;padding:24px;display:flex;flex-direction:column;gap:16px;}
+.row{display:flex;gap:10px;align-items:stretch;}
+.swatch{flex:1;border-radius:10px;padding:16px 12px 12px;display:flex;flex-direction:column;justify-content:flex-end;min-height:100px;}
+.swatch-label{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:0.7;margin-bottom:2px;}
+.swatch-name{font-size:0.78rem;font-weight:600;margin-bottom:1px;}
+.swatch-hex{font-size:0.7rem;opacity:0.6;font-weight:400;}
+.gold-1{background:#d4af37;color:#0a0a0a;}
+.gold-2{background:#b89658;color:#0a0a0a;}
+.gold-3{background:#8b6f47;color:#fff;}
+.gold-4{background:#f5df80;color:#0a0a0a;}
+.title{color:#b89658;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.6;}
+</style></head><body>
+<div class="title">Brand Gold Palette</div>
+<div class="row">
+  <div class="swatch gold-4">
+    <div class="swatch-label">Light</div>
+    <div class="swatch-name">Gold Light</div>
+    <div class="swatch-hex">#f5df80</div>
+  </div>
+  <div class="swatch gold-1" style="flex:2;">
+    <div class="swatch-label">Primary</div>
+    <div class="swatch-name">Gold Primary</div>
+    <div class="swatch-hex">#d4af37</div>
+  </div>
+  <div class="swatch gold-2">
+    <div class="swatch-label">Secondary</div>
+    <div class="swatch-name">Gold Secondary</div>
+    <div class="swatch-hex">#b89658</div>
+  </div>
+  <div class="swatch gold-3">
+    <div class="swatch-label">Dark</div>
+    <div class="swatch-name">Gold Dark</div>
+    <div class="swatch-hex">#8b6f47</div>
+  </div>
+</div>
+<div class="row">
+  <div style="flex:1;background:linear-gradient(135deg,#f5df80 0%,#d4af37 40%,#b89658 70%,#f5df80 100%);background-size:200% auto;animation:gs 3s ease infinite;border-radius:8px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+    <span style="color:#0a0a0a;font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Gold Shimmer Gradient</span>
+    <span style="color:#0a0a0a;font-size:0.7rem;opacity:0.7;">Hero accent · Prices · Highlights</span>
+  </div>
+</div>
+<style>@keyframes gs{0%,100%{background-position:0% center}50%{background-position:200% center}}</style>
+</body></html>

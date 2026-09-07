@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="/multimedia/favicon-32.png">
+    <link rel="apple-touch-icon" href="/multimedia/apple-touch-icon-180.png">
+    <base href="/">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Mazda 6 2004 | ALTORRA CARS</title>
+
+    <!-- SEO Meta Tags (updated dynamically via JS) -->
+    <meta name="description" content="Mazda 6 2004 - $ 15.000.000. Usado, Mecanica, 124.000 km. Disponible en ALTORRA CARS, Cartagena.">
+    <!-- OLA-3.1 §276: este archivo es el TEMPLATE dinámico (SPA por ?id=). La
+         superficie INDEXABLE son los estáticos /vehiculos/{slug}.html (canonical
+         horneado por generate-vehicles.mjs). Sin `noindex` aquí, esta URL se
+         indexaba como DUPLICADO sin canonical. El SSG FLIPEA noindex→index+
+         canonical al hornear cada estático (no heredan este noindex). -->
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://altorracars.github.io/vehiculos/mazda-6-2004-35.html">
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="product">
+    <meta property="og:url" id="og-url" content="https://altorracars.github.io/vehiculos/mazda-6-2004-35.html">
+    <meta property="og:title" id="og-title" content="Mazda 6 2004 | ALTORRA CARS">
+    <meta property="og:description" id="og-description" content="Encuentra los mejores vehículos usados en Cartagena. Financiación disponible. Visítanos o agenda tu cita en línea.">
+    <meta property="og:image" id="og-image" content="https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773523871522_MAZDA_6_MEC_MODELO_2004-1_compressed.webp?alt=media&amp;token=9eb8375a-c8dc-4960-ad31-356321ec2591">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="ALTORRA CARS">
+    <meta property="og:locale" content="es_CO">
+    <meta property="product:price:amount" id="og-price" content="">
+    <meta property="product:price:currency" content="COP">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="tw-title" content="Mazda 6 2004 | ALTORRA CARS">
+    <meta name="twitter:description" id="tw-description" content="Encuentra los mejores vehículos usados en Cartagena. Financiación disponible. Visítanos o agenda tu cita en línea.">
+    <meta name="twitter:image" id="tw-image" content="https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773523871522_MAZDA_6_MEC_MODELO_2004-1_compressed.webp?alt=media&amp;token=9eb8375a-c8dc-4960-ad31-356321ec2591">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/comparador.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/historial-visitas.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/citas.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/animaciones.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/performance-fixes.css">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+    <!-- SSG (TODO-53 P3.2): preload de la imagen LCP del vehículo — horneado por
+         generate-vehicles.mjs en los estáticos (desacopla el LCP del fetch a Firestore);
+         en el SPA dinámico queda vacío (la imagen la pone el JS tras el fetch). -->
+    <link rel="preload" as="image" fetchpriority="high" href="https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773523871522_MAZDA_6_MEC_MODELO_2004-1_compressed.webp?alt=media&amp;token=9eb8375a-c8dc-4960-ad31-356321ec2591">
+    <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
+         para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
+         DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->
+    <link rel="stylesheet" data-altorra-fonts href="css/fonts.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
+    <link rel="stylesheet" href="css/home/detalle-cinematic.css">
+    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
+         unauthenticated header buttons when the user is already logged in.
+         Sets html.auth-authenticated or html.auth-guest based on the
+         localStorage flag persisted by auth.js (updateHeaderAuthState).
+         CSS in style.css uses these classes to hide/show login buttons. -->
+    <script>
+    (function () {
+        try {
+            var hint = localStorage.getItem('altorra_auth_hint');
+            document.documentElement.classList.add(
+                hint === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+            );
+        } catch (e) {
+            document.documentElement.classList.add('auth-guest');
+        }
+    })();
+    </script>
+    <!-- Critical header CSS — inlined for first-paint stability.
+         (1) Reserves 80px for the header so layout doesn't shift when
+             components.js injects the fetched header HTML.
+         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
+             prevents the sequential paint of favoritos→login→register→bell).
+         (3) Auth hint rules duplicated here so they apply even before
+             style.css finishes parsing (defense-in-depth).
+         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <style>
+    #header-placeholder{min-height:80px;display:block}
+    header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
+    header .nav-actions.hdr-ready{opacity:1;visibility:visible}
+    html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
+    html.auth-guest #headerUserArea{display:none!important}
+    html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+    @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
+    </style>
+
+    <!-- Page Loader — Critical Inline CSS (cross-browser) -->
+    <style>
+    #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:24px;-webkit-transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}
+    #page-loader.pl-done{opacity:0;visibility:hidden;pointer-events:none;}
+    .pl-logo{width:68px;height:68px;-o-object-fit:contain;object-fit:contain;-webkit-animation:plPulse 2s ease-in-out infinite;animation:plPulse 2s ease-in-out infinite;}
+    .pl-ring{width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;-webkit-animation:plSpin .8s linear infinite;animation:plSpin .8s linear infinite;}
+    @-webkit-keyframes plPulse{0%,100%{opacity:1;-webkit-transform:scale(1);transform:scale(1)}50%{opacity:.6;-webkit-transform:scale(.93);transform:scale(.93)}}
+    @keyframes plPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.93)}}
+    @-webkit-keyframes plSpin{to{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}
+    @keyframes plSpin{to{transform:rotate(360deg)}}
+    </style>
+    <link rel="stylesheet" href="css/page-loader.css">
+
+    <noscript>
+            <link rel="stylesheet" href="css/comparador.css">
+        <link rel="stylesheet" href="css/historial-visitas.css">
+        <link rel="stylesheet" href="css/citas.css">
+        <link rel="stylesheet" href="css/animaciones.css">
+    </noscript>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Car","name":"Mazda 6 2004","brand":{"@type":"Brand","name":"Mazda"},"model":"6","vehicleModelDate":"2004","image":"https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773523871522_MAZDA_6_MEC_MODELO_2004-1_compressed.webp?alt=media\u0026token=9eb8375a-c8dc-4960-ad31-356321ec2591","url":"https://altorracars.github.io/vehiculos/mazda-6-2004-35.html","vehicleTransmission":"Mecanica","fuelType":"Gasolina","mileageFromOdometer":{"@type":"QuantitativeValue","value":124000,"unitCode":"KMT"},"color":"Gris","numberOfDoors":5,"vehicleSeatingCapacity":5,"itemCondition":"https://schema.org/UsedCondition","offers":{"@type":"Offer","price":15000000,"priceCurrency":"COP","availability":"https://schema.org/InStock","itemCondition":"https://schema.org/UsedCondition"},"bodyType":"Sedan","driveWheelConfiguration":"FrontWheelDriveConfiguration","vehicleEngine":{"@type":"EngineSpecification","engineDisplacement":{"@type":"QuantitativeValue","value":"2.0","unitCode":"CMQ"},"enginePower":{"@type":"QuantitativeValue","value":"141HP","unitCode":"BHP"}}}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://altorracars.github.io/"},{"@type":"ListItem","position":2,"name":"Marcas","item":"https://altorracars.github.io/marcas.html"},{"@type":"ListItem","position":3,"name":"Mazda","item":"https://altorracars.github.io/marcas/mazda.html"},{"@type":"ListItem","position":4,"name":"Mazda 6 2004","item":"https://altorracars.github.io/vehiculos/mazda-6-2004-35.html"}]}</script>
+</head>
+<body data-cin="on">
+    <!-- Page Loader -->
+    <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
+        <img src="/multimedia/logo-wheel-128.webp" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
+        <div class="pl-ring" aria-hidden="true"></div>
+    </div>
+
+    <div id="header-placeholder"></div>
+    <noscript>
+        <div style="max-width:1200px;margin:100px auto;padding:24px;font-family:sans-serif">
+            <h1>Mazda 6 2004</h1>
+            <img src="https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773523871522_MAZDA_6_MEC_MODELO_2004-1_compressed.webp?alt=media&amp;token=9eb8375a-c8dc-4960-ad31-356321ec2591" alt="Mazda 6 2004" style="max-width:100%;height:auto;border-radius:12px">
+            <p style="font-size:24px;font-weight:700;color:#b89658;margin:16px 0">$ 15.000.000</p>
+            <ul style="list-style:none;padding:0;line-height:2">
+                <li><strong>Tipo:</strong> Usado</li>
+                <li><strong>Transmision:</strong> Mecanica</li>
+                <li><strong>Combustible:</strong> Gasolina</li>
+                <li><strong>Kilometraje:</strong> 124.000 km</li>
+                <li><strong>Color:</strong> Gris</li>
+                <li><strong>Categoria:</strong> Sedan</li>
+            </ul>
+            <p><a href="https://altorracars.github.io">Volver a ALTORRA CARS</a></p>
+        </div>
+    </noscript>
+
+    <div class="detail-page">
+        <div class="detail-container">
+            <a href="busqueda.html" class="dt-back">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+                Volver al catálogo
+            </a>
+            <div class="detail-grid">
+                <!-- Galería -->
+                <div class="gallery-section">
+                    <div class="main-image-container gallery-main">
+                        <img id="mainImage" src="https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773523871522_MAZDA_6_MEC_MODELO_2004-1_compressed.webp?alt=media&amp;token=9eb8375a-c8dc-4960-ad31-356321ec2591" alt="Vehículo" class="main-image" loading="eager" fetchpriority="high" decoding="async">
+                        <div class="image-counter" id="imageCounter">1/1</div>
+                        <span class="gallery-zoom-hint" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                        </span>
+                    </div>
+                    <div class="thumbnails-grid" id="thumbnailsGrid"></div>
+
+                </div>
+
+                <!-- Info Sidebar -->
+                <div class="info-sidebar">
+                    <div class="info-card">
+                        <div class="vehicle-header">
+                            <div class="badges" id="badgesContainer"></div>
+                            <h1 class="vehicle-title" id="vehicleTitle"></h1>
+                            <p class="vehicle-subtitle" id="vehicleSubtitle"></p>
+                        </div>
+
+                        <div class="price-box">
+                            <div class="price-label">Precio</div>
+                            <div id="priceContainer"></div>
+                        </div>
+
+                        <div class="quick-specs" id="quickSpecs"></div>
+
+                        <!-- Botones de acción — Opción A (jerarquía por prioridad, SP-5.3) -->
+                        <div class="dt-actions">
+                            <a href="#" id="btnWhatsApp" class="dt-btn dt-btn--wa" target="_blank" rel="noopener">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                                </svg>
+                                <span>Contactar por WhatsApp</span>
+                            </a>
+                            <a id="btnCalculadora" href="simulador-credito.html" class="dt-btn dt-btn--sim">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="4" y="2" width="16" height="20" rx="2"/>
+                                    <line x1="8" y1="6" x2="16" y2="6"/>
+                                    <line x1="8" y1="10" x2="10" y2="10"/>
+                                    <line x1="14" y1="10" x2="16" y2="10"/>
+                                    <line x1="8" y1="14" x2="10" y2="14"/>
+                                    <line x1="14" y1="14" x2="16" y2="14"/>
+                                    <line x1="8" y1="18" x2="10" y2="18"/>
+                                    <line x1="14" y1="18" x2="16" y2="18"/>
+                                </svg>
+                                <span>Simular Crédito</span>
+                            </a>
+                            <div class="dt-actions-row">
+                                <button id="btnAgendar" type="button" class="dt-ibtn btn-agendar-cita">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                        <line x1="16" y1="2" x2="16" y2="6"/>
+                                        <line x1="8" y1="2" x2="8" y2="6"/>
+                                        <line x1="3" y1="10" x2="21" y2="10"/>
+                                    </svg>
+                                    <span>Agendar</span>
+                                </button>
+                                <!-- MF2.5 — vehicle thread -->
+                                <button id="btnAskVehicle" type="button" class="dt-ibtn" data-action="open-concierge-vehicle">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                    <span>Preguntar</span>
+                                </button>
+                                <button id="btnComparar" type="button" class="dt-ibtn">
+                                    <svg id="btnCompararIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <rect x="2" y="3" width="5" height="9" rx="1"/>
+                                        <rect x="9.5" y="3" width="5" height="9" rx="1"/>
+                                        <rect x="17" y="3" width="5" height="9" rx="1"/>
+                                        <path d="M4 15v6M12 15v6M20 15v6M2 18h4M10 18h4M18 18h4"/>
+                                    </svg>
+                                    <span id="btnCompararText">Comparar</span>
+                                </button>
+                                <button id="btnShare" type="button" class="dt-ibtn">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                    </svg>
+                                    <span>Compartir</span>
+                                </button>
+                            </div>
+                            <div class="dt-actions-foot">
+                                <button id="btnGuardar" type="button" class="dt-save" aria-pressed="false">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
+                                    </svg>
+                                    <span class="dt-save-label">Guardar</span>
+                                </button>
+                                <span class="dt-trust">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                        <path d="M9 12l2 2 4-4"/>
+                                    </svg>
+                                    Verificado
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Section -->
+                <div class="content-section">
+                    <div class="tabs-nav">
+                        <button class="tab-btn active" data-tab="ficha">Ficha Técnica</button>
+                        <button class="tab-btn" data-tab="caracteristicas">Características</button>
+                    </div>
+
+                    <!-- Ficha Técnica -->
+                    <div class="tab-content active" id="tab-ficha">
+                        <h2 class="section-title">Ficha Técnica Completa</h2>
+                        <div class="ficha-table" id="fichaTable"></div>
+                    </div>
+
+                    <!-- Características -->
+                    <div class="tab-content" id="tab-caracteristicas">
+                        <h2 class="section-title">Características y Equipamiento</h2>
+                        <div class="features-grid" id="featuresGrid"></div>
+                    </div>
+                </div>
+
+                <!-- Vehículos Similares -->
+                <div class="similar-section">
+                    <h2 class="section-title">Te puede interesar</h2>
+                    <div class="similar-carousel-wrapper">
+                        <button class="carousel-arrow prev" type="button" aria-label="Anterior">&#8249;</button>
+                        <button class="carousel-arrow next" type="button" aria-label="Siguiente">&#8250;</button>
+                        <div class="vehicles-grid" id="similarVehicles"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra sticky móvil (precio + WhatsApp siempre visible al hacer scroll) -->
+    <div class="dt-sticky" id="dtSticky">
+        <div class="dt-sticky-info">
+            <span class="dt-sticky-model" id="dtStickyModel"></span>
+            <span class="dt-sticky-price" id="dtStickyPrice"></span>
+        </div>
+        <a href="#" class="dt-sticky-cta" id="dtStickyWa" target="_blank" rel="noopener">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884Z"/></svg>
+            <span>WhatsApp</span>
+        </a>
+    </div>
+
+    <!-- Lightbox Avanzado -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose" aria-label="Cerrar">×</button>
+
+        <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Imagen anterior">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15,18 9,12 15,6"/>
+            </svg>
+        </button>
+
+        <div class="lightbox-container">
+            <img id="lightboxImage" src="" alt="Imagen ampliada" class="lightbox-image" loading="lazy" decoding="async">
+        </div>
+
+        <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Imagen siguiente">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9,18 15,12 9,6"/>
+            </svg>
+        </button>
+
+        <div class="lightbox-dots" id="lightboxDots"></div>
+        <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
+        <div class="zoom-hint">Click para hacer zoom</div>
+    </div>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="js/core/firebase-config.js" defer></script>
+    <script src="js/public/vehicle-hotspots.js" defer></script>
+    <script src="js/core/comm-schema.js" defer></script>
+    <script src="js/core/favorites-manager.js"></script>
+    <script src="js/core/favorites-watcher.js" defer></script>
+    <script src="js/core/toast.js"></script>
+    <script src="js/core/components.js"></script>
+    <script src="js/core/database.js"></script>
+    <script src="js/core/render.js"></script>
+    <script src="js/core/main.js"></script>
+    <script src="js/public/comparador.js"></script>
+    <script>window.PRERENDERED_VEHICLE_ID = "35";</script>
+    <script src="js/core/historial-visitas.js"></script>
+    <script src="js/public/citas.js"></script>
+    <script src="js/public/detalle/detalle-data.js"></script>
+    <script src="js/public/detalle/detalle-render.js"></script>
+    <script src="js/public/detalle/detalle-gallery.js"></script>
+    <script src="js/public/detalle/detalle-page.js"></script>
+
+        <script src="js/core/page-loader.js"></script>
+    <!-- Cache Manager -->
+    <script src="js/core/cache-manager.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+/* ============================================================
+   LOGIN
+   ============================================================ */
+
+.login-wrap {
+  display: grid; place-items: center;
+  height: 100dvh; padding: var(--s-5);
+}
+.login {
+  width: 100%; max-width: 400px;
+  padding: var(--s-8) var(--s-8) var(--s-6);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-32);
+}
+.login__brand { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s-6); }
+.login__logo {
+  font-family: var(--font-display); font-weight: 800; letter-spacing: 0.24em;
+  font-size: var(--t-subtitle); color: var(--gold-700);
+}
+:root[data-theme="dark"] .login__logo { color: var(--gold-400); }
+.login__tag { letter-spacing: 0.1em; }
+.login__title { font-size: var(--t-title-sm); margin-bottom: 2px; }
+.login__lead { margin-bottom: var(--s-6); font-size: var(--t-body); }
+.login__form { display: flex; flex-direction: column; gap: var(--s-4); }
+.login__form .btn { margin-top: var(--s-2); height: 44px; }
+.login__error {
+  padding: var(--s-2) var(--s-3); border-radius: var(--r-sm);
+  background: rgba(232,93,93,0.10); color: var(--danger);
+  font-size: var(--t-caption); font-weight: 600;
+  border: 1px solid rgba(232,93,93,0.25);
+}
+.login__foot { margin-top: var(--s-6); text-align: center; }
+
+/* F-6 §1 — aviso de re-login para usuarios del panel viejo.
+   Tinte dorado de marca HARDCODEADO (como .login__error con --danger): es un
+   aviso semántico/de sistema, no debe seguir el accent per-device (que pre-auth
+   puede ser un leftover) ni cambiar entre light/dark. Texto theme-aware. */
+.login__notice {
+  display: flex;
+  gap: var(--s-2);
+  align-items: flex-start;
+  padding: var(--s-3);
+  margin-bottom: var(--s-5);
+  border-radius: var(--r-md);
+  background: rgba(212, 168, 90, 0.10);
+  border: 1px solid rgba(212, 168, 90, 0.30);
+  color: var(--ink-text);
+}
+.login__notice-icon { font-size: 18px; line-height: 1.3; flex: none; }
+.login__notice-body { min-width: 0; }
+.login__notice-title { font-weight: 700; font-size: var(--t-body); margin-bottom: 2px; }
+.login__notice-text { color: var(--ink-text-muted); line-height: var(--t-caption-lh); }
+.login__notice-x {
+  margin-left: auto;
+  flex: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: var(--r-xs);
+}
+.login__notice-x:hover { opacity: 1; }

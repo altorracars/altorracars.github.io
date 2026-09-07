@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="/multimedia/favicon-32.png">
+    <link rel="apple-touch-icon" href="/multimedia/apple-touch-icon-180.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Nosotros | ALTORRA CARS — Especialistas en Carros Usados en Cartagena</title>
+    <meta name="description" content="Conoce ALTORRA CARS, tu concesionario de confianza para comprar carros usados en Cartagena. Venta de vehículos usados con transparencia, calidad certificada, financiación flexible y atención personalizada.">
+    <meta name="keywords" content="ALTORRA CARS nosotros, concesionario carros usados Cartagena, quienes somos ALTORRA CARS, venta carros usados Cartagena, ALTORRA COMPANY SAS">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://altorracars.github.io/nosotros.html">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://altorracars.github.io/nosotros.html">
+    <meta property="og:title" content="Nosotros | ALTORRA CARS — Especialistas en Carros Usados Cartagena">
+    <meta property="og:description" content="ALTORRA CARS — Tu concesionario de vehículos usados en Cartagena. Carros certificados, financiación flexible y atención personalizada.">
+    <meta property="og:image" content="https://altorracars.github.io/multimedia/nosotros-hero.webp">
+    <meta property="og:site_name" content="ALTORRA CARS">
+    <meta property="og:locale" content="es_CO">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://altorracars.github.io/nosotros.html">
+    <meta name="twitter:title" content="Nosotros | ALTORRA CARS — Especialistas en Carros Usados Cartagena">
+    <meta name="twitter:description" content="ALTORRA CARS — Tu concesionario de vehículos usados en Cartagena. Carros certificados, financiación flexible y atención personalizada.">
+    <meta name="twitter:image" content="https://altorracars.github.io/multimedia/nosotros-hero.webp">
+
+    <!-- §91 Sprint 3A: LCP hero preload responsive AVIF/WebP.
+         Browser que soporta AVIF descarga del primer preload (más liviano ~70%).
+         Browser que NO soporta AVIF ignora ese, descarga del segundo preload WebP.
+         Browser sin AVIF ni WebP cae al <img src="multimedia/nosotros-hero.webp"> legacy.
+         Matches exact URLs del <picture> abajo → cache hit garantizado. -->
+    <link rel="preload" as="image" type="image/avif" fetchpriority="high"
+          imagesrcset="multimedia/optimized/nosotros-hero-480.avif 480w,
+                       multimedia/optimized/nosotros-hero-768.avif 768w,
+                       multimedia/optimized/nosotros-hero-1280.avif 1280w,
+                       multimedia/optimized/nosotros-hero-1920.avif 1920w"
+          imagesizes="100vw">
+    <link rel="preload" as="image" type="image/webp" fetchpriority="high"
+          imagesrcset="multimedia/optimized/nosotros-hero-480.webp 480w,
+                       multimedia/optimized/nosotros-hero-768.webp 768w,
+                       multimedia/optimized/nosotros-hero-1280.webp 1280w,
+                       multimedia/optimized/nosotros-hero-1920.webp 1920w"
+          imagesizes="100vw">
+
+    <link rel="stylesheet" href="css/style.css">
+    <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
+         para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
+         DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->
+    <link rel="stylesheet" data-altorra-fonts href="css/fonts.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
+    <link rel="stylesheet" href="css/performance-fixes.css">
+    <style>
+        /* ── Global ── */
+        body { background: #0a0a0a; }
+
+        /* ── Hero — synced with index hero (same dimensions, overlays, animations) ── */
+        .about-hero {
+            position: relative;
+            z-index: 10;
+            min-height: clamp(480px, 70vh, 720px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            overflow: hidden;
+            isolation: isolate;
+            /* §95 — margin-top:70px legacy ELIMINADO. Header fixed flota
+               encima sin necesidad de gap. */
+        }
+        /* §91 Sprint 3A — Background image migrado a <img loading="lazy" decoding="async"> dentro de <picture>.
+           Antes: .about-hero::before con background: url('nosotros-hero.webp').
+           Ahora: <img class="about-hero-bg"> con srcset AVIF/WebP responsive.
+           LCP -40-60% en mobile (AVIF es ~70% más liviano que WebP/JPG).
+           Las ambient lights, overlay y particles siguen idénticos. */
+        .about-hero-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            z-index: 0;
+            pointer-events: none;
+        }
+        /* Dark gradient overlay — identical to index hero-overlay */
+        .about-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.78) 0%,
+                rgba(0,0,0,0.28) 38%,
+                rgba(0,0,0,0.30) 62%,
+                rgba(0,0,0,0.85) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* Ambient lights — identical to index hero-ambient */
+        .hero-ambient {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .hero-ambient::before,
+        .hero-ambient::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(70px);
+            animation: hero-orb-drift 16s ease-in-out infinite alternate;
+        }
+        .hero-ambient::before {
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(212,175,55,0.045) 0%, transparent 65%);
+            top: -220px;
+            left: -180px;
+        }
+        .hero-ambient::after {
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(184,150,88,0.035) 0%, transparent 65%);
+            bottom: -180px;
+            right: -150px;
+            animation-delay: -8s;
+            animation-direction: alternate-reverse;
+        }
+        @keyframes hero-orb-drift {
+            0%   { transform: translate(0, 0) scale(1); }
+            50%  { transform: translate(30px, 20px) scale(1.08); }
+            100% { transform: translate(-15px, -15px) scale(0.96); }
+        }
+        /* §92 — particles eliminadas, keyframe huérfano limpiado */
+
+        /* Bottom fade — identical to index hero::before (140px) */
+        .hero-bottom-fade {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 140px;
+            background: linear-gradient(to bottom, transparent 0%, #0a0a0a 100%);
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        /* ── Content container — synced with index hero-content ── */
+        .about-hero .container {
+            position: relative;
+            z-index: 4;
+            text-align: center;
+            padding: 3rem 2rem 3rem;
+            max-width: 880px;
+            margin: 0 auto;
+            width: 100%;
+            animation: hero-content-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes hero-content-in {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Badge — synced with index hero-badge */
+        .hero-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.5rem 1.5rem;
+            border: 1px solid rgba(212,175,55,0.38);
+            border-radius: 100px;
+            background: rgba(212,175,55,0.1);
+            color: #d4af37;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 1.2rem;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 0 24px rgba(212,175,55,0.08), inset 0 1px 0 rgba(255,255,255,0.07);
+            animation: hero-badge-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+        }
+        @keyframes hero-badge-in {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .hero-label-dot {
+            width: 6px;
+            height: 6px;
+            background: #d4af37;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 7px rgba(212,175,55,0.9);
+            animation: hero-dot-pulse 2.2s ease-in-out infinite;
+        }
+        @keyframes hero-dot-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 7px rgba(212,175,55,0.9); }
+            50% { opacity: 0.4; transform: scale(0.65); box-shadow: 0 0 2px rgba(212,175,55,0.3); }
+        }
+
+        /* H1 "SOMOS" — same font-weight/letter-spacing as index .hero-title */
+        .about-hero h1 {
+            font-size: clamp(1.1rem, 2vw, 1.5rem);
+            font-weight: 900;
+            margin-bottom: 0.4rem;
+            letter-spacing: 0.15em;
+            line-height: 1.06;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.7);
+            animation: hero-title-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+        }
+        @keyframes hero-title-in {
+            from { opacity: 0; transform: translateY(22px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ALTORRA CARS mark — Cardo serif (canonical brand typography) */
+        .hero-mark {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1;
+            gap: 0;
+            margin-bottom: 0.3rem;
+            animation: hero-title-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+        }
+        .hero-mark__name {
+            display: block;
+            font-family: 'Cardo', Georgia, 'Times New Roman', serif;
+            font-size: clamp(2.4rem, 5.5vw, 4.5rem);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            background: linear-gradient(
+                115deg,
+                #7a5c00 0%,
+                #c9a227 22%,
+                #f5df80 42%,
+                #d4af37 54%,
+                #eacb55 68%,
+                #c9a227 82%,
+                #7a5c00 100%
+            );
+            background-size: 230% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: heroShimmer 6s ease-in-out infinite;
+            filter: drop-shadow(0 2px 12px rgba(212,175,55,0.35));
+        }
+        .hero-mark__rule {
+            display: block;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.6) 20%, rgba(212,175,55,0.6) 80%, transparent);
+            margin: 8px 0 8px;
+        }
+        .hero-mark__sub {
+            display: block;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+            font-weight: 500;
+            letter-spacing: 0.55em;
+            text-indent: 0.55em;
+            text-transform: uppercase;
+            color: rgba(212,175,55,0.8);
+            white-space: nowrap;
+        }
+        @keyframes heroShimmer {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Subtitle */
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: rgba(255,255,255,0.82);
+            max-width: 580px;
+            margin: 1rem auto 0;
+            line-height: 1.8;
+            font-weight: 400;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+            animation: hero-subtitle-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+        }
+        @keyframes hero-subtitle-in {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Pillar Cards (Misión / Visión / Compromiso) ── */
+        .about-pillars {
+            padding: 5rem 0;
+            background: #0a0a0a;
+            position: relative;
+        }
+        .about-pillars::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent);
+        }
+        .pillars-grid {
+            display: -ms-grid;
+            display: grid;
+            -ms-grid-columns: 1fr 1.5rem 1fr 1.5rem 1fr;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .pillar-card {
+            background: linear-gradient(165deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+            border-radius: 16px;
+            padding: 2.5rem 2rem 2rem;
+            border: 1px solid rgba(255,255,255,0.06);
+            text-align: center;
+            -webkit-transition: -webkit-transform 0.35s cubic-bezier(.22,1,.36,1), border-color 0.35s, box-shadow 0.35s;
+            transition: transform 0.35s cubic-bezier(.22,1,.36,1), border-color 0.35s, box-shadow 0.35s;
+            position: relative;
+            overflow: hidden;
+        }
+        .pillar-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #d4af37 50%, transparent 100%);
+            opacity: 0.6;
+        }
+        .pillar-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            background: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .pillar-card:hover {
+            -webkit-transform: translateY(-6px);
+            transform: translateY(-6px);
+            border-color: rgba(212,175,55,0.25);
+            -webkit-box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 30px rgba(212,175,55,0.06);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 30px rgba(212,175,55,0.06);
+        }
+
+        .pillar-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.03) 70%);
+            border: 1px solid rgba(212,175,55,0.15);
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -webkit-align-items: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: center;
+            -webkit-justify-content: center;
+            -ms-flex-pack: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            position: relative;
+            color: #d4af37;
+            -webkit-transition: border-color 0.35s, box-shadow 0.35s;
+            transition: border-color 0.35s, box-shadow 0.35s;
+        }
+        .pillar-card:hover .pillar-icon {
+            border-color: rgba(212,175,55,0.4);
+            -webkit-box-shadow: 0 0 20px rgba(212,175,55,0.12);
+            box-shadow: 0 0 20px rgba(212,175,55,0.12);
+        }
+        .pillar-icon::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1px dashed rgba(212,175,55,0.15);
+            -webkit-animation: pillar-ring-spin 20s linear infinite;
+            animation: pillar-ring-spin 20s linear infinite;
+        }
+        @-webkit-keyframes pillar-ring-spin { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
+        @keyframes pillar-ring-spin { to { transform: rotate(360deg); } }
+
+        .pillar-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.92);
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.3px;
+        }
+        .pillar-card p {
+            font-size: 0.88rem;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.7;
+        }
+
+        /* ── Section Header (shared) ── */
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.92);
+            margin-bottom: 0.5rem;
+        }
+        .section-header p {
+            color: rgba(255,255,255,0.4);
+            font-size: 1rem;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .section-header .accent-line {
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #d4af37, transparent);
+            margin: 1rem auto 0;
+        }
+
+        /* ── Values Section ── */
+        .about-values {
+            padding: 5rem 0;
+            background: linear-gradient(180deg, #0a0a0a 0%, #0f0d08 100%);
+            position: relative;
+        }
+        .about-values::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+        }
+        .values-grid {
+            display: -ms-grid;
+            display: grid;
+            -ms-grid-columns: 1fr 1.25rem 1fr 1.25rem 1fr 1.25rem 1fr;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .value-card {
+            padding: 1.75rem 1.5rem;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+            -webkit-transition: color 0.3s, background-color 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.3s, opacity 0.3s, filter 0.3s;
+            transition: color 0.3s, background-color 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.3s, opacity 0.3s, filter 0.3s;
+            text-align: center;
+        }
+        .value-card:hover {
+            border-color: rgba(212,175,55,0.25);
+            background: rgba(255,255,255,0.04);
+            -webkit-transform: translateY(-3px);
+            transform: translateY(-3px);
+        }
+        .value-card .value-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -webkit-align-items: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: center;
+            -webkit-justify-content: center;
+            -ms-flex-pack: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        .value-card:nth-child(1) .value-icon { background: rgba(212,175,55,0.1); }
+        .value-card:nth-child(2) .value-icon { background: rgba(56,162,142,0.1); }
+        .value-card:nth-child(3) .value-icon { background: rgba(59,130,246,0.1); }
+        .value-card:nth-child(4) .value-icon { background: rgba(168,85,247,0.1); }
+
+        .value-card h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 0.5rem;
+        }
+        .value-card p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.38);
+            line-height: 1.6;
+        }
+
+        /* ── Why Us ── */
+        .about-why {
+            padding: 5rem 0;
+            background: #0a0a0a;
+            color: white;
+            position: relative;
+        }
+        .about-why::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+        }
+        .why-grid {
+            display: -ms-grid;
+            display: grid;
+            -ms-grid-columns: 1fr 1.5rem 1fr 1.5rem 1fr;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .why-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 2rem;
+            text-align: center;
+            -webkit-transition: color 0.3s, background-color 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.3s, opacity 0.3s, filter 0.3s;
+            transition: color 0.3s, background-color 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.3s, opacity 0.3s, filter 0.3s;
+        }
+        .why-card:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(212,175,55,0.3);
+            -webkit-transform: translateY(-3px);
+            transform: translateY(-3px);
+        }
+        .why-card .why-number {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d4af37, #b89658);
+            color: #0a0a0a;
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -webkit-align-items: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: center;
+            -webkit-justify-content: center;
+            -ms-flex-pack: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+        .why-card h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 0.5rem;
+        }
+        .why-card p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.6;
+        }
+
+        /* ── CTA Section ── */
+        .about-cta {
+            padding: 5rem 0;
+            background: linear-gradient(180deg, #0a0a0a 0%, #0f0d08 50%, #0a0a0a 100%);
+            text-align: center;
+            position: relative;
+        }
+        .about-cta::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent);
+        }
+        .about-cta h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.92);
+            margin-bottom: 0.75rem;
+        }
+        .about-cta p {
+            color: rgba(255,255,255,0.4);
+            font-size: 1rem;
+            max-width: 500px;
+            margin: 0 auto 2rem;
+        }
+        .cta-buttons {
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+            gap: 1rem;
+            -webkit-box-pack: center;
+            -webkit-justify-content: center;
+            -ms-flex-pack: center;
+            justify-content: center;
+            -webkit-flex-wrap: wrap;
+            -ms-flex-wrap: wrap;
+            flex-wrap: wrap;
+        }
+        .cta-btn {
+            display: -webkit-inline-box;
+            display: -webkit-inline-flex;
+            display: -ms-inline-flexbox;
+            display: inline-flex;
+            -webkit-box-align: center;
+            -webkit-align-items: center;
+            -ms-flex-align: center;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 2rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            -webkit-transition: color 0.3s, background-color 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.3s, opacity 0.3s, filter 0.3s;
+            transition: color 0.3s, background-color 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.3s, opacity 0.3s, filter 0.3s;
+            text-decoration: none;
+        }
+        .cta-btn.primary {
+            background: linear-gradient(135deg, #d4af37, #b89658);
+            color: #0a0a0a;
+        }
+        .cta-btn.primary:hover {
+            -webkit-transform: translateY(-2px);
+            transform: translateY(-2px);
+            -webkit-box-shadow: 0 8px 28px rgba(212,175,55,0.3);
+            box-shadow: 0 8px 28px rgba(212,175,55,0.3);
+        }
+        .cta-btn.secondary {
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .cta-btn.secondary:hover {
+            border-color: rgba(212,175,55,0.5);
+            color: #d4af37;
+        }
+
+        /* ── Responsive — synced breakpoints with index hero (768/480/360) ── */
+        @media (max-width: 900px) {
+            .pillars-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+            .values-grid  { grid-template-columns: 1fr 1fr; max-width: 520px; margin: 0 auto; }
+            .why-grid     { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+            .section-header { text-align: center; }
+            .section-header h2, .section-header p { text-align: center; margin-left: auto; margin-right: auto; }
+        }
+        @media (max-width: 768px) {
+            .about-hero { min-height: clamp(300px, 42vh, 420px); }
+            .about-hero .container { padding: 1.4rem 1.5rem 2rem; }
+            .about-hero h1 { font-size: clamp(0.9rem, 1.8vw, 1.2rem); }
+            .hero-mark__name { font-size: clamp(1.6rem, 6vw, 2.2rem); }
+            .hero-mark__sub { font-size: clamp(0.65rem, 1.4vw, 0.9rem); }
+            .hero-subtitle { font-size: 0.95rem; }
+            .hero-bottom-fade { height: 100px; }
+        }
+        @media (max-width: 600px) {
+            .values-grid  { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; }
+            .about-pillars, .about-values, .about-why, .about-cta { padding: 3rem 0; }
+            .pillar-card  { padding: 2rem 1.5rem 1.5rem; }
+            .section-header { text-align: center !important; padding: 0 1rem; }
+            .section-header h2 { text-align: center !important; }
+            .section-header p { text-align: center !important; margin-left: auto; margin-right: auto; }
+        }
+        @media (max-width: 480px) {
+            .about-hero { min-height: 0 !important; height: auto !important; }
+            .about-hero .container { padding: 7vh 1.25rem 5vh; }
+            .about-hero h1 { font-size: clamp(0.8rem, 1.5vw, 1rem); }
+            .hero-mark__name { font-size: clamp(1.3rem, 7vw, 1.8rem); }
+            .hero-mark__sub { font-size: clamp(0.55rem, 1.1vw, 0.7rem); }
+            .hero-subtitle { font-size: 0.9rem; }
+            .hero-label { margin-bottom: 0.9rem; }
+            .hero-bottom-fade { height: 80px; }
+        }
+        @media (max-width: 360px) {
+            .about-hero .container { padding: 1.25rem 1rem 2rem; }
+            .about-hero h1 { font-size: 0.8rem; }
+            .hero-mark__name { font-size: clamp(1.2rem, 6.5vw, 1.5rem); }
+        }
+    </style>
+    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
+         unauthenticated header buttons when the user is already logged in.
+         Sets html.auth-authenticated or html.auth-guest based on the
+         localStorage flag persisted by auth.js (updateHeaderAuthState).
+         CSS in style.css uses these classes to hide/show login buttons. -->
+    <script>
+    (function () {
+        try {
+            var hint = localStorage.getItem('altorra_auth_hint');
+            document.documentElement.classList.add(
+                hint === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+            );
+        } catch (e) {
+            document.documentElement.classList.add('auth-guest');
+        }
+    })();
+    </script>
+    <!-- Critical header CSS — inlined for first-paint stability.
+         (1) Reserves 80px for the header so layout doesn't shift when
+             components.js injects the fetched header HTML.
+         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
+             prevents the sequential paint of favoritos→login→register→bell).
+         (3) Auth hint rules duplicated here so they apply even before
+             style.css finishes parsing (defense-in-depth).
+         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <style>
+    #header-placeholder{min-height:80px;display:block}
+    header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
+    header .nav-actions.hdr-ready{opacity:1;visibility:visible}
+    html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
+    html.auth-guest #headerUserArea{display:none!important}
+    html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+    @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
+    </style>
+
+    <!-- Page Loader — Critical Inline CSS (cross-browser) -->
+    <style>
+    #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:24px;-webkit-transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}
+    #page-loader.pl-done{opacity:0;visibility:hidden;pointer-events:none;}
+    .pl-logo{width:68px;height:68px;-o-object-fit:contain;object-fit:contain;-webkit-animation:plPulse 2s ease-in-out infinite;animation:plPulse 2s ease-in-out infinite;}
+    .pl-ring{width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;-webkit-animation:plSpin .8s linear infinite;animation:plSpin .8s linear infinite;}
+    @-webkit-keyframes plPulse{0%,100%{opacity:1;-webkit-transform:scale(1);transform:scale(1)}50%{opacity:.6;-webkit-transform:scale(.93);transform:scale(.93)}}
+    @keyframes plPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.93)}}
+    @-webkit-keyframes plSpin{to{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}
+    @keyframes plSpin{to{transform:rotate(360deg)}}
+    </style>
+    <link rel="stylesheet" href="css/page-loader.css">
+
+    <noscript>
+        </noscript>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
+        <img src="/multimedia/logo-wheel-128.webp" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
+        <div class="pl-ring" aria-hidden="true"></div>
+    </div>
+
+    <div id="header-placeholder"></div>
+
+    <main class="soft-page" data-cin="on">
+
+        <!-- ══════════ HERO ══════════ -->
+        <section class="soft-hero">
+            <div class="soft-hero-bg" aria-hidden="true"></div>
+            <div class="soft-hero-inner">
+                <span class="cin-eyebrow">Nosotros · desde 2017</span>
+                <h1 class="soft-hero-h">
+                    Una ventana digital,<br>
+                    <span class="soft-hero-h-accent">todo un país detrás.</span>
+                </h1>
+                <p class="soft-hero-sub">
+                    Altorra conecta compradores con concesionarios aliados verificados en Cartagena y la Costa Caribe.
+                    No vendemos directo — orquestamos la mejor experiencia con la mejor red.
+                </p>
+            </div>
+        </section>
+
+        <!-- ══════════ PILARES ══════════ -->
+        <section class="soft-section">
+            <div class="soft-2col">
+                <div>
+                    <span class="cin-eyebrow">Pilares</span>
+                    <h2 class="soft-section-h">Cómo trabajamos</h2>
+                    <p class="soft-section-lead">
+                        No reinventamos la venta de carros. La hicimos más limpia.
+                    </p>
+                </div>
+                <ul class="soft-pillars">
+                    <li class="soft-pillar" style="--i:0">
+                        <span class="soft-pillar-n">01</span>
+                        <div>
+                            <h3>Verificación previa</h3>
+                            <p>Cada aliado pasa por revisión documental, comercial y técnica antes de listar.</p>
+                        </div>
+                    </li>
+                    <li class="soft-pillar" style="--i:1">
+                        <span class="soft-pillar-n">02</span>
+                        <div>
+                            <h3>Acompañamiento humano</h3>
+                            <p>No somos un Wallapop. Cada operación tiene asesor dedicado de principio a fin.</p>
+                        </div>
+                    </li>
+                    <li class="soft-pillar" style="--i:2">
+                        <span class="soft-pillar-n">03</span>
+                        <div>
+                            <h3>Financiación pre-aprobada</h3>
+                            <p>Conectamos con 5 bancos aliados. Tu solicitud llega lista, no en cero.</p>
+                        </div>
+                    </li>
+                    <li class="soft-pillar" style="--i:3">
+                        <span class="soft-pillar-n">04</span>
+                        <div>
+                            <h3>Transparencia total</h3>
+                            <p>Peritaje técnico, historial, precio justificado. Sin letras chicas, sin sorpresas.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ══════════ LÍNEA DE TIEMPO ══════════ -->
+        <section class="soft-timeline-section">
+            <span class="cin-eyebrow">Línea de tiempo</span>
+            <h2 class="soft-section-h">Nueve años, cinco hitos</h2>
+            <ol class="soft-timeline">
+                <li class="soft-tl-item" style="--i:0">
+                    <span class="soft-tl-year">2017</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Nace Altorra</h3>
+                        <p>Una idea simple: comprar carros en Colombia debería ser tan fácil como comprar online.</p>
+                    </div>
+                </li>
+                <li class="soft-tl-item" style="--i:1">
+                    <span class="soft-tl-year">2019</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Primeros aliados</h3>
+                        <p>Tres concesionarios se suman. Comienza el marketplace digital.</p>
+                    </div>
+                </li>
+                <li class="soft-tl-item" style="--i:2">
+                    <span class="soft-tl-year">2021</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Cobertura nacional</h3>
+                        <p>Llegamos a las 6 ciudades principales y firmamos con bancos aliados.</p>
+                    </div>
+                </li>
+                <li class="soft-tl-item" style="--i:3">
+                    <span class="soft-tl-year">2023</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Catálogo +500</h3>
+                        <p>Más de 500 vehículos verificados en vitrina simultáneamente.</p>
+                    </div>
+                </li>
+                <li class="soft-tl-item" style="--i:4">
+                    <span class="soft-tl-year">2026</span>
+                    <span class="soft-tl-dot"></span>
+                    <div class="soft-tl-body">
+                        <h3>Nueva experiencia</h3>
+                        <p>Estrenamos la plataforma rediseñada. Más rápida, más editorial, más Altorra.</p>
+                    </div>
+                </li>
+            </ol>
+        </section>
+
+        <!-- ══════════ NÚMEROS ══════════ -->
+        <section class="soft-numbers-section">
+            <div class="soft-numbers">
+                <div><strong>2.400+</strong><span>Clientes desde 2017</span></div>
+                <div><strong>21<em>días</em></strong><span>Promedio para vender</span></div>
+                <div><strong>16</strong><span>Marcas en vitrina</span></div>
+                <div><strong>5</strong><span>Bancos aliados</span></div>
+            </div>
+        </section>
+
+        <!-- ══════════ CTA ══════════ -->
+        <section class="soft-cta-section">
+            <h2 class="soft-cta-h">¿Listo para empezar?</h2>
+            <p class="soft-cta-sub">Explora la vitrina o ponte en contacto con un asesor.</p>
+            <div class="soft-cta-row">
+                <a href="busqueda.html" class="soft-cta">Ver catálogo</a>
+                <a href="contacto.html" class="soft-cta soft-cta--alt">Hablar con un asesor</a>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="footer-placeholder"></div>
+    <script src="js/core/firebase-config.js" defer></script>
+    <script src="js/core/page-loader.js"></script>
+    <script src="js/core/components.js"></script>
+    <script src="js/core/main.js"></script>
+    <script src="js/core/cache-manager.js" defer></script>
+</body>
+</html>

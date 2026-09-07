@@ -1,0 +1,54 @@
+{
+  "name": "ALTORRA CARS — Panel Admin",
+  "short_name": "Altorra Admin",
+  "description": "Panel de administración de Altorra Cars: gestión de vehículos, citas, leads, CRM y comunicaciones unificadas.",
+  "start_url": "/admin.html",
+  "scope": "/admin.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d0a06",
+  "theme_color": "#b89658",
+  "lang": "es-CO",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/multimedia/logo-placeholder.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/multimedia/logo-placeholder.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Inicio",
+      "short_name": "Dashboard",
+      "description": "Dashboard ejecutivo con insights del día",
+      "url": "/admin.html#/dashboard"
+    },
+    {
+      "name": "Bandeja de Comunicaciones",
+      "short_name": "Bandeja",
+      "description": "Citas, solicitudes y leads pendientes",
+      "url": "/admin.html#/appointments"
+    },
+    {
+      "name": "Concierge",
+      "short_name": "Chats",
+      "description": "Conversaciones live del bot Concierge",
+      "url": "/admin.html#/concierge"
+    },
+    {
+      "name": "Calendario",
+      "short_name": "Calendario",
+      "description": "Vista mensual de citas",
+      "url": "/admin.html#/calendar"
+    }
+  ]
+}

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="/multimedia/favicon-32.png">
+    <link rel="apple-touch-icon" href="/multimedia/apple-touch-icon-180.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Hatchbacks Usados en Cartagena | ALTORRA CARS</title>
+    <meta name="description" content="Hatchbacks usados en Cartagena. Encuentra tu hatchback usado ideal con ALTORRA CARS. Vehículos certificados con financiación flexible.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://altorracars.github.io/vehiculos-hatchback.html">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://altorracars.github.io/vehiculos-hatchback.html">
+    <meta property="og:title" content="Hatchbacks Usados en Cartagena | ALTORRA CARS">
+    <meta property="og:description" content="Hatchbacks usados en Cartagena. Encuentra tu hatchback usado ideal con ALTORRA CARS. Vehículos certificados.">
+    <meta property="og:image" content="https://altorracars.github.io/multimedia/heroindex.webp">
+    <meta property="og:site_name" content="ALTORRA CARS">
+    <meta property="og:locale" content="es_CO">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://altorracars.github.io/vehiculos-hatchback.html">
+    <meta name="twitter:title" content="Hatchbacks Usados en Cartagena | ALTORRA CARS">
+    <meta name="twitter:description" content="Hatchbacks usados en Cartagena. Encuentra tu hatchback usado ideal con ALTORRA CARS. Vehículos certificados.">
+    <meta name="twitter:image" content="https://altorracars.github.io/multimedia/heroindex.webp">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/toast-notifications.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/comparador.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/performance-fixes.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
+    <link rel="stylesheet" href="css/home/marca-cinematic.css">
+    <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
+         para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
+         DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->
+    <link rel="stylesheet" data-altorra-fonts href="css/fonts.css">
+    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
+         unauthenticated header buttons when the user is already logged in.
+         Sets html.auth-authenticated or html.auth-guest based on the
+         localStorage flag persisted by auth.js (updateHeaderAuthState).
+         CSS in style.css uses these classes to hide/show login buttons. -->
+    <script>
+    (function () {
+        try {
+            var hint = localStorage.getItem('altorra_auth_hint');
+            document.documentElement.classList.add(
+                hint === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+            );
+        } catch (e) {
+            document.documentElement.classList.add('auth-guest');
+        }
+    })();
+    </script>
+    <!-- Critical header CSS — inlined for first-paint stability.
+         (1) Reserves 80px for the header so layout doesn't shift when
+             components.js injects the fetched header HTML.
+         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
+             prevents the sequential paint of favoritos→login→register→bell).
+         (3) Auth hint rules duplicated here so they apply even before
+             style.css finishes parsing (defense-in-depth).
+         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <style>
+    #header-placeholder{min-height:80px;display:block}
+    header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
+    header .nav-actions.hdr-ready{opacity:1;visibility:visible}
+    html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
+    html.auth-guest #headerUserArea{display:none!important}
+    html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+    @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
+    </style>
+
+    <!-- Page Loader — Critical Inline CSS (cross-browser) -->
+    <style>
+    #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:24px;-webkit-transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}
+    #page-loader.pl-done{opacity:0;visibility:hidden;pointer-events:none;}
+    .pl-logo{width:68px;height:68px;-o-object-fit:contain;object-fit:contain;-webkit-animation:plPulse 2s ease-in-out infinite;animation:plPulse 2s ease-in-out infinite;}
+    .pl-ring{width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;-webkit-animation:plSpin .8s linear infinite;animation:plSpin .8s linear infinite;}
+    @-webkit-keyframes plPulse{0%,100%{opacity:1;-webkit-transform:scale(1);transform:scale(1)}50%{opacity:.6;-webkit-transform:scale(.93);transform:scale(.93)}}
+    @keyframes plPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.93)}}
+    @-webkit-keyframes plSpin{to{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}
+    @keyframes plSpin{to{transform:rotate(360deg)}}
+    </style>
+    <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="preload" as="image" href="multimedia/categories/HATCHBACK.jpg" fetchpriority="high">
+
+    <noscript>
+            <link rel="stylesheet" href="css/toast-notifications.css">
+        <link rel="stylesheet" href="css/comparador.css">
+    </noscript>
+</head>
+<body data-cin="on">
+    <!-- Page Loader -->
+    <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
+        <img src="/multimedia/logo-wheel-128.webp" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
+        <div class="pl-ring" aria-hidden="true"></div>
+    </div>
+
+    <div id="header-placeholder"></div>
+
+    <!-- A11Y §48 (A11Y-02): h1 principal sr-only — la landing no tenía ningún h1 (WCAG 1.3.1/2.4.6 + SEO). -->
+    <h1 class="sr-only">Hatchbacks Usados en Cartagena | ALTORRA CARS</h1>
+    <section class="brand-hero">
+        <div class="brand-hero-overlay"></div>
+    <div class="hero-ambient" aria-hidden="true"></div>
+        <picture>
+        <!-- §97: HATCHBACK.jpg fuente es 1200×800 → optimizer solo generó 480/768 (1280/1920 > source width, no upscaling). Variants 1280/1920 NUNCA existieron → 404 + LCP roto. Mismo bug class que §95 (heroindex-1920) y §96 (camioneta). Fix: srcset solo 480/768. <img> fallback usa HATCHBACK.jpg 1200px full-res. -->
+        <source type="image/avif" srcset="multimedia/optimized/HATCHBACK-480.avif 480w, multimedia/optimized/HATCHBACK-768.avif 768w" sizes="100vw">
+        <source type="image/webp" srcset="multimedia/optimized/HATCHBACK-480.webp 480w, multimedia/optimized/HATCHBACK-768.webp 768w" sizes="100vw">
+        <img src="multimedia/categories/HATCHBACK.jpg" alt="Hatchback" class="brand-hero-bg" width="1200" height="800" fetchpriority="high" loading="eager" decoding="async">
+    </picture>
+    <div class="hero-bottom-fade"></div>
+    </section>
+    <section class="catalog-section"><div class="container"><div class="catalog-layout">
+        <button type="button" class="mobile-filters-toggle" id="mobileFiltersToggle">
+            <span class="toggle-icon">🔍 Filtros</span>
+            <span class="toggle-arrow">▼</span>
+        </button>
+        <aside class="filters-sidebar collapsed" id="filtersSidebar"><div class="filters-header"><h3>Filtros</h3><button id="clearFilters" class="btn-clear">Limpiar</button></div>
+            <form id="filtersForm" class="filters-form">
+                <div class="filter-group"><label>Tipo</label><select name="tipo" class="filter-select" id="tipoSelect" aria-label="Tipo"><option value="">Todos</option></select></div>
+                <div class="filter-group"><label>Precio</label><div class="filter-inputs"><input type="number" name="precioMin" placeholder="Mínimo" class="filter-input" aria-label="Precio mínimo"><span>-</span><input type="number" name="precioMax" placeholder="Máximo" class="filter-input" aria-label="Precio máximo"></div></div>
+                <div class="filter-group"><label>Marca</label><select name="marca" class="filter-select" id="marcaSelect" aria-label="Marca"><option value="">Todas</option><!-- FASE 3: Marcas dinámicas --></select></div>
+                <div class="filter-group"><label>Transmisión</label><select name="transmision" class="filter-select" id="transmisionSelect" aria-label="Transmisión"><option value="">Todas</option></select></div>
+                <div class="filter-group"><label>Combustible</label><select name="combustible" class="filter-select" id="combustibleSelect" aria-label="Combustible"><option value="">Todos</option></select></div>
+                <div class="filter-group"><label>Año</label><div class="filter-inputs"><input type="number" name="yearMin" placeholder="Desde" class="filter-input" aria-label="Año desde"><span>-</span><input type="number" name="yearMax" placeholder="Hasta" class="filter-input" aria-label="Año hasta"></div></div>
+                <button type="submit" class="btn-apply-filters">Aplicar</button>
+            </form>
+        </aside>
+        <div class="catalog-main">
+            <div class="results-header">
+                <div class="results-info">
+                    <p><span id="resultsCount">0</span> hatchback</p>
+                </div>
+                <div class="results-sort">
+                    <label for="sortBy">Ordenar por:</label>
+                    <select id="sortBy" class="sort-select">
+                        <option value="precio-asc">Precio: Menor a Mayor</option>
+                        <option value="precio-desc">Precio: Mayor a Menor</option>
+                        <option value="year-desc">Año: Más Reciente</option>
+                    </select>
+                </div>
+            </div>
+            <div class="vehicles-grid" id="vehiclesGrid"></div><div id="pagination"></div>
+        </div>
+    </div></div></section>
+    <div id="footer-placeholder"></div>
+    <script src="js/core/firebase-config.js" defer></script>
+    <script src="js/core/favorites-manager.js" defer></script><script src="js/core/toast.js" defer></script><script src="js/core/components.js" defer></script><script src="js/core/database.js" defer></script><script src="js/core/dynamic-lists.js" defer></script><script src="js/core/render.js" defer></script><script src="js/core/main.js" defer></script><script>
+    <script src="js/core/favorites-watcher.js" defer></script>
+(function () {
+    function loadComparador() {
+        if (window._comparadorLoaded) return;
+        window._comparadorLoaded = true;
+        var s = document.createElement('script');
+        s.src = 'js/public/comparador.js';
+        s.async = false;
+        document.body.appendChild(s);
+    }
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadComparador, { timeout: 3000 });
+    } else if (document.readyState === 'complete') {
+        setTimeout(loadComparador, 1500);
+    } else {
+        window.addEventListener('load', function () {
+            setTimeout(loadComparador, 1500);
+        });
+    }
+})();
+</script>
+    <script>
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let currentFilters = {categoria: 'hatchback'};
+        let currentSort = 'precio-asc';
+
+        async function loadVehicles() {
+            showLoading('vehiclesGrid');
+            await vehicleDB.load();
+            let v = vehicleDB.filter(currentFilters);
+            v = vehicleDB.sort(v, currentSort);
+            document.getElementById('resultsCount').textContent = v.length;
+            renderVehicles(v.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage), 'vehiclesGrid');
+            renderPagination(v.length, currentPage, itemsPerPage, 'pagination');
+        }
+
+        window.goToPage = p => {
+            currentPage = p;
+            loadVehicles();
+            scrollTo(0, 0);
+        };
+
+        async function loadDynamicFilters() {
+            await vehicleDB.load();
+            await DynamicLists.load();
+            DynamicLists.populatePageFilters();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDynamicFilters();
+
+            // Mobile filter toggle
+            const mobileToggle = document.getElementById('mobileFiltersToggle');
+            const sidebar = document.getElementById('filtersSidebar');
+            if (mobileToggle && sidebar) {
+                mobileToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    const isCollapsed = sidebar.classList.contains('collapsed');
+                    mobileToggle.querySelector('.toggle-arrow').textContent = isCollapsed ? '▼' : '▲';
+                });
+            }
+
+            document.getElementById('filtersForm')?.addEventListener('submit', e => {
+                e.preventDefault();
+                currentFilters = {categoria: 'hatchback'};
+                new FormData(e.target).forEach((v, k) => {
+                    if (v) currentFilters[k] = v;
+                });
+                currentPage = 1;
+                loadVehicles();
+            });
+            document.getElementById('clearFilters')?.addEventListener('click', () => {
+                document.getElementById('filtersForm').reset();
+                currentFilters = {categoria: 'hatchback'};
+                loadVehicles();
+            });
+            document.getElementById('sortBy')?.addEventListener('change', e => {
+                currentSort = e.target.value;
+                loadVehicles();
+            });
+            loadVehicles();
+        });
+    </script>
+
+        <script src="js/core/page-loader.js"></script>
+    <!-- Cache Manager -->
+    <script src="js/core/cache-manager.js" defer></script>
+</body>
+</html>

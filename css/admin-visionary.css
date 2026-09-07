@@ -1,0 +1,6058 @@
+/**
+ * ALTORRA ADMIN VISIONARY
+ * =========================
+ * Capa final que GANA especificidad sobre admin.css legacy + NOVA.
+ * Lenguaje visual basado en lo MEJOR de:
+ *   - HarmonyOS NEXT (depth + breathing radii)
+ *   - Windows 11 Fluent (Mica + Acrylic + Reveal)
+ *   - iOS 26 Liquid Glass (refractive + spring physics)
+ *   - Material You / Android 14 (dynamic color + state layers)
+ *   - visionOS (depth perception + cursor follow)
+ *
+ * Filosofía: surface stack 6 capas, elevation system 6 niveles,
+ * motion choreography, micro-interactions con física real.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   1. VISIONARY TOKENS — lenguaje completo nuevo
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+    /* ─── Surface stack iOS 26 Liquid + Win 11 Mica ─── */
+    --vis-surface-base:      #0a0a0c;
+    --vis-surface-canvas:    rgba(14, 14, 16, 0.98);
+    --vis-surface-1:         rgba(20, 20, 22, 0.78);
+    --vis-surface-2:         rgba(26, 26, 28, 0.76);
+    --vis-surface-3:         rgba(32, 32, 34, 0.78);
+    --vis-surface-4:         rgba(40, 40, 42, 0.82);
+    --vis-surface-modal:     rgba(15, 15, 17, 0.88);
+    --vis-surface-popover:   rgba(18, 18, 20, 0.92);
+
+    /* ─── Brand color con dynamic stops ─── */
+    --vis-brand-50:          #fff8e6;
+    --vis-brand-100:         #f5e3b8;
+    --vis-brand-200:         #ecd292;
+    --vis-brand-300:         var(--ak-light,#d4ad6e);
+    --vis-brand-400:         #c4a065;
+    --vis-brand-500:         var(--ak-primary,#b89658);
+    --vis-brand-600:         #a78649;
+    --vis-brand-700:         #8c6f3a;
+    --vis-brand-800:         #6f5829;
+    --vis-brand-glow:        rgba(var(--ak-rgb), 0.55);
+    --vis-brand-glow-soft:   rgba(var(--ak-rgb), 0.22);
+    --vis-brand-tint:        rgba(var(--ak-rgb), 0.06);
+    --vis-brand-tint-strong: rgba(var(--ak-rgb), 0.14);
+
+    /* ─── Borders glass refractive ─── */
+    --vis-border-1:          1px solid rgba(255, 255, 255, 0.05);
+    --vis-border-2:          1px solid rgba(255, 255, 255, 0.08);
+    --vis-border-3:          1px solid rgba(255, 255, 255, 0.12);
+    --vis-border-4:          1px solid rgba(255, 255, 255, 0.18);
+    --vis-border-gold:       1px solid rgba(var(--ak-rgb), 0.20);
+    --vis-border-gold-hi:    1px solid rgba(var(--ak-rgb), 0.45);
+    --vis-border-glow:       1px solid rgba(var(--ak-rgb), 0.32);
+
+    /* ─── Elevation 6 niveles físicos ─── */
+    --vis-elev-1:
+        0 1px 2px rgba(0, 0, 0, 0.20),
+        0 1px 3px rgba(0, 0, 0, 0.10);
+    --vis-elev-2:
+        0 2px 4px rgba(0, 0, 0, 0.20),
+        0 4px 12px rgba(0, 0, 0, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.08);
+    --vis-elev-3:
+        0 4px 8px rgba(0, 0, 0, 0.24),
+        0 8px 24px rgba(0, 0, 0, 0.16),
+        0 16px 48px rgba(0, 0, 0, 0.12);
+    --vis-elev-4:
+        0 8px 16px rgba(0, 0, 0, 0.30),
+        0 16px 40px rgba(0, 0, 0, 0.22),
+        0 32px 80px rgba(0, 0, 0, 0.16);
+    --vis-elev-5:
+        0 16px 32px rgba(0, 0, 0, 0.40),
+        0 32px 64px rgba(0, 0, 0, 0.30),
+        0 64px 128px rgba(0, 0, 0, 0.22);
+    --vis-elev-6:
+        0 24px 48px rgba(0, 0, 0, 0.50),
+        0 48px 96px rgba(0, 0, 0, 0.36),
+        0 96px 200px rgba(0, 0, 0, 0.28);
+    --vis-elev-glow:
+        0 0 0 1px rgba(var(--ak-rgb), 0.20),
+        0 8px 32px rgba(var(--ak-rgb), 0.20),
+        0 16px 64px rgba(var(--ak-rgb), 0.10);
+    --vis-elev-glow-strong:
+        0 0 0 1px rgba(var(--ak-rgb), 0.40),
+        0 12px 48px rgba(var(--ak-rgb), 0.32),
+        0 24px 96px rgba(var(--ak-rgb), 0.18);
+
+    /* ─── Motion 12 spring curves ─── */
+    --vis-ease-linear:       linear;
+    --vis-ease-snap:         cubic-bezier(0.4, 0, 0.2, 1);
+    --vis-ease-soft:         cubic-bezier(0.22, 1, 0.36, 1);
+    --vis-ease-decel:        cubic-bezier(0, 0, 0.2, 1);
+    --vis-ease-accel:        cubic-bezier(0.4, 0, 1, 1);
+    --vis-ease-bounce:       cubic-bezier(0.34, 1.56, 0.64, 1);
+    --vis-ease-spring-1:     cubic-bezier(0.16, 1, 0.3, 1);
+    --vis-ease-spring-2:     cubic-bezier(0.5, 0.5, 0.1, 1.4);
+    --vis-ease-spring-3:     cubic-bezier(0.34, 1.4, 0.64, 1);
+    --vis-ease-flow:         cubic-bezier(0.65, 0, 0.35, 1);
+    --vis-ease-overshoot:    cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    --vis-ease-anticipate:   cubic-bezier(0.36, 0, 0.66, -0.56);
+
+    /* Durations (12 escalones) */
+    --vis-d-instant:   80ms;
+    --vis-d-quickest:  120ms;
+    --vis-d-quick:     160ms;
+    --vis-d-fast:      220ms;
+    --vis-d-base:      300ms;
+    --vis-d-medium:    420ms;
+    --vis-d-slow:      560ms;
+    --vis-d-slower:    720ms;
+    --vis-d-stagger:   80ms;
+
+    /* ─── Blur stack ─── */
+    --vis-blur-2:      4px;
+    --vis-blur-4:      8px;
+    --vis-blur-8:      16px;
+    --vis-blur-12:     24px;
+    --vis-blur-16:     32px;
+    --vis-blur-24:     48px;
+    --vis-blur-32:     64px;
+
+    /* ─── Radii sistema breathing ─── */
+    --vis-r-xs:        6px;
+    --vis-r-sm:        10px;
+    --vis-r-md:        14px;
+    --vis-r-lg:        18px;
+    --vis-r-xl:        22px;
+    --vis-r-2xl:       28px;
+    --vis-r-3xl:       36px;
+    --vis-r-pill:      999px;
+
+    /* ─── Typography scale (golden ratio inspired) ─── */
+    --vis-fs-2xs:      0.6875rem;   /* 11 */
+    --vis-fs-xs:       0.75rem;     /* 12 */
+    --vis-fs-sm:       0.8125rem;   /* 13 */
+    --vis-fs-base:     0.9375rem;   /* 15 */
+    --vis-fs-md:       1rem;        /* 16 */
+    --vis-fs-lg:       1.125rem;    /* 18 */
+    --vis-fs-xl:       1.375rem;    /* 22 */
+    --vis-fs-2xl:      1.75rem;     /* 28 */
+    --vis-fs-3xl:      2.25rem;     /* 36 */
+    --vis-fs-4xl:      3rem;        /* 48 */
+    --vis-fs-5xl:      4rem;        /* 64 */
+
+    /* Letter spacing (iOS-inspired) */
+    --vis-ls-tightest: -0.04em;
+    --vis-ls-tighter:  -0.025em;
+    --vis-ls-tight:    -0.015em;
+    --vis-ls-base:     0;
+    --vis-ls-wide:     0.02em;
+    --vis-ls-wider:    0.05em;
+    --vis-ls-widest:   0.1em;
+
+    /* Line heights */
+    --vis-lh-tight:    1.1;
+    --vis-lh-snug:     1.3;
+    --vis-lh-base:     1.5;
+    --vis-lh-loose:    1.65;
+
+    /* Font feature settings */
+    --vis-font-sans: 'Inter', 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --vis-font-mono: 'SF Mono', ui-monospace, 'Cascadia Code', monospace;
+    --vis-font-display: 'Inter Display', 'Poppins', system-ui, sans-serif;
+
+    /* ─── State layers (Material You) ─── */
+    --vis-state-hover:       rgba(255, 255, 255, 0.04);
+    --vis-state-hover-gold:  rgba(var(--ak-rgb), 0.10);
+    --vis-state-active:      rgba(255, 255, 255, 0.08);
+    --vis-state-active-gold: rgba(var(--ak-rgb), 0.18);
+    --vis-state-focus:       0 0 0 3px rgba(var(--ak-rgb), 0.32);
+    --vis-state-focus-tight: 0 0 0 2px rgba(var(--ak-rgb), 0.55);
+    --vis-state-selected:    rgba(var(--ak-rgb), 0.14);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. BACKGROUND — Mesh gradient + Noise SVG (Material You depth)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel,
+body:has(.admin-panel) {
+    background:
+        radial-gradient(ellipse 1200px 800px at 10% 0%,
+            rgba(var(--ak-rgb), 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 1000px 700px at 90% 100%,
+            rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+        radial-gradient(ellipse 600px 400px at 50% 50%,
+            rgba(var(--ak-rgb), 0.03) 0%, transparent 70%),
+        var(--vis-surface-base);
+    background-attachment: fixed;
+    color: rgba(255, 255, 255, 0.92);
+    font-family: var(--vis-font-sans);
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1, 'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+/* Noise overlay sutil para textura HarmonyOS */
+.admin-panel::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' /%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0' /%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' /%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+}
+.admin-panel > * { position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. TYPOGRAPHY system world-class
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel h1,
+.admin-panel .section-title,
+.admin-panel .page-header h1 {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-2xl);
+    font-weight: 700;
+    line-height: var(--vis-lh-tight);
+    letter-spacing: var(--vis-ls-tighter);
+    background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0.98) 0%,
+        rgba(255, 255, 255, 0.78) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-block: 0;
+}
+.admin-panel h2 {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-xl);
+    font-weight: 650;
+    line-height: var(--vis-lh-snug);
+    letter-spacing: var(--vis-ls-tight);
+}
+.admin-panel h3 {
+    font-size: var(--vis-fs-lg);
+    font-weight: 600;
+    line-height: var(--vis-lh-snug);
+    letter-spacing: var(--vis-ls-tight);
+}
+.admin-panel h4 {
+    font-size: var(--vis-fs-md);
+    font-weight: 600;
+    line-height: var(--vis-lh-snug);
+}
+.admin-panel p,
+.admin-panel li {
+    line-height: var(--vis-lh-base);
+}
+.admin-panel small,
+.admin-panel .text-small {
+    font-size: var(--vis-fs-xs);
+    color: rgba(255, 255, 255, 0.60);
+    letter-spacing: var(--vis-ls-base);
+}
+
+/* Tabular numerals universales en data */
+.admin-panel .kpi-value,
+.admin-panel .hero-kpi-value,
+.admin-panel .reports-kpi-value,
+.admin-panel .section-stat-tile-value,
+.admin-panel .forecast-value,
+.admin-panel [data-numeric],
+.admin-panel td[data-num],
+.admin-panel .nav-badge,
+.admin-panel .tabular {
+    font-feature-settings: 'tnum' 1, 'kern' 1, 'cv11' 1;
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Display gradients para hero values */
+.admin-panel .hero-kpi-value,
+.admin-panel .reports-kpi-value,
+.admin-panel .forecast-value {
+    font-size: var(--vis-fs-3xl);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: var(--vis-ls-tightest);
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. CARDS reimaginadas — depth + cursor follow + sparkles
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .kpi-card,
+.admin-panel .hero-kpi,
+.admin-panel .reports-kpi-card,
+.admin-panel .workflow-card,
+.admin-panel .alt-card,
+.admin-panel .section-stat-tile,
+.admin-panel .stat-card,
+.admin-panel .nba-dash-item,
+.admin-panel .pipeline-card,
+.admin-panel .insights-card,
+.admin-panel .insight-item,
+.admin-panel .review-card,
+.admin-panel .dealer-card,
+.admin-panel .brand-admin-card {
+    position: relative;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    backdrop-filter: blur(var(--vis-blur-12)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-12)) saturate(180%);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    box-shadow: var(--vis-elev-1);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3),
+                box-shadow var(--vis-d-fast) var(--vis-ease-spring-3),
+                border-color var(--vis-d-fast) var(--vis-ease-snap);
+    isolation: isolate;
+    overflow: hidden;
+}
+/* Vision Pro cursor follow effect */
+.admin-panel .kpi-card::before,
+.admin-panel .hero-kpi::before,
+.admin-panel .reports-kpi-card::before,
+.admin-panel .workflow-card::before,
+.admin-panel .nba-dash-item::before,
+.admin-panel .pipeline-card::before,
+.admin-panel .insights-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle 280px at var(--vis-mx, 50%) var(--vis-my, 50%),
+        rgba(var(--ak-rgb), 0.10) 0%,
+        rgba(var(--ak-rgb), 0.04) 25%,
+        transparent 60%);
+    opacity: 0;
+    transition: opacity var(--vis-d-base) var(--vis-ease-snap);
+    pointer-events: none;
+    z-index: 0;
+}
+.admin-panel .kpi-card:hover::before,
+.admin-panel .hero-kpi:hover::before,
+.admin-panel .reports-kpi-card:hover::before,
+.admin-panel .workflow-card:hover::before,
+.admin-panel .nba-dash-item:hover::before,
+.admin-panel .pipeline-card:hover::before,
+.admin-panel .insights-card:hover::before {
+    opacity: 1;
+}
+/* Border gradient animation on hover */
+.admin-panel .kpi-card::after,
+.admin-panel .hero-kpi::after,
+.admin-panel .reports-kpi-card::after,
+.admin-panel .workflow-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(var(--ak-rgb), 0) 0%,
+        rgba(var(--ak-rgb), 0.40) 50%,
+        rgba(var(--ak-rgb), 0) 100%);
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--vis-d-medium) var(--vis-ease-snap);
+    pointer-events: none;
+}
+.admin-panel .kpi-card:hover::after,
+.admin-panel .hero-kpi:hover::after,
+.admin-panel .reports-kpi-card:hover::after,
+.admin-panel .workflow-card:hover::after {
+    opacity: 1;
+}
+/* Hover lift refinado */
+.admin-panel .kpi-card:hover,
+.admin-panel .reports-kpi-card:hover,
+.admin-panel .workflow-card:hover,
+.admin-panel .alt-card:hover,
+.admin-panel .nba-dash-item:hover,
+.admin-panel .pipeline-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--vis-elev-3),
+                0 0 0 1px rgba(var(--ak-rgb), 0.18);
+}
+.admin-panel .hero-kpi:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--vis-elev-4),
+                var(--vis-elev-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. SIDEBAR reimaginada — depth real 3-layer
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.85) 0%,
+            rgba(15, 15, 17, 0.82) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border-right: var(--vis-border-3);
+    box-shadow:
+        4px 0 32px rgba(0, 0, 0, 0.28),
+        inset -1px 0 0 rgba(var(--ak-rgb), 0.06);
+    position: relative;
+}
+.admin-panel .sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(var(--ak-rgb), 0.18) 30%,
+        rgba(var(--ak-rgb), 0.18) 70%,
+        transparent 100%);
+    pointer-events: none;
+}
+
+/* Sidebar logo polish */
+.admin-panel .sidebar-logo h2 {
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-300) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 750;
+    letter-spacing: var(--vis-ls-tight);
+}
+
+/* Quick search refinada */
+.admin-panel .sidebar-quicksearch {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    padding: 8px 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .sidebar-quicksearch:focus-within {
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-state-focus);
+    background: var(--vis-brand-tint);
+}
+
+/* Nav group headers refinados */
+.admin-panel .nav-group-header,
+.admin-panel .nav-group .nav-group-header {
+    color: rgba(255, 255, 255, 0.50);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 650;
+    letter-spacing: var(--vis-ls-widest);
+    text-transform: uppercase;
+    transition: color var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .nav-group-header:hover {
+    color: rgba(255, 255, 255, 0.85);
+}
+.admin-panel .nav-group-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--vis-brand-500);
+    opacity: 0.7;
+}
+
+/* Nav items premium */
+.admin-panel .nav-item,
+.admin-panel .sidebar .nav-item {
+    position: relative;
+    border-radius: var(--vis-r-sm);
+    padding: 9px 14px;
+    margin: 1px 4px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: var(--vis-fs-sm);
+    font-weight: 500;
+    letter-spacing: var(--vis-ls-base);
+    transition:
+        background var(--vis-d-quick) var(--vis-ease-snap),
+        color var(--vis-d-quick) var(--vis-ease-snap),
+        transform var(--vis-d-quick) var(--vis-ease-spring-3),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap);
+    background: transparent;
+    border: 1px solid transparent;
+    isolation: isolate;
+}
+.admin-panel .nav-item [data-lucide] {
+    color: currentColor;
+    opacity: 0.65;
+    transition: opacity var(--vis-d-quick) var(--vis-ease-snap),
+                transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel .nav-item:hover {
+    background: var(--vis-state-hover-gold);
+    color: rgba(255, 255, 255, 0.95);
+    transform: translateX(2px);
+}
+.admin-panel .nav-item:hover [data-lucide] {
+    opacity: 1;
+    color: var(--vis-brand-300);
+    transform: scale(1.08);
+}
+
+/* ACTIVE state premium con multi-layer */
+.admin-panel .sidebar .nav-item.active,
+.admin-panel .nav-item.active {
+    background:
+        linear-gradient(135deg,
+            rgba(var(--ak-rgb), 0.20) 0%,
+            rgba(var(--ak-rgb), 0.08) 100%);
+    color: var(--vis-brand-200);
+    font-weight: 600;
+    border-color: rgba(var(--ak-rgb), 0.30);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 0 24px rgba(var(--ak-rgb), 0.06),
+        0 4px 12px rgba(var(--ak-rgb), 0.10);
+}
+.admin-panel .sidebar .nav-item.active::before,
+.admin-panel .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: linear-gradient(180deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-300) 100%);
+    border-radius: var(--vis-r-pill);
+    box-shadow: 0 0 12px var(--vis-brand-glow-soft);
+}
+.admin-panel .nav-item.active [data-lucide] {
+    opacity: 1;
+    color: var(--vis-brand-300);
+}
+
+/* Badge en nav-item */
+.admin-panel .nav-badge {
+    background: linear-gradient(135deg,
+        rgba(var(--ak-rgb), 0.30) 0%,
+        rgba(var(--ak-rgb), 0.18) 100%);
+    color: var(--vis-brand-200);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    padding: 2px 8px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-wide);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.admin-panel .nav-badge[data-tone="urgent"] {
+    background: linear-gradient(135deg,
+        rgba(239, 68, 68, 0.30) 0%,
+        rgba(239, 68, 68, 0.18) 100%);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.40);
+}
+.admin-panel .nav-badge[data-tone="success"] {
+    background: linear-gradient(135deg,
+        rgba(16, 185, 129, 0.30) 0%,
+        rgba(16, 185, 129, 0.18) 100%);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.40);
+}
+
+/* Sidebar profile card */
+.admin-panel .sidebar-profile,
+.admin-panel .user-profile-card {
+    background:
+        linear-gradient(135deg,
+            rgba(var(--ak-rgb), 0.10) 0%,
+            rgba(var(--ak-rgb), 0.02) 100%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-md);
+    padding: 12px 14px;
+    transition: all var(--vis-d-base) var(--vis-ease-spring-1);
+}
+.admin-panel .sidebar-profile:hover {
+    border-color: rgba(var(--ak-rgb), 0.40);
+    box-shadow: var(--vis-elev-glow);
+    transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   6. BUTTONS world-class — haptic visual + iOS shimmer
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .btn-primary,
+.admin-panel .alt-btn--primary {
+    position: relative;
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: var(--ak-on-accent, #1a1310);
+    font-weight: 650;
+    letter-spacing: var(--vis-ls-base);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.50);
+    border-radius: var(--vis-r-sm);
+    padding: 10px 18px;
+    box-shadow:
+        var(--vis-elev-1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.10);
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+        transform var(--vis-d-quick) var(--vis-ease-spring-3),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap),
+        background var(--vis-d-base) var(--vis-ease-snap);
+}
+.admin-panel .btn-primary::before,
+.admin-panel .alt-btn--primary::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.32) 50%,
+        transparent 100%);
+    transition: left var(--vis-d-slower) var(--vis-ease-spring-1);
+    pointer-events: none;
+    z-index: 0;
+}
+.admin-panel .btn-primary:hover::before,
+.admin-panel .alt-btn--primary:hover::before {
+    left: 100%;
+}
+.admin-panel .btn-primary:hover:not(:disabled),
+.admin-panel .alt-btn--primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+        var(--vis-elev-2),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+/* Haptic visual scale on click */
+.admin-panel .btn-primary:active:not(:disabled),
+.admin-panel .alt-btn--primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+    transition-duration: 80ms;
+    box-shadow:
+        var(--vis-elev-1),
+        inset 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Button secondary world-class */
+.admin-panel .btn-secondary,
+.admin-panel .alt-btn--secondary {
+    background: var(--vis-surface-2);
+    color: rgba(255, 255, 255, 0.85);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-sm);
+    padding: 10px 18px;
+    font-weight: 550;
+    backdrop-filter: blur(var(--vis-blur-8));
+    -webkit-backdrop-filter: blur(var(--vis-blur-8));
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+}
+.admin-panel .btn-secondary:hover:not(:disabled),
+.admin-panel .alt-btn--secondary:hover:not(:disabled) {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(var(--ak-rgb), 0.30);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: var(--vis-elev-2);
+}
+.admin-panel .btn-secondary:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+    transition-duration: 80ms;
+}
+
+/* Ghost / icon buttons */
+.admin-panel .alt-btn--ghost,
+.admin-panel .btn-ghost,
+.admin-panel .alt-btn--icon {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-sm);
+    color: rgba(255, 255, 255, 0.65);
+    transition: all var(--vis-d-quick) var(--vis-ease-snap);
+}
+.admin-panel .alt-btn--ghost:hover:not(:disabled),
+.admin-panel .btn-ghost:hover:not(:disabled),
+.admin-panel .alt-btn--icon:hover:not(:disabled) {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(var(--ak-rgb), 0.20);
+    color: var(--vis-brand-300);
+    transform: scale(1.05);
+}
+.admin-panel .alt-btn--icon:active {
+    transform: scale(0.95);
+    transition-duration: 60ms;
+}
+
+/* Focus ring premium multi-layer */
+.admin-panel button:focus-visible,
+.admin-panel .btn:focus-visible,
+.admin-panel .alt-btn:focus-visible,
+.admin-panel input:focus-visible,
+.admin-panel textarea:focus-visible,
+.admin-panel select:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 2px var(--vis-surface-base),
+        0 0 0 4px rgba(var(--ak-rgb), 0.55),
+        0 0 16px rgba(var(--ak-rgb), 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. INPUTS premium — floating labels iOS-style + spring
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel input[type="text"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="email"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="tel"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="number"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="password"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="search"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="url"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="date"]:not(.alt-input):not(.cnc-input),
+.admin-panel textarea:not(.alt-input):not(.cnc-input),
+.admin-panel select:not(.alt-input):not(.cnc-input) {
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.10) 0%,
+            rgba(0, 0, 0, 0.04) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-sm);
+    padding: 11px 14px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: var(--vis-fs-base);
+    transition:
+        background var(--vis-d-fast) var(--vis-ease-snap),
+        border-color var(--vis-d-fast) var(--vis-ease-snap),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.admin-panel input:hover:not(:focus):not(:disabled),
+.admin-panel textarea:hover:not(:focus):not(:disabled),
+.admin-panel select:hover:not(:focus):not(:disabled) {
+    background: var(--vis-surface-2);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+.admin-panel input:focus,
+.admin-panel textarea:focus,
+.admin-panel select:focus {
+    background: var(--vis-brand-tint);
+    border-color: var(--vis-brand-500);
+    outline: none;
+    box-shadow:
+        0 0 0 3px rgba(var(--ak-rgb), 0.20),
+        inset 0 1px 0 rgba(var(--ak-rgb), 0.10);
+}
+.admin-panel input::placeholder,
+.admin-panel textarea::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. TABLES world-class — hover sliding accent
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .data-table,
+.admin-panel .admin-table,
+.admin-panel .users-table,
+.admin-panel table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    border-radius: var(--vis-r-md);
+    overflow: hidden;
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel .data-table thead th,
+.admin-panel .admin-table thead th,
+.admin-panel .users-table thead th,
+.admin-panel table thead th {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.08) 0%,
+            rgba(var(--ak-rgb), 0.02) 100%);
+    backdrop-filter: blur(var(--vis-blur-8));
+    -webkit-backdrop-filter: blur(var(--vis-blur-8));
+    color: rgba(255, 255, 255, 0.72);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 650;
+    letter-spacing: var(--vis-ls-widest);
+    text-transform: uppercase;
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: var(--vis-border-gold);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.admin-panel .data-table tbody tr,
+.admin-panel .admin-table tbody tr,
+.admin-panel .users-table tbody tr,
+.admin-panel table tbody tr {
+    position: relative;
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .data-table tbody td,
+.admin-panel .admin-table tbody td,
+.admin-panel .users-table tbody td,
+.admin-panel table tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: var(--vis-fs-sm);
+    color: rgba(255, 255, 255, 0.85);
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+    position: relative;
+}
+.admin-panel .data-table tbody tr:hover td,
+.admin-panel .admin-table tbody tr:hover td,
+.admin-panel .users-table tbody tr:hover td,
+.admin-panel table tbody tr:hover td {
+    background: var(--vis-state-hover-gold);
+    color: #ffffff;
+}
+/* Sliding accent line en row hover */
+.admin-panel .data-table tbody tr td:first-child,
+.admin-panel .admin-table tbody tr td:first-child,
+.admin-panel .users-table tbody tr td:first-child {
+    position: relative;
+}
+.admin-panel .data-table tbody tr td:first-child::before,
+.admin-panel .admin-table tbody tr td:first-child::before,
+.admin-panel .users-table tbody tr td:first-child::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: linear-gradient(180deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 100%);
+    transition: width var(--vis-d-fast) var(--vis-ease-spring-3);
+    pointer-events: none;
+}
+.admin-panel .data-table tbody tr:hover td:first-child::before,
+.admin-panel .admin-table tbody tr:hover td:first-child::before,
+.admin-panel .users-table tbody tr:hover td:first-child::before {
+    width: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9. MODALS world-class — multi-layer scrim + spring physics
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ~ .modal-overlay,
+.modal-overlay {
+    background:
+        radial-gradient(circle at center,
+            rgba(0, 0, 0, 0.55) 0%,
+            rgba(0, 0, 0, 0.85) 100%);
+    backdrop-filter: blur(var(--vis-blur-12)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-12)) saturate(160%);
+    transition: opacity var(--vis-d-base) var(--vis-ease-snap);
+}
+.modal-overlay.active .modal-container,
+.modal-overlay.show .modal-container,
+.modal-overlay.active .modal-content,
+.modal-overlay.show .modal-content {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-modal);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(180%);
+    border: var(--vis-border-4);
+    border-radius: var(--vis-r-xl);
+    box-shadow:
+        var(--vis-elev-5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    animation: visModalIn var(--vis-d-medium) var(--vis-ease-bounce) both;
+}
+@keyframes visModalIn {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.94);
+        filter: blur(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .modal-overlay.active .modal-container { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   10. WORKSPACE color accents premium
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section[data-workspace-color="gold"] .page-header,
+.admin-panel #sec-vehicles .page-header,
+.admin-panel #sec-brands .page-header,
+.admin-panel #sec-dealers .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(var(--ak-rgb), 0.15) 0%,
+            rgba(var(--ak-rgb), 0.04) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+    margin: 0 -8px 24px;
+    position: relative;
+}
+.admin-panel .section[data-workspace-color="green"] .page-header,
+.admin-panel #sec-kb .page-header,
+.admin-panel #sec-unmatched .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(16, 185, 129, 0.12) 0%,
+            rgba(16, 185, 129, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="blue"] .page-header,
+.admin-panel #sec-crm .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(59, 130, 246, 0.12) 0%,
+            rgba(59, 130, 246, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="violet"] .page-header,
+.admin-panel #sec-calendar .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(139, 92, 246, 0.12) 0%,
+            rgba(139, 92, 246, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="cyan"] .page-header,
+.admin-panel #sec-reports .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(6, 182, 212, 0.12) 0%,
+            rgba(6, 182, 212, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="amber"] .page-header,
+.admin-panel #sec-workflows .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(245, 158, 11, 0.12) 0%,
+            rgba(245, 158, 11, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="coral"] .page-header,
+.admin-panel #sec-banners .page-header,
+.admin-panel #sec-reviews .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(249, 112, 102, 0.12) 0%,
+            rgba(249, 112, 102, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   11. SCROLLBARS premium dorados refinados
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.admin-panel ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.30);
+    border-radius: var(--vis-r-pill);
+}
+.admin-panel ::-webkit-scrollbar-thumb {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.40) 0%,
+            rgba(var(--ak-rgb), 0.25) 100%);
+    border-radius: var(--vis-r-pill);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel ::-webkit-scrollbar-thumb:hover {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.65) 0%,
+            rgba(var(--ak-rgb), 0.45) 100%);
+    background-clip: padding-box;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   12. ANIMATIONS choreography (stagger system real)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section.active {
+    animation: visSectionIn var(--vis-d-medium) var(--vis-ease-spring-1) both;
+}
+@keyframes visSectionIn {
+    from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* Stagger automatic en hijos de section.active */
+.admin-panel .section.active > * {
+    animation: visStaggerIn var(--vis-d-medium) var(--vis-ease-spring-1) both;
+}
+.admin-panel .section.active > *:nth-child(1) { animation-delay: 40ms; }
+.admin-panel .section.active > *:nth-child(2) { animation-delay: 80ms; }
+.admin-panel .section.active > *:nth-child(3) { animation-delay: 120ms; }
+.admin-panel .section.active > *:nth-child(4) { animation-delay: 160ms; }
+.admin-panel .section.active > *:nth-child(5) { animation-delay: 200ms; }
+.admin-panel .section.active > *:nth-child(6) { animation-delay: 240ms; }
+.admin-panel .section.active > *:nth-child(7) { animation-delay: 280ms; }
+.admin-panel .section.active > *:nth-child(8) { animation-delay: 320ms; }
+@keyframes visStaggerIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .section.active,
+    .admin-panel .section.active > * {
+        animation: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   13. TEXT SELECTION dorada signature
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ::selection {
+    background: rgba(var(--ak-rgb), 0.45);
+    color: #ffffff;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.30);
+}
+.admin-panel ::-moz-selection {
+    background: rgba(var(--ak-rgb), 0.45);
+    color: #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY Foundation
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   14. HAPTIC visual feedback (clicks)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .vis-haptic-active,
+.vis-haptic-active {
+    transform: scale(0.97) !important;
+    transition: transform 80ms var(--vis-ease-snap) !important;
+}
+.admin-panel .nav-item.vis-haptic-active {
+    transform: scale(0.97) translateX(2px) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   15. TILT 3D en hero KPIs
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .hero-kpi {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    --vis-tilt-x: 0deg;
+    --vis-tilt-y: 0deg;
+    transform: perspective(1000px)
+               rotateX(var(--vis-tilt-x))
+               rotateY(var(--vis-tilt-y))
+               translateY(0);
+    transition: transform var(--vis-d-medium) var(--vis-ease-spring-1);
+}
+.admin-panel .hero-kpi:hover {
+    transform: perspective(1000px)
+               rotateX(var(--vis-tilt-x))
+               rotateY(var(--vis-tilt-y))
+               translateY(-4px);
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .hero-kpi { transform: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   16. STAGGER items entrada
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .vis-stagger-item {
+    animation: visStaggerFromBottom var(--vis-d-medium) var(--vis-ease-spring-1) both;
+}
+@keyframes visStaggerFromBottom {
+    from { opacity: 0; transform: translateY(16px); filter: blur(2px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .vis-stagger-item { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   17. TOPBAR (admin header) premium con liquid material
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .admin-header,
+.admin-panel .dashboard-header,
+.admin-panel header.admin-header {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.85) 0%,
+            rgba(15, 15, 17, 0.78) 100%);
+    backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    border-bottom: var(--vis-border-3);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.05) inset,
+        0 8px 24px rgba(0, 0, 0, 0.18);
+    position: relative;
+}
+.admin-panel .admin-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 5%; right: 5%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(var(--ak-rgb), 0.20) 50%,
+        transparent 100%);
+    pointer-events: none;
+}
+
+/* Mobile topbar matching */
+.admin-panel .mobile-topbar {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.92) 0%,
+            rgba(15, 15, 17, 0.85) 100%);
+    backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    border-bottom: var(--vis-border-gold);
+}
+.admin-panel .mobile-topbar-logo {
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-400) 60%,
+        var(--vis-brand-600) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 750;
+    letter-spacing: var(--vis-ls-tight);
+}
+
+/* Global search refinado */
+.admin-panel .global-search-wrapper input,
+.admin-panel #globalSearch,
+.admin-panel #globalSearchMobile {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-pill);
+    padding: 8px 16px 8px 38px;
+    font-size: var(--vis-fs-sm);
+    color: rgba(255, 255, 255, 0.92);
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.10);
+}
+.admin-panel .global-search-wrapper input:focus,
+.admin-panel #globalSearch:focus {
+    background: var(--vis-brand-tint);
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-state-focus);
+    outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   18. STATUS BADGES (vehicle/role/lead) world-class
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .status-badge,
+.admin-panel .badge,
+.admin-panel .pill,
+.admin-panel .vehicle-status,
+.admin-panel .role-badge,
+.admin-panel .estado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: var(--vis-r-pill);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 650;
+    letter-spacing: var(--vis-ls-wide);
+    text-transform: uppercase;
+    line-height: 1.5;
+    /* §102 HarmonyOS: chip de estado plano — borde neutro sutil (las
+       variantes lo sobreescriben con su color tinted) + sin inset
+       highlight glassy ni drop-shadow. Single-surface flat. */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+.admin-panel .vehicle-status--disponible,
+.admin-panel .vehicle-status--available,
+.admin-panel .estado-badge--disponible {
+    background: rgba(16, 185, 129, 0.16);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.40);
+}
+.admin-panel .vehicle-status--reservado,
+.admin-panel .vehicle-status--reserved,
+.admin-panel .estado-badge--reservado {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.40);
+}
+.admin-panel .vehicle-status--vendido,
+.admin-panel .vehicle-status--sold,
+.admin-panel .estado-badge--vendido {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.40);
+}
+.admin-panel .vehicle-status--borrador,
+.admin-panel .vehicle-status--draft,
+.admin-panel .estado-badge--borrador {
+    background: rgba(107, 114, 128, 0.16);
+    color: rgba(255, 255, 255, 0.70);
+    border-color: rgba(107, 114, 128, 0.40);
+}
+.admin-panel .role-badge--super_admin {
+    background: linear-gradient(135deg,
+        rgba(var(--ak-rgb), 0.24) 0%,
+        rgba(var(--ak-rgb), 0.12) 100%);
+    color: var(--vis-brand-200);
+    border-color: rgba(var(--ak-rgb), 0.55);
+}
+.admin-panel .role-badge--editor {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.45);
+}
+.admin-panel .role-badge--viewer {
+    background: rgba(107, 114, 128, 0.18);
+    color: rgba(255, 255, 255, 0.78);
+    border-color: rgba(107, 114, 128, 0.40);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   19. MODAL HEADER premium con accent dorado
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ~ .modal-overlay .modal-header,
+.modal-overlay .modal-header,
+.modal-container .modal-header,
+#vehicleModal .modal-header,
+#brandModal .modal-header,
+#dealerModal .modal-header,
+#bannerModal .modal-header,
+#reviewModal .modal-header,
+#userModal .modal-header,
+#vehiclePreviewModal .modal-header,
+#appointmentManagerModal .modal-header {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.10) 0%,
+            rgba(var(--ak-rgb), 0.02) 100%);
+    border-bottom: var(--vis-border-gold);
+    padding: 20px 26px;
+    position: relative;
+}
+.modal-overlay .modal-header h2,
+#vehicleModal .modal-header h2,
+#brandModal .modal-header h2,
+#dealerModal .modal-header h2,
+#bannerModal .modal-header h2,
+#reviewModal .modal-header h2,
+#userModal .modal-header h2,
+#appointmentManagerModal .modal-header h2 {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-lg);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-tight);
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-300) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.modal-overlay .modal-header::before,
+#vehicleModal .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--vis-brand-500) 50%,
+        transparent 100%);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.modal-overlay .modal-close {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--vis-r-pill);
+    background: var(--vis-surface-2);
+    border: var(--vis-border-3);
+    color: rgba(255, 255, 255, 0.65);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.modal-overlay .modal-close:hover {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    transform: rotate(90deg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   20. NOTIFY CENTER + BELL premium
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-notify-center {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.95) 0%,
+            rgba(15, 15, 17, 0.92) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-4);
+    border-radius: var(--vis-r-xl);
+    box-shadow:
+        var(--vis-elev-5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.altorra-bell {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-pill);
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    color: rgba(255, 255, 255, 0.78);
+}
+.altorra-bell:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(var(--ak-rgb), 0.30);
+    color: var(--vis-brand-300);
+    transform: rotate(-12deg) scale(1.08);
+}
+.altorra-bell__badge {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #ffffff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.20);
+    border: 1.5px solid var(--vis-surface-base);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   21. ACTIVITY FEED + SIDE PANEL premium
+   ═══════════════════════════════════════════════════════════════════ */
+.aaf-panel,
+.activity-feed-panel {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.96) 0%,
+            rgba(15, 15, 17, 0.92) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border-left: var(--vis-border-4);
+    box-shadow: var(--vis-elev-5);
+}
+.aaf-entry {
+    background: transparent;
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    margin-bottom: 6px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.aaf-entry:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: var(--vis-border-gold-hi);
+    transform: translateX(2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   22. PALETTE ⌘+K refinada
+   ═══════════════════════════════════════════════════════════════════ */
+.alt-palette-modal {
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.94) 0%,
+            rgba(15, 15, 17, 0.90) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-4);
+    border-radius: var(--vis-r-xl);
+    box-shadow: var(--vis-elev-5);
+}
+.alt-palette-input-wrap {
+    border-bottom: var(--vis-border-gold);
+    padding: 18px 22px;
+}
+.alt-palette-input {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: var(--vis-fs-md);
+    font-weight: 500;
+    width: 100%;
+}
+.alt-palette-input::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+}
+.alt-palette-input-wrap kbd {
+    background: var(--vis-brand-tint-strong);
+    color: var(--vis-brand-300);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 9px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+}
+.alt-palette-cat {
+    color: rgba(255, 255, 255, 0.40);
+    font-size: var(--vis-fs-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    font-weight: 700;
+    padding: 12px 22px 6px;
+}
+.alt-palette-item {
+    border-radius: var(--vis-r-sm);
+    margin: 0 10px;
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: all var(--vis-d-quick) var(--vis-ease-snap);
+}
+.alt-palette-item:hover {
+    background: var(--vis-state-hover-gold);
+}
+.alt-palette-item.selected {
+    background:
+        linear-gradient(90deg,
+            rgba(var(--ak-rgb), 0.24) 0%,
+            rgba(var(--ak-rgb), 0.08) 100%);
+    border-left: 3px solid var(--vis-brand-500);
+    padding-left: 11px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   23. AVATAR premium gradient + glow
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .user-avatar,
+.admin-panel .users-table .user-avatar,
+.admin-panel .nba-dash-avatar {
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: var(--ak-on-accent, #1a1310);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-tight);
+    box-shadow:
+        0 2px 8px rgba(var(--ak-rgb), 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel .user-avatar:hover {
+    transform: scale(1.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   24. PRESENCE OVERLAY premium
+   ═══════════════════════════════════════════════════════════════════ */
+.alt-presence-overlay {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.92) 0%,
+            rgba(15, 15, 17, 0.85) 100%);
+    backdrop-filter: blur(var(--vis-blur-16)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-16)) saturate(200%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    box-shadow: var(--vis-elev-3),
+                var(--vis-elev-glow);
+    padding: 6px 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   25. CRM & WORKSPACE TABS premium
+   ═══════════════════════════════════════════════════════════════════ */
+.crm-tabstrip,
+.cal-tabstrip,
+.crm-detail-tabs {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 4px;
+    display: inline-flex;
+    gap: 2px;
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.10);
+}
+.crm-tab,
+.cal-tab,
+.crm-detail-tab {
+    background: transparent;
+    border: none;
+    border-radius: var(--vis-r-xs);
+    padding: 8px 16px;
+    color: rgba(255, 255, 255, 0.62);
+    font-weight: 550;
+    font-size: var(--vis-fs-sm);
+    letter-spacing: var(--vis-ls-base);
+    cursor: pointer;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+    position: relative;
+    overflow: hidden;
+}
+.crm-tab:hover,
+.cal-tab:hover,
+.crm-detail-tab:hover {
+    background: var(--vis-state-hover-gold);
+    color: rgba(255, 255, 255, 0.92);
+}
+.crm-tab.is-active,
+.cal-tab.is-active,
+.crm-detail-tab.is-active,
+.crm-tab[aria-selected="true"],
+.cal-tab[aria-selected="true"] {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.30) 0%,
+            rgba(var(--ak-rgb), 0.12) 100%);
+    color: var(--vis-brand-200);
+    font-weight: 650;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        0 2px 8px rgba(var(--ak-rgb), 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   26. HERO / DASHBOARD greeting card
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .dashboard-greeting,
+.admin-panel .welcome-card {
+    background:
+        radial-gradient(ellipse 600px 300px at 0% 0%,
+            rgba(var(--ak-rgb), 0.10) 0%, transparent 60%),
+        linear-gradient(135deg,
+            rgba(20, 20, 22, 0.85) 0%,
+            rgba(14, 14, 16, 0.92) 100%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-2xl);
+    padding: 32px 36px;
+    box-shadow: var(--vis-elev-3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(var(--vis-blur-12));
+    -webkit-backdrop-filter: blur(var(--vis-blur-12));
+    margin-bottom: 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   27. ICONS Lucide refinados (size + stroke consistente)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .nav-item [data-lucide],
+.admin-panel .nav-group-icon {
+    stroke-width: 1.75;
+}
+.admin-panel .btn [data-lucide],
+.admin-panel .alt-btn [data-lucide] {
+    stroke-width: 2;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   28. TOOLTIPS (data-tooltip) refinados Mica
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.95) 0%,
+            rgba(15, 15, 17, 0.92) 100%) !important;
+    backdrop-filter: blur(var(--vis-blur-12)) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(var(--vis-blur-12)) saturate(200%) !important;
+    border: var(--vis-border-gold) !important;
+    box-shadow: var(--vis-elev-3) !important;
+    color: var(--vis-brand-200) !important;
+    padding: 8px 14px !important;
+    border-radius: var(--vis-r-sm) !important;
+    font-size: var(--vis-fs-2xs) !important;
+    font-weight: 600 !important;
+    letter-spacing: var(--vis-ls-wide) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   29. WORKFLOW CARDS detail (existing — refinados)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .workflow-card--on {
+    border-color: rgba(var(--ak-rgb), 0.32);
+    box-shadow:
+        var(--vis-elev-1),
+        inset 0 0 24px rgba(var(--ak-rgb), 0.04);
+}
+.admin-panel .workflow-card--off {
+    opacity: 0.65;
+}
+.admin-panel .workflow-card .alt-toggle {
+    /* el switch de admin-toggle ya existente — solo refinamos */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   30. FORM groups + labels iOS-style
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .form-row,
+.admin-panel .form-group {
+    margin-bottom: 18px;
+}
+.admin-panel .form-row label,
+.admin-panel .form-group label,
+.admin-panel .form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.78);
+    letter-spacing: var(--vis-ls-wide);
+    text-transform: uppercase;
+}
+.admin-panel .form-row .form-hint,
+.admin-panel .form-group .form-hint,
+.admin-panel .form-hint {
+    font-size: var(--vis-fs-xs);
+    color: rgba(255, 255, 255, 0.50);
+    margin-top: 4px;
+    line-height: var(--vis-lh-snug);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   31. TOAST notifications refinadas
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-notify {
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.94) 0%,
+            rgba(15, 15, 17, 0.90) 100%);
+    backdrop-filter: blur(var(--vis-blur-16)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-16)) saturate(180%);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    box-shadow: var(--vis-elev-4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   32. Pipeline cards refinados (Kanban)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .pipeline-card {
+    cursor: grab;
+    transition:
+        transform var(--vis-d-fast) var(--vis-ease-spring-3),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap),
+        border-color var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .pipeline-card.dragging {
+    cursor: grabbing;
+    transform: scale(1.02) rotate(1deg);
+    box-shadow: var(--vis-elev-4),
+                var(--vis-elev-glow-strong);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   33. Action buttons ATTENTION-getter
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .btn-cta,
+.admin-panel .alt-btn--cta {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: var(--ak-on-accent, #1a1310);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-base);
+    padding: 12px 24px;
+    border-radius: var(--vis-r-md);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55);
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel .btn-cta::before,
+.admin-panel .alt-btn--cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.32) 50%,
+        transparent 70%);
+    transform: translateX(-100%);
+    transition: transform var(--vis-d-slower) var(--vis-ease-spring-1);
+}
+.admin-panel .btn-cta:hover::before,
+.admin-panel .alt-btn--cta:hover::before {
+    transform: translateX(100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   34. ALTORRA HUB conversation list polish
+   ═══════════════════════════════════════════════════════════════════ */
+.cnc-admin-list-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 12px 16px;
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+    cursor: pointer;
+}
+.cnc-admin-list-item:hover {
+    background: var(--vis-state-hover-gold);
+}
+.cnc-admin-list-item.is-active {
+    background:
+        linear-gradient(90deg,
+            rgba(var(--ak-rgb), 0.18) 0%,
+            rgba(var(--ak-rgb), 0.06) 100%);
+    border-left: 3px solid var(--vis-brand-500);
+    padding-left: 13px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   35. EMPTY STATES refinados (compatibilidad con §28.5)
+   ═══════════════════════════════════════════════════════════════════ */
+.alt-empty-illustrated {
+    color: rgba(255, 255, 255, 0.85);
+}
+.alt-empty-illustrated-title {
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-tight);
+    background: linear-gradient(180deg,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.78) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.alt-empty-illustrated-text {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   36. PAGE HEADERS premium con title gradient + workspace accent
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .page-header {
+    margin-bottom: 28px;
+    padding: 20px 24px 24px;
+    border-radius: var(--vis-r-lg) var(--vis-r-lg) 0 0;
+    position: relative;
+}
+.admin-panel .page-header h1 {
+    font-size: var(--vis-fs-2xl);
+    font-weight: 750;
+    letter-spacing: var(--vis-ls-tighter);
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.75) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+.admin-panel .page-header .page-subtitle,
+.admin-panel .page-header p {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--vis-fs-sm);
+    margin-top: 6px;
+    font-weight: 400;
+    letter-spacing: var(--vis-ls-base);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   37. KPI VALUE numbers — extra polish display
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .kpi-card .kpi-value,
+.admin-panel .stat-card .stat-value,
+.admin-panel .metric-value {
+    font-size: var(--vis-fs-2xl);
+    font-weight: 750;
+    line-height: 1.1;
+    letter-spacing: var(--vis-ls-tighter);
+    color: #ffffff;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+.admin-panel .kpi-label,
+.admin-panel .stat-label,
+.admin-panel .metric-label {
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-wider);
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   38. UPLOAD AREA premium drag&drop
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .upload-area {
+    background:
+        radial-gradient(ellipse at center,
+            rgba(var(--ak-rgb), 0.04) 0%, transparent 70%),
+        var(--vis-surface-1);
+    border: 2px dashed rgba(var(--ak-rgb), 0.30);
+    border-radius: var(--vis-r-lg);
+    padding: 36px 28px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel .upload-area:hover {
+    border-color: var(--vis-brand-500);
+    background:
+        radial-gradient(ellipse at center,
+            rgba(var(--ak-rgb), 0.08) 0%, transparent 70%),
+        var(--vis-surface-2);
+    transform: scale(1.005);
+}
+.admin-panel .upload-area.dragover {
+    border-color: var(--vis-brand-300);
+    background:
+        radial-gradient(ellipse at center,
+            rgba(var(--ak-rgb), 0.15) 0%, transparent 70%),
+        var(--vis-brand-tint);
+    box-shadow: var(--vis-elev-glow);
+    transform: scale(1.01);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   39. CHECKBOX y RADIO custom dorados
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel input[type="checkbox"]:not(.alt-toggle input),
+.admin-panel input[type="radio"]:not(.alt-toggle input) {
+    accent-color: var(--vis-brand-500);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   40. SECTIONS layout (better spacing)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section,
+.admin-panel .admin-section {
+    padding: 24px 28px;
+}
+.admin-panel .section .stat-card,
+.admin-panel .section .info-card {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 22px 24px;
+    box-shadow: var(--vis-elev-1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY Sprint 2 (refinements + components)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   41. BUG FIXES — legacy specificity overrides
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Fix: --admin-surface (legacy) NO debe usarse — pisa con --vis-surface */
+.admin-panel .stat-card,
+.admin-panel .info-card,
+.admin-panel .form-card,
+.admin-panel [class*="-card"]:not(.alt-card):not(.workflow-card):not(.reports-card):not(.kpi-card):not(.hero-kpi):not(.pipeline-card):not(.nba-dash-item):not(.insights-card):not(.cnc-admin-list-item):not([class*="av2-card"]) {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.01) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+}
+
+/* §101.1 — El sistema av2-card (cards + lista §100/§101) tiene su estilo
+   propio completo en admin-v2.css. El catch-all [class*="-card"] de
+   visionary cajeaba CADA hijo (av2-card-title/-meta/-price/-codeflat/
+   -subline...) porque todos contienen "-card" como substring → boxes
+   apilados. Excluido arriba con :not([class*="av2-card"]). Garantia
+   adicional: neutralizar cualquier residuo en hijos planos de texto. */
+.admin-panel .av2-card-title,
+.admin-panel .av2-card-meta,
+.admin-panel .av2-card-price,
+.admin-panel .av2-card-codeflat,
+.admin-panel .av2-card-subline,
+.admin-panel .av2-card-branddesc,
+.admin-panel .av2-row-title,
+.admin-panel .av2-row-meta,
+.admin-panel .av2-row-price,
+.admin-panel .av2-row-code {
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Fix: transition: all (caro) → solo lo que necesita transition */
+.admin-panel .btn,
+.admin-panel .alt-btn,
+.admin-panel .nav-item,
+.admin-panel button {
+    transition:
+        background var(--vis-d-quick) var(--vis-ease-snap),
+        color var(--vis-d-quick) var(--vis-ease-snap),
+        border-color var(--vis-d-quick) var(--vis-ease-snap),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap),
+        transform var(--vis-d-quick) var(--vis-ease-spring-3);
+}
+
+/* Fix: dropdown menu legacy con border-radius 8 → 14 */
+.admin-panel .dropdown-menu,
+.admin-panel .nav-dropdown,
+.admin-panel .megamenu,
+.admin-panel .context-menu,
+.admin-panel .popover,
+.admin-panel .header-dropdown {
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.94) 0%,
+            rgba(15, 15, 17, 0.90) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    box-shadow: var(--vis-elev-4);
+    padding: 6px;
+}
+
+/* Fix: legacy input border-radius 6/8 → 10 */
+.admin-panel input[type="checkbox"]:not(.alt-toggle input),
+.admin-panel input[type="radio"]:not(.alt-toggle input) {
+    border-radius: var(--vis-r-xs) !important;
+}
+
+/* Fix: tabla legacy "tr" sin separación — ahora con borders glass */
+.admin-panel tr {
+    border: 0;
+}
+
+/* Fix: section padding legacy demasiado grande/pequeño */
+.admin-panel #sec-dashboard,
+.admin-panel #sec-vehicles,
+.admin-panel #sec-brands,
+.admin-panel #sec-dealers,
+.admin-panel #sec-banners,
+.admin-panel #sec-reviews,
+.admin-panel #sec-crm,
+.admin-panel #sec-calendar,
+.admin-panel #sec-workflows,
+.admin-panel #sec-kb,
+.admin-panel #sec-unmatched,
+.admin-panel #sec-users,
+.admin-panel #sec-audit,
+.admin-panel #sec-settings,
+.admin-panel #sec-reports {
+    padding: 28px 32px;
+}
+
+/* Fix: links color brand consistent */
+.admin-panel a:not(.btn):not(.alt-btn):not(.nav-item) {
+    color: var(--vis-brand-300);
+    text-decoration: none;
+    transition: color var(--vis-d-quick) var(--vis-ease-snap);
+}
+.admin-panel a:not(.btn):not(.alt-btn):not(.nav-item):hover {
+    color: var(--vis-brand-200);
+    text-decoration: underline;
+    text-decoration-color: rgba(var(--ak-rgb), 0.40);
+    text-underline-offset: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   42. DYNAMIC ISLAND-STYLE toasts (iOS 16+ inspired)
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-notify-stack,
+#altorraNotifyStack {
+    /* container existente, solo refinements */
+}
+.altorra-notify {
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.92) 0%,
+            rgba(8, 8, 10, 0.88) 100%);
+    backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-pill);
+    box-shadow:
+        var(--vis-elev-4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+    padding: 14px 22px;
+    color: #ffffff;
+    font-weight: 500;
+    letter-spacing: var(--vis-ls-base);
+    min-width: 280px;
+    max-width: 480px;
+    transform-origin: top center;
+    animation: visToastIn var(--vis-d-medium) var(--vis-ease-spring-2) both;
+}
+@keyframes visToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.85);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+.altorra-notify--success {
+    border-color: rgba(16, 185, 129, 0.40);
+    box-shadow:
+        var(--vis-elev-4),
+        0 0 32px rgba(16, 185, 129, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.altorra-notify--error {
+    border-color: rgba(239, 68, 68, 0.45);
+    box-shadow:
+        var(--vis-elev-4),
+        0 0 32px rgba(239, 68, 68, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.altorra-notify--warning {
+    border-color: rgba(245, 158, 11, 0.40);
+}
+.altorra-notify--info,
+.altorra-notify--default {
+    border-color: rgba(var(--ak-rgb), 0.35);
+    box-shadow:
+        var(--vis-elev-4),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+@media (prefers-reduced-motion: reduce) {
+    .altorra-notify { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   43. FAB — Floating Action Button Material You
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-voice-btn,
+.altorra-fab,
+[data-fab],
+.pwa-install-btn {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: var(--ak-on-accent, #1a1310);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55);
+    border-radius: var(--vis-r-pill);
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    transition:
+        transform var(--vis-d-fast) var(--vis-ease-spring-3),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap);
+}
+.altorra-voice-btn:hover,
+.altorra-fab:hover,
+[data-fab]:hover,
+.pwa-install-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow:
+        var(--vis-elev-4),
+        var(--vis-elev-glow-strong),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   44. SPARKLE on hover — Cards premium effect
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .hero-kpi::after,
+.admin-panel .reports-kpi-card::after,
+.admin-panel .workflow-card::after {
+    /* override de border-gradient anterior con sparkle effect */
+}
+.admin-panel .hero-kpi:hover::after {
+    background:
+        linear-gradient(135deg,
+            rgba(var(--ak-rgb), 0) 0%,
+            rgba(var(--ak-rgb), 0.60) 30%,
+            rgba(var(--ak-rgb), 0.25) 60%,
+            rgba(var(--ak-rgb), 0) 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   45. ALT-TOGGLE switch refinado (iOS-style)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .alt-toggle {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-pill);
+    width: 44px;
+    height: 26px;
+    padding: 2px;
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+    position: relative;
+    cursor: pointer;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.20);
+}
+.admin-panel .alt-toggle::before,
+.admin-panel .alt-toggle .alt-toggle-thumb {
+    content: '';
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 100%);
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.30),
+        0 1px 0 rgba(0, 0, 0, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.50);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+    transform: translateX(0);
+}
+.admin-panel .alt-toggle.is-on,
+.admin-panel .alt-toggle[aria-checked="true"],
+.admin-panel input:checked + .alt-toggle,
+.admin-panel .alt-toggle:has(input:checked) {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300),
+        var(--vis-brand-600));
+    border-color: var(--vis-brand-500);
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.20),
+        0 0 12px rgba(var(--ak-rgb), 0.30);
+}
+.admin-panel .alt-toggle.is-on::before,
+.admin-panel .alt-toggle[aria-checked="true"]::before {
+    transform: translateX(18px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   46. KEYBOARD SHORTCUT KBD premium
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    padding: 2px 7px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-2);
+    border: var(--vis-border-3);
+    border-bottom-width: 2px;
+    border-radius: var(--vis-r-xs);
+    color: rgba(255, 255, 255, 0.85);
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-tight);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.05),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   47. LOADING SPINNER premium
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .loader,
+.admin-panel .spinner,
+.admin-panel [data-loading]::before {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg,
+        rgba(var(--ak-rgb), 0) 0%,
+        rgba(var(--ak-rgb), 0.60) 50%,
+        var(--vis-brand-500) 100%);
+    -webkit-mask: radial-gradient(circle, transparent 50%, #000 51%);
+    mask: radial-gradient(circle, transparent 50%, #000 51%);
+    animation: visSpinnerRotate 1s linear infinite;
+}
+@keyframes visSpinnerRotate {
+    to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .loader,
+    .admin-panel .spinner { animation: none; opacity: 0.5; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   48. PROGRESS BARS premium (used in KPIs / completitud)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .progress-bar,
+.admin-panel progress,
+.admin-panel .progress {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-pill);
+    height: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.20);
+}
+.admin-panel .progress-bar-fill,
+.admin-panel progress::-webkit-progress-value,
+.admin-panel .progress-fill {
+    background: linear-gradient(90deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-300) 100%);
+    background-size: 200% 100%;
+    border-radius: var(--vis-r-pill);
+    box-shadow:
+        0 0 12px rgba(var(--ak-rgb), 0.40),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    animation: visProgressShimmer 2.4s ease-in-out infinite;
+    transition: width var(--vis-d-medium) var(--vis-ease-spring-3);
+}
+@keyframes visProgressShimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .progress-bar-fill { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   49. SIDEBAR group-items expanded animation
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .nav-group-items {
+    overflow: hidden;
+    transition: max-height var(--vis-d-medium) var(--vis-ease-spring-3),
+                opacity var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .nav-group[aria-expanded="false"] .nav-group-items,
+.admin-panel .nav-group.is-collapsed .nav-group-items {
+    max-height: 0 !important;
+    opacity: 0;
+}
+.admin-panel .nav-group-chevron {
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel .nav-group[aria-expanded="false"] .nav-group-chevron,
+.admin-panel .nav-group.is-collapsed .nav-group-chevron {
+    transform: rotate(-90deg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   50. CRM & DASHBOARD specific polish
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* NBA dashboard items premium */
+.admin-panel .nba-dash-item {
+    padding: 16px 18px;
+    border-left: 3px solid transparent;
+}
+.admin-panel .nba-dash-item--high {
+    border-left-color: var(--vis-brand-500);
+    background:
+        linear-gradient(90deg,
+            rgba(var(--ak-rgb), 0.12) 0%,
+            rgba(var(--ak-rgb), 0.02) 30%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+}
+.admin-panel .nba-dash-item--medium {
+    border-left-color: rgba(245, 158, 11, 0.65);
+}
+.admin-panel .nba-dash-item--low {
+    border-left-color: rgba(107, 114, 128, 0.45);
+}
+
+/* Pipeline cards lane background */
+.admin-panel .pipeline-lane,
+.admin-panel .crm-pipeline-column {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-canvas);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 14px;
+    min-width: 280px;
+}
+.admin-panel .pipeline-lane-header {
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    color: rgba(255, 255, 255, 0.55);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: var(--vis-border-2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   51. CHARTS & DATAVIZ polish
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel canvas {
+    border-radius: var(--vis-r-md);
+}
+.admin-panel .chart-container,
+.admin-panel .chart-wrapper {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 18px;
+}
+
+/* Reports KPI subtitle */
+.admin-panel .reports-kpi-card .kpi-trend {
+    margin-top: 8px;
+    font-size: var(--vis-fs-xs);
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-base);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.admin-panel .kpi-trend--up { color: #6ee7b7; }
+.admin-panel .kpi-trend--down { color: #fca5a5; }
+.admin-panel .kpi-trend--flat { color: rgba(255, 255, 255, 0.55); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   52. SECTION BREATHE — micro-animation section content
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section.active .page-header {
+    animation: visHeaderBreathe 8s ease-in-out infinite;
+}
+@keyframes visHeaderBreathe {
+    0%, 100% { background-position: 50% 0%; }
+    50% { background-position: 50% 30%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .section.active .page-header { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   53. RESPONSIVE perfection
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Mobile: reducir blurs costosos */
+    .admin-panel .sidebar,
+    .admin-panel .admin-header,
+    .admin-panel .modal-container,
+    .admin-panel .altorra-notify-center {
+        backdrop-filter: blur(var(--vis-blur-16)) saturate(160%);
+        -webkit-backdrop-filter: blur(var(--vis-blur-16)) saturate(160%);
+    }
+    /* Mobile: cards padding compacto */
+    .admin-panel .kpi-card,
+    .admin-panel .hero-kpi,
+    .admin-panel .reports-kpi-card,
+    .admin-panel .workflow-card,
+    .admin-panel .alt-card {
+        padding: 18px 16px;
+    }
+    /* Mobile: typography reducida */
+    .admin-panel h1,
+    .admin-panel .section-title,
+    .admin-panel .page-header h1 {
+        font-size: var(--vis-fs-xl);
+    }
+    .admin-panel .hero-kpi-value,
+    .admin-panel .reports-kpi-value {
+        font-size: var(--vis-fs-2xl);
+    }
+    /* Mobile: sections padding reducido */
+    .admin-panel .section,
+    .admin-panel #sec-dashboard,
+    .admin-panel #sec-vehicles,
+    .admin-panel #sec-brands,
+    .admin-panel #sec-dealers,
+    .admin-panel #sec-banners,
+    .admin-panel #sec-reviews,
+    .admin-panel #sec-crm,
+    .admin-panel #sec-calendar,
+    .admin-panel #sec-workflows,
+    .admin-panel #sec-kb,
+    .admin-panel #sec-unmatched,
+    .admin-panel #sec-users,
+    .admin-panel #sec-audit,
+    .admin-panel #sec-settings,
+    .admin-panel #sec-reports {
+        padding: 18px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Phone: sin tilt 3D (touch confunde) */
+    .admin-panel .hero-kpi {
+        --vis-tilt-x: 0deg !important;
+        --vis-tilt-y: 0deg !important;
+    }
+    /* Phone: sidebar drawer cubre 92vw */
+    .admin-panel .sidebar {
+        width: min(92vw, 320px) !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   54. PRINT MODE polish
+   ═══════════════════════════════════════════════════════════════════ */
+@media print {
+    .admin-panel {
+        background: white !important;
+        color: black !important;
+    }
+    .admin-panel * {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+    .admin-panel ::before,
+    .admin-panel ::after {
+        display: none !important;
+    }
+    .admin-panel .sidebar,
+    .admin-panel .admin-header,
+    .admin-panel .alt-presence-overlay,
+    .admin-panel .altorra-bell,
+    .admin-panel .altorra-notify-center,
+    .admin-panel [data-fab],
+    .admin-panel .pwa-install-btn,
+    .admin-panel .alt-palette,
+    .admin-panel .activity-feed-panel {
+        display: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   55. HIGH CONTRAST mode (a11y)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-contrast: more) {
+    .admin-panel {
+        --vis-border-2: 1px solid rgba(255, 255, 255, 0.30);
+        --vis-border-3: 1px solid rgba(255, 255, 255, 0.55);
+        --vis-border-4: 1px solid rgba(255, 255, 255, 0.78);
+    }
+    .admin-panel .nav-item.active {
+        outline: 2px solid var(--vis-brand-500);
+        outline-offset: -2px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY Sprint 3 — bug fixes + Dynamic Island + FAB + polish
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   56. SPOTLIGHT EFFECT — search results + onboarding tour
+   ═══════════════════════════════════════════════════════════════════ */
+.vis-spotlight {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    pointer-events: none;
+    background: radial-gradient(
+        circle 280px at var(--vis-spot-x, 50%) var(--vis-spot-y, 50%),
+        transparent 0%,
+        transparent 60%,
+        rgba(0, 0, 0, 0.85) 80%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: opacity var(--vis-d-base) var(--vis-ease-snap);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   57. DASHBOARD HERO refinement — admin entry experience
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel #sec-dashboard .page-header,
+.admin-panel #sec-dashboard > h1:first-child {
+    background:
+        radial-gradient(ellipse 800px 300px at 30% 0%,
+            rgba(var(--ak-rgb), 0.20) 0%,
+            rgba(var(--ak-rgb), 0.06) 30%,
+            transparent 70%),
+        radial-gradient(ellipse 600px 200px at 70% 100%,
+            rgba(139, 92, 246, 0.10) 0%,
+            transparent 60%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-2xl);
+    padding: 36px 40px 32px;
+    margin: 0 0 28px;
+    box-shadow: var(--vis-elev-2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel #sec-dashboard .page-header::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle,
+        rgba(var(--ak-rgb), 0.12) 0%,
+        transparent 70%);
+    filter: blur(32px);
+    pointer-events: none;
+    animation: visHeroFloat 12s ease-in-out infinite;
+}
+@keyframes visHeroFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-30px, 20px) scale(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel #sec-dashboard .page-header::before { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   58. SECTION HEADERS de TODAS las secciones — radial accent
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section .page-header,
+.admin-panel .admin-section .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 0% 0%,
+            rgba(var(--ak-rgb), 0.08) 0%,
+            transparent 60%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-xl);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(var(--vis-blur-12));
+    -webkit-backdrop-filter: blur(var(--vis-blur-12));
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel .section .page-header::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 5%; right: 5%;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--vis-brand-500) 50%,
+        transparent 100%);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   59. CONCIERGE/HUB chat refinements (admin side)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .cnc-admin-detail-messages,
+.admin-panel .cnc-admin-conversation {
+    background:
+        linear-gradient(180deg,
+            var(--vis-surface-canvas) 0%,
+            rgba(10, 10, 12, 0.95) 100%);
+    border-radius: var(--vis-r-lg);
+    border: var(--vis-border-2);
+    padding: 16px;
+}
+.admin-panel .cnc-admin-msg-bubble,
+.admin-panel .cnc-admin-message {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 10px 14px;
+    margin: 4px 0;
+    max-width: 80%;
+}
+.admin-panel .cnc-admin-msg-bubble--user {
+    margin-left: auto;
+    background: linear-gradient(135deg,
+        var(--vis-brand-300),
+        var(--vis-brand-600));
+    color: var(--ak-on-accent, #1a1310);
+    border-color: rgba(var(--ak-light-rgb), 0.55);
+}
+.admin-panel .cnc-admin-msg-bubble--bot {
+    background: var(--vis-brand-tint);
+    border-color: var(--vis-border-gold);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   60. CALENDAR refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .cal-day,
+.admin-panel .calendar-day,
+.admin-panel .cal-grid > * {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-sm);
+    padding: 8px;
+    min-height: 80px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .cal-day:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: var(--vis-brand-500);
+    transform: scale(1.02);
+}
+.admin-panel .cal-day--today {
+    background:
+        linear-gradient(135deg,
+            rgba(var(--ak-rgb), 0.20) 0%,
+            rgba(var(--ak-rgb), 0.06) 100%);
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-elev-glow);
+}
+.admin-panel .cal-day--has-events {
+    border-color: rgba(var(--ak-rgb), 0.30);
+}
+.admin-panel .cal-event {
+    background: linear-gradient(135deg,
+        var(--vis-brand-tint-strong),
+        var(--vis-brand-tint));
+    color: var(--vis-brand-200);
+    border-radius: var(--vis-r-xs);
+    padding: 2px 6px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   61. SETTINGS PAGE refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel #sec-settings .stat-card,
+.admin-panel #sec-settings .info-card,
+.admin-panel #sec-settings > div {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    margin-bottom: 18px;
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel #sec-settings .table-header h3 {
+    font-size: var(--vis-fs-md);
+    font-weight: 650;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: var(--vis-ls-tight);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   62. AUDIT FEED refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel #activityFeed,
+.admin-panel .activity-feed {
+    background: transparent;
+    padding: 0;
+}
+.admin-panel #activityFeed > *,
+.admin-panel .activity-feed-item {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel #activityFeed > *:hover,
+.admin-panel .activity-feed-item:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: var(--vis-border-gold-hi);
+    transform: translateX(4px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   63. UNMATCHED FEED refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel #unmatchedList,
+.admin-panel .unmatched-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.admin-panel #unmatchedList > *,
+.admin-panel .unmatched-item {
+    background:
+        linear-gradient(180deg,
+            rgba(245, 158, 11, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: 1px solid rgba(245, 158, 11, 0.20);
+    border-left: 3px solid rgba(245, 158, 11, 0.55);
+    border-radius: var(--vis-r-md);
+    padding: 16px 18px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel #unmatchedList > *:hover {
+    border-color: rgba(245, 158, 11, 0.45);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+    transform: translateX(2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   64. KB CARDS refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .kb-card,
+.admin-panel #kbList > * {
+    background:
+        linear-gradient(180deg,
+            rgba(16, 185, 129, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: 1px solid rgba(16, 185, 129, 0.20);
+    border-left: 3px solid rgba(16, 185, 129, 0.55);
+    border-radius: var(--vis-r-md);
+    padding: 16px 18px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .kb-card:hover {
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);
+    transform: translateX(2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   65. WORKSPACE color tokens — section accent globally
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel [data-workspace-color="gold"]    { --vis-ws-color: var(--vis-brand-500); }
+.admin-panel [data-workspace-color="green"]   { --vis-ws-color: #10b981; }
+.admin-panel [data-workspace-color="blue"]    { --vis-ws-color: #3b82f6; }
+.admin-panel [data-workspace-color="violet"]  { --vis-ws-color: #8b5cf6; }
+.admin-panel [data-workspace-color="cyan"]    { --vis-ws-color: #06b6d4; }
+.admin-panel [data-workspace-color="amber"]   { --vis-ws-color: #f59e0b; }
+.admin-panel [data-workspace-color="coral"]   { --vis-ws-color: #f97066; }
+.admin-panel [data-workspace-color="neutral"] { --vis-ws-color: #94a3b8; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   66. THEME BUMPS — Card accent based on workspace
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel [data-workspace-color] .stat-card::before,
+.admin-panel [data-workspace-color] .kpi-card::before {
+    /* opcional accent en cards de la sección */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   67. SCROLL HINT — fade en bottom de tablas largas
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .table-wrapper,
+.admin-panel .table-container {
+    position: relative;
+}
+.admin-panel .table-wrapper::after,
+.admin-panel .table-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 24px;
+    background: linear-gradient(180deg,
+        transparent 0%,
+        var(--vis-surface-base) 100%);
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   68. SECTION TRANSITION — fluid switching
+   ═══════════════════════════════════════════════════════════════════ */
+@supports (view-transition-name: none) {
+    .admin-panel .section.active {
+        view-transition-name: section-active;
+    }
+    ::view-transition-old(section-active) {
+        animation: visSectionOut 0.36s var(--vis-ease-spring-1);
+    }
+    ::view-transition-new(section-active) {
+        animation: visSectionInVT 0.42s var(--vis-ease-spring-1);
+    }
+}
+@keyframes visSectionOut {
+    to { opacity: 0; transform: translateY(-12px); filter: blur(4px); }
+}
+@keyframes visSectionInVT {
+    from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   69. SUCCESS / ERROR pulse animation (after action)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .vis-success-pulse {
+    animation: visSuccessPulse 1.2s var(--vis-ease-spring-1);
+}
+@keyframes visSuccessPulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+    50% { box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.admin-panel .vis-error-pulse {
+    animation: visErrorPulse 0.8s var(--vis-ease-snap);
+}
+@keyframes visErrorPulse {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY Sprint 4 — dashboard hero + section accents + collab
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-031 VISIONARY DEEP — Bug fixes + Vista Previa galeria moderna
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 70. LAYOUT FIX — gap entre sidebar y contenido ─────────── */
+.admin-panel.admin-layout {
+    display: grid;
+    grid-template-columns: var(--layout-sidebar-w-expanded, 256px) 1fr;
+    grid-template-areas: "sidebar main";
+    min-height: 100vh;
+    gap: 0;
+}
+body.sidebar-collapsed .admin-panel.admin-layout {
+    grid-template-columns: 64px 1fr;
+}
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    grid-area: sidebar;
+    width: 100% !important;
+    height: 100vh;
+    position: sticky !important;
+    top: 0;
+    overflow-y: auto;
+    margin: 0 !important;
+}
+.admin-panel .admin-content,
+.admin-panel main,
+.admin-panel #adminMain {
+    grid-area: main;
+    min-width: 0;
+    width: 100%;
+    margin-left: 0 !important;
+    padding: 0 !important;
+}
+@media (max-width: 768px) {
+    .admin-panel.admin-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas: "main";
+    }
+    .admin-panel .sidebar {
+        position: fixed !important;
+        z-index: 9999;
+        grid-area: unset;
+    }
+}
+
+/* ─── 71. SELECT options legibility fix CRITICO ─────────────── */
+.admin-panel select option,
+.admin-panel select optgroup {
+    background: #1a1a1c !important;
+    color: #ffffff !important;
+    padding: 8px 12px;
+}
+.admin-panel select option:hover,
+.admin-panel select option:checked {
+    background: rgba(var(--ak-rgb), 0.30) !important;
+    color: #ffffff !important;
+}
+/* Forzar text color en selects (Safari + Firefox bug) */
+.admin-panel select {
+    color: #ffffff !important;
+    background-color: var(--vis-surface-2) !important;
+}
+.admin-panel select:focus {
+    color: #ffffff !important;
+}
+
+/* §106 — Los modales (#vehicleModal, #brandModal, #userModal, etc.) son
+   HERMANOS de #adminPanel en el DOM, no descendientes. Por eso las reglas
+   .admin-panel select de arriba NUNCA los alcanzan → los dropdowns salen
+   con fondo blanco + texto blanco (ilegibles). Este archivo solo carga en
+   admin.html, así que es seguro estilizar .modal-overlay directamente. */
+.modal-overlay select option,
+.modal-overlay select optgroup {
+    background: #1a1a1c !important;
+    color: #ffffff !important;
+    padding: 8px 12px;
+}
+.modal-overlay select option:hover,
+.modal-overlay select option:checked {
+    background: rgba(var(--ak-rgb), 0.30) !important;
+    color: #ffffff !important;
+}
+.modal-overlay select,
+.modal-overlay .form-select {
+    color: #ffffff !important;
+    background-color: var(--vis-surface-2, #1a1a1c) !important;
+}
+.modal-overlay select:focus,
+.modal-overlay .form-select:focus {
+    color: #ffffff !important;
+}
+
+/* Datalist + autocomplete chrome legible */
+.admin-panel input::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.6);
+}
+
+/* ─── 72. PERFORMANCE — content-visibility + contain ─────────── */
+.admin-panel .section:not(.active),
+.admin-panel .admin-section:not(.active) {
+    content-visibility: hidden;
+    contain: strict;
+}
+.admin-panel .section.active,
+.admin-panel .admin-section.active {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 800px;
+}
+/* Cards en grids: skip rendering off-screen */
+.admin-panel .kpi-card,
+.admin-panel .reports-kpi-card,
+.admin-panel .workflow-card,
+.admin-panel .pipeline-card,
+.admin-panel .nba-dash-item,
+.admin-panel .review-card,
+.admin-panel .dealer-card,
+.admin-panel .brand-admin-card {
+    contain: layout style;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 200px;
+}
+/* Tabla rows (vehicles/users/admin tables) */
+.admin-panel .data-table tbody tr,
+.admin-panel .admin-table tbody tr,
+.admin-panel .users-table tbody tr {
+    contain: layout style;
+}
+
+/* ─── 73. PERF — backdrop-filter SOLO donde necesita visualmente ─── */
+/* El blur enorme 64px global es caro. Reducirlo en zonas que scrollean. */
+.admin-panel .nav-item,
+.admin-panel .alt-card,
+.admin-panel .stat-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* ─── 74. VISTA PREVIA — galeria moderna iOS Photos style ─── */
+.vis-prv-overlay {
+    /* hereda de .modal-overlay */
+}
+.vis-prv-modal {
+    max-width: min(1100px, 95vw) !important;
+    width: 100% !important;
+}
+.vis-prv-modal .modal-body {
+    padding: 0 !important;
+    max-height: calc(85vh - 120px) !important;
+    overflow: hidden !important;
+}
+.vis-prv-wrap {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 0;
+    height: calc(85vh - 120px);
+    min-height: 480px;
+}
+@media (max-width: 900px) {
+    .vis-prv-wrap {
+        grid-template-columns: 1fr;
+        height: auto;
+        max-height: calc(85vh - 120px);
+        overflow-y: auto;
+    }
+}
+
+/* GALERIA */
+.vis-prv-gallery {
+    background: linear-gradient(180deg,
+        rgba(0, 0, 0, 0.40) 0%,
+        rgba(0, 0, 0, 0.20) 100%),
+        var(--vis-surface-base);
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    gap: 14px;
+    border-right: var(--vis-border-3);
+    overflow: hidden;
+}
+@media (max-width: 900px) {
+    .vis-prv-gallery {
+        border-right: none;
+        border-bottom: var(--vis-border-3);
+    }
+}
+.vis-prv-main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--vis-r-lg);
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.40);
+    border: var(--vis-border-2);
+    box-shadow: var(--vis-elev-2);
+    position: relative;
+}
+.vis-prv-main img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+@media (max-width: 900px) {
+    .vis-prv-main {
+        height: 320px;
+    }
+}
+.vis-prv-thumbs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+}
+.vis-prv-thumbs::-webkit-scrollbar { height: 6px; }
+.vis-prv-thumb {
+    width: 64px;
+    height: 48px;
+    border-radius: var(--vis-r-xs);
+    overflow: hidden;
+    border: 2px solid transparent;
+    background: rgba(0, 0, 0, 0.40);
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.vis-prv-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.vis-prv-thumb:hover {
+    border-color: rgba(var(--ak-rgb), 0.55);
+    transform: scale(1.05);
+}
+.vis-prv-thumb.is-active {
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-elev-glow);
+}
+
+/* INFO panel (derecha) */
+.vis-prv-info {
+    overflow-y: auto;
+    padding: 24px 28px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+}
+.vis-prv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.vis-prv-codigo {
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-2xs);
+    color: var(--vis-brand-300);
+    background: var(--vis-brand-tint-strong);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 9px;
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-wide);
+}
+.vis-prv-title {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-2xl);
+    font-weight: 750;
+    line-height: var(--vis-lh-tight);
+    letter-spacing: var(--vis-ls-tighter);
+    color: #ffffff;
+    margin: 0 0 6px;
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.vis-prv-subtitle {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    font-weight: 500;
+    margin-bottom: 18px;
+}
+.vis-prv-price {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 22px;
+    padding: 16px 18px;
+    background:
+        linear-gradient(135deg,
+            rgba(var(--ak-rgb), 0.14) 0%,
+            rgba(var(--ak-rgb), 0.04) 100%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-md);
+    box-shadow: var(--vis-elev-1);
+}
+.vis-prv-price-main {
+    font-size: var(--vis-fs-2xl);
+    font-weight: 750;
+    color: var(--vis-brand-300);
+    letter-spacing: var(--vis-ls-tight);
+    font-feature-settings: 'tnum' 1;
+}
+.vis-prv-price-old {
+    font-size: var(--vis-fs-md);
+    color: rgba(255, 255, 255, 0.50);
+    text-decoration: line-through;
+    font-feature-settings: 'tnum' 1;
+}
+
+/* HIGHLIGHTS — 2x2 grid de specs principales */
+.vis-prv-highlights {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 22px;
+}
+.vis-prv-highlight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 10px 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.vis-prv-highlight:hover {
+    border-color: rgba(var(--ak-rgb), 0.32);
+    background: var(--vis-state-hover-gold);
+}
+.vis-prv-highlight [data-lucide] {
+    color: var(--vis-brand-400);
+    flex-shrink: 0;
+}
+.vis-prv-highlight-label {
+    font-size: var(--vis-fs-2xs);
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    font-weight: 600;
+}
+.vis-prv-highlight-val {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: var(--vis-fs-sm);
+    margin-top: 2px;
+}
+
+/* Section (ficha + caracteristicas + descripcion) */
+.vis-prv-section {
+    margin-bottom: 18px;
+}
+.vis-prv-section-title {
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.62);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    margin: 0 0 10px;
+}
+.vis-prv-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    overflow: hidden;
+    background: var(--vis-surface-2);
+}
+.vis-prv-spec-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+.vis-prv-spec-row:nth-child(2n) { border-right: none; }
+.vis-prv-spec-row:nth-last-child(-n+2) { border-bottom: none; }
+.vis-prv-spec-label {
+    font-size: var(--vis-fs-2xs);
+    color: rgba(255, 255, 255, 0.50);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wide);
+    font-weight: 600;
+}
+.vis-prv-spec-val {
+    font-size: var(--vis-fs-sm);
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Features chips */
+.vis-prv-feat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.vis-prv-feat-chip {
+    background: var(--vis-brand-tint-strong);
+    color: var(--vis-brand-200);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    padding: 4px 12px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-base);
+}
+
+/* Descripción */
+.vis-prv-desc {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: var(--vis-fs-sm);
+    line-height: var(--vis-lh-loose);
+    margin: 0;
+}
+
+/* ─── 75. TABLA VEHICULOS — acciones inline organizadas ─────── */
+.admin-panel .v-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+}
+.admin-panel .v-act {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-sm);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+    flex-shrink: 0;
+}
+.admin-panel .v-act [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 1.75;
+}
+.admin-panel .v-act:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(var(--ak-rgb), 0.30);
+    color: var(--vis-brand-300);
+    transform: scale(1.08);
+}
+.admin-panel .v-act--danger:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.40);
+    color: #fca5a5;
+}
+.admin-panel .v-act--gold:hover,
+.admin-panel .v-act--featured:hover,
+.admin-panel .v-act--star:hover {
+    color: var(--vis-brand-300);
+}
+.admin-panel .v-act-sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.10);
+    margin: 0 4px;
+}
+.admin-panel .v-actions-row {
+    flex-wrap: nowrap !important;
+    flex-direction: row !important;
+}
+
+/* ─── 76. TABLA VEHICULOS — codigo+thumbnail premium layout ─── */
+.admin-panel .vehicle-thumb,
+.admin-panel #vehiclesTableBody img {
+    width: 64px !important;
+    height: 48px !important;
+    border-radius: var(--vis-r-xs) !important;
+    object-fit: cover;
+    border: var(--vis-border-2);
+    box-shadow: var(--vis-elev-1);
+}
+
+/* Codigo cell pill style */
+.admin-panel .vehicle-codigo,
+.admin-panel #vehiclesTableBody td:first-child .codigo,
+.admin-panel #vehiclesTableBody [class*="codigo"] {
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    color: var(--vis-brand-300);
+    background: var(--vis-brand-tint-strong);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 9px;
+    letter-spacing: var(--vis-ls-wide);
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* ─── 77. ESTADO badge en tabla — pill consistente ─────────── */
+.admin-panel #vehiclesTableBody .estado-badge,
+.admin-panel #vehiclesTableBody [class*="estado"]:not(.section):not(td) {
+    text-transform: uppercase;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-widest);
+    padding: 3px 10px;
+    border-radius: var(--vis-r-pill);
+    border: 1px solid currentColor;
+    display: inline-block;
+}
+
+/* ─── 78. INVENTARIO TOOLBAR moderno ─────────────────────── */
+.admin-panel .table-toolbar,
+.admin-panel .vehicle-toolbar,
+.admin-panel #sec-vehicles .table-header,
+.admin-panel #sec-brands .table-header,
+.admin-panel #sec-dealers .table-header {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.04) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg) var(--vis-r-lg) 0 0;
+    padding: 16px 20px;
+    border-bottom: var(--vis-border-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Search input dentro de toolbar */
+.admin-panel .table-toolbar input[type="search"],
+.admin-panel .table-toolbar input[type="text"] {
+    border-radius: var(--vis-r-pill);
+    padding: 8px 16px;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-3);
+    min-width: 280px;
+    flex: 1;
+}
+
+/* Filter selects pill style */
+.admin-panel .table-toolbar select,
+.admin-panel #sec-vehicles select,
+.admin-panel #sec-brands select,
+.admin-panel #sec-dealers select {
+    border-radius: var(--vis-r-pill);
+    padding: 7px 32px 7px 14px;
+    background-color: var(--vis-surface-2) !important;
+    border: var(--vis-border-3);
+    color: #ffffff !important;
+    font-size: var(--vis-fs-sm);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b89658' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 14px !important;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+/* CSV / Reordenar buttons */
+.admin-panel .table-toolbar .btn-ghost,
+.admin-panel #sec-vehicles button[id*="csv"],
+.admin-panel #sec-vehicles button[id*="reorder"] {
+    border-radius: var(--vis-r-pill);
+    padding: 7px 14px;
+    background: transparent;
+    border: var(--vis-border-3);
+    color: rgba(255, 255, 255, 0.78);
+    font-weight: 500;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .table-toolbar .btn-ghost:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(var(--ak-rgb), 0.40);
+    color: var(--vis-brand-300);
+}
+
+/* ─── 79. SIDEBAR widths fix ───────────────────────────── */
+:root {
+    --layout-sidebar-w-expanded: 256px;
+    --layout-sidebar-w-collapsed: 64px;
+}
+
+/* ─── 80. AGREGAR VEHICULO button (header section) ───────── */
+.admin-panel #btnAddVehicle,
+.admin-panel #addVehicleBtn,
+.admin-panel button[data-action="new-vehicle"] {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: var(--ak-on-accent, #1a1310);
+    font-weight: 700;
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55);
+    border-radius: var(--vis-r-pill);
+    padding: 10px 20px;
+    box-shadow:
+        var(--vis-elev-2),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.admin-panel #btnAddVehicle:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow-strong),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+/* ─── 81. CONCESIONARIO origen text refinement ────────── */
+.admin-panel #vehiclesTableBody td {
+    font-size: var(--vis-fs-sm);
+}
+.admin-panel .origen-text,
+.admin-panel #vehiclesTableBody td:nth-child(7) {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: var(--vis-fs-xs);
+}
+
+/* ─── 82. ALL FORM SELECTS — universal fix ─────────── */
+.admin-panel select,
+.admin-panel select:not([multiple]) {
+    background-color: var(--vis-surface-2) !important;
+    color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b89658' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 36px;
+}
+
+/* ─── 83. HEADER del admin layout fix ─────────── */
+.admin-panel .admin-header {
+    width: 100%;
+    z-index: 50;
+}
+
+/* ─── 84. DARK MODE select FORCE — Firefox/Safari fallback ─── */
+@-moz-document url-prefix() {
+    .admin-panel select {
+        color: #ffffff;
+        background-color: rgba(26, 26, 28, 0.92) !important;
+    }
+    .admin-panel select option {
+        background-color: #1a1a1c !important;
+        color: #ffffff !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY DEEP — Bug fixes + Vista Previa galeria + perf
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-032 VISIONARY MASTER — Rediseño profundo por sección
+   Foco: Vehículos, Marcas, Dashboard, Sidebar, todos los modales
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 90. SIDEBAR refinado total — width perfecto + bordes ───── */
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    width: var(--layout-sidebar-w-expanded, 256px) !important;
+    padding: 18px 12px;
+    box-shadow: inset -1px 0 0 rgba(var(--ak-rgb), 0.08);
+}
+.admin-panel .sidebar-logo {
+    padding: 6px 12px 18px;
+    margin-bottom: 14px;
+    border-bottom: var(--vis-border-2);
+}
+.admin-panel .sidebar-logo h2 {
+    font-size: var(--vis-fs-md);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    margin: 0;
+    line-height: 1.2;
+}
+.admin-panel .sidebar-logo small {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: var(--vis-fs-2xs);
+    letter-spacing: var(--vis-ls-wider);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.admin-panel .sidebar-collapse-btn {
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--vis-r-xs);
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    color: rgba(255, 255, 255, 0.55);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .sidebar-collapse-btn:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(var(--ak-rgb), 0.35);
+    color: var(--vis-brand-300);
+}
+
+/* Quick search refinado */
+.admin-panel .sidebar-quicksearch {
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .sidebar-quicksearch:focus-within {
+    border-color: var(--vis-brand-500);
+    background: var(--vis-brand-tint);
+    box-shadow: var(--vis-state-focus);
+}
+.admin-panel .sidebar-quicksearch-icon {
+    width: 16px;
+    height: 16px;
+    color: rgba(255, 255, 255, 0.50);
+    flex-shrink: 0;
+}
+.admin-panel .sidebar-quicksearch input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: var(--vis-fs-sm);
+    width: 100%;
+    outline: none;
+}
+.admin-panel .sidebar-quicksearch input::placeholder {
+    color: rgba(255, 255, 255, 0.40);
+}
+.admin-panel .sidebar-quicksearch-kbd {
+    background: rgba(255, 255, 255, 0.06);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-xs);
+    padding: 2px 7px;
+    font-size: var(--vis-fs-2xs);
+    font-family: var(--vis-font-mono);
+    color: rgba(255, 255, 255, 0.65);
+    flex-shrink: 0;
+}
+
+/* Nav group spacing perfeccionado */
+.admin-panel .nav-group {
+    margin-bottom: 6px;
+}
+.admin-panel .nav-group-header {
+    padding: 8px 14px 4px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.admin-panel .nav-group-chevron {
+    margin-left: auto;
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.40);
+    transition: transform var(--vis-d-fast) var(--vis-ease-snap);
+}
+
+/* Nav item — pulir letterspacing y heights */
+.admin-panel .sidebar .nav-item,
+.admin-panel .nav-group-items .nav-item {
+    width: calc(100% - 8px);
+    margin: 1px 4px;
+    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-sm);
+    font-size: var(--vis-fs-sm);
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.72);
+}
+.admin-panel .nav-group-items {
+    margin-top: 2px;
+}
+
+/* ─── 91. TABLA VEHÍCULOS — visual transformation completa ──── */
+.admin-panel #vehiclesTable {
+    border-spacing: 0;
+    border-collapse: separate;
+    width: 100%;
+    background: var(--vis-surface-1);
+    border-radius: var(--vis-r-lg);
+    overflow: hidden;
+    border: var(--vis-border-2);
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel #vehiclesTable thead {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.12) 0%,
+            rgba(var(--ak-rgb), 0.04) 100%);
+}
+.admin-panel #vehiclesTable thead th {
+    padding: 14px 16px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.78);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    border-bottom: var(--vis-border-gold);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+.admin-panel #vehiclesTable thead th:hover {
+    background: rgba(var(--ak-rgb), 0.06);
+}
+.admin-panel #vehiclesTable thead th:first-child {
+    width: 40px;
+    text-align: center;
+}
+.admin-panel #vehiclesTable tbody tr {
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel #vehiclesTable tbody tr:hover {
+    background: var(--vis-state-hover-gold);
+}
+.admin-panel #vehiclesTable tbody tr:hover td:first-child {
+    border-left: 3px solid var(--vis-brand-500);
+    padding-left: 13px;
+}
+.admin-panel #vehiclesTable tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+    font-size: var(--vis-fs-sm);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Col código */
+.admin-panel #vehiclesTable tbody code {
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    color: var(--vis-brand-300) !important;
+    background: var(--vis-brand-tint-strong);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 4px 10px;
+    letter-spacing: var(--vis-ls-wide);
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* Col vehiculo (marca + modelo) */
+.admin-panel #vehiclesTable tbody td strong {
+    font-size: var(--vis-fs-base);
+    font-weight: 650;
+    color: #ffffff;
+    letter-spacing: var(--vis-ls-tight);
+}
+.admin-panel #vehiclesTable tbody td small {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--vis-fs-xs);
+    letter-spacing: var(--vis-ls-base);
+    text-transform: uppercase;
+}
+
+/* Tipo badge premium */
+.admin-panel #vehiclesTable tbody .badge.badge-nuevo,
+.admin-panel #vehiclesTable tbody .badge.badge-usado,
+.admin-panel #vehiclesTable tbody .badge.badge-semi-nuevo {
+    text-transform: uppercase;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-widest);
+    padding: 4px 12px;
+    border-radius: var(--vis-r-pill);
+    border: 1px solid currentColor;
+    display: inline-block;
+}
+.admin-panel #vehiclesTable .badge.badge-nuevo {
+    background: rgba(16, 185, 129, 0.16);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-usado {
+    background: rgba(59, 130, 246, 0.16);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-semi-nuevo {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.40);
+}
+
+/* Estado badge premium (disponible/reservado/vendido/borrador) */
+.admin-panel #vehiclesTable .badge[class*="estado"],
+.admin-panel #vehiclesTable .badge.badge-success,
+.admin-panel #vehiclesTable .badge.badge-warning,
+.admin-panel #vehiclesTable .badge.badge-danger,
+.admin-panel #vehiclesTable .badge.badge-secondary {
+    text-transform: uppercase;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-widest);
+    padding: 4px 12px;
+    border-radius: var(--vis-r-pill);
+    border: 1px solid currentColor;
+    display: inline-block;
+}
+.admin-panel #vehiclesTable .badge.badge-success {
+    background: rgba(16, 185, 129, 0.16);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-warning {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-danger {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-secondary {
+    background: rgba(107, 114, 128, 0.16);
+    color: rgba(255, 255, 255, 0.70);
+    border-color: rgba(107, 114, 128, 0.40);
+}
+
+/* Precio premium */
+.admin-panel #vehiclesTable tbody td:nth-child(7) {
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-base);
+    font-weight: 650;
+    color: var(--vis-brand-200);
+    font-feature-settings: 'tnum' 1;
+    white-space: nowrap;
+}
+.admin-panel #vehiclesTable tbody td:nth-child(7) small {
+    color: rgba(245, 158, 11, 0.85);
+    font-size: var(--vis-fs-xs);
+    text-decoration: line-through;
+    font-family: var(--vis-font-mono);
+    margin-top: 2px;
+    display: block;
+}
+
+/* Origen text */
+.admin-panel #vehiclesTable tbody td small[style*="text-secondary"],
+.admin-panel #vehiclesTable tbody td:nth-last-child(2) small {
+    color: rgba(255, 255, 255, 0.55) !important;
+    font-size: var(--vis-fs-xs);
+    text-transform: capitalize;
+}
+
+/* Vehicle thumb consistente */
+.admin-panel .vehicle-thumb {
+    width: 80px !important;
+    height: 56px !important;
+    border-radius: var(--vis-r-sm) !important;
+    object-fit: cover;
+    border: var(--vis-border-3);
+    box-shadow: var(--vis-elev-1), 0 0 0 1px rgba(var(--ak-rgb), 0.10);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel #vehiclesTable tbody tr:hover .vehicle-thumb {
+    transform: scale(1.08);
+    box-shadow: var(--vis-elev-2), 0 0 0 1px rgba(var(--ak-rgb), 0.30);
+}
+
+/* Acciones inline organizadas */
+.admin-panel .v-actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+}
+.admin-panel .v-act {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border: 1px solid transparent !important;
+    border-radius: var(--vis-r-sm) !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3) !important;
+    flex-shrink: 0;
+}
+.admin-panel .v-act [data-lucide] {
+    width: 16px !important;
+    height: 16px !important;
+    stroke-width: 1.75;
+}
+.admin-panel .v-act:hover:not(:disabled) {
+    background: var(--vis-state-hover-gold) !important;
+    border-color: rgba(var(--ak-rgb), 0.30) !important;
+    color: var(--vis-brand-300) !important;
+    transform: scale(1.10);
+}
+.admin-panel .v-act--danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.14) !important;
+    border-color: rgba(239, 68, 68, 0.40) !important;
+    color: #fca5a5 !important;
+}
+.admin-panel .v-act--operation {
+    width: auto !important;
+    padding: 0 12px !important;
+    gap: 6px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    background: rgba(var(--ak-rgb), 0.10) !important;
+    border-color: rgba(var(--ak-rgb), 0.30) !important;
+    color: var(--vis-brand-300) !important;
+}
+.admin-panel .v-act--operation:hover {
+    background: rgba(var(--ak-rgb), 0.18) !important;
+}
+.admin-panel .v-act-sep {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.10);
+    margin: 0 4px;
+}
+
+/* ─── 92. SECTION HEADER vehiculos premium ───────────────── */
+.admin-panel #sec-vehicles .page-header,
+.admin-panel #sec-brands .page-header,
+.admin-panel #sec-dealers .page-header,
+.admin-panel #sec-banners .page-header,
+.admin-panel #sec-reviews .page-header {
+    background:
+        radial-gradient(ellipse 600px 200px at 0% 0%,
+            rgba(var(--ak-rgb), 0.18) 0%,
+            rgba(var(--ak-rgb), 0.02) 50%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-2xl);
+    padding: 28px 32px 24px;
+    margin: 0 0 24px;
+    box-shadow: var(--vis-elev-2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(var(--vis-blur-12));
+    -webkit-backdrop-filter: blur(var(--vis-blur-12));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.admin-panel #sec-vehicles .page-header h1,
+.admin-panel #sec-brands .page-header h1,
+.admin-panel #sec-dealers .page-header h1,
+.admin-panel #sec-banners .page-header h1,
+.admin-panel #sec-reviews .page-header h1 {
+    font-size: var(--vis-fs-2xl);
+    font-weight: 800;
+    letter-spacing: var(--vis-ls-tighter);
+    margin: 0;
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.admin-panel #sec-vehicles .page-header .page-subtitle,
+.admin-panel #sec-vehicles .page-header > div > p,
+.admin-panel #sec-brands .page-header > div > p {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+    margin-top: 4px;
+}
+
+/* ─── 93. INVENTARIO toolbar premium ───────────────────── */
+.admin-panel #sec-vehicles .table-header,
+.admin-panel #sec-brands .table-header,
+.admin-panel #sec-dealers .table-header,
+.admin-panel #sec-banners .table-header,
+.admin-panel #sec-reviews .table-header,
+.admin-panel #sec-users .table-header {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.06) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-bottom: var(--vis-border-gold);
+    border-radius: var(--vis-r-lg) var(--vis-r-lg) 0 0;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+}
+.admin-panel #sec-vehicles .table-header h2,
+.admin-panel #sec-vehicles .table-header h3 {
+    font-size: var(--vis-fs-lg);
+    font-weight: 700;
+    margin: 0;
+    color: #ffffff;
+    letter-spacing: var(--vis-ls-tight);
+    margin-right: auto;
+}
+
+/* Tabla pegada al toolbar (sin gap visual) */
+.admin-panel .table-container,
+.admin-panel #sec-vehicles .table-container,
+.admin-panel #sec-brands .table-container {
+    border-radius: 0 0 var(--vis-r-lg) var(--vis-r-lg);
+    overflow: hidden;
+    margin-bottom: 18px;
+}
+
+/* ─── 94. INPUTS dentro del toolbar premium ─────────── */
+.admin-panel #sec-vehicles .table-header input[type="search"],
+.admin-panel #sec-vehicles .table-header input[type="text"],
+.admin-panel #sec-vehicles input#vehicleSearch,
+.admin-panel #sec-brands input[type="search"],
+.admin-panel #sec-dealers input[type="search"] {
+    flex: 1;
+    min-width: 240px;
+    max-width: 360px;
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-3) !important;
+    border-radius: var(--vis-r-pill) !important;
+    padding: 9px 16px 9px 38px !important;
+    font-size: var(--vis-fs-sm);
+    color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b89658' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: 12px center !important;
+    background-size: 16px !important;
+}
+.admin-panel #sec-vehicles .table-header input:focus,
+.admin-panel input#vehicleSearch:focus {
+    background-color: var(--vis-brand-tint) !important;
+    border-color: var(--vis-brand-500) !important;
+    box-shadow: var(--vis-state-focus) !important;
+    outline: none;
+}
+
+/* Botón "Agregar Vehiculo" en header */
+.admin-panel #btnAddVehicle,
+.admin-panel #addVehicleBtn,
+.admin-panel #sec-vehicles button[id*="add" i],
+.admin-panel #sec-brands button[id*="add" i],
+.admin-panel #sec-dealers button[id*="add" i] {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%) !important;
+    color: var(--ak-on-accent, #1a1310) !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55) !important;
+    border-radius: var(--vis-r-pill) !important;
+    padding: 10px 22px !important;
+    box-shadow:
+        var(--vis-elev-2),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3) !important;
+}
+.admin-panel #btnAddVehicle:hover {
+    transform: translateY(-1px) scale(1.02) !important;
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow-strong),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40) !important;
+}
+
+/* ─── 95. STATS KPI vehículos refinados ────────────── */
+.admin-panel #sec-vehicles .stats-grid,
+.admin-panel #sec-vehicles .vehicle-stats,
+.admin-panel #sec-brands .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+/* ─── 96. MARCAS — galería visual moderna ───────── */
+.admin-panel #brandsTable,
+.admin-panel #sec-brands table {
+    /* Si sigue siendo tabla, refinarla */
+}
+.admin-panel #sec-brands .brand-card,
+.admin-panel #sec-brands #brandsList > div {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 24px 18px;
+    text-align: center;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    cursor: pointer;
+}
+.admin-panel #sec-brands .brand-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    border-color: rgba(var(--ak-rgb), 0.40);
+    box-shadow: var(--vis-elev-3),
+                var(--vis-elev-glow);
+}
+.admin-panel #sec-brands .brand-card img {
+    max-width: 90%;
+    height: 64px;
+    object-fit: contain;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.30));
+}
+
+/* ─── 97. DASHBOARD hero greeting ──────────────── */
+.admin-panel #sec-dashboard .page-header,
+.admin-panel #sec-dashboard > div:first-child {
+    background:
+        radial-gradient(ellipse 800px 300px at 20% 0%,
+            rgba(var(--ak-rgb), 0.20) 0%,
+            rgba(var(--ak-rgb), 0.04) 40%,
+            transparent 80%),
+        radial-gradient(ellipse 600px 200px at 80% 100%,
+            rgba(139, 92, 246, 0.10) 0%,
+            transparent 60%),
+        var(--vis-surface-1);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-2xl);
+    padding: 36px 40px 32px;
+    margin: 0 0 24px;
+    box-shadow: var(--vis-elev-3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel #sec-dashboard .page-header::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle,
+        rgba(var(--ak-rgb), 0.15) 0%,
+        transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    animation: visHeroOrb 14s ease-in-out infinite;
+}
+@keyframes visHeroOrb {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-40px, 30px) scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel #sec-dashboard .page-header::before { animation: none; }
+}
+
+/* ─── 98. KPIs grid Dashboard premium ───────────── */
+.admin-panel #sec-dashboard .stats-grid,
+.admin-panel #sec-dashboard .kpis-grid,
+.admin-panel #sec-dashboard .hero-kpis,
+.admin-panel #sec-dashboard .kpi-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+}
+.admin-panel .stat-card,
+.admin-panel #sec-dashboard .stat-card,
+.admin-panel #sec-dashboard .kpi-card,
+.admin-panel #sec-dashboard .hero-kpi {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 22px 24px;
+    box-shadow: var(--vis-elev-1);
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel .stat-card::before,
+.admin-panel #sec-dashboard .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--vis-brand-500) 50%,
+        transparent 100%);
+    opacity: 0;
+    transition: opacity var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .stat-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(var(--ak-rgb), 0.32);
+    box-shadow: var(--vis-elev-3),
+                var(--vis-elev-glow);
+}
+.admin-panel .stat-card:hover::before {
+    opacity: 1;
+}
+.admin-panel .stat-card .stat-value,
+.admin-panel .kpi-value {
+    font-size: var(--vis-fs-3xl);
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.05;
+    letter-spacing: var(--vis-ls-tightest);
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-500) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+}
+.admin-panel .stat-card .stat-label,
+.admin-panel .kpi-label {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+}
+
+/* ─── 99. PAGINATION premium en tablas ─────────── */
+.admin-panel .pagination,
+.admin-panel .pagination-wrapper,
+.admin-panel [class*="paginat"] {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px;
+    padding: 16px 0;
+    margin-top: 12px;
+}
+.admin-panel .pagination button,
+.admin-panel .pagination-wrapper button,
+.admin-panel .page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-2) !important;
+    border-radius: var(--vis-r-sm) !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--vis-d-fast) var(--vis-ease-spring-3), border-color var(--vis-d-fast) var(--vis-ease-spring-3), color var(--vis-d-fast) var(--vis-ease-spring-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.admin-panel .pagination button:hover:not(:disabled),
+.admin-panel .pagination-wrapper button:hover:not(:disabled) {
+    background: var(--vis-state-hover-gold) !important;
+    border-color: rgba(var(--ak-rgb), 0.40) !important;
+    color: var(--vis-brand-300) !important;
+}
+.admin-panel .pagination button.active,
+.admin-panel .pagination button[aria-current="page"],
+.admin-panel .page-btn.active {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 100%) !important;
+    border-color: var(--vis-brand-500) !important;
+    color: var(--ak-on-accent, #1a1310) !important;
+    font-weight: 700;
+    box-shadow: var(--vis-elev-1),
+                var(--vis-elev-glow);
+}
+
+/* ─── 100. CHECKBOX universal en tablas ──────── */
+.admin-panel .vehicle-cb,
+.admin-panel input[type="checkbox"]:not(.alt-toggle input):not(.availability-day input) {
+    accent-color: var(--vis-brand-500);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    border-radius: var(--vis-r-xs);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY MASTER — Vehículos + Marcas + Dashboard + Sidebar
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-032 MASTER 2 — Secciones que faltan + modales premium
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 101. ALIADOS (Dealers) — cards business style ────── */
+.admin-panel #sec-dealers .dealer-card,
+.admin-panel #sec-dealers .dealer-row,
+.admin-panel #dealersList > div {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 20px 22px;
+    margin-bottom: 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    align-items: center;
+}
+.admin-panel #sec-dealers .dealer-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--ak-rgb), 0.40);
+    box-shadow: var(--vis-elev-2),
+                var(--vis-elev-glow);
+}
+.admin-panel #sec-dealers .dealer-name {
+    font-size: var(--vis-fs-lg);
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: var(--vis-ls-tight);
+}
+.admin-panel #sec-dealers .dealer-meta {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.admin-panel #sec-dealers .dealer-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.admin-panel #sec-dealers .dealer-meta-item [data-lucide] {
+    width: 14px;
+    height: 14px;
+    color: var(--vis-brand-400);
+}
+
+/* ─── 102. BANNERS — preview cards premium ───────── */
+.admin-panel #sec-banners .banner-preview-card,
+.admin-panel #sec-banners .banner-card,
+.admin-panel #bannersList > div {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    overflow: hidden;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel #sec-banners .banner-preview-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(var(--ak-rgb), 0.40);
+    box-shadow: var(--vis-elev-3),
+                var(--vis-elev-glow);
+}
+.admin-panel #sec-banners .banner-preview-card img {
+    width: 100%;
+    aspect-ratio: 3/1;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.40);
+}
+.admin-panel #sec-banners .banner-info {
+    padding: 14px 18px;
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.04) 0%,
+            transparent 100%);
+}
+
+/* ─── 103. RESENAS — Twitter card style ─────────── */
+.admin-panel #sec-reviews .review-card,
+.admin-panel #sec-reviews .review-item,
+.admin-panel #reviewsList > div {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: start;
+}
+.admin-panel #sec-reviews .review-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(249, 112, 102, 0.32);
+    box-shadow: var(--vis-elev-2),
+                0 0 24px rgba(249, 112, 102, 0.10);
+}
+.admin-panel #sec-reviews .review-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,
+        #f97066 0%,
+        #c2410c 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: var(--vis-fs-md);
+    box-shadow: 0 2px 8px rgba(249, 112, 102, 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    flex-shrink: 0;
+}
+.admin-panel #sec-reviews .review-content {
+    min-width: 0;
+}
+.admin-panel #sec-reviews .review-author {
+    font-size: var(--vis-fs-base);
+    font-weight: 650;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+.admin-panel #sec-reviews .review-stars {
+    color: #fcd34d;
+    letter-spacing: 0.1em;
+    font-size: var(--vis-fs-sm);
+    margin-bottom: 8px;
+}
+.admin-panel #sec-reviews .review-text {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: var(--vis-fs-sm);
+    line-height: var(--vis-lh-base);
+}
+
+/* ─── 104. CRM Pipeline lanes refinadas ─────────── */
+.admin-panel #sec-crm .pipeline-lane {
+    min-width: 280px;
+    flex-shrink: 0;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            transparent 100%),
+        var(--vis-surface-canvas);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 14px 14px 18px;
+}
+.admin-panel #sec-crm .pipeline-lane-header {
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    color: rgba(255, 255, 255, 0.55);
+    padding: 4px 4px 12px;
+    margin-bottom: 10px;
+    border-bottom: var(--vis-border-2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.admin-panel #sec-crm .pipeline-count {
+    background: var(--vis-brand-tint-strong);
+    color: var(--vis-brand-300);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    padding: 2px 8px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+}
+
+/* ─── 105. CALENDARIO — vista mes refinada ──── */
+.admin-panel #sec-calendar .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 14px;
+}
+.admin-panel #sec-calendar .cal-header-day {
+    text-align: center;
+    padding: 8px 4px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    color: rgba(255, 255, 255, 0.55);
+}
+.admin-panel #sec-calendar .cal-day,
+.admin-panel #sec-calendar .calendar-cell,
+.admin-panel #sec-calendar .day {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-sm);
+    padding: 8px 10px;
+    min-height: 90px;
+    cursor: pointer;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.admin-panel #sec-calendar .cal-day:hover {
+    border-color: var(--vis-brand-500);
+    background: var(--vis-state-hover-gold);
+    transform: scale(1.02);
+}
+.admin-panel #sec-calendar .cal-day .day-number {
+    font-size: var(--vis-fs-md);
+    font-weight: 650;
+    color: #ffffff;
+}
+.admin-panel #sec-calendar .cal-day--today {
+    background: linear-gradient(135deg,
+        rgba(var(--ak-rgb), 0.18) 0%,
+        rgba(var(--ak-rgb), 0.06) 100%);
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-elev-glow);
+}
+.admin-panel #sec-calendar .cal-day--today .day-number {
+    color: var(--vis-brand-200);
+    font-weight: 800;
+}
+.admin-panel #sec-calendar .cal-event {
+    background: linear-gradient(135deg,
+        var(--vis-brand-tint-strong),
+        var(--vis-brand-tint));
+    color: var(--vis-brand-200);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 8px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px solid rgba(var(--ak-rgb), 0.30);
+}
+
+/* ─── 106. WORKFLOWS rules visual cards ───── */
+.admin-panel #sec-workflows .workflow-card,
+.admin-panel #sec-workflows .rule-card {
+    background:
+        linear-gradient(180deg,
+            rgba(245, 158, 11, 0.04) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-left: 3px solid rgba(245, 158, 11, 0.40);
+    border-radius: var(--vis-r-lg);
+    padding: 18px 22px;
+    margin-bottom: 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    align-items: center;
+}
+.admin-panel #sec-workflows .workflow-card:hover {
+    border-color: rgba(245, 158, 11, 0.55);
+    border-left-color: rgba(245, 158, 11, 0.85);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+    transform: translateX(2px);
+}
+.admin-panel #sec-workflows .workflow-card--on {
+    border-left-color: var(--vis-brand-500);
+}
+.admin-panel #sec-workflows .workflow-name {
+    font-size: var(--vis-fs-md);
+    font-weight: 650;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+.admin-panel #sec-workflows .workflow-desc {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+}
+
+/* ─── 107. REPORTES KPI cards refinados ───── */
+.admin-panel #sec-reports .reports-kpi-card,
+.admin-panel #sec-reports .kpi-card,
+.admin-panel #sec-reports .stat-card {
+    background:
+        linear-gradient(180deg,
+            rgba(6, 182, 212, 0.04) 0%,
+            rgba(6, 182, 212, 0) 60%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 22px 24px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel #sec-reports .reports-kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(6, 182, 212, 0.40);
+    box-shadow: var(--vis-elev-3),
+                0 0 24px rgba(6, 182, 212, 0.20);
+}
+.admin-panel #sec-reports .reports-kpi-value,
+.admin-panel #sec-reports .kpi-value {
+    background: linear-gradient(135deg,
+        #67e8f9 0%,
+        #06b6d4 50%,
+        #0e7490 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ─── 108. KB (Cerebro AI) cards refinadas ───── */
+.admin-panel #sec-kb .kb-card,
+.admin-panel #kbList > div {
+    background:
+        linear-gradient(180deg,
+            rgba(16, 185, 129, 0.04) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-left: 3px solid rgba(16, 185, 129, 0.55);
+    border-radius: var(--vis-r-lg);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel #sec-kb .kb-card:hover {
+    transform: translateX(3px);
+    border-left-color: #10b981;
+    background:
+        linear-gradient(180deg,
+            rgba(16, 185, 129, 0.08) 0%,
+            transparent 100%),
+        var(--vis-surface-2);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.18);
+}
+.admin-panel #sec-kb .kb-question {
+    font-size: var(--vis-fs-md);
+    font-weight: 650;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+.admin-panel #sec-kb .kb-answer {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: var(--vis-fs-sm);
+    line-height: var(--vis-lh-base);
+}
+
+/* ─── 109. UNMATCHED cards refinadas ─────── */
+.admin-panel #sec-unmatched #unmatchedList > div,
+.admin-panel #sec-unmatched .unmatched-item {
+    background:
+        linear-gradient(180deg,
+            rgba(245, 158, 11, 0.06) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-left: 3px solid rgba(245, 158, 11, 0.55);
+    border-radius: var(--vis-r-lg);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel #sec-unmatched .unmatched-item:hover {
+    transform: translateX(3px);
+    border-left-color: #f59e0b;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.18);
+}
+.admin-panel #sec-unmatched .unmatched-query {
+    font-size: var(--vis-fs-md);
+    font-weight: 600;
+    color: #fcd34d;
+    margin-bottom: 6px;
+    font-family: var(--vis-font-mono);
+}
+
+/* ─── 110. USERS table cards style ────────── */
+.admin-panel #sec-users .users-table tbody tr {
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel #sec-users .users-table tbody tr:hover {
+    background: var(--vis-state-hover-gold);
+}
+.admin-panel #sec-users .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: var(--ak-on-accent, #1a1310);
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(var(--ak-rgb), 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+/* ─── 111. AUDIT timeline visual ────────── */
+.admin-panel #sec-audit .audit-entry,
+.admin-panel #sec-audit .audit-row,
+.admin-panel #activityFeed > div {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: center;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+    position: relative;
+}
+.admin-panel #sec-audit .audit-entry::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--vis-brand-500);
+    box-shadow: 0 0 0 3px rgba(var(--ak-rgb), 0.20);
+}
+.admin-panel #sec-audit .audit-entry:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(var(--ak-rgb), 0.30);
+    transform: translateX(4px);
+}
+.admin-panel #sec-audit .audit-action {
+    font-weight: 600;
+    color: #ffffff;
+    padding-left: 16px;
+}
+.admin-panel #sec-audit .audit-time {
+    color: rgba(255, 255, 255, 0.50);
+    font-size: var(--vis-fs-xs);
+    font-family: var(--vis-font-mono);
+}
+
+/* ─── 112. SETTINGS macOS-style cards ─────── */
+.admin-panel #sec-settings > div:not(:first-child),
+.admin-panel #sec-settings .setting-card,
+.admin-panel #sec-settings .stat-card,
+.admin-panel #sec-settings .form-card {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 22px 26px;
+    margin-bottom: 16px;
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel #sec-settings .setting-card-title,
+.admin-panel #sec-settings h3 {
+    font-size: var(--vis-fs-md);
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: var(--vis-ls-tight);
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.admin-panel #sec-settings h3 [data-lucide] {
+    color: var(--vis-brand-400);
+}
+
+/* ─── 113. MODALES refinement final premium ─────── */
+.admin-panel ~ .modal-overlay .modal,
+.modal-overlay .modal,
+#vehicleModal,
+#brandModal,
+#dealerModal,
+#bannerModal,
+#reviewModal,
+#userModal {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-modal) !important;
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-4) !important;
+    border-radius: var(--vis-r-xl) !important;
+    box-shadow: var(--vis-elev-5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+.modal-overlay .modal-header,
+#vehicleModal .modal-header,
+#brandModal .modal-header,
+#dealerModal .modal-header,
+#bannerModal .modal-header,
+#reviewModal .modal-header,
+#userModal .modal-header {
+    background:
+        linear-gradient(180deg,
+            rgba(var(--ak-rgb), 0.10) 0%,
+            rgba(var(--ak-rgb), 0.02) 100%) !important;
+    border-bottom: var(--vis-border-gold) !important;
+    padding: 20px 28px !important;
+    border-radius: var(--vis-r-xl) var(--vis-r-xl) 0 0 !important;
+    position: relative;
+}
+.modal-overlay .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--vis-brand-500) 50%,
+        transparent 100%);
+    opacity: 0.55;
+    pointer-events: none;
+}
+.modal-overlay .modal-header h2 {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-lg) !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-300) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    letter-spacing: var(--vis-ls-tight);
+}
+.modal-overlay .modal-close {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-3) !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3) !important;
+}
+.modal-overlay .modal-close:hover {
+    background: rgba(239, 68, 68, 0.18) !important;
+    border-color: rgba(239, 68, 68, 0.45) !important;
+    color: #fca5a5 !important;
+    transform: rotate(90deg);
+}
+
+/* ─── 114. FORMS dentro modales premium ───── */
+.modal-overlay .form-group,
+.modal-overlay .form-row,
+.modal-overlay label {
+    margin-bottom: 16px;
+}
+.modal-overlay label,
+.modal-overlay .form-label {
+    display: block;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    color: rgba(255, 255, 255, 0.72);
+    margin-bottom: 6px;
+}
+.modal-overlay input[type="text"],
+.modal-overlay input[type="email"],
+.modal-overlay input[type="tel"],
+.modal-overlay input[type="number"],
+.modal-overlay input[type="password"],
+.modal-overlay input[type="url"],
+.modal-overlay input[type="date"],
+.modal-overlay textarea,
+.modal-overlay select {
+    width: 100% !important;
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.10) 0%,
+            rgba(0, 0, 0, 0.04) 100%),
+        var(--vis-surface-1) !important;
+    border: var(--vis-border-3) !important;
+    border-radius: var(--vis-r-sm) !important;
+    padding: 11px 14px !important;
+    color: #ffffff !important;
+    font-family: inherit;
+    font-size: var(--vis-fs-base);
+    transition: all var(--vis-d-fast) var(--vis-ease-snap) !important;
+}
+.modal-overlay input:focus,
+.modal-overlay textarea:focus,
+.modal-overlay select:focus {
+    border-color: var(--vis-brand-500) !important;
+    background-color: var(--vis-brand-tint) !important;
+    box-shadow: var(--vis-state-focus) !important;
+    outline: none !important;
+}
+
+/* ─── 115. MODAL FOOTER buttons premium ──── */
+.modal-overlay .modal-footer {
+    padding: 16px 28px !important;
+    border-top: var(--vis-border-2) !important;
+    background:
+        linear-gradient(0deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            transparent 100%);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.modal-overlay .modal-footer .btn-ghost,
+.modal-overlay .modal-footer .btn-secondary {
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-3) !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    border-radius: var(--vis-r-sm) !important;
+    padding: 9px 18px !important;
+    font-weight: 550;
+}
+.modal-overlay .modal-footer .btn-ghost:hover,
+.modal-overlay .modal-footer .btn-secondary:hover {
+    background: var(--vis-state-hover-gold) !important;
+    border-color: rgba(var(--ak-rgb), 0.40) !important;
+    color: #ffffff !important;
+}
+.modal-overlay .modal-footer .btn-primary {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%) !important;
+    color: var(--ak-on-accent, #1a1310) !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55) !important;
+    border-radius: var(--vis-r-sm) !important;
+    padding: 9px 22px !important;
+    box-shadow:
+        var(--vis-elev-1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+}
+.modal-overlay .modal-footer .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        var(--vis-elev-2),
+        var(--vis-elev-glow) !important;
+}
+
+/* ─── 116. WIZARD STEPS rediseñados ─────── */
+.modal-overlay .wizard-steps,
+.modal-overlay .form-wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 18px 0;
+    border-bottom: var(--vis-border-2);
+    margin-bottom: 18px;
+}
+.modal-overlay .wizard-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-pill);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.modal-overlay .wizard-step.active {
+    background: linear-gradient(135deg,
+        rgba(var(--ak-rgb), 0.24) 0%,
+        rgba(var(--ak-rgb), 0.08) 100%);
+    border-color: var(--vis-brand-500);
+    color: var(--vis-brand-200);
+    box-shadow: 0 0 16px rgba(var(--ak-rgb), 0.18);
+    transform: scale(1.05);
+}
+.modal-overlay .wizard-step.done {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.40);
+    color: #6ee7b7;
+}
+
+/* ─── 117. CRM Detail Modal (360°) refinement ─── */
+.admin-panel #crmDetailModal,
+.admin-panel .crm-detail-modal {
+    /* placeholder for future CRM 360 */
+}
+
+/* ─── 118. EMPTY STATES refinados ─────── */
+.admin-panel .empty-state,
+.admin-panel .alt-empty-illustrated {
+    text-align: center;
+    padding: 64px 32px;
+}
+.admin-panel .empty-state-icon,
+.admin-panel .alt-empty-illustrated-svg {
+    margin-bottom: 16px;
+    opacity: 0.85;
+    filter: drop-shadow(0 4px 12px rgba(var(--ak-rgb), 0.20));
+}
+.admin-panel .empty-state-title,
+.admin-panel .alt-empty-illustrated-title {
+    font-size: var(--vis-fs-lg);
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 8px;
+    letter-spacing: var(--vis-ls-tight);
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.admin-panel .empty-state-text,
+.admin-panel .alt-empty-illustrated-text {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--vis-fs-sm);
+    line-height: var(--vis-lh-base);
+    max-width: 440px;
+    margin: 0 auto 18px;
+}
+.admin-panel .empty-state .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ─── 119. SEARCH GLOBAL en topbar premium ─── */
+.admin-panel .global-search-wrapper input,
+.admin-panel #globalSearch {
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-3) !important;
+    border-radius: var(--vis-r-pill) !important;
+    padding: 9px 16px 9px 38px !important;
+    color: #ffffff !important;
+    font-size: var(--vis-fs-sm);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b89658' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: 12px center !important;
+    background-size: 16px !important;
+}
+.admin-panel #globalSearch:focus {
+    background-color: var(--vis-brand-tint) !important;
+    border-color: var(--vis-brand-500) !important;
+    box-shadow: var(--vis-state-focus) !important;
+}
+
+/* ─── 120. ALL TABS strips uniformizados ───── */
+.admin-panel .crm-tabstrip,
+.admin-panel .cal-tabstrip,
+.admin-panel .crm-detail-tabs,
+.admin-panel .form-tabs,
+.admin-panel .modal-tabs {
+    display: inline-flex;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 4px;
+    gap: 2px;
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.10);
+}
+.admin-panel .crm-tab,
+.admin-panel .cal-tab,
+.admin-panel .crm-detail-tab,
+.admin-panel .form-tab,
+.admin-panel .modal-tab {
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--vis-r-xs);
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+    font-weight: 550;
+    cursor: pointer;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+    white-space: nowrap;
+}
+.admin-panel .crm-tab:hover,
+.admin-panel .cal-tab:hover,
+.admin-panel .crm-detail-tab:hover {
+    background: var(--vis-state-hover-gold);
+    color: rgba(255, 255, 255, 0.92);
+}
+.admin-panel .crm-tab.is-active,
+.admin-panel .cal-tab.is-active,
+.admin-panel .crm-detail-tab.is-active,
+.admin-panel .crm-tab[aria-selected="true"] {
+    background: linear-gradient(180deg,
+        rgba(var(--ak-rgb), 0.32) 0%,
+        rgba(var(--ak-rgb), 0.14) 100%);
+    color: var(--vis-brand-200);
+    font-weight: 700;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10),
+                0 2px 8px rgba(var(--ak-rgb), 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN MASTER 2 — todas las secciones + modales + forms unificados
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-032 FASES 4-10 — UX Flows + Data Viz + Micro + Perf + A11y + Mobile + Polish
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════ FASE 4 — UX FLOWS PREMIUM ═══════ */
+
+/* ─── 130. COMMAND PALETTE extendido (⌘+K) ────── */
+.alt-palette-modal {
+    width: min(640px, 92vw) !important;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+}
+.alt-palette-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 22px !important;
+}
+.alt-palette-input-wrap [data-lucide]:first-child {
+    color: var(--vis-brand-400);
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.75;
+}
+.alt-palette-results {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    max-height: calc(70vh - 80px);
+}
+.alt-palette-cat:first-of-type {
+    margin-top: 0;
+}
+.alt-palette-shortcut {
+    margin-left: auto;
+    display: inline-flex;
+    gap: 4px;
+}
+.alt-palette-shortcut kbd {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-bottom-width: 2px;
+    border-radius: var(--vis-r-xs);
+    padding: 2px 7px;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.65);
+    font-family: var(--vis-font-mono);
+}
+.alt-palette-item-meta {
+    color: rgba(255, 255, 255, 0.40);
+    font-size: var(--vis-fs-2xs);
+    margin-top: 2px;
+}
+
+/* ─── 131. GLOBAL SEARCH RESULTS dropdown ───── */
+.global-search-results {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.96) 0%,
+            rgba(15, 15, 17, 0.92) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    box-shadow: var(--vis-elev-4);
+    padding: 6px;
+    max-height: 480px;
+    overflow-y: auto;
+    animation: visSearchResultsIn var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+@keyframes visSearchResultsIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.global-search-result {
+    padding: 10px 14px;
+    border-radius: var(--vis-r-sm);
+    cursor: pointer;
+    transition: all var(--vis-d-quick) var(--vis-ease-snap);
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 12px;
+    align-items: center;
+}
+.global-search-result:hover,
+.global-search-result.is-selected {
+    background: var(--vis-state-hover-gold);
+}
+.global-search-result-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--vis-r-xs);
+    background: var(--vis-brand-tint);
+    border: var(--vis-border-gold);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--vis-brand-300);
+}
+.global-search-result-meta {
+    color: rgba(255, 255, 255, 0.50);
+    font-size: var(--vis-fs-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    font-weight: 600;
+}
+
+/* ─── 132. BULK ACTIONS BAR universal ─── */
+.bulk-actions-bar,
+[data-bulk-bar] {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.95) 0%,
+            rgba(15, 15, 17, 0.92) 100%);
+    backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    border: var(--vis-border-gold-hi);
+    border-radius: var(--vis-r-pill);
+    padding: 10px 18px;
+    box-shadow:
+        var(--vis-elev-5),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 200;
+    animation: visBulkBarIn var(--vis-d-base) var(--vis-ease-bounce);
+}
+@keyframes visBulkBarIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.92); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+.bulk-actions-bar .bulk-count {
+    background: var(--vis-brand-tint-strong);
+    color: var(--vis-brand-200);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    padding: 4px 12px;
+    font-size: var(--vis-fs-xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-wide);
+}
+.bulk-actions-bar button {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-sm);
+    padding: 6px 14px;
+    color: rgba(255, 255, 255, 0.78);
+    cursor: pointer;
+    font-weight: 550;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.bulk-actions-bar button:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(var(--ak-rgb), 0.40);
+    color: var(--vis-brand-300);
+    transform: scale(1.05);
+}
+.bulk-actions-bar button.is-danger:hover {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.40);
+    color: #fca5a5;
+}
+
+/* ─── 133. UNDO TOAST (action confirmation) ─── */
+.vis-undo-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.95) 0%,
+            rgba(15, 15, 17, 0.92) 100%);
+    backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    padding: 12px 16px;
+    box-shadow: var(--vis-elev-4);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.92);
+    z-index: 200;
+    animation: visUndoIn var(--vis-d-base) var(--vis-ease-spring-3);
+}
+.vis-undo-btn {
+    background: var(--vis-brand-tint-strong);
+    border: var(--vis-border-gold);
+    color: var(--vis-brand-300);
+    padding: 6px 14px;
+    border-radius: var(--vis-r-pill);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: var(--vis-fs-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wide);
+}
+@keyframes visUndoIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── 134. QUICK ACTIONS FAB menu (cada seccion) ─── */
+.vis-fab-menu {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+}
+.vis-fab-trigger {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55);
+    color: var(--ak-on-accent, #1a1310);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow-strong),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.vis-fab-trigger:hover {
+    transform: scale(1.08) rotate(-12deg);
+}
+.vis-fab-trigger.is-open {
+    transform: rotate(45deg);
+}
+.vis-fab-items {
+    position: absolute;
+    bottom: 64px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--vis-d-base) var(--vis-ease-snap);
+}
+.vis-fab-menu.is-open .vis-fab-items {
+    opacity: 1;
+    pointer-events: auto;
+}
+.vis-fab-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--vis-surface-modal);
+    backdrop-filter: blur(var(--vis-blur-12));
+    -webkit-backdrop-filter: blur(var(--vis-blur-12));
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-pill);
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 550;
+    cursor: pointer;
+    box-shadow: var(--vis-elev-2);
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.vis-fab-item:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: var(--vis-brand-500);
+    color: var(--vis-brand-300);
+    transform: translateX(-4px);
+}
+
+/* ═══════ FASE 5 — DATA VIZ WORLD-CLASS ═══════ */
+
+/* ─── 140. SPARKLINES en KPI cards ───── */
+.admin-panel .kpi-sparkline,
+.admin-panel .stat-sparkline {
+    width: 100%;
+    height: 40px;
+    margin-top: 8px;
+    opacity: 0.85;
+}
+.admin-panel .kpi-sparkline path {
+    stroke: var(--vis-brand-400);
+    stroke-width: 1.75;
+    fill: none;
+    filter: drop-shadow(0 2px 4px rgba(var(--ak-rgb), 0.30));
+}
+.admin-panel .kpi-sparkline-area {
+    fill: url(#visSparklineGradient);
+    opacity: 0.30;
+}
+
+/* ─── 141. CHART containers premium ───── */
+.admin-panel .chart-container,
+.admin-panel canvas {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 18px;
+    box-shadow: var(--vis-elev-1);
+}
+
+/* ─── 142. FUNNEL viz ───── */
+.admin-panel .funnel-stage,
+.admin-panel .funnel-step {
+    position: relative;
+    background: linear-gradient(90deg,
+        var(--vis-brand-tint-strong) 0%,
+        var(--vis-brand-tint) 50%,
+        rgba(255, 255, 255, 0.02) 100%);
+    border-left: 4px solid var(--vis-brand-500);
+    border-radius: var(--vis-r-sm);
+    padding: 14px 18px;
+    margin-bottom: 6px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel .funnel-stage:hover {
+    transform: translateX(4px);
+    box-shadow: var(--vis-elev-glow);
+}
+.admin-panel .funnel-stage-value {
+    font-size: var(--vis-fs-xl);
+    font-weight: 700;
+    color: var(--vis-brand-200);
+    font-feature-settings: 'tnum' 1;
+}
+
+/* ─── 143. HEATMAP grid ───── */
+.admin-panel .heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    padding: 12px;
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+}
+.admin-panel .heatmap-cell {
+    aspect-ratio: 1;
+    border-radius: var(--vis-r-xs);
+    background: rgba(var(--ak-rgb), 0.05);
+    transition: transform var(--vis-d-quick) var(--vis-ease-spring-3);
+    cursor: pointer;
+}
+.admin-panel .heatmap-cell[data-intensity="1"] { background: rgba(var(--ak-rgb), 0.20); }
+.admin-panel .heatmap-cell[data-intensity="2"] { background: rgba(var(--ak-rgb), 0.40); }
+.admin-panel .heatmap-cell[data-intensity="3"] { background: rgba(var(--ak-rgb), 0.65); }
+.admin-panel .heatmap-cell[data-intensity="4"] {
+    background: linear-gradient(135deg, var(--vis-brand-300), var(--vis-brand-500));
+    box-shadow: 0 0 8px var(--vis-brand-glow-soft);
+}
+.admin-panel .heatmap-cell:hover {
+    transform: scale(1.30);
+    z-index: 2;
+}
+
+/* ─── 144. KANBAN drag-drop premium ─── */
+.admin-panel .kanban-card.is-dragging {
+    opacity: 0.85;
+    transform: rotate(2deg) scale(1.04);
+    box-shadow: var(--vis-elev-5),
+                var(--vis-elev-glow-strong);
+    cursor: grabbing;
+    z-index: 100;
+}
+.admin-panel .kanban-column.is-drop-target {
+    background: var(--vis-brand-tint);
+    border-color: var(--vis-brand-500);
+    box-shadow: inset 0 0 32px rgba(var(--ak-rgb), 0.15);
+}
+.admin-panel .kanban-drop-indicator {
+    height: 3px;
+    background: var(--vis-brand-500);
+    border-radius: var(--vis-r-pill);
+    box-shadow: 0 0 12px var(--vis-brand-glow);
+    margin: 4px 0;
+    animation: visDropPulse 1s ease-in-out infinite;
+}
+@keyframes visDropPulse {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+
+/* ═══════ FASE 6 — MICROINTERACCIONES PREMIUM ═══════ */
+
+/* ─── 150. PAGE TRANSITIONS cross-section ─── */
+@supports (view-transition-name: none) {
+    .admin-panel .section.active {
+        view-transition-name: section-content;
+    }
+    ::view-transition-old(section-content),
+    ::view-transition-new(section-content) {
+        animation-duration: 360ms;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    ::view-transition-old(section-content) {
+        animation-name: visSecOut;
+    }
+    ::view-transition-new(section-content) {
+        animation-name: visSecIn;
+    }
+}
+@keyframes visSecOut {
+    to { opacity: 0; transform: translateY(-8px) scale(0.99); filter: blur(4px); }
+}
+@keyframes visSecIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.99); filter: blur(4px); }
+}
+
+/* ─── 151. SUCCESS confetti animation ─── */
+@keyframes visConfettiIn {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-20px) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-40px) scale(0.8) rotate(360deg);
+    }
+}
+.vis-confetti-particle {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 99999;
+    animation: visConfettiIn 1.4s var(--vis-ease-spring-1) forwards;
+}
+
+/* ─── 152. SHAKE error feedback ─── */
+@keyframes visShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+}
+.vis-shake {
+    animation: visShake 0.5s var(--vis-ease-snap);
+}
+
+/* ─── 153. RIPPLE click feedback ─── */
+.vis-ripple-container {
+    position: relative;
+    overflow: hidden;
+}
+.vis-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(var(--ak-rgb), 0.45);
+    pointer-events: none;
+    animation: visRipple 0.6s ease-out;
+}
+@keyframes visRipple {
+    from { transform: scale(0); opacity: 1; }
+    to   { transform: scale(4); opacity: 0; }
+}
+
+/* ─── 154. MAGNETIC button effect ─── */
+.vis-magnetic {
+    transition: transform var(--vis-d-quick) var(--vis-ease-spring-3);
+}
+
+/* ─── 155. SMART SKELETON loaders ─── */
+.vis-skeleton {
+    position: relative;
+    background: linear-gradient(90deg,
+        rgba(var(--ak-rgb), 0.04) 0%,
+        rgba(var(--ak-rgb), 0.10) 50%,
+        rgba(var(--ak-rgb), 0.04) 100%);
+    background-size: 200% 100%;
+    border-radius: var(--vis-r-sm);
+    overflow: hidden;
+    animation: visSkeletonShine 2s ease-in-out infinite;
+}
+@keyframes visSkeletonShine {
+    0%, 100% { background-position: -200% 0; }
+    50%      { background-position: 200% 0; }
+}
+.vis-skeleton-row {
+    height: 14px;
+    margin-bottom: 8px;
+    border-radius: var(--vis-r-xs);
+}
+.vis-skeleton-row--lg { height: 22px; }
+.vis-skeleton-row--xs { height: 10px; }
+.vis-skeleton-circle {
+    border-radius: 50%;
+}
+@media (prefers-reduced-motion: reduce) {
+    .vis-skeleton, .vis-confetti-particle, .vis-shake, .vis-ripple {
+        animation: none;
+    }
+}
+
+/* ═══════ FASE 7 — PERFORMANCE WORLD-CLASS ═══════ */
+
+/* ─── 160. CONTAIN aplicado a containers grandes ─── */
+.admin-panel .data-table,
+.admin-panel #vehiclesTable,
+.admin-panel #brandsTable,
+.admin-panel #usersTable {
+    contain: layout style;
+}
+.admin-panel .stats-grid,
+.admin-panel .kpis-grid,
+.admin-panel .reports-kpis,
+.admin-panel .hero-kpis {
+    contain: layout style;
+}
+
+/* ─── 161. WILL-CHANGE en elementos animados ─── */
+.admin-panel .modal-overlay,
+.admin-panel .sidebar,
+.admin-panel .vis-fab-menu,
+.admin-panel .bulk-actions-bar {
+    will-change: opacity, transform;
+}
+
+/* ─── 162. CONTENT-VISIBILITY tighter ─── */
+.admin-panel .activity-feed-panel:not(.is-open),
+.admin-panel .alt-palette:not(.alt-palette-open),
+.admin-panel .altorra-notify-center:not(.is-open) {
+    content-visibility: hidden;
+    contain: strict;
+}
+
+/* ═══════ FASE 8 — ACCESIBILIDAD AAA ═══════ */
+
+/* ─── 170. FOCUS rings AAA ─── */
+.admin-panel *:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 2px var(--vis-surface-base),
+        0 0 0 5px rgba(var(--ak-rgb), 0.85),
+        0 0 32px rgba(var(--ak-rgb), 0.30);
+    border-radius: var(--vis-r-xs);
+}
+
+/* ─── 171. SKIP TO CONTENT link ─── */
+.vis-skip-to-content {
+    position: absolute;
+    left: -200%;
+    top: 12px;
+    background: var(--vis-brand-500);
+    color: var(--ak-on-accent, #1a1310);
+    padding: 10px 18px;
+    border-radius: var(--vis-r-sm);
+    font-weight: 700;
+    z-index: 99999;
+    transition: left var(--vis-d-base) var(--vis-ease-snap);
+}
+.vis-skip-to-content:focus {
+    left: 12px;
+}
+
+/* ─── 172. SR-ONLY util ─── */
+.vis-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ─── 173. HIGH CONTRAST refinement ─── */
+@media (prefers-contrast: more) {
+    .admin-panel {
+        --vis-border-2: 1px solid rgba(255, 255, 255, 0.50);
+        --vis-border-3: 1px solid rgba(255, 255, 255, 0.78);
+        --vis-border-4: 1px solid rgba(255, 255, 255, 0.95);
+    }
+    .admin-panel .nav-item.active {
+        outline: 3px solid var(--vis-brand-300);
+        outline-offset: -3px;
+    }
+    .admin-panel .btn-primary,
+    .admin-panel .alt-btn--primary {
+        outline: 2px solid currentColor;
+        font-weight: 800;
+    }
+}
+
+/* ─── 174. REDUCED MOTION (todo desactivado) ─── */
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel *,
+    .admin-panel *::before,
+    .admin-panel *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ═══════ FASE 9 — MOBILE PREMIUM ═══════ */
+
+/* ─── 180. SIDEBAR drawer mobile spring ─── */
+@media (max-width: 768px) {
+    .admin-panel .sidebar,
+    .admin-panel #adminSidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        width: 290px !important;
+        transform: translateX(-100%);
+        transition: transform var(--vis-d-base) var(--vis-ease-spring-3);
+        z-index: 9999;
+        box-shadow: var(--vis-elev-5);
+    }
+    .admin-panel.sidebar-open .sidebar,
+    body.sidebar-open .sidebar,
+    .admin-panel .sidebar.is-open {
+        transform: translateX(0);
+    }
+    .admin-panel.admin-layout {
+        grid-template-columns: 1fr !important;
+        grid-template-areas: "main" !important;
+    }
+    .admin-panel .admin-content,
+    .admin-panel main {
+        grid-area: main !important;
+        padding: 12px !important;
+    }
+    .admin-panel .section,
+    .admin-panel #sec-vehicles,
+    .admin-panel #sec-brands,
+    .admin-panel #sec-dealers,
+    .admin-panel #sec-banners,
+    .admin-panel #sec-reviews,
+    .admin-panel #sec-crm,
+    .admin-panel #sec-calendar,
+    .admin-panel #sec-workflows,
+    .admin-panel #sec-kb,
+    .admin-panel #sec-unmatched,
+    .admin-panel #sec-users,
+    .admin-panel #sec-audit,
+    .admin-panel #sec-settings,
+    .admin-panel #sec-reports {
+        padding: 16px !important;
+    }
+}
+
+/* ─── 181. BOTTOM SHEET para modales mobile ─── */
+@media (max-width: 600px) {
+    .modal-overlay .modal {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 92vh !important;
+        margin: 0 !important;
+        border-radius: var(--vis-r-xl) var(--vis-r-xl) 0 0 !important;
+        animation: visBottomSheetIn var(--vis-d-base) var(--vis-ease-spring-3) !important;
+    }
+    @keyframes visBottomSheetIn {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
+    }
+    .modal-overlay .modal::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.30);
+        border-radius: var(--vis-r-pill);
+    }
+}
+
+/* ─── 182. TOUCH gestures hint ─── */
+@media (max-width: 768px) {
+    .admin-panel .nav-item,
+    .admin-panel .btn,
+    .admin-panel .v-act,
+    .admin-panel .alt-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    .admin-panel #vehiclesTable tbody td {
+        padding: 12px 10px !important;
+        font-size: var(--vis-fs-xs);
+    }
+    .admin-panel .vehicle-thumb {
+        width: 56px !important;
+        height: 40px !important;
+    }
+}
+
+/* ─── 183. Mobile typography fluida ─── */
+@media (max-width: 480px) {
+    .admin-panel .stat-card .stat-value,
+    .admin-panel .kpi-value {
+        font-size: clamp(1.5rem, 6vw, 2rem);
+    }
+    .admin-panel .page-header h1 {
+        font-size: clamp(1.25rem, 5vw, 1.75rem);
+    }
+}
+
+/* ═══════ FASE 10 — POLISH FINAL ═══════ */
+
+/* ─── 190. EMPTY STATES 3D depth ─── */
+.admin-panel .alt-empty-illustrated {
+    position: relative;
+}
+.admin-panel .alt-empty-illustrated::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle,
+        rgba(var(--ak-rgb), 0.10) 0%,
+        transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+    animation: visEmptyOrb 8s ease-in-out infinite;
+}
+.admin-panel .alt-empty-illustrated > * {
+    position: relative;
+    z-index: 1;
+}
+@keyframes visEmptyOrb {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50%      { transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* ─── 191. SPLASH screen / loading premium ─── */
+.vis-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background:
+        radial-gradient(ellipse 800px 600px at center,
+            rgba(var(--ak-rgb), 0.08) 0%,
+            transparent 70%),
+        #0a0a0c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    animation: visSplashFadeIn 0.4s var(--vis-ease-snap);
+}
+.vis-splash.is-fading {
+    animation: visSplashFadeOut 0.6s var(--vis-ease-snap) forwards;
+}
+.vis-splash-logo {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-3xl);
+    font-weight: 900;
+    letter-spacing: var(--vis-ls-tightest);
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: visLogoBreathe 2s ease-in-out infinite;
+}
+@keyframes visLogoBreathe {
+    0%, 100% { transform: scale(1); opacity: 0.95; }
+    50%      { transform: scale(1.02); opacity: 1; }
+}
+.vis-splash-loader {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 3px solid rgba(var(--ak-rgb), 0.20);
+    border-top-color: var(--vis-brand-500);
+    animation: visSpinnerSpin 0.8s linear infinite;
+}
+@keyframes visSpinnerSpin {
+    to { transform: rotate(360deg); }
+}
+@keyframes visSplashFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes visSplashFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; visibility: hidden; }
+}
+
+/* ─── 192. TOOLTIP refinado universal ─── */
+[data-tooltip] {
+    position: relative;
+}
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--vis-surface-modal);
+    backdrop-filter: blur(var(--vis-blur-12));
+    -webkit-backdrop-filter: blur(var(--vis-blur-12));
+    border: var(--vis-border-3);
+    color: rgba(255, 255, 255, 0.95);
+    padding: 6px 12px;
+    border-radius: var(--vis-r-xs);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+    z-index: 1000;
+    box-shadow: var(--vis-elev-3);
+}
+[data-tooltip]:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ─── 193. SCROLL fade hints ─── */
+.admin-panel .scroll-fade-bottom::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: linear-gradient(180deg,
+        transparent 0%,
+        var(--vis-surface-base) 100%);
+    pointer-events: none;
+}
+
+/* ─── 194. HOVER preview tooltip rico ─── */
+.vis-hover-card {
+    position: absolute;
+    background: var(--vis-surface-modal);
+    backdrop-filter: blur(var(--vis-blur-24));
+    -webkit-backdrop-filter: blur(var(--vis-blur-24));
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    box-shadow: var(--vis-elev-4);
+    padding: 14px 16px;
+    min-width: 240px;
+    max-width: 320px;
+    z-index: 1000;
+    animation: visHoverCardIn 0.18s var(--vis-ease-spring-3);
+}
+@keyframes visHoverCardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── 195. EASTER EGG — Konami code activated ─── */
+body.vis-konami {
+    animation: visRainbow 5s linear;
+}
+@keyframes visRainbow {
+    0%   { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+/* ─── 196. SECTION ENTRY refinado por section ─── */
+.admin-panel .section.active {
+    animation: visSectionEntry var(--vis-d-medium) var(--vis-ease-spring-1) both;
+}
+@keyframes visSectionEntry {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+        filter: blur(2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+/* ─── 197. STAGGER CASCADE en grids visibles ─── */
+.admin-panel .section.active .stats-grid > *,
+.admin-panel .section.active .kpis-grid > *,
+.admin-panel .section.active .hero-kpis > *,
+.admin-panel .section.active .reports-kpis > * {
+    animation: visStaggerEntry var(--vis-d-medium) var(--vis-ease-spring-1) both;
+}
+.admin-panel .section.active .stats-grid > *:nth-child(1) { animation-delay: 60ms; }
+.admin-panel .section.active .stats-grid > *:nth-child(2) { animation-delay: 120ms; }
+.admin-panel .section.active .stats-grid > *:nth-child(3) { animation-delay: 180ms; }
+.admin-panel .section.active .stats-grid > *:nth-child(4) { animation-delay: 240ms; }
+.admin-panel .section.active .stats-grid > *:nth-child(5) { animation-delay: 300ms; }
+.admin-panel .section.active .stats-grid > *:nth-child(6) { animation-delay: 360ms; }
+@keyframes visStaggerEntry {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── 198. SOUND TOGGLE switch ─── */
+.vis-sound-toggle {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--vis-surface-modal);
+    backdrop-filter: blur(var(--vis-blur-12));
+    border: var(--vis-border-2);
+    color: rgba(255, 255, 255, 0.62);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    opacity: 0.55;
+}
+.vis-sound-toggle:hover {
+    opacity: 1;
+    border-color: var(--vis-brand-500);
+    color: var(--vis-brand-300);
+    transform: scale(1.08);
+}
+.vis-sound-toggle.is-on {
+    opacity: 1;
+    color: var(--vis-brand-300);
+    border-color: rgba(var(--ak-rgb), 0.40);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN FASES 4-10 — UX + Data Viz + Micro + Perf + A11y + Mobile + Polish
+   ═══════════════════════════════════════════════════════════════════ */

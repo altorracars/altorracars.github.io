@@ -1,0 +1,997 @@
+/* ============================================================
+   ALTORRA CARS · DETALLE VEHÍCULO — CSS page-specific (SP-5.3)
+   Fase 2: reescrito a tema CINEMATIC. Carga: <link> en el <head> del
+   template, tras soft-redesign.css (que aporta los tokens --cin-*) y en la
+   posición que ocupaba el <style> inline (tras performance-fixes.css) para
+   preservar el orden de cascada. <base href="/"> hace que resuelva desde la
+   raíz también en /vehiculos/*.html.
+
+   Reglas de diseño (spec §4 + mockups botones-layout/layout-pagina + Detail.jsx):
+   - Paleta dorada cinematic (NO los 6 colores chillones legacy). Acento dorado
+     en estados activos. WhatsApp verde = única excepción (marca).
+   - Tipografía: títulos Instrument Serif (--cin-display), cuerpo Manrope
+     (--cin-sans). Fuentes inyectadas por components.js.
+   - §17: sin `transition: all`, animar solo transform/opacity, sin
+     backdrop-filter en grids/listas (solo en la barra sticky estructural).
+   - Contratos preservados: TODAS las clases-hook que consulta el JS
+     (.gallery-section, .main-image-container, .thumbnail, .tab-btn,
+     .tab-content, .lightbox-*, .vehicle-card de los similares).
+   ============================================================ */
+
+/* ===== Base cinematic del cuerpo (cinematic.css NO se carga aquí) ===== */
+body[data-cin="on"] {
+    background: var(--cin-bg);
+    color: var(--cin-ink);
+    font-family: var(--cin-sans);
+    letter-spacing: -0.005em;
+}
+
+/* Tipografía Manrope robusta: animaciones.css fija system-ui vía
+   `html:not(.fonts-loaded) body` (especificidad 0,1,2 > body[data-cin] 0,1,1), así
+   que el cuerpo hereda system-ui mientras no exista la clase .fonts-loaded. Estos
+   contenedores (0,2,1) ganan SIEMPRE y sus descendientes heredan la tipografía
+   cinematic — sin depender del timing de carga de fuentes. */
+body[data-cin="on"] .detail-page,
+body[data-cin="on"] .dt-sticky,
+body[data-cin="on"] .lightbox,
+body[data-cin="on"] .share-toast {
+    font-family: var(--cin-sans);
+}
+
+/* ===== Página + contenedor ===== */
+body[data-cin="on"] .detail-page {
+    background: var(--cin-bg);
+    min-height: 100vh;
+    overflow-x: clip;
+    /* padding-top: despeja la barra de navegación fija */
+    padding: clamp(86px, 11vh, 116px) 0 80px;
+}
+
+body[data-cin="on"] .detail-container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 48px);
+    box-sizing: border-box;
+}
+
+/* Volver al catálogo */
+body[data-cin="on"] .dt-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: rgba(244, 238, 222, 0.04);
+    border: 1px solid var(--cin-line);
+    border-radius: 999px;
+    color: var(--cin-ink-soft);
+    font-size: 12.5px;
+    text-decoration: none;
+    margin-bottom: 18px;
+    transition: color .25s var(--cin-ease), background .25s var(--cin-ease), border-color .25s var(--cin-ease);
+}
+body[data-cin="on"] .dt-back:hover {
+    color: var(--cin-ink);
+    background: rgba(244, 238, 222, 0.08);
+    border-color: rgba(244, 238, 222, 0.18);
+}
+
+/* ===== Grid principal: galería 1.7fr + panel sticky 1fr ===== */
+body[data-cin="on"] .detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: clamp(18px, 2.4vw, 32px);
+    align-items: start;
+}
+/* Tabs y similares ocupan el ancho completo bajo la fila galería/panel */
+body[data-cin="on"] .content-section,
+body[data-cin="on"] .similar-section {
+    grid-column: 1 / -1;
+}
+
+/* ===== Galería ===== */
+body[data-cin="on"] .gallery-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+body[data-cin="on"] .main-image-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: linear-gradient(135deg, #1a1622, #0d0b12);
+    border: 1px solid var(--cin-line);
+    border-radius: 18px;
+    overflow: hidden;
+    cursor: zoom-in;
+}
+body[data-cin="on"] .main-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .5s var(--cin-ease);
+}
+body[data-cin="on"] .main-image-container:hover .main-image {
+    transform: scale(1.03);
+}
+body[data-cin="on"] .image-counter {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(8, 7, 10, 0.72);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+}
+body[data-cin="on"] .gallery-zoom-hint {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(8, 7, 10, 0.55);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-gold);
+    pointer-events: none;
+}
+
+/* Thumbnails — fila horizontal */
+body[data-cin="on"] .thumbnails-grid {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cin-gold) transparent;
+}
+body[data-cin="on"] .thumbnails-grid::-webkit-scrollbar { height: 4px; }
+body[data-cin="on"] .thumbnails-grid::-webkit-scrollbar-track { background: rgba(244,238,222,0.06); border-radius: 2px; }
+body[data-cin="on"] .thumbnails-grid::-webkit-scrollbar-thumb { background: var(--cin-gold-deep); border-radius: 2px; }
+body[data-cin="on"] .thumbnail {
+    flex: 0 0 78px;
+    height: 56px;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid var(--cin-line);
+    opacity: .65;
+    transition: opacity .25s var(--cin-ease), border-color .25s var(--cin-ease);
+}
+body[data-cin="on"] .thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+body[data-cin="on"] .thumbnail:hover { opacity: 1; }
+body[data-cin="on"] .thumbnail.active {
+    opacity: 1;
+    border-color: var(--cin-gold);
+}
+
+/* ===== Panel sticky (sidebar) ===== */
+body[data-cin="on"] .info-sidebar {
+    position: sticky;
+    top: 96px;
+    min-width: 0;
+}
+body[data-cin="on"] .info-card {
+    background: linear-gradient(180deg, rgba(14, 11, 9, 0.72), rgba(9, 7, 5, 0.74));
+    backdrop-filter: blur(18px) saturate(1.25);
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    border: 1px solid rgba(244, 238, 222, 0.12);
+    border-radius: 20px;
+    padding: clamp(18px, 1.8vw, 24px);
+    box-shadow: 0 28px 64px -38px rgba(0, 0, 0, 0.92), inset 0 1px 0 rgba(244, 238, 222, 0.07);
+}
+
+body[data-cin="on"] .vehicle-header { margin-bottom: 14px; }
+
+body[data-cin="on"] .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+/* Badges en familia dorada (sin los colores chillones legacy) */
+body[data-cin="on"] .badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(212, 168, 90, 0.16);
+    color: var(--cin-gold-hot);
+    border: 1px solid rgba(212, 168, 90, 0.35);
+}
+
+body[data-cin="on"] .info-card .vehicle-title,
+body[data-cin="on"] #vehicleTitle {
+    font-family: var(--cin-display);
+    font-weight: 400;
+    font-size: clamp(26px, 2.4vw, 34px);
+    line-height: 1.06;
+    letter-spacing: -0.01em;
+    color: var(--cin-ink);
+    margin: 0 0 6px;
+}
+body[data-cin="on"] .vehicle-subtitle {
+    font-size: 13px;
+    color: var(--cin-ink-soft);
+    margin: 0;
+    letter-spacing: .02em;
+}
+
+/* Precio */
+body[data-cin="on"] .price-box {
+    background: linear-gradient(135deg, rgba(212, 168, 90, 0.14), rgba(212, 168, 90, 0.05));
+    border: 1px solid rgba(212, 168, 90, 0.26);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin: 14px 0;
+    box-shadow: inset 0 1px 0 rgba(240, 198, 116, 0.14);
+}
+body[data-cin="on"] .price-label {
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--cin-ink-faint);
+    margin-bottom: 4px;
+}
+body[data-cin="on"] .price-value,
+body[data-cin="on"] .price-offer {
+    font-size: clamp(26px, 2.6vw, 30px);
+    font-weight: 800;
+    color: var(--cin-gold-hot);
+    line-height: 1.1;
+}
+body[data-cin="on"] .price-normal {
+    font-size: 16px;
+    color: var(--cin-ink-faint);
+    text-decoration: line-through;
+    margin-bottom: 2px;
+}
+
+/* Quick specs 2×2 */
+body[data-cin="on"] .quick-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+body[data-cin="on"] .spec-item {
+    background: rgba(244, 238, 222, 0.04);
+    border: 1px solid var(--cin-line);
+    border-radius: 10px;
+    padding: 9px 11px;
+}
+body[data-cin="on"] .spec-label {
+    font-size: 10px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--cin-ink-faint);
+    margin-bottom: 3px;
+}
+body[data-cin="on"] .spec-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cin-ink);
+}
+
+/* ===== Botones de acción — Opción A ===== */
+body[data-cin="on"] .dt-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+body[data-cin="on"] .dt-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border-radius: 12px;
+    font-family: var(--cin-sans);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 13px 16px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform .25s var(--cin-ease), box-shadow .25s var(--cin-ease), background .25s var(--cin-ease);
+}
+body[data-cin="on"] .dt-btn svg { flex-shrink: 0; }
+/* WhatsApp — verde de marca (única excepción no-dorada) */
+body[data-cin="on"] .dt-btn--wa {
+    background: linear-gradient(135deg, #1faf54, #0f8a43);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(31, 175, 84, 0.22);
+}
+body[data-cin="on"] .dt-btn--wa:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(31, 175, 84, 0.32);
+}
+/* Simular — relleno dorado cinematic */
+body[data-cin="on"] .dt-btn--sim {
+    background: linear-gradient(135deg, var(--cin-gold-hot), var(--cin-gold) 55%, var(--cin-gold-deep));
+    color: #1a1208;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(212, 168, 90, 0.20);
+}
+body[data-cin="on"] .dt-btn--sim:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(212, 168, 90, 0.30);
+}
+
+/* Fila de 4 iconos compactos (icono + etiqueta debajo, sin truncar) */
+body[data-cin="on"] .dt-actions-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+body[data-cin="on"] .dt-ibtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 11px 4px;
+    border-radius: 12px;
+    cursor: pointer;
+    background: rgba(244, 238, 222, 0.05);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink-soft);
+    font-family: var(--cin-sans);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+    transition: background .25s var(--cin-ease), border-color .25s var(--cin-ease), color .25s var(--cin-ease), transform .25s var(--cin-ease);
+}
+body[data-cin="on"] .dt-ibtn svg { color: var(--cin-gold); flex-shrink: 0; }
+body[data-cin="on"] .dt-ibtn:hover {
+    background: rgba(212, 168, 90, 0.08);
+    border-color: rgba(212, 168, 90, 0.3);
+    color: var(--cin-ink);
+    transform: translateY(-1px);
+}
+/* Estado activo (comparador.js togglea .active en #btnComparar) */
+body[data-cin="on"] .dt-ibtn.active {
+    background: rgba(212, 168, 90, 0.14);
+    border-color: rgba(212, 168, 90, 0.5);
+    color: var(--cin-gold-hot);
+}
+body[data-cin="on"] .dt-ibtn.active svg { color: var(--cin-gold-hot); }
+
+/* Pie: Guardar (favorito) + sello Verificado */
+body[data-cin="on"] .dt-actions-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--cin-line);
+}
+body[data-cin="on"] .dt-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--cin-ink-soft);
+    font-family: var(--cin-sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 4px 2px;
+    transition: color .25s var(--cin-ease);
+}
+body[data-cin="on"] .dt-save svg { transition: transform .25s var(--cin-spring); }
+body[data-cin="on"] .dt-save:hover { color: var(--cin-ink); }
+body[data-cin="on"] .dt-save.is-on { color: var(--cin-gold-hot); }
+body[data-cin="on"] .dt-save.is-on svg { color: var(--cin-gold-hot); fill: var(--cin-gold-hot); }
+body[data-cin="on"] .dt-trust {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--cin-ink-faint);
+    font-size: 11.5px;
+}
+body[data-cin="on"] .dt-trust svg { color: var(--cin-gold); }
+
+/* ===== Sección de contenido + tabs ===== */
+body[data-cin="on"] .content-section { margin-top: clamp(24px, 3vw, 40px); }
+body[data-cin="on"] .tabs-nav {
+    display: flex;
+    gap: clamp(14px, 2vw, 24px);
+    border-bottom: 1px solid var(--cin-line);
+    margin-bottom: 22px;
+}
+body[data-cin="on"] .tab-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 0 10px;
+    font-family: var(--cin-sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--cin-ink-soft);
+    position: relative;
+    white-space: nowrap;
+    transition: color .25s var(--cin-ease);
+}
+body[data-cin="on"] .tab-btn:hover { color: var(--cin-ink); }
+body[data-cin="on"] .tab-btn.active { color: var(--cin-gold-hot); }
+body[data-cin="on"] .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--cin-gold);
+}
+body[data-cin="on"] .tab-content { display: none; }
+body[data-cin="on"] .tab-content.active {
+    display: block;
+    animation: dtFade .35s var(--cin-ease);
+}
+@keyframes dtFade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+body[data-cin="on"] .section-title {
+    font-family: var(--cin-display);
+    font-weight: 400;
+    font-size: clamp(22px, 2.4vw, 30px);
+    color: var(--cin-ink);
+    margin: 0 0 20px;
+    padding-bottom: 14px;
+    letter-spacing: -0.01em;
+    position: relative;
+}
+body[data-cin="on"] .section-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 48px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cin-gold-hot), transparent);
+}
+
+/* ===== Ficha técnica (inyectada por detalle-render.js) ===== */
+body[data-cin="on"] .ficha-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(12px, 1.6vw, 18px);
+}
+body[data-cin="on"] .ficha-group {
+    background: linear-gradient(180deg, rgba(244, 238, 222, 0.05), rgba(244, 238, 222, 0.02));
+    border: 1px solid rgba(244, 238, 222, 0.10);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(244, 238, 222, 0.05);
+    transition: border-color .4s var(--cin-ease), box-shadow .4s var(--cin-ease);
+}
+/* FIX (§141): neutraliza el glow dorado de dark-theme.css `.ficha-group:hover` — la ficha NO es enlace */
+body[data-cin="on"] .ficha-group:hover {
+    border-color: rgba(244, 238, 222, 0.16);
+    box-shadow: inset 0 1px 0 rgba(244, 238, 222, 0.06);
+}
+body[data-cin="on"] .ficha-group-title {
+    font-family: var(--cin-sans);
+    font-weight: 300;
+    font-size: 12px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--cin-gold-hot);
+    padding: 14px 16px 6px;
+}
+body[data-cin="on"] .ficha-rows { padding: 0 16px 8px; }
+body[data-cin="on"] .ficha-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--cin-line);
+}
+body[data-cin="on"] .ficha-row:last-child { border-bottom: none; }
+body[data-cin="on"] .ficha-label {
+    font-size: 13px;
+    color: var(--cin-ink-soft);
+    white-space: nowrap;
+}
+body[data-cin="on"] .ficha-separator {
+    flex: 1 1 auto;
+    align-self: center;
+    border-bottom: 1px dotted var(--cin-line);
+    min-width: 12px;
+}
+body[data-cin="on"] .ficha-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cin-ink);
+    text-align: right;
+}
+
+/* ===== Características (inyectadas) ===== */
+body[data-cin="on"] .features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(12px, 1.6vw, 18px);
+}
+body[data-cin="on"] .feature-category {
+    background: linear-gradient(180deg, rgba(244, 238, 222, 0.05), rgba(244, 238, 222, 0.02));
+    border: 1px solid rgba(244, 238, 222, 0.10);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: inset 0 1px 0 rgba(244, 238, 222, 0.05);
+}
+body[data-cin="on"] .feature-category-title {
+    font-family: var(--cin-sans);
+    font-weight: 300;
+    font-size: 12px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--cin-gold-hot);
+    margin: 0 0 12px;
+}
+body[data-cin="on"] .feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+body[data-cin="on"] .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    /* FIX (§141): style.css `.feature-item{background:white}` (otro componente) tapaba el texto → forzar transparente */
+    background: transparent;
+    font-size: 13.5px;
+    color: var(--cin-ink-soft);
+    padding: 8px 2px;
+    border-bottom: 1px solid rgba(244, 238, 222, 0.06);
+    transition: color .25s var(--cin-ease);
+}
+body[data-cin="on"] .feature-list .feature-item:last-child { border-bottom: none; }
+body[data-cin="on"] .feature-item:hover { color: var(--cin-ink); }
+body[data-cin="on"] .feature-item::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--cin-gold-hot);
+    box-shadow: 0 0 8px rgba(240, 198, 116, 0.5);
+    flex-shrink: 0;
+}
+
+/* ===== Vehículos similares (cards del render global, restyle cinematic) ===== */
+body[data-cin="on"] .similar-section {
+    margin-top: clamp(28px, 3.4vw, 48px);
+    padding-top: clamp(24px, 3vw, 36px);
+    border-top: 1px solid var(--cin-line);
+}
+body[data-cin="on"] .similar-carousel-wrapper { position: relative; }
+body[data-cin="on"] .similar-section .vehicles-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
+    padding: 6px 2px 14px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+body[data-cin="on"] .similar-section .vehicles-grid::-webkit-scrollbar { display: none; }
+body[data-cin="on"] .similar-section .vehicle-card {
+    flex: 0 0 280px;
+    min-width: 280px;
+    max-width: 280px;
+    scroll-snap-align: start;
+    background: linear-gradient(180deg, var(--cin-bg-elev), #0A0806);
+    border: 1px solid var(--cin-line);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color .3s var(--cin-ease), transform .3s var(--cin-ease);
+}
+body[data-cin="on"] .similar-section .vehicle-card:hover {
+    border-color: rgba(212, 168, 90, 0.35);
+    transform: translateY(-3px);
+}
+body[data-cin="on"] .similar-section .vehicle-image {
+    position: relative;
+    aspect-ratio: 16 / 11;
+    overflow: hidden;
+    background: #0D0B09;
+}
+body[data-cin="on"] .similar-section .vehicle-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+body[data-cin="on"] .similar-section .img-skeleton {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #1a1622, #0d0b12);
+}
+body[data-cin="on"] .similar-section .vehicle-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+}
+body[data-cin="on"] .similar-section .favorite-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(8, 7, 10, 0.6);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: color .2s var(--cin-ease), background .2s var(--cin-ease);
+}
+body[data-cin="on"] .similar-section .favorite-btn:hover { background: rgba(8, 7, 10, 0.8); }
+body[data-cin="on"] .similar-section .favorite-btn.active { color: var(--cin-gold-hot); }
+body[data-cin="on"] .similar-section .vehicle-badges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: 5px;
+    z-index: 2;
+}
+body[data-cin="on"] .similar-section .btn-compare {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(8, 7, 10, 0.6);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: color .2s var(--cin-ease), background .2s var(--cin-ease);
+}
+body[data-cin="on"] .similar-section .btn-compare:hover { background: rgba(8, 7, 10, 0.8); color: var(--cin-gold-hot); }
+body[data-cin="on"] .similar-section .btn-compare.active { color: var(--cin-gold-hot); border-color: rgba(212, 168, 90, 0.5); }
+/* En la card compacta el texto del comparador estorba: solo el icono */
+body[data-cin="on"] .similar-section .btn-compare .compare-text { display: none; }
+body[data-cin="on"] .similar-section .vehicle-info { padding: 14px 16px 16px; }
+body[data-cin="on"] .similar-section .vehicle-card .vehicle-title {
+    font-family: var(--cin-sans);
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--cin-ink);
+    margin: 0 0 6px;
+    line-height: 1.25;
+    white-space: normal;
+}
+body[data-cin="on"] .similar-section .vehicle-specs {
+    font-size: 12px;
+    color: var(--cin-ink-soft);
+    margin: 0 0 10px;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+body[data-cin="on"] .similar-section .vehicle-footer { margin: 0; }
+body[data-cin="on"] .similar-section .vehicle-price,
+body[data-cin="on"] .similar-section .vehicle-price-offer {
+    font-family: var(--cin-sans);
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--cin-gold-hot);
+    margin: 0;
+}
+body[data-cin="on"] .similar-section .vehicle-price-original {
+    font-size: 12px;
+    color: var(--cin-ink-faint);
+    text-decoration: line-through;
+    display: block;
+}
+
+/* Flechas del carrusel */
+body[data-cin="on"] .similar-carousel-wrapper .carousel-arrow {
+    position: absolute;
+    top: 42%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(8, 7, 10, 0.75);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+    transition: background .25s var(--cin-ease), border-color .25s var(--cin-ease), color .25s var(--cin-ease);
+}
+body[data-cin="on"] .similar-carousel-wrapper .carousel-arrow:hover {
+    background: rgba(212, 168, 90, 0.16);
+    border-color: rgba(212, 168, 90, 0.4);
+    color: var(--cin-gold-hot);
+}
+body[data-cin="on"] .similar-carousel-wrapper .carousel-arrow.prev { left: -10px; }
+body[data-cin="on"] .similar-carousel-wrapper .carousel-arrow.next { right: -10px; }
+
+/* Estado "sin resultados" del render global */
+body[data-cin="on"] .similar-section .no-results {
+    color: var(--cin-ink-soft);
+    text-align: center;
+    padding: 40px 20px;
+}
+body[data-cin="on"] .similar-section .no-results-icon { color: var(--cin-gold-deep); }
+
+/* ===== Lightbox (markup intacto; estados funcionales preservados) ===== */
+body[data-cin="on"] .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 5, 8, 0.97);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    animation: dtFade .3s var(--cin-ease);
+}
+body[data-cin="on"] .lightbox.active { display: flex; }
+body[data-cin="on"] .lightbox-container {
+    position: relative;
+    max-width: 90vw;
+    max-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+body[data-cin="on"] .lightbox-image {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 10px;
+    cursor: zoom-in;
+    transition: transform .35s var(--cin-ease);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: pan-x;
+}
+body[data-cin="on"] .lightbox-image.zoomed {
+    cursor: zoom-out;
+    transform: scale(1.6);
+}
+body[data-cin="on"] .lightbox-close,
+body[data-cin="on"] .lightbox-nav {
+    position: absolute;
+    background: rgba(244, 238, 222, 0.08);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink);
+    border-radius: 50%;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    z-index: 10;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .25s var(--cin-ease), border-color .25s var(--cin-ease);
+}
+body[data-cin="on"] .lightbox-close:hover,
+body[data-cin="on"] .lightbox-nav:hover {
+    background: rgba(212, 168, 90, 0.18);
+    border-color: rgba(212, 168, 90, 0.4);
+}
+body[data-cin="on"] .lightbox-close {
+    top: 20px;
+    right: 20px;
+    width: 46px;
+    height: 46px;
+    font-size: 26px;
+}
+body[data-cin="on"] .lightbox-nav {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+}
+body[data-cin="on"] .lightbox-nav:hover { transform: translateY(-50%) scale(1.06); }
+body[data-cin="on"] .lightbox-nav:disabled { opacity: .3; cursor: not-allowed; }
+body[data-cin="on"] .lightbox-prev { left: 20px; }
+body[data-cin="on"] .lightbox-next { right: 20px; }
+body[data-cin="on"] .lightbox-counter {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(8, 7, 10, 0.7);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink);
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+}
+body[data-cin="on"] .lightbox-dots {
+    display: flex;
+    gap: 8px;
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+body[data-cin="on"] .lightbox-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(244, 238, 222, 0.32);
+    cursor: pointer;
+    border: none;
+    transition: background .2s var(--cin-ease), transform .2s var(--cin-ease);
+    touch-action: manipulation;
+}
+body[data-cin="on"] .lightbox-dot:hover { background: rgba(244, 238, 222, 0.6); }
+body[data-cin="on"] .lightbox-dot.active {
+    background: var(--cin-gold-hot);
+    transform: scale(1.25);
+}
+body[data-cin="on"] .zoom-hint {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(8, 7, 10, 0.7);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink-soft);
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s var(--cin-ease);
+}
+body[data-cin="on"] .lightbox.active .zoom-hint { animation: dtZoomHint 3s forwards; }
+@keyframes dtZoomHint { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ===== Barra sticky móvil (precio + WhatsApp) ===== */
+body[data-cin="on"] .dt-sticky {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(8, 7, 10, 0.92);
+    border-top: 1px solid var(--cin-line);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+body[data-cin="on"] .dt-sticky-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+body[data-cin="on"] .dt-sticky-model {
+    font-size: 12px;
+    color: var(--cin-ink-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+body[data-cin="on"] .dt-sticky-price {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--cin-gold-hot);
+    line-height: 1.1;
+}
+body[data-cin="on"] .dt-sticky-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #1faf54, #0f8a43);
+    color: #fff;
+    padding: 11px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+/* ===== Share toast ===== */
+body[data-cin="on"] .share-toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--cin-bg-elev);
+    border: 1px solid var(--cin-line);
+    color: var(--cin-ink);
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 500;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s var(--cin-ease), transform .3s var(--cin-ease);
+}
+body[data-cin="on"] .share-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Ocultar el botón flotante global de WhatsApp (esta página ya tiene CTAs) */
+.wa-float { display: none !important; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+    body[data-cin="on"] .ficha-table,
+    body[data-cin="on"] .features-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1024px) {
+    /* Una sola columna: galería → panel → tabs → similares */
+    body[data-cin="on"] .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    body[data-cin="on"] .info-sidebar {
+        position: static;
+    }
+    /* Barra sticky CTA visible al hacer scroll en móvil/tablet */
+    body[data-cin="on"] .dt-sticky { display: flex; }
+    body[data-cin="on"] .detail-page { padding-bottom: 96px; }
+}
+
+@media (max-width: 640px) {
+    body[data-cin="on"] .detail-container { padding: 0 14px; }
+    body[data-cin="on"] .info-card { padding: 16px; }
+    body[data-cin="on"] .quick-specs { grid-template-columns: 1fr 1fr; }
+    body[data-cin="on"] .dt-actions-row { gap: 6px; }
+    body[data-cin="on"] .dt-ibtn { font-size: 10.5px; padding: 10px 3px; }
+    body[data-cin="on"] .tabs-nav {
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    body[data-cin="on"] .tabs-nav::-webkit-scrollbar { display: none; }
+    body[data-cin="on"] .tab-btn { flex-shrink: 0; }
+    body[data-cin="on"] .ficha-row {
+        flex-wrap: wrap;
+        gap: 2px 10px;
+    }
+    body[data-cin="on"] .ficha-separator { display: none; }
+    body[data-cin="on"] .ficha-value { text-align: left; }
+    body[data-cin="on"] .similar-section .vehicle-card {
+        flex-basis: 240px;
+        min-width: 240px;
+        max-width: 240px;
+    }
+    body[data-cin="on"] .similar-carousel-wrapper .carousel-arrow { display: none; }
+}

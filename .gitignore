@@ -1,0 +1,74 @@
+node_modules/
+dist/
+# EXCEPCIÓN: el build de la app admin CRM (admin-app/dist) SÍ se versiona —
+# GitHub Pages lo sirve en /admin-app/dist/ durante el run paralelo (Fase 2, §159).
+!admin-app/dist/
+!admin-app/dist/**
+.env
+.env.local
+
+# Firebase CLI logs (locales, NO commitear — pueden contener tokens y paths internos)
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+database-debug.log
+pubsub-debug.log
+ui-debug.log
+.firebase/
+.runtimeconfig.json
+
+# Logs varios
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Brainstorm visual companion (superpowers) — local, NO versionar
+.superpowers/
+
+# Build outputs locales
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.output/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Playwright MCP — snapshots (.yml) y logs (.log) temporales de verificación en vivo (NO versionar)
+.playwright-mcp/
+
+# Respaldos locales de Firestore (salida de scripts/backup-firestore.mjs — NO versionar)
+backups/
+
+# Respaldo reversible de fotos huérfanas (salida de scripts/storage-orphans.mjs --backup — NO versionar)
+orphans_backup/
+
+# Snapshot temporal de functions desplegadas (salida de `npm run deadcode:check` — NO versionar)
+.deadcode-fns.json
+_fnlist.json
+
+# (F8, 2026-09-05) El cerebro documental (docs/, _legacy/, specs/, el kernel de scripts/ y skills/) ya no
+# vive aqui: esta en ../brain-private/altorracars/ con su historia. Sus sidecars (docs/.estado-auto.md,
+# .guard-log, .sesiones/...) los ignora el .gitignore de la boveda. La cuarentena _legacy/ (admin viejo)
+# sigue en la HISTORIA de este repo y en la boveda.
+
+# Carpetas que escriben plugins de terceros dentro del repo (incidente 2026-09-03).
+# No son nuestras y una de ellas llevaba un id de telemetria dentro.
+.semgrep/
+.remember/

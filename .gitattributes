@@ -1,0 +1,7 @@
+# Assets binarios: nunca aplicar normalización de fin de línea (autocrlf) — la
+# corromperían. Las fuentes self-hosted (TODO-54 perf-v2) viven en fonts/.
+*.woff2 binary
+*.woff   binary
+*.ttf    binary
+*.otf    binary
+*.eot    binary

@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#111;padding:24px;display:flex;gap:16px;flex-wrap:wrap;}
+.card{background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.18);border-radius:20px;overflow:hidden;width:240px;box-shadow:0 8px 32px rgba(0,0,0,0.37),inset 0 1px 0 rgba(255,255,255,0.15);}
+.card-img{position:relative;height:150px;background:#1a1a1a;overflow:hidden;}
+.card-img img{width:100%;height:100%;object-fit:cover;}
+.card-badge{position:absolute;top:10px;left:10px;padding:3px 10px;border-radius:8px;font-size:0.72rem;font-weight:700;color:#fff;}
+.card-fav{position:absolute;top:10px;right:10px;width:34px;height:34px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.card-body{padding:16px;}
+.card-title{font-size:1rem;font-weight:600;color:#fff;margin-bottom:4px;}
+.card-specs{color:#b0b0b0;font-size:0.82rem;margin-bottom:14px;}
+.card-footer{display:flex;justify-content:space-between;align-items:center;}
+.card-price{font-size:1.2rem;font-weight:700;color:#d4af37;}
+.btn-view{padding:5px 14px;background:#1d1b19;color:#fff;border-radius:8px;font-size:0.82rem;font-weight:500;}
+</style></head><body>
+<!-- Card 1: New -->
+<div class="card">
+  <div class="card-img" style="background:linear-gradient(135deg,#1a1a1a,#2a2a2a);">
+    <img src="../assets/placeholder-car.jpg" alt="car" onerror="this.style.display='none'">
+    <div class="card-badge" style="background:#38a28e;">NUEVO</div>
+    <div class="card-fav"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+  </div>
+  <div class="card-body">
+    <div class="card-title">Chevrolet Equinox LS</div>
+    <div class="card-specs">2018 · 45.000 km · Automático</div>
+    <div class="card-footer">
+      <div class="card-price">$66.000.000</div>
+      <div class="btn-view">Ver más</div>
+    </div>
+  </div>
+</div>
+<!-- Card 2: Used -->
+<div class="card">
+  <div class="card-img" style="background:linear-gradient(135deg,#1a1a1a,#2a2a2a);">
+    <img src="../assets/placeholder-car.jpg" alt="car" onerror="this.style.display='none'">
+    <div class="card-badge" style="background:#3498db;">USADO</div>
+    <div class="card-fav" style="background:#d4af37;"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+  </div>
+  <div class="card-body">
+    <div class="card-title">Toyota Hilux 4x4</div>
+    <div class="card-specs">2020 · 62.000 km · Manual</div>
+    <div class="card-footer">
+      <div>
+        <div style="font-size:0.78rem;color:#9c9997;text-decoration:line-through;">$125.000.000</div>
+        <div style="font-size:1.2rem;font-weight:700;color:#e74c3c;">$119.000.000</div>
+      </div>
+      <div class="btn-view">Ver más</div>
+    </div>
+  </div>
+</div>
+</body></html>

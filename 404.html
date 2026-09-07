@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="/multimedia/favicon-32.png">
+    <link rel="apple-touch-icon" href="/multimedia/apple-touch-icon-180.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Página no encontrada | ALTORRA CARS</title>
+
+    <meta name="robots" content="noindex, nofollow">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/performance-fixes.css">
+
+    <!-- OLA-3.3 (§3.3): fuentes cinematic HORNEADAS (Manrope · Instrument Serif · Cardo) en el head
+         para matar el FOUT de las páginas SEO — antes las inyectaba components.js tras
+         DOMContentLoaded. El data-flag hace que injectCinematicAssets() NO las re-inyecte. -->
+    <link rel="stylesheet" data-altorra-fonts href="css/fonts.css">
+
+    <style>
+        .error-page {
+            min-height: calc(100vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #111111 100%);
+            margin-top: 80px;
+        }
+
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .error-illustration {
+            margin-bottom: 32px;
+        }
+
+        .error-car {
+            width: 200px;
+            height: auto;
+            animation: carBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes carBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .error-code {
+            font-size: 120px;
+            font-weight: 900;
+            color: #b89658;
+            line-height: 1;
+            margin-bottom: 16px;
+            text-shadow: 4px 4px 0 #916652;
+        }
+
+        .error-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 16px;
+        }
+
+        .error-message {
+            font-size: 16px;
+            color: #9ca3af;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .error-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 48px;
+        }
+
+        .btn-error {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+        }
+
+        .btn-error-primary {
+            background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+            color: white;
+        }
+
+        .btn-error-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(184, 150, 88, 0.4);
+        }
+
+        .btn-error-secondary {
+            background: #252525;
+            color: #d1d5db;
+            border: 2px solid #333333;
+        }
+
+        .btn-error-secondary:hover {
+            border-color: #b89658;
+            color: #b89658;
+        }
+
+        .error-search {
+            margin-bottom: 48px;
+        }
+
+        .error-search-form {
+            display: flex;
+            max-width: 400px;
+            margin: 0 auto;
+            background: #252525;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .error-search-input {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            font-size: 15px;
+            outline: none;
+            background: #252525;
+            color: #ffffff;
+        }
+
+        .error-search-input::placeholder {
+            color: #6b7280;
+        }
+
+        .error-search-btn {
+            padding: 14px 20px;
+            background: #b89658;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .error-search-btn:hover {
+            background: #916652;
+        }
+
+        .error-suggestions {
+            margin-top: 32px;
+        }
+
+        .error-suggestions h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .suggestion-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .suggestion-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: #252525;
+            border-radius: 8px;
+            color: #d1d5db;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .suggestion-link:hover {
+            background: #b89658;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .error-code {
+                font-size: 80px;
+            }
+
+            .error-title {
+                font-size: 22px;
+            }
+
+            .error-actions {
+                flex-direction: column;
+            }
+
+            .btn-error {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+    </style>
+    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
+         unauthenticated header buttons when the user is already logged in.
+         Sets html.auth-authenticated or html.auth-guest based on the
+         localStorage flag persisted by auth.js (updateHeaderAuthState).
+         CSS in style.css uses these classes to hide/show login buttons. -->
+    <script>
+    (function () {
+        try {
+            var hint = localStorage.getItem('altorra_auth_hint');
+            document.documentElement.classList.add(
+                hint === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+            );
+        } catch (e) {
+            document.documentElement.classList.add('auth-guest');
+        }
+    })();
+    </script>
+    <!-- Critical header CSS — inlined for first-paint stability.
+         (1) Reserves 80px for the header so layout doesn't shift when
+             components.js injects the fetched header HTML.
+         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
+             prevents the sequential paint of favoritos→login→register→bell).
+         (3) Auth hint rules duplicated here so they apply even before
+             style.css finishes parsing (defense-in-depth).
+         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <style>
+    #header-placeholder{min-height:80px;display:block}
+    header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
+    header .nav-actions.hdr-ready{opacity:1;visibility:visible}
+    html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
+    html.auth-guest #headerUserArea{display:none!important}
+    html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+    @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
+    </style>
+
+    <!-- Page Loader — Critical Inline CSS (cross-browser) -->
+    <style>
+    #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:24px;-webkit-transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}
+    #page-loader.pl-done{opacity:0;visibility:hidden;pointer-events:none;}
+    .pl-logo{width:68px;height:68px;-o-object-fit:contain;object-fit:contain;-webkit-animation:plPulse 2s ease-in-out infinite;animation:plPulse 2s ease-in-out infinite;}
+    .pl-ring{width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;-webkit-animation:plSpin .8s linear infinite;animation:plSpin .8s linear infinite;}
+    @-webkit-keyframes plPulse{0%,100%{opacity:1;-webkit-transform:scale(1);transform:scale(1)}50%{opacity:.6;-webkit-transform:scale(.93);transform:scale(.93)}}
+    @keyframes plPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.93)}}
+    @-webkit-keyframes plSpin{to{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}
+    @keyframes plSpin{to{transform:rotate(360deg)}}
+    </style>
+    <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="stylesheet" href="css/home/soft-redesign.css">
+</head>
+<body>
+    <!-- Page Loader -->
+    <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
+        <img src="/multimedia/logo-wheel-128.webp" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
+        <div class="pl-ring" aria-hidden="true"></div>
+    </div>
+
+    <div id="header-placeholder"></div>
+
+    <main class="soft-page" data-cin="on">
+        <section class="nf-section">
+            <div class="nf-num"><span>4</span><span class="nf-mid">0</span><span>4</span></div>
+            <h1 class="nf-h">Esta ruta <span class="nf-h-accent">no existe.</span></h1>
+            <p class="nf-sub">El link puede estar roto, el vehículo ya se vendió o llegaste aquí por suerte.</p>
+            <div class="nf-actions">
+                <a href="index.html" class="soft-cta">Volver al inicio</a>
+                <a href="busqueda.html" class="soft-cta soft-cta--alt">Explorar vehículos</a>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script>
+    // Smart redirect: if the user hit a /vehiculos/slug.html that doesn't exist yet
+    // (vehicle just created, static page not generated), redirect to the dynamic page.
+    (function() {
+        var path = window.location.pathname;
+        var match = path.match(/\/vehiculos\/(.+)\.html$/);
+        if (match) {
+            var slug = match[1];
+            // Extract numeric ID from the end of the slug
+            var parts = slug.split('-');
+            var id = parts[parts.length - 1];
+            if (id && /^\d+$/.test(id)) {
+                window.location.replace('/detalle-vehiculo.html?v=' + slug);
+                return;
+            }
+        }
+    })();
+    </script>
+
+    <script src="js/core/firebase-config.js" defer></script>
+    <script src="js/core/components.js" defer></script>
+
+        <script src="js/core/page-loader.js"></script>
+    <!-- Cache Manager -->
+    <script src="js/core/cache-manager.js" defer></script>
+</body>
+</html>

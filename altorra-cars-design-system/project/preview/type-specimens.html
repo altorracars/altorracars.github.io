@@ -1,0 +1,43 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#0a0a0a;padding:24px 28px;display:flex;flex-direction:column;gap:14px;}
+.title{color:#b89658;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.6;}
+.specimen{padding:16px 20px;background:#111;border-radius:10px;border:1px solid rgba(255,255,255,0.07);}
+.specimen-label{font-size:0.62rem;color:#9c9997;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em;}
+.gold-text{background:linear-gradient(135deg,#f5df80 0%,#d4af37 40%,#b89658 70%,#f5df80 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gs 4s ease infinite;}
+@keyframes gs{0%,100%{background-position:0% center}50%{background-position:200% center}}
+.weights{display:flex;flex-wrap:wrap;gap:6px;}
+.w-chip{background:#1a1a1a;border-radius:6px;padding:6px 12px;font-size:0.85rem;}
+</style></head><body>
+<div class="title">Typography Specimens</div>
+
+<div class="specimen">
+  <div class="specimen-label">Hero Title — with Gold Accent</div>
+  <div style="font-size:clamp(1.6rem,4vw,2.8rem);font-weight:900;letter-spacing:-0.03em;line-height:1.06;color:#fff;">
+    Encuentra el Vehículo <span class="gold-text">de tus Sueños</span>
+  </div>
+</div>
+
+<div class="specimen">
+  <div class="specimen-label">Price Typography</div>
+  <div style="display:flex;align-items:baseline;gap:12px;">
+    <span style="font-size:1.5rem;font-weight:800;color:#d4af37;">$66.000.000</span>
+    <span style="font-size:0.85rem;color:#9c9997;text-decoration:line-through;">$70.000.000</span>
+    <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:rgba(231,76,60,0.15);color:#e74c3c;padding:2px 8px;border-radius:100px;">OFERTA</span>
+  </div>
+</div>
+
+<div class="specimen">
+  <div class="specimen-label">Font Weights</div>
+  <div class="weights">
+    <span class="w-chip" style="font-weight:400;color:#b0b0b0;">400 Regular</span>
+    <span class="w-chip" style="font-weight:500;color:#d0d0d0;">500 Medium</span>
+    <span class="w-chip" style="font-weight:600;color:#e8e8e8;">600 SemiBold</span>
+    <span class="w-chip" style="font-weight:700;color:#fff;">700 Bold</span>
+    <span class="w-chip" style="font-weight:800;color:#fff;">800 ExtraBold</span>
+    <span class="w-chip" style="font-weight:900;color:#fff;">900 Black</span>
+  </div>
+</div>
+</body></html>

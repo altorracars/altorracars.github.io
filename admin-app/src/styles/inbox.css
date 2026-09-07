@@ -1,0 +1,119 @@
+/* ============================================================
+   BANDEJA — colas, toolbar, lista, tarjeta de lead.
+   ============================================================ */
+
+.inbox { display: flex; flex-direction: column; width: 100%; min-width: 0; }
+
+.inbox__queues {
+  display: flex; gap: var(--s-2); flex-wrap: wrap; flex: 0 0 auto;
+  padding: var(--s-5) var(--s-6) var(--s-3);
+}
+
+.inbox__toolbar {
+  display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; flex: 0 0 auto;
+  padding: 0 var(--s-6) var(--s-3);
+}
+.inbox__toolbar .search { flex: 1 1 260px; max-width: 440px; }
+.inbox__filters { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+
+.inbox__list {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--s-2);
+  padding: 0 var(--s-6) var(--s-6);
+}
+.inbox__listhead { display: flex; justify-content: space-between; align-items: baseline; padding: var(--s-1) var(--s-1) var(--s-2); }
+.inbox__more { padding: var(--s-4) 0 var(--s-2); }
+
+/* ─────────── Lead card ─────────── */
+.lead-card {
+  display: grid;
+  grid-template-columns: 12px 30px minmax(0, 1fr) auto;
+  align-items: center; gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.28);
+  cursor: pointer;
+  transition: box-shadow var(--dur-2) var(--ease-fluent),
+              border-color var(--dur-2) var(--ease-fluent),
+              transform var(--dur-2) var(--ease-fluent);
+}
+.lead-card:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 28px rgba(0,0,0,0.45); border-color: var(--surface-stroke-hi); transform: translateY(-1px); }
+.lead-card:focus-visible { outline: 2px solid var(--gold-500); outline-offset: 2px; }
+
+.lead-card__main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lead-card__top { display: flex; align-items: center; gap: var(--s-2); }
+.lead-card__name { flex: 1 1 auto; min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--t-body-lg); }
+.lead-card__what { font-size: var(--t-body); }
+.lead-card__meta { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; color: var(--ink-text-muted); }
+.lead-card__dot { opacity: 0.4; }
+.lead-card__chan { font-weight: 600; }
+.lead-card__nba { display: flex; align-items: center; gap: 6px; font-size: var(--t-caption); margin-top: 2px; color: var(--ink-text-muted); }
+.lead-card__nba strong { color: var(--ink-text); }
+
+.lead-card__actions {
+  display: flex; align-items: center; gap: 2px;
+  opacity: 0.82; transition: opacity var(--dur-2) var(--ease-fluent);
+}
+.lead-card:hover .lead-card__actions,
+.lead-card:focus-within .lead-card__actions { opacity: 1; }
+.lead-card__actions .btn--wa {
+  width: 34px; height: 34px; padding: 0;
+  border-radius: var(--r-sm); display: inline-grid; place-content: center;
+}
+.lead-card__actions .btn--wa svg { width: 17px; height: 17px; }
+
+/* ─────────── F1: selección múltiple ─────────── */
+/* Modificador: solo las tarjetas de lead seleccionables ganan la columna del checkbox
+   (pendientes/skeleton reusan .lead-card y NO se ven afectados). */
+.lead-card--selectable { grid-template-columns: 22px 12px 30px minmax(0, 1fr) auto; }
+.lead-card__sel {
+  width: 20px; height: 20px; padding: 0; border-radius: var(--r-xs);
+  border: 1.5px solid var(--surface-stroke-hi); background: var(--surface-card);
+  display: inline-grid; place-content: center; cursor: pointer; color: transparent;
+  transition: border-color var(--dur-1) var(--ease-fluent), background var(--dur-1) var(--ease-fluent);
+}
+.lead-card__sel svg { width: 13px; height: 13px; }
+.lead-card:hover .lead-card__sel { border-color: var(--gold-500); }
+.lead-card.is-selected { border-color: var(--gold-500); box-shadow: inset 0 0 0 1px var(--gold-500), var(--shadow-8); }
+.lead-card.is-selected .lead-card__sel { background: var(--gold-500); border-color: var(--gold-500); color: var(--ink-950); } /* OLA-1.8: contraste sobre oro */
+
+.inbox__bulkbar {
+  display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; flex: 0 0 auto;
+  margin: 0 var(--s-6) var(--s-3); padding: var(--s-2) var(--s-4);
+  background: var(--gold-50); border: 1px solid var(--gold-200); border-radius: var(--r-md);
+}
+:root[data-theme="dark"] .inbox__bulkbar { background: rgba(184, 146, 74, 0.14); border-color: rgba(184, 146, 74, 0.3); }
+.inbox__bulkcount { font-weight: 700; font-size: var(--t-body); color: var(--gold-800); }
+:root[data-theme="dark"] .inbox__bulkcount { color: var(--gold-200); }
+@media (max-width: 560px) { .inbox__bulkbar { margin-left: var(--s-4); margin-right: var(--s-4); } }
+
+/* OLA-1.9b: banner de capturas offline sin confirmar */
+.inbox__offline {
+  display: flex; flex-direction: column; gap: var(--s-2); flex: 0 0 auto;
+  margin: 0 var(--s-6) var(--s-3); padding: var(--s-3) var(--s-4);
+  background: rgba(232, 93, 93, 0.1); /* tint de --danger (patrón badge--danger) */
+  border: 1px solid var(--danger); border-radius: var(--r-md);
+}
+.inbox__offline-head { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.inbox__offline-head .u-ico { color: var(--danger); }
+.inbox__offline-row { display: flex; align-items: center; gap: var(--s-3); }
+@media (max-width: 560px) {
+  .inbox__offline { margin-left: var(--s-4); margin-right: var(--s-4); }
+  .inbox__offline-row { flex-wrap: wrap; }
+}
+
+/* Skeleton (override del grid) */
+.lead-card--skeleton { display: flex; align-items: center; gap: var(--s-3); cursor: default; pointer-events: none; }
+.lead-card--skeleton:hover { box-shadow: var(--shadow-2); transform: none; border-color: var(--surface-stroke); }
+
+@media (max-width: 560px) {
+  .lead-card__nba { display: none; }
+  .inbox__queues, .inbox__toolbar, .inbox__list { padding-left: var(--s-4); padding-right: var(--s-4); }
+  /* En pantallas angostas las columnas fijas (checkbox+dot+avatar) + gaps + los
+     botones de acción (no encogen) desbordaban la tarjeta y recortaban ~5px del
+     último botón. Ajustamos gap y padding horizontal (sin tocar el tamaño de los
+     botones = touch targets intactos) para que quepan. */
+  .lead-card { gap: var(--s-2); padding-left: var(--s-3); padding-right: var(--s-3); }
+}

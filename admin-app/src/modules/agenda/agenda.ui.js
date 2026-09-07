@@ -1,0 +1,228 @@
+// ============================================================
+// Agenda — vista de mes (capa UI). UN solo calendario del portal.
+// Muestra `activities` con dueAt; click en evento → Customer 360.
+// ============================================================
+
+import { el, clear } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
+import { openMenu } from '../../core/popover.js';
+import { store } from '../../core/store.js';
+import {
+  WEEKDAYS, MONTHS, monthMatrix, gridRange, groupByDay, dayKey, timeOf, isSameDay,
+} from '../../domain/agenda.js';
+import { hasPermission, isSuper } from '../../core/auth.js';
+import { navigate } from '../../core/router.js';
+import { toast } from '../../core/toast.js';
+import { confirmDialog } from '../../core/confirm.js';
+import { exportXlsx, xlsxDate } from '../../core/xlsx.js';
+import { subscribeRange, citaAction, deleteActivity } from './agenda.data.js';
+import { openCitaDetail, openCitaChooser } from './cita-dialog.js';
+import { getMockAgenda } from '../../core/mock.js';
+
+export function mountAgenda(root) {
+  const today = new Date();
+  const ui = { year: today.getFullYear(), month: today.getMonth(), events: [], loading: true, error: null, sub: null };
+
+  const head = el('div', { class: 'agenda__head' });
+  // F18/F19 §184: la GESTIÓN de citas vive AQUÍ (confirmar con asesor, WhatsApp
+  // con link, reprogramar, cancelar, no-show). F-6 §255: retirado el link al
+  // "calendario clásico" de respaldo — admin.html se cuarentenó en el cutover.
+  const banner = el('p', { class: 'u-muted u-caption', style: { margin: '0', padding: '8px 10px', border: '1px dashed var(--line, #444)', borderRadius: '8px' } }, [
+    el('span', { class: 'u-ico', html: icon('info'), style: 'vertical-align:-3px;margin-right:5px;color:var(--gold-500)' }),
+    'Toca una cita para confirmarla (asignando asesor), pedir confirmación por WhatsApp, reprogramarla o cancelarla. ',
+    'Si el cliente no confirma, caduca sola 3h antes y libera el cupo.',
+  ]);
+  const weekdays = el('div', { class: 'agenda__weekdays' }, WEEKDAYS.map((w) => el('span', { class: 'agenda__wd', text: w })));
+  const grid = el('div', { class: 'agenda__grid' });
+  const section = el('section', { class: 'agenda' }, [head, banner, weekdays, grid]);
+  clear(root); root.append(section);
+
+  function go(delta) {
+    let m = ui.month + delta, y = ui.year;
+    if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
+    ui.year = y; ui.month = m; load();
+  }
+  function goToday() { ui.year = today.getFullYear(); ui.month = today.getMonth(); load(); }
+
+  function renderHead() {
+    clear(head);
+    const nav = el('div', { class: 'u-row u-row--tight' }, [
+      iconBtn('chevronLeft', 'Mes anterior', () => go(-1)),
+      el('button', { class: 'btn btn--soft btn--sm', type: 'button', onclick: goToday }, ['Hoy']),
+      iconBtn('chevronRight', 'Mes siguiente', () => go(1)),
+    ]);
+    // OLA-1.2: la config de disponibilidad vive en SU dominio (la Agenda), no
+    // enterrada en Administración — la ruta #/config sigue siendo la misma.
+    if (hasPermission('calendar.config')) {
+      const cfg = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('clock') + ' Disponibilidad', title: 'Días, horarios y cupos de citas' });
+      cfg.addEventListener('click', () => navigate('config'));
+      nav.append(cfg);
+    }
+    // OLA-2.4: exporta las citas/tareas del MES visible.
+    const csvBtn = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('download') + ' Excel', title: 'Exportar el mes visible a Excel' });
+    csvBtn.addEventListener('click', () => {
+      if (!ui.events.length) { toast('No hay citas en este mes para exportar.', 'info'); return; }
+      const mesLabel = new Date(ui.year, ui.month, 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+      csvBtn.disabled = true;
+      exportXlsx(`altorra-agenda-${ui.year}-${String(ui.month + 1).padStart(2, '0')}.xlsx`, {
+        title: 'Agenda — ' + mesLabel, types: ['date', 'text', 'text', 'text', 'text'],
+        rows: [
+          ['Fecha y hora', 'Cliente', 'Asunto', 'Tipo', 'Estado'],
+          ...ui.events.map((ev) => [
+            xlsxDate(ev.dueAt), (ev.relatedTo && ev.relatedTo.name) || '', ev.subject || '',
+            ev.type || 'tarea', ev.type === 'cita' ? (ev.estadoCita || 'pendiente') : (ev.status || ''),
+          ]),
+        ],
+      }).catch(() => toast('No se pudo generar el Excel.', 'error'))
+        .finally(() => { csvBtn.disabled = false; });
+    });
+    nav.append(csvBtn);
+    // OLA-2.5: limpieza masiva owner-only — canceladas/caducadas (ya sin cupo).
+    if (isSuper() && !store.get().mock) {
+      const purge = el('button', { class: 'btn btn--soft btn--sm', type: 'button', html: icon('trash') + ' Purgar canceladas', title: 'Borra definitivamente las citas canceladas y caducadas (completadas y no-show se conservan)' });
+      purge.addEventListener('click', async () => {
+        const ok = await confirmDialog({
+          title: 'Purgar citas canceladas',
+          message: 'Se borran DEFINITIVAMENTE todas las citas canceladas y caducadas (y sus recordatorios de Agenda). Las completadas y los no-show se conservan como historial. Esta acción no se puede deshacer.',
+          confirmText: 'Purgar', danger: true,
+        });
+        if (!ok) return;
+        purge.disabled = true;
+        try {
+          const r = await citaAction('purgeCancelled', null);
+          toast(r.deleted ? `🗑 ${r.deleted} cita(s) purgada(s)` + (r.more ? ' — vuelve a pulsar para el resto' : '') : 'No había citas canceladas.', 'ok');
+        } catch (e) {
+          toast('No se pudo purgar: ' + ((e && e.message) || ''), 'error');
+        }
+        purge.disabled = false;
+      });
+      nav.append(purge);
+    }
+    // Gap 5 (F23-7 §188): crear cita SIN pasar por el 360 — walk-ins incluidos.
+    if (hasPermission('crm.edit')) {
+      const nueva = el('button', { class: 'btn btn--gold btn--sm', type: 'button', html: icon('plus') + ' Nueva cita' });
+      nueva.addEventListener('click', () => openCitaChooser({}));
+      nav.append(nueva);
+    }
+    head.append(
+      el('h2', { class: 'agenda__title', text: `${MONTHS[ui.month]} ${ui.year}` }),
+      nav,
+    );
+  }
+  function iconBtn(iconId, label, fn) {
+    const b = el('button', { class: 'icon-btn', type: 'button', 'aria-label': label, html: icon(iconId) });
+    b.addEventListener('click', fn);
+    return b;
+  }
+
+  function render() {
+    renderHead();
+    clear(grid);
+    if (ui.error) { grid.append(el('div', { class: 'state' }, [el('div', { class: 'state__icon', html: icon('alertTriangle') }), el('div', { class: 'state__title', text: 'No se pudo cargar la agenda' }), el('div', { class: 'state__msg', text: ui.error })])); return; }
+
+    const byDay = groupByDay(ui.events);
+    const weeks = monthMatrix(ui.year, ui.month);
+    weeks.forEach((week) => {
+      week.forEach((cell) => {
+        const k = dayKey(cell.date);
+        const evs = byDay[k] || [];
+        const isToday = isSameDay(cell.date, today);
+        const day = el('div', {
+          class: 'agenda__day' + (cell.inMonth ? '' : ' is-out') + (isToday ? ' is-today' : ''),
+          role: 'gridcell',
+        }, [
+          el('div', { class: 'agenda__daynum', text: String(cell.date.getDate()) }),
+          // Nombre corto del día (ej. "mié") — oculto en desktop (cuadrícula);
+          // la vista día/lista móvil (≤560, CSS) lo muestra como cabecera del día.
+          el('span', { class: 'agenda__dayname', 'aria-hidden': 'true', text: cell.date.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '') }),
+        ]);
+        const list = el('div', { class: 'agenda__events' });
+        if (ui.loading) {
+          // OLA-1.8b: chips fantasma mientras llegan las citas (y NO se pintan los
+          // eventos del mes anterior, que aún viven en ui.events al navegar).
+          if (cell.inMonth && cell.date.getDate() % 7 === 3) {
+            list.append(el('span', { class: 'skeleton', style: { width: '85%', height: '18px' }, 'aria-hidden': 'true' }));
+          }
+        } else {
+          evs.slice(0, 3).forEach((ev) => list.append(eventChip(ev)));
+          if (evs.length > 3) {
+            const more = el('button', { class: 'agenda__more', type: 'button' }, [`+${evs.length - 3} más`]);
+            more.addEventListener('click', () => openMenu(more, evs.map((ev) => ({ value: ev, label: `${timeOf(ev.dueAt)} · ${ev.relatedTo?.name || ev.subject || 'Cita'}` })), (it) => openEvent(it.value, more), { title: `${cell.date.getDate()} ${MONTHS[ui.month]}` }));
+            list.append(more);
+          }
+        }
+        day.append(list);
+        grid.append(day);
+      });
+    });
+    // Estado vacío SOLO para la vista día/lista móvil (donde los días sin citas
+    // se ocultan → sin esto quedaría en blanco). En desktop está display:none
+    // (la cuadrícula del mes ya se ve). Se añade solo si el mes VISIBLE no tiene
+    // citas (ui.events retiene las de otros meses al navegar → cuento las in-month).
+    const monthHasEvents = weeks.some((week) => week.some((cell) => cell.inMonth && (byDay[dayKey(cell.date)] || []).length));
+    if (!ui.loading && !monthHasEvents) {
+      grid.append(el('div', { class: 'agenda__empty' }, [el('span', { text: 'No hay citas este mes.' })]));
+    }
+  }
+
+  function eventChip(ev) {
+    // F18 §184: las citas pintan su estado (pendiente ámbar / confirmada
+    // verde / cerradas apagadas) y abren su diálogo de acciones.
+    const estado = ev.type === 'cita' ? (ev.estadoCita || 'pendiente') : null;
+    const cls = 'agenda__chip'
+      + (estado ? ' agenda__chip--' + estado : '')
+      + (ev.status === 'closed' ? ' is-closed' : '');
+    const chip = el('button', { class: cls, type: 'button', title: ev.subject || 'Cita' }, [
+      el('span', { class: 'agenda__chip-time', text: timeOf(ev.dueAt) }),
+      el('span', { class: 'u-truncate', text: ev.relatedTo?.name || ev.subject || 'Cita' }),
+    ]);
+    chip.addEventListener('click', () => openEvent(ev, chip));
+    return chip;
+  }
+
+  function openEvent(ev, anchor) {
+    // Cita proyectada (F16) → diálogo de gestión F18; lo demás → 360.
+    if (ev.type === 'cita' && ev.sourceSolicitudId) {
+      openCitaDetail(ev, { onLead: (id) => store.set({ detailLeadId: id }) });
+      return;
+    }
+    const leadId = ev.relatedTo && ev.relatedTo.id;
+    // OLA-2.5: el dueño puede ELIMINAR tareas/eventos sueltos (los huérfanos
+    // de purgas incluidos) — menú en vez de salto ciego al 360.
+    if (isSuper() && anchor && !store.get().mock) {
+      openMenu(anchor, [
+        leadId ? { value: 'open', iconId: 'user', label: 'Ver ficha del cliente' } : null,
+        { value: 'delete', iconId: 'trash', label: 'Eliminar de la Agenda' },
+      ].filter(Boolean), async (it) => {
+        if (it.value === 'open') { store.set({ detailLeadId: leadId }); return; }
+        if (it.value !== 'delete') return;
+        const ok = await confirmDialog({
+          title: '¿Eliminar este evento de la Agenda?',
+          message: `"${ev.subject || 'Evento'}" desaparece definitivamente.`,
+          confirmText: 'Eliminar', danger: true,
+        });
+        if (!ok) return;
+        try { await deleteActivity(ev.id); toast('🗑 Evento eliminado', 'ok'); }
+        catch (e) { toast('No se pudo eliminar: ' + ((e && e.message) || ''), 'error'); }
+      }, { title: ev.subject || 'Evento' });
+      return;
+    }
+    if (leadId) store.set({ detailLeadId: leadId });
+  }
+
+  function load() {
+    ui.loading = true;
+    render(); // pinta el mes de inmediato (con chips skeleton hasta que lleguen las citas)
+    if (ui.sub) { ui.sub(); ui.sub = null; }
+    if (store.get().mock) {
+      ui.events = getMockAgenda(); ui.loading = false; render(); return;
+    }
+    const { startISO, endISO } = gridRange(ui.year, ui.month);
+    ui.sub = subscribeRange(startISO, endISO,
+      (rows) => { ui.events = rows; ui.loading = false; ui.error = null; render(); },
+      (err) => { ui.loading = false; ui.error = err && err.code === 'permission-denied' ? 'Sin permiso.' : 'Revisa tu conexión.'; render(); });
+  }
+
+  load();
+  return function cleanup() { if (ui.sub) ui.sub(); ui.sub = null; };
+}

@@ -1,0 +1,117 @@
+# Auto-generate vehicle detail pages for SEO & social sharing
+# Generates /vehiculos/{slug}.html with pre-baked OG meta tags
+#
+# Triggers:
+# 1. Push to main (code changes)
+# 2. Every 4 hours (catches Firestore changes)
+# 3. repository_dispatch (fired by Firebase Cloud Function on vehicle changes)
+# 4. workflow_dispatch (manual trigger from GitHub UI)
+
+name: Generate Vehicle Pages
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Every 4 hours — safety net for any missed triggers
+    - cron: '0 */4 * * *'
+  repository_dispatch:
+    types: [vehicle-changed]
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+# FASE 2.4 (TODO-23 §222): varios guardados de CMS (o un guardado + el cron) pueden disparar
+# regeneraciones solapadas. cancel-in-progress garantiza que gane SIEMPRE el último run (evita que
+# uno viejo pise contenido nuevo y evita 'git push' en paralelo con conflicto).
+concurrency:
+  group: generate-vehicles
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # SECURITY GATE (§288) — anti-stored-XSS self-test. Bakes breakout payloads into the
+      # JSON-LD / PRERENDERED_* sinks with mocks (NO Firestore) and asserts every JSON block
+      # parses. If safeJsonLd or the injections ever regress, exit≠0 fails the job HERE — the
+      # generation + commit/push steps below never run, so no vulnerable pages reach production.
+      # Runs before generation on purpose: a manual gate is a gate nobody runs.
+      - name: Security self-test (SSG anti-stored-XSS)
+        run: npm run selftest
+
+      - name: Generate vehicle pages from Firestore
+        run: npm run generate
+        env:
+          # CMS hardening (TODO-23, cron→admin+SA): si el secret existe, el SSG lee Firestore
+          # AUTENTICADO con la Service Account (endurece `siteContent`, habilita drafts futuros).
+          # Si el secret NO existe, esta var llega VACÍA → el script cae al SDK cliente anónimo
+          # (comportamiento histórico, cero regresión). Activación = el dueño crea la SA + el secret.
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
+
+      - name: Validate sitemap.xml
+        run: |
+          if [ ! -s sitemap.xml ]; then
+            echo "ERROR: sitemap.xml is missing or empty — aborting." >&2; exit 1
+          fi
+          if ! grep -q '<?xml' sitemap.xml || ! grep -q '</urlset>' sitemap.xml; then
+            echo "ERROR: sitemap.xml is malformed." >&2; exit 1
+          fi
+          if grep -q 'marca.html?marca=' sitemap.xml; then
+            echo "ERROR: sitemap.xml still contains brand pages with query strings." >&2; exit 1
+          fi
+          URL_COUNT=$(grep -c '<loc>' sitemap.xml || true)
+          echo "sitemap.xml OK — ${URL_COUNT} URLs found."
+
+      - name: Check for real content changes
+        id: changes
+        run: |
+          # Only check for actual content changes (vehicle pages, sitemap, data files)
+          # Do NOT include deploy-info.json, service-worker.js, or cache-manager.js
+          # since those are bumped AFTER this check — prevents false-positive deploys
+          git diff --quiet vehiculos/ marcas/ data/vehicle-slugs.json data/brand-slugs.json sitemap.xml || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Bump cache versions (only when content changed)
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          DEPLOY_TS="$(date -u +%Y%m%d%H%M%S)"
+          SHA_SHORT="${GITHUB_SHA:0:7}"
+
+          # 1. deploy-info.json — read by cache-manager.js to detect new deploys
+          #    §83 — Field `type` distingue 3 niveles de update:
+          #      • 'silent'  → cero notificación (cambios cosméticos, refactor interno)
+          #      • 'soft'    → pill sutil + toast contextual en páginas catálogo
+          #      • 'forced'  → modal obligatorio (security fix raro)
+          #    El generator emite SIEMPRE 'soft' porque solo corre cuando detecta
+          #    cambios en vehiculos/ marcas/ sitemap (contenido visible al user).
+          #    Default si falta el field: 'silent' (retrocompat conservadora).
+          echo "{\"version\":\"${DEPLOY_TS}\",\"sha\":\"${SHA_SHORT}\",\"ref\":\"${GITHUB_REF_NAME}\",\"type\":\"soft\",\"userVisible\":true}" > data/deploy-info.json
+
+          # 2. Service Worker CACHE_VERSION — triggers updatefound in browsers
+          sed -i "s/const CACHE_VERSION = '[^']*'/const CACHE_VERSION = 'v${DEPLOY_TS}'/" service-worker.js
+
+          # 3. cache-manager.js APP_VERSION — detects change on first load
+          #    (movido a js/core/ en §119 Fase 2.4c-3 — la ruta vieja js/ rompía este step)
+          sed -i "s/const APP_VERSION[[:space:]]*=[[:space:]]*'[^']*'/const APP_VERSION = '${DEPLOY_TS}'/" js/core/cache-manager.js
+
+      - name: Commit and push generated pages
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add vehiculos/ marcas/ data/vehicle-slugs.json data/brand-slugs.json data/deploy-info.json sitemap.xml service-worker.js js/core/cache-manager.js
+          git commit -m "Auto-generate vehicle pages + bump cache version [skip ci]"
+          git push

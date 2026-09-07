@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#0a0a0a;padding:24px;display:flex;flex-direction:column;gap:14px;}
+.title{color:#b89658;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.6;}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;padding:4px 12px;border-radius:100px;font-size:0.72rem;font-weight:700;letter-spacing:0.05em;}
+/* Search input */
+.search-wrap{background:rgba(18,18,18,0.88);border:1px solid rgba(255,255,255,0.22);border-radius:100px;padding:0 18px;display:flex;align-items:center;gap:8px;max-width:500px;}
+.search-input{background:transparent;border:none;outline:none;color:#fff;font-size:0.95rem;padding:12px 0;font-family:inherit;flex:1;}
+.search-input::placeholder{color:rgba(255,255,255,0.35);}
+/* Standard input */
+.input{padding:10px 14px;border:2px solid #c5c6c6;border-radius:8px;font-size:0.9rem;font-family:inherit;background:#fff;color:#1d1b19;width:200px;}
+.input:focus{outline:none;border-color:#d4af37;}
+.input-dark{padding:10px 14px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.9rem;font-family:inherit;background:#1a1a1a;color:#fff;width:200px;}
+.input-dark::placeholder{color:#9c9997;}
+</style></head><body>
+<div class="title">Badges &amp; Tags</div>
+<div class="row">
+  <span class="badge" style="background:linear-gradient(135deg,#25d366,#1da851);color:#fff;">NUEVO</span>
+  <span class="badge" style="background:linear-gradient(135deg,#3498db,#2980b9);color:#fff;">USADO</span>
+  <span class="badge" style="background:linear-gradient(135deg,#d4af37,#b89658);color:#0a0a0a;">DESTACADO</span>
+  <span class="badge" style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;">OFERTA</span>
+  <span class="badge" style="background:rgba(212,175,55,0.10);border:1px solid rgba(212,175,55,0.38);color:#d4af37;letter-spacing:0.12em;font-size:0.68rem;">PLATAFORMA PREMIUM</span>
+  <span class="badge" style="background:#d4af37;color:#0a0a0a;min-width:20px;height:18px;padding:0 6px;font-size:0.66rem;">12</span>
+</div>
+
+<div class="title">Hero Search Bar</div>
+<div class="search-wrap">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+  <input class="search-input" placeholder="Buscar por marca, modelo, año...">
+  <button style="padding:8px 18px;background:linear-gradient(135deg,#d4af37,#b89658);color:#0a0a0a;border:none;border-radius:100px;font-weight:700;font-size:0.82rem;cursor:pointer;font-family:inherit;">Buscar</button>
+</div>
+
+<div class="title">Form Inputs</div>
+<div class="row">
+  <input class="input" placeholder="Buscar vehículo...">
+  <input class="input-dark" placeholder="Precio máximo">
+  <select class="input-dark"><option>Tipo de vehículo</option><option>SUV</option><option>Sedán</option></select>
+</div>
+</body></html>

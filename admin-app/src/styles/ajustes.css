@@ -1,0 +1,19 @@
+/* ============================================================
+   Ajustes (PLAN-UNIFICADO F-2 6/6) — SEO/sitemap.
+   §219-next (dueño 29/06): se ELIMINÓ el accent picker ("cambiar el color del
+   panel" = irrelevante). Altorra Cars es dark-only con oro de marca FIJO
+   (--gold-* canónico de tokens.css). Reusa .cfg-card/.cfg-card__title + .btn/.state.
+   ============================================================ */
+
+.aj-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--s-5);
+  align-items: start;
+}
+
+/* ── SEO · botón + estado ─────────────────────────────────── */
+.aj-seo__row { margin: var(--s-3) 0; }
+.aj-seo__status { display: block; }
+.aj-seo__status--ok { color: var(--success); }
+.aj-seo__status--err { color: var(--danger); }

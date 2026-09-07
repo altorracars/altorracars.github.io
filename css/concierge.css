@@ -1,0 +1,2370 @@
+/**
+ * ALTORRA CARS — Concierge Unificado styles (Mega-Plan v4, U.1)
+ * ===============================================================
+ * Botón flotante + panel deslizable con tres modos visuales:
+ *   bot     → dorado clásico (default)
+ *   live    → verde (asesor conectado)
+ *   wa      → verde WhatsApp (handover)
+ *
+ * Reemplaza los estilos del whatsapp-widget + ai-assistant.
+ * Respeta prefers-reduced-motion.
+ */
+
+/* ═══════════════════════════════════════════════════════════
+   FAB BUTTON
+   ═══════════════════════════════════════════════════════════ */
+/* FAB — ALTOR flota libre, SIN fondo de círculo, SIN borde, SIN clipping.
+   El PNG ya tiene su propio diseño/efecto integrado; solo añadimos un
+   drop-shadow dorado animado que da el efecto "flotando" sobre la página
+   y respeta los pixels visibles del PNG (no el bounding box rectangular). */
+.altorra-concierge-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 108px;
+    height: 108px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: block;
+    overflow: visible;
+    z-index: 9998;
+    /* drop-shadow respeta canal alpha del PNG → sólo sombrea la silueta del bot */
+    filter: drop-shadow(0 6px 14px rgba(184, 150, 88, 0.55))
+            drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                filter 0.28s ease;
+    animation: altorFloat 3.4s ease-in-out infinite,
+               altorGlow 3s ease-in-out infinite;
+}
+.altorra-concierge-btn:hover {
+    transform: scale(1.10) translateY(-3px);
+    filter: drop-shadow(0 12px 28px rgba(184, 150, 88, 0.95))
+            drop-shadow(0 0 18px rgba(245, 223, 128, 0.55))
+            drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+    /* La animación float+glow del button se pausa en hover; el spin "feliz"
+       lo aplicamos a la <img> interna para que ambos transforms coexistan
+       (el button hace scale, la img rota). */
+    animation: none;
+}
+.altorra-concierge-btn:active {
+    transform: scale(0.95);
+    animation: none;
+}
+/* ALTOR PNG en el FAB — sin clipping circular, mantiene proporciones naturales
+   del PNG (que ya viene con su propio diseño/efecto integrado). */
+.altorra-concierge-btn .cnc-altor-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none; /* el button captura clicks, no la img */
+    -webkit-user-drag: none;
+    user-select: none;
+    transform-origin: 50% 50%;
+}
+/* Hover = ALTOR baila feliz: bounce + tilt rítmico tipo "happy dance".
+   Sin giro completo (era demasiado robótico). Velocidad humana 1.6s,
+   easing in-out para que se sienta natural. Loop infinito mientras
+   se mantiene el hover. */
+.altorra-concierge-btn:hover .cnc-altor-img {
+    animation: altorHappyDance 1.6s ease-in-out infinite;
+}
+@keyframes altorHappyDance {
+    0%, 100% { transform: rotate(0deg)  translateY(0)   scale(1); }
+    12%      { transform: rotate(-10deg) translateY(-4px) scale(1.06); }
+    25%      { transform: rotate(10deg)  translateY(-7px) scale(1.10); }
+    37%      { transform: rotate(-8deg)  translateY(-3px) scale(1.06); }
+    50%      { transform: rotate(8deg)   translateY(-7px) scale(1.10); }
+    62%      { transform: rotate(-5deg)  translateY(-3px) scale(1.06); }
+    75%      { transform: rotate(5deg)   translateY(-5px) scale(1.08); }
+    87%      { transform: rotate(-2deg)  translateY(-1px) scale(1.03); }
+}
+
+/* Sparkles dorados que orbitan alrededor de ALTOR cuando es hovered.
+   Pseudo-elementos del button — el ::before y ::after se animan en
+   trayectorias circulares con fade in/out. */
+.altorra-concierge-btn::before,
+.altorra-concierge-btn::after {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff5d0 0%, #c9a663 60%, transparent 100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    will-change: transform, opacity;
+}
+.altorra-concierge-btn::before {
+    top: 8%;
+    right: 4%;
+}
+.altorra-concierge-btn::after {
+    bottom: 12%;
+    left: 6%;
+    width: 5px;
+    height: 5px;
+}
+.altorra-concierge-btn:hover::before {
+    opacity: 1;
+    animation: altorSparkleA 1.6s ease-in-out infinite;
+}
+.altorra-concierge-btn:hover::after {
+    opacity: 1;
+    animation: altorSparkleB 1.6s ease-in-out infinite;
+    animation-delay: 0.4s;
+}
+@keyframes altorSparkleA {
+    0%, 100% { transform: translate(0, 0)   scale(1);   opacity: 0.9; }
+    25%      { transform: translate(8px, -4px) scale(1.4); opacity: 1; }
+    50%      { transform: translate(4px, -10px) scale(0.7); opacity: 0.6; }
+    75%      { transform: translate(-4px, -6px) scale(1.2); opacity: 0.9; }
+}
+@keyframes altorSparkleB {
+    0%, 100% { transform: translate(0, 0)    scale(1);   opacity: 0.7; }
+    33%      { transform: translate(-6px, 4px) scale(1.5); opacity: 1; }
+    66%      { transform: translate(-10px, -2px) scale(0.8); opacity: 0.5; }
+}
+/* Avatar dentro del header del chat — SÍ va dentro de un círculo dorado
+   (ahí queremos foto de perfil clásica, recortada redonda). */
+.cnc-avatar .cnc-altor-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+/* Fallback "AL" si el PNG no carga.
+   Dentro del FAB: rectangular sin fondo (simula el PNG flotando).
+   Dentro del header avatar: circular con gradient dorado (foto de perfil). */
+.cnc-altor-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #c9a663;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 0.04em;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6),
+                 0 0 12px rgba(184, 150, 88, 0.45);
+}
+.cnc-avatar .cnc-altor-fallback {
+    background: linear-gradient(135deg, #c9a663, #9a7d44);
+    color: #1a1500;
+    border-radius: 50%;
+    font-size: 0.78rem;
+    text-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CTA BUBBLE — invitación flotante junto al FAB con mensaje
+   tipo "¡Quiero hablar contigo!" rotativo cada N segundos
+   ═══════════════════════════════════════════════════════════ */
+.cnc-cta-bubble {
+    position: fixed;
+    bottom: 62px;          /* alineado con la "boca" de ALTOR (108px FAB) */
+    right: 146px;          /* a la izquierda del FAB de 108 + gap */
+    background: linear-gradient(135deg, #fefdf6 0%, #fff7e0 100%);
+    color: #1a1500;
+    padding: 11px 38px 11px 16px;
+    border-radius: 18px;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.30),
+                0 2px 8px rgba(184, 150, 88, 0.35),
+                0 0 0 1px rgba(184, 150, 88, 0.20);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.35;
+    max-width: 240px;
+    white-space: normal;
+    z-index: 9997;
+    transform: translateX(20px) scale(0.85);
+    transform-origin: 100% 80%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.40s ease-out,
+                transform 0.55s cubic-bezier(0.34, 1.6, 0.64, 1);
+    user-select: none;
+    cursor: pointer;
+}
+.cnc-cta-bubble.is-visible {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+    animation: ctaBubbleAttention 1.6s ease-out 0.5s 1;
+}
+.cnc-cta-bubble:hover {
+    transform: translateX(-2px) scale(1.03);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.36),
+                0 0 0 2px rgba(184, 150, 88, 0.55);
+}
+/* Tail apuntando hacia el FAB (a la derecha) */
+.cnc-cta-bubble::after {
+    content: '';
+    position: absolute;
+    right: -9px;
+    bottom: 14px;
+    width: 0;
+    height: 0;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    border-left: 11px solid #fff7e0;
+    filter: drop-shadow(1px 0 0 rgba(184, 150, 88, 0.20));
+}
+.cnc-cta-bubble-text {
+    display: block;
+    color: #2a1f08;
+}
+.cnc-cta-bubble-close {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    /* A11y (TODO-53 P1 + §PERF Fase 0): objetivo táctil ≥24px REAL. El scale de la
+       animación de entrada del bubble encogía 24px→~20.2px en el momento de medición
+       (PageSpeed target-size, ordenador). Se sube la base a 28px para dar margen. */
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: rgba(42, 31, 8, 0.5);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.cnc-cta-bubble-close:hover {
+    background: rgba(42, 31, 8, 0.10);
+    color: rgba(42, 31, 8, 0.9);
+}
+/* Pulse de atención cuando aparece — un pequeño "ping" sin invadir */
+@keyframes ctaBubbleAttention {
+    0%, 100% { transform: translateX(0) scale(1); }
+    50%      { transform: translateX(0) scale(1.05); }
+}
+
+/* Send button mantiene Lucide icon */
+.cnc-send [data-lucide],
+.cnc-send svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+.cnc-quick-btn [data-lucide],
+.cnc-quick-btn svg {
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+    vertical-align: -2px;
+}
+
+/* Animación de flotación vertical sutil — ALTOR se siente vivo */
+@keyframes altorFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+}
+/* Glow dorado pulsante — usa filter:drop-shadow para respetar canal alpha del PNG */
+@keyframes altorGlow {
+    0%, 100% {
+        filter: drop-shadow(0 6px 14px rgba(184, 150, 88, 0.55))
+                drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    }
+    50% {
+        filter: drop-shadow(0 8px 22px rgba(201, 166, 99, 0.85))
+                drop-shadow(0 0 16px rgba(245, 223, 128, 0.45))
+                drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    }
+}
+/* Legacy keyframe — kept for compatibility, reduced-motion override */
+@keyframes cncPulse {
+    0%, 100% { filter: drop-shadow(0 6px 14px rgba(184, 150, 88, 0.55)); }
+    50%      { filter: drop-shadow(0 8px 22px rgba(201, 166, 99, 0.85)); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PANEL
+   ═══════════════════════════════════════════════════════════ */
+.altorra-concierge {
+    position: fixed;
+    bottom: 148px;
+    right: 24px;
+    width: 380px;
+    max-width: calc(100vw - 32px);
+    height: 560px;
+    max-height: calc(100vh - 170px);
+    background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
+    border: 1px solid rgba(184, 150, 88, 0.25);
+    border-radius: 22px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(184, 150, 88, 0.08);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    /* El panel emana de la posición del FAB (esquina inferior derecha).
+       Comienza muy pequeño cerca del FAB y crece a su tamaño final con
+       un easing tipo "burbuja inflando". */
+    transform-origin: bottom right;
+    transform: scale(0.06) translate(40px, 40px);
+    transition: opacity 0.32s ease-out 0.05s,
+                transform 0.50s cubic-bezier(0.34, 1.5, 0.55, 1);
+    pointer-events: none;
+}
+.altorra-concierge.cnc-open {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+    pointer-events: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════════ */
+.cnc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: linear-gradient(180deg, rgba(184, 150, 88, 0.15) 0%, rgba(184, 150, 88, 0.05) 100%);
+    border-bottom: 1px solid rgba(184, 150, 88, 0.15);
+}
+.cnc-header-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.cnc-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, #2a1f08 0%, #15110a 80%);
+    border: 1.5px solid #c9a663;
+    color: #1a1500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    padding: 0;
+}
+.cnc-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #f0e6d2;
+    line-height: 1.2;
+}
+.cnc-status {
+    font-size: 0.72rem;
+    color: rgba(240, 230, 210, 0.6);
+    margin-top: 2px;
+}
+.cnc-close {
+    background: transparent;
+    border: none;
+    color: rgba(240, 230, 210, 0.7);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.cnc-close:hover { background: rgba(255, 255, 255, 0.06); color: #f0e6d2; }
+
+/* ─── Header actions: ⋮ menu button + dropdown (BUG #1) ──────── */
+.cnc-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.cnc-header-menu-btn {
+    background: transparent;
+    border: none;
+    color: rgba(240, 230, 210, 0.7);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.cnc-header-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #f0e6d2;
+}
+.cnc-header-menu-btn[aria-expanded="true"] {
+    background: rgba(184, 150, 88, 0.18);
+    color: #d4b67a;
+}
+.cnc-header-menu-btn [data-lucide] {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+.cnc-header-dropdown {
+    position: absolute;
+    top: 56px;
+    right: 14px;
+    z-index: 10;
+    min-width: 220px;
+    background: linear-gradient(180deg, #2a2418, #1f1a10);
+    border: 1px solid rgba(184, 150, 88, 0.22);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45),
+                0 0 0 1px rgba(184, 150, 88, 0.06);
+    animation: cncDropdownIn 0.18s cubic-bezier(0.34, 1.5, 0.55, 1);
+}
+.cnc-header-dropdown[hidden] { display: none; }
+.cnc-header-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #e9dcc1;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.cnc-header-dropdown-item:hover {
+    background: rgba(184, 150, 88, 0.12);
+    color: #f0e6d2;
+}
+.cnc-header-dropdown-item [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    color: #c9a663;
+}
+@keyframes cncDropdownIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cnc-header-dropdown { animation: none; }
+}
+
+/* ─── Reset toast (feedback visual tras finalizar conversación) ─── */
+.cnc-reset-toast {
+    position: absolute;
+    top: 64px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-12px);
+    z-index: 20;
+    background: linear-gradient(135deg, #2d4a30, #1a2f1d);
+    color: #d4f5d8;
+    border: 1px solid rgba(120, 200, 130, 0.42);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35),
+                0 0 0 1px rgba(120, 200, 130, 0.12);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.32s cubic-bezier(0.34, 1.5, 0.55, 1);
+}
+.cnc-reset-toast--show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+    .cnc-reset-toast { transition: opacity 0.15s linear; transform: translateX(-50%); }
+    .cnc-reset-toast--show { transform: translateX(-50%); }
+}
+
+/* ─── Quick Replies (Propuesta #2 §22) ──────────────────────── */
+.cnc-quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(184, 150, 88, 0.18);
+}
+.cnc-quick-reply {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.18), rgba(184, 150, 88, 0.10));
+    border: 1px solid rgba(184, 150, 88, 0.42);
+    color: #d4b67a;
+    font-size: 0.86rem;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.cnc-quick-reply:hover {
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.32), rgba(184, 150, 88, 0.20));
+    border-color: rgba(184, 150, 88, 0.65);
+    color: #f0e6d2;
+    transform: translateY(-1px);
+}
+.cnc-quick-reply:active { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+    .cnc-quick-reply { transition: none; }
+    .cnc-quick-reply:hover { transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   QUICK ACTIONS
+   ═══════════════════════════════════════════════════════════ */
+.cnc-quick-actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.cnc-quick-btn {
+    flex: 1;
+    background: rgba(184, 150, 88, 0.10);
+    border: 1px solid rgba(184, 150, 88, 0.22);
+    color: #f0e6d2;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+.cnc-quick-btn:hover {
+    background: rgba(184, 150, 88, 0.20);
+    transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MESSAGES
+   ═══════════════════════════════════════════════════════════ */
+.cnc-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scroll-behavior: smooth;
+}
+.cnc-msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.88rem;
+    line-height: 1.42;
+    word-wrap: break-word;
+    animation: cncMsgIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes cncMsgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.cnc-bot-bubble {
+    align-self: flex-start;
+    background: rgba(184, 150, 88, 0.08);
+    color: #e8dcc0;
+    border-bottom-left-radius: 4px;
+}
+.cnc-asesor-bubble {
+    align-self: flex-start;
+    background: rgba(74, 222, 128, 0.10);
+    color: #d4f3d8;
+    border-bottom-left-radius: 4px;
+    border-left: 2px solid #4ade80;
+}
+.cnc-user-bubble {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #c9a663, #9a7d44);
+    color: #1a1500;
+    border-bottom-right-radius: 4px;
+    font-weight: 500;
+}
+.cnc-welcome {
+    background: rgba(184, 150, 88, 0.10);
+    border: 1px dashed rgba(184, 150, 88, 0.25);
+    color: #e8dcc0;
+    max-width: 100%;
+    padding: 14px 16px;
+}
+.cnc-bubble-cta {
+    display: block;
+    margin-top: 10px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(184, 150, 88, 0.35);
+    color: #f0e6d2;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.cnc-bubble-cta:hover { background: rgba(184, 150, 88, 0.25); }
+
+/* ═══════════════════════════════════════════════════════════
+   INPUT
+   ═══════════════════════════════════════════════════════════ */
+.cnc-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.25);
+}
+.cnc-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.18);
+    color: #f0e6d2;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cnc-input:focus {
+    outline: none;
+    border-color: rgba(184, 150, 88, 0.5);
+    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.12);
+}
+.cnc-input::placeholder { color: rgba(240, 230, 210, 0.4); }
+.cnc-send {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #c9a663, #9a7d44);
+    color: #1a1500;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cnc-send:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.3);
+}
+.cnc-send:active { transform: scale(0.92); }
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    .altorra-concierge {
+        right: 8px;
+        bottom: 124px;                  /* sobre el FAB de 92px + 16px + 16 gap */
+        width: calc(100vw - 16px);
+        height: calc(100vh - 144px);
+        max-height: calc(100vh - 144px);
+    }
+    .altorra-concierge-btn {
+        bottom: 16px;
+        right: 16px;
+        width: 92px;
+        height: 92px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+    .altorra-concierge-btn { animation: none; }
+    .altorra-concierge-btn:hover .cnc-altor-img { animation: none; }
+    .cnc-msg { animation: none; }
+    .cnc-cta-bubble.is-visible { animation: none; }
+    .altorra-concierge { transition: opacity 0.15s linear; transform: none; }
+}
+
+@media (max-width: 480px) {
+    /* En mobile, el bubble se muestra arriba del FAB en vez de a la
+       izquierda (no hay espacio horizontal suficiente) */
+    .cnc-cta-bubble {
+        right: 16px;
+        bottom: 105px;
+        max-width: calc(100vw - 32px);
+        font-size: 0.82rem;
+        padding: 10px 32px 10px 14px;
+        border-bottom-right-radius: 18px;
+        border-bottom-left-radius: 6px;
+    }
+    .cnc-cta-bubble::after {
+        right: 28px;
+        bottom: -9px;
+        border-left: 9px solid transparent;
+        border-right: 9px solid transparent;
+        border-top: 11px solid #fff7e0;
+        border-bottom: 0;
+    }
+}
+
+/* U.19 — Opt-in modal */
+.altorra-optin {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.optin-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(8px);
+}
+.optin-modal {
+    position: relative;
+    background: linear-gradient(180deg, #15110a, #0d0a06);
+    border: 1px solid rgba(184, 150, 88, 0.35);
+    border-radius: 14px;
+    padding: 28px 32px;
+    width: min(440px, 92vw);
+    color: #f0e6d2;
+}
+.optin-modal h3 {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+}
+.optin-modal p {
+    margin: 0 0 20px;
+    color: rgba(240, 230, 210, 0.75);
+    font-size: 0.9rem;
+}
+.optin-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.optin-row:hover { background: rgba(184, 150, 88, 0.10); }
+.optin-row input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: #b89658;
+    width: 16px;
+    height: 16px;
+}
+.optin-row strong {
+    display: block;
+    font-size: 0.92rem;
+    margin-bottom: 2px;
+}
+.optin-row small {
+    display: block;
+    color: rgba(240, 230, 210, 0.55);
+    font-size: 0.74rem;
+}
+.optin-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+.optin-btn-skip {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(240, 230, 210, 0.75);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+}
+.optin-btn-save {
+    background: linear-gradient(135deg, #c9a663, #9a7d44);
+    color: #1a1500;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEAD CAPTURE GATE — formulario antes del primer mensaje
+   ═══════════════════════════════════════════════════════════ */
+.cnc-gate {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 14px 14px;
+    overflow-y: auto;
+    background: linear-gradient(180deg, rgba(184, 150, 88, 0.04) 0%, transparent 60%);
+}
+/* #7 (F4/F5, validado live 2026-06-24) — gate = TAKEOVER limpio: el formulario
+   ocupa todo el cuerpo del panel; oculta mensajes/quick-actions/input mientras
+   pide datos. Clase de estado en el panel (robusta a re-renders que pisan el
+   display inline; el !important gana siempre). El v2 lo hace como overlay nativo. */
+.altorra-concierge.cnc-gating .cnc-messages,
+.altorra-concierge.cnc-gating .cnc-quick-actions,
+.altorra-concierge.cnc-gating .cnc-input-wrap {
+    display: none !important;
+}
+.altorra-concierge.cnc-gating .cnc-gate {
+    flex: 1 1 auto;
+}
+.cnc-gate-head { margin-bottom: 10px; }
+.cnc-gate-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e8d8b3;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+}
+.cnc-gate-sub {
+    font-size: 0.74rem;
+    color: rgba(232, 216, 179, 0.72);
+    margin-top: 3px;
+    line-height: 1.35;
+}
+.cnc-gate-form { display: flex; flex-direction: column; gap: 7px; }
+.cnc-gate-row { display: flex; gap: 7px; }
+.cnc-gate-row label { flex: 1; min-width: 0; }
+.cnc-gate-form label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.72rem;
+    color: rgba(232, 216, 179, 0.85);
+    gap: 2px;
+}
+.cnc-gate-form input[type="text"],
+.cnc-gate-form input[type="tel"],
+.cnc-gate-form input[type="email"] {
+    background: rgba(20, 16, 8, 0.6);
+    border: 1px solid rgba(184, 150, 88, 0.25);
+    color: #f3e8c8;
+    padding: 7px 9px;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    transition: border-color 0.18s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+.cnc-gate-form input:focus {
+    outline: none;
+    border-color: #c9a663;
+    box-shadow: 0 0 0 2px rgba(201, 166, 99, 0.18);
+}
+.cnc-gate-consent {
+    flex-direction: row !important;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 0.68rem !important;
+    color: rgba(232, 216, 179, 0.75) !important;
+    line-height: 1.3;
+    margin-top: 2px;
+}
+.cnc-gate-consent input[type="checkbox"] {
+    margin-top: 1px;
+    accent-color: #c9a663;
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+}
+.cnc-gate-submit {
+    margin-top: 4px;
+    background: linear-gradient(135deg, #c9a663 0%, #b89658 50%, #9a7d44 100%);
+    color: #1a1500;
+    border: none;
+    padding: 9px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.cnc-gate-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(201, 166, 99, 0.35);
+}
+.cnc-gate-submit:active { transform: scale(0.98); }
+.cnc-gate-error {
+    color: #ff8a8a;
+    font-size: 0.72rem;
+    min-height: 0;
+    text-align: center;
+    margin-top: 0;
+    line-height: 1.3;
+}
+.cnc-gate-error:not(:empty) {
+    margin-top: 2px;
+    min-height: 1em;
+}
+/* F2.b (EPIC) — fallback WhatsApp en el gate (rescate cero-pérdida). Clases NUEVAS (aditivo §3.2). */
+.cnc-gate-or {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0;
+    color: rgba(232, 216, 179, 0.4);
+    font-size: 0.68rem;
+}
+.cnc-gate-or::before,
+.cnc-gate-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(184, 150, 88, 0.18);
+}
+.cnc-gate-wa {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: rgba(37, 211, 102, 0.12);
+    color: #25d366;
+    border: 1px solid rgba(37, 211, 102, 0.35);
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 140ms ease, transform 140ms ease;
+}
+.cnc-gate-wa:hover { background: rgba(37, 211, 102, 0.2); transform: translateY(-1px); }
+.cnc-gate-wa:active { transform: scale(0.98); }
+.cnc-gate-wa i { width: 15px; height: 15px; }
+.cnc-gate-wa .cnc-wa-glyph { width: 17px; height: 17px; flex-shrink: 0; }
+@media (max-height: 600px) {
+    /* Pantallas cortas (mobile landscape, laptops chicos) — más compacto aún */
+    .cnc-gate { padding: 10px 12px; }
+    .cnc-gate-head { margin-bottom: 6px; }
+    .cnc-gate-title { font-size: 0.88rem; }
+    .cnc-gate-sub { font-size: 0.7rem; margin-top: 2px; }
+    .cnc-gate-form { gap: 5px; }
+    .cnc-gate-form input[type="text"],
+    .cnc-gate-form input[type="tel"],
+    .cnc-gate-form input[type="email"] { padding: 6px 8px; font-size: 0.82rem; }
+    .cnc-gate-form label { font-size: 0.68rem; }
+    .cnc-gate-submit { padding: 8px; font-size: 0.85rem; }
+    .cnc-gate-wa { padding: 7px; font-size: 0.8rem; }
+    .cnc-gate-or { margin: 0; }
+}
+@media (max-width: 480px) {
+    .cnc-gate-row { flex-direction: column; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MENSAJE SISTEMA — handoff "X se ha unido al chat"
+   ═══════════════════════════════════════════════════════════ */
+.cnc-system-msg {
+    align-self: center;
+    background: rgba(74, 222, 128, 0.10);
+    border: 1px solid rgba(74, 222, 128, 0.28);
+    color: #a8e6c0;
+    font-size: 0.78rem;
+    padding: 6px 14px;
+    border-radius: 14px;
+    margin: 8px auto;
+    text-align: center;
+    letter-spacing: 0.01em;
+    animation: cncMsgIn 0.4s ease-out;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER DINÁMICO — avatar del asesor toma el chat
+   ═══════════════════════════════════════════════════════════ */
+.cnc-asesor-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+.cnc-asesor-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2d5f3f 0%, #4ade80 100%);
+    color: #0a1f0f;
+    font-weight: 800;
+    font-size: 0.9rem;
+    border-radius: 50%;
+    letter-spacing: 0.02em;
+}
+
+/* AC LOGO custom — ya viene como SVG inline desde el JS, asegurar sizing */
+.altorra-concierge-btn svg {
+    width: 100% !important;
+    height: 100% !important;
+}
+.cnc-avatar svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FASE 1.B — Bloque de conversación cerrada
+   Aparece cuando session.closed = true (admin cerró el chat)
+   ═══════════════════════════════════════════════════════════ */
+.cnc-closed-block {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 22px 18px 18px;
+    background: linear-gradient(180deg, rgba(74,222,128,0.06) 0%, transparent 80%);
+    border-top: 1px solid rgba(74, 222, 128, 0.20);
+    text-align: center;
+}
+.cnc-closed-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cnc-closed-icon [data-lucide] { width: 24px; height: 24px; stroke-width: 2.4; }
+.cnc-closed-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e8d8b3;
+}
+.cnc-closed-sub {
+    font-size: 0.78rem;
+    color: rgba(232, 216, 179, 0.65);
+    line-height: 1.4;
+    max-width: 280px;
+}
+.cnc-closed-cta {
+    margin-top: 6px;
+    background: linear-gradient(135deg, #c9a663 0%, #b89658 50%, #9a7d44 100%);
+    color: #1a1500;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 9px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.cnc-closed-cta [data-lucide] { width: 14px; height: 14px; }
+.cnc-closed-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(201, 166, 99, 0.35);
+}
+.cnc-closed-cta:active { transform: scale(0.97); }
+
+/* ═══════════════════════════════════════════════════════════
+   FASE 3 — Typing indicator (3 puntos animados estilo iMessage)
+   Aparece mientras el LLM está procesando la respuesta del bot.
+   ═══════════════════════════════════════════════════════════ */
+.cnc-typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 16px !important;
+    min-height: 30px;
+}
+.cnc-typing span {
+    display: block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(232, 220, 192, 0.55);
+    animation: cncTypingDot 1.2s ease-in-out infinite;
+}
+.cnc-typing span:nth-child(2) { animation-delay: 0.2s; }
+.cnc-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes cncTypingDot {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30%           { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   F.3 — Proactive bubble (mensajes que el bot envía sin que el
+   cliente haya escrito). Acento dorado sutil para distinguirlos.
+   ═══════════════════════════════════════════════════════════ */
+.cnc-proactive-bubble {
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.14) 0%, rgba(184, 150, 88, 0.06) 100%) !important;
+    border-left: 2px solid rgba(201, 166, 99, 0.55);
+    position: relative;
+}
+.cnc-proactive-bubble::before {
+    content: '✨';
+    position: absolute;
+    top: -10px;
+    left: -8px;
+    font-size: 14px;
+    background: #15110a;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(184, 150, 88, 0.4);
+}
+
+/* ─── §23 FASE 5 — Radicado en header + closed block ─────────── */
+.cnc-radicado-inline {
+    display: inline-block;
+    background: rgba(184, 150, 88, 0.20);
+    color: #d4b67a;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 1px 7px;
+    border-radius: 6px;
+    margin-left: 4px;
+    border: 1px solid rgba(184, 150, 88, 0.30);
+}
+.cnc-closed-radicado {
+    color: rgba(212, 182, 122, 0.85);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 0.78rem;
+    margin: 8px 0 14px 0;
+    text-align: center;
+    letter-spacing: 0.04em;
+}
+.cnc-closed-radicado strong {
+    color: #d4b67a;
+    font-weight: 700;
+}
+
+/* ─── §57 / §57.8 — Cliente finaliza chat: 3 botones ──────────────
+   Patrón Intercom/Drift/WhatsApp:
+     Descargar conversación (secondary)
+     Iniciar nueva conversación (primary, CTA principal)
+     Cerrar chat (ghost, opción menos prominente)
+*/
+.cnc-closed-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 6px;
+}
+.cnc-closed-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+.cnc-closed-action [data-lucide] {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+.cnc-closed-action--secondary {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+.cnc-closed-action--secondary:hover {
+    background: rgba(212, 182, 122, 0.12);
+    border-color: rgba(212, 182, 122, 0.35);
+    color: #d4b67a;
+}
+.cnc-closed-action--primary {
+    background: linear-gradient(135deg, #d4b67a 0%, #b89658 100%);
+    color: #1a1310;
+    border-color: rgba(212, 182, 122, 0.6);
+    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.25);
+}
+.cnc-closed-action--primary:hover {
+    background: linear-gradient(135deg, #e2c388 0%, #c4a062 100%);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.35);
+}
+/* §57.8 — Ghost variant para "Cerrar chat" (opción menos prominente
+   que "Iniciar nueva conversación", patrón Intercom). */
+.cnc-closed-action--ghost {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.62);
+    border-color: rgba(255, 255, 255, 0.10);
+}
+.cnc-closed-action--ghost:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.20);
+}
+.cnc-closed-action:active {
+    transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+    .cnc-closed-action,
+    .cnc-closed-action:active {
+        transition: none;
+        transform: none;
+    }
+}
+
+/* ─── §23 FASE 2 — Queue + SLA banners (cliente) ─────────────── */
+.cnc-queue-banner {
+    margin: 12px 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 0.86rem;
+    line-height: 1.4;
+    text-align: center;
+}
+.cnc-queue-banner-msg { font-weight: 600; margin-bottom: 4px; }
+.cnc-queue-banner-elapsed {
+    color: rgba(212, 182, 122, 0.7);
+    font-size: 0.74rem;
+    font-family: ui-monospace, 'SF Mono', monospace;
+}
+.cnc-queue-banner--available {
+    background: linear-gradient(135deg, rgba(120, 200, 130, 0.14), rgba(120, 200, 130, 0.05));
+    border: 1px solid rgba(120, 200, 130, 0.32);
+    color: #c8eecf;
+}
+.cnc-queue-banner--saturated {
+    background: linear-gradient(135deg, rgba(245, 200, 90, 0.14), rgba(245, 200, 90, 0.05));
+    border: 1px solid rgba(245, 200, 90, 0.32);
+    color: #f5d990;
+}
+.cnc-queue-banner--offline {
+    background: linear-gradient(135deg, rgba(120, 160, 230, 0.14), rgba(120, 160, 230, 0.05));
+    border: 1px solid rgba(120, 160, 230, 0.32);
+    color: #b8d0f4;
+}
+
+/* §52 — Layout default: column en TODO mobile (<700px) y la mayoría
+   de paneles desktop estrechos (panel del Concierge ≈ 380px). Antes era
+   row con min-width 140px en botones que forzaba el text container a
+   shrinkear hasta 0 → cada palabra rompía a línea separada vertical.
+   Solo desktop ancho (≥700px) usa row. */
+.cnc-sla-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+.cnc-sla-banner--warning {
+    background: linear-gradient(135deg, rgba(245, 180, 90, 0.18), rgba(245, 180, 90, 0.06));
+    border: 1px solid rgba(245, 180, 90, 0.42);
+    color: #f5d09a;
+}
+.cnc-sla-banner--breach {
+    background: linear-gradient(135deg, rgba(240, 100, 100, 0.18), rgba(240, 100, 100, 0.06));
+    border: 1px solid rgba(240, 100, 100, 0.50);
+    color: #f5b8b8;
+}
+.cnc-sla-banner-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    /* §52 — En layout column, el icon sigue alineado al inicio. */
+    align-self: flex-start;
+}
+.cnc-sla-banner-text {
+    flex: 1;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+.cnc-sla-banner-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+    width: 100%;
+}
+.cnc-sla-btn {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s ease, background 0.15s ease;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;       /* §52 — permitir wrap si el texto no cabe */
+    width: 100%;
+}
+
+/* §52 / backlog #1 (TODO-37, 2026-06-23): el banner SLA queda SIEMPRE en COLUMN.
+   El override `row` anterior se activaba con @media (min-width:700px) sobre el VIEWPORT,
+   pero el widget del bot es ≤440px (panel 380px). En desktop (viewport ≥700px) el banner
+   pasaba a row DENTRO del widget de 380px → icon + text(flex:1) + actions(flex-shrink:0, 2
+   botones anchos) en una fila de 380px → el texto colapsaba a ~15px y se renderizaba VERTICAL
+   (1 letra/línea) + scroll-trap. Column (icon, texto full-width, botones apilados) es correcto
+   a cualquier ancho del widget. Si el panel llegara a ser ancho, usar @container — NUNCA viewport.
+   (El root-cause "falta flex:1/min-width:0" del reporte era errado: el texto YA los tenía.) */
+.cnc-sla-btn--wa {
+    background: linear-gradient(135deg, #25d366, #128c7e);
+    color: #fff;
+}
+.cnc-sla-btn--wa:hover { transform: translateY(-1px); }
+.cnc-sla-btn--wait {
+    background: rgba(255, 255, 255, 0.06);
+    color: #d4b67a;
+    border: 1px solid rgba(184, 150, 88, 0.32);
+}
+.cnc-sla-btn--pulsing {
+    animation: cncSlaButtonPulse 1.6s ease-in-out infinite;
+}
+@keyframes cncSlaButtonPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.55); }
+    50%      { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cnc-sla-btn--pulsing { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   §26.2 — Vehicle Cards inline en burbujas del bot
+   Render rico de vehículos cuando ALTOR los menciona: miniatura,
+   título, specs, precio, bullets humanos y CTAs.
+   Patrón Telegram/WhatsApp Business cards.
+   ═══════════════════════════════════════════════════════════════ */
+.cnc-vcard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+.cnc-vcard {
+    display: flex;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.25);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.cnc-vcard:hover {
+    border-color: rgba(184, 150, 88, 0.55);
+    box-shadow: 0 4px 14px rgba(184, 150, 88, 0.18);
+    transform: translateY(-1px);
+}
+.cnc-vcard-imgwrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 110px;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cnc-vcard-img {
+    width: 100%;
+    height: 100%;
+    min-height: 130px;
+    object-fit: cover;
+    display: block;
+}
+.cnc-vcard-img-placeholder {
+    width: 100%;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(184, 150, 88, 0.5);
+}
+.cnc-vcard-status {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.cnc-vcard-status--reservado {
+    background: rgba(245, 158, 11, 0.92);
+    color: #1a1300;
+}
+.cnc-vcard-status--vendido {
+    background: rgba(220, 38, 38, 0.92);
+    color: #fff;
+}
+.cnc-vcard-body {
+    flex: 1;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.cnc-vcard-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #fff;
+    line-height: 1.2;
+    /* backlog #2 (2026-06-23): el título ("toyota HILUX 4X4 2018") se cortaba con … en 1 línea
+       (clientWidth 92 < scrollWidth 126). Clamp a 2 líneas → se ve completo; ellipsis solo si excede 2. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+.cnc-vcard-meta {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.65);
+}
+.cnc-vcard-price {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #b89658;
+    margin-top: 2px;
+}
+.cnc-vcard-price-old {
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: line-through;
+    font-weight: 400;
+    font-size: 0.78rem;
+    margin-right: 6px;
+}
+.cnc-vcard-price-new {
+    color: #b89658;
+}
+.cnc-vcard-oferta-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #b89658, #d4af37);
+    color: #1a1300;
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}
+.cnc-vcard-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 0;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.4;
+}
+.cnc-vcard-bullets li {
+    padding: 1px 0;
+}
+.cnc-vcard-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+.cnc-vcard-btn {
+    flex: 1;
+    min-width: 70px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+    font-family: inherit;
+}
+.cnc-vcard-btn:hover {
+    background: rgba(184, 150, 88, 0.15);
+    border-color: rgba(184, 150, 88, 0.5);
+    color: #fff;
+}
+.cnc-vcard-btn--primary {
+    background: linear-gradient(135deg, #b89658, #a08348);
+    border-color: #b89658;
+    color: #1a1300;
+}
+.cnc-vcard-btn--primary:hover {
+    background: linear-gradient(135deg, #d4af37, #b89658);
+    color: #1a1300;
+}
+/* Mobile: cards apiladas verticales para mejor legibilidad */
+@media (max-width: 480px) {
+    .cnc-vcard {
+        flex-direction: column;
+    }
+    .cnc-vcard-imgwrap {
+        width: 100%;
+    }
+    .cnc-vcard-img,
+    .cnc-vcard-img-placeholder {
+        height: 140px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   §60.2 — Estados visuales canónicos de mensajes Concierge cliente
+   (Sprint S2 cirugía, patrón WhatsApp/Linear/Intercom).
+
+   Cuatro estados local-only (no Firestore) — solo aplica a mensajes
+   del usuario (cnc-user-bubble) que requirieron sync a Firestore:
+
+     pending → ⏱ icon gris claro + opacity 0.7
+     sent    → ✓ gris (1 check) — confirmado en server
+     read    → ✓✓ azul (#34B7F1) — leído por asesor (S4 read receipts)
+     failed  → border rojo + botón Reintentar inline + shake animation
+
+   Sólo se animan opacity/transform/color/box-shadow (compositor-only,
+   doctrina §17.2). Respeta prefers-reduced-motion (§35).
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cnc-msg.cnc-msg-pending {
+    opacity: 0.7;
+}
+
+.cnc-msg.cnc-msg-sent {
+    opacity: 1;
+}
+
+.cnc-msg.cnc-msg-failed {
+    border: 1px solid #ef4444;
+    border-radius: 16px;
+    opacity: 1;
+}
+
+.cnc-msg-status {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1;
+    transition: color 150ms ease-out, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cnc-msg-status[data-state="pending"] {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.cnc-msg-status[data-state="sent"] {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.cnc-msg-status[data-state="read"] {
+    color: #34B7F1;
+}
+
+/* En user-bubble el texto es oscuro (sobre dorado), así que el icon
+   también debe ser oscuro para contraste. */
+.cnc-user-bubble .cnc-msg-status[data-state="pending"] {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.cnc-user-bubble .cnc-msg-status[data-state="sent"] {
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.cnc-user-bubble .cnc-msg-status[data-state="read"] {
+    color: #1d4ed8;  /* azul más oscuro sobre fondo dorado */
+}
+
+.cnc-msg-retry {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background-color 150ms ease-out, color 150ms ease-out, transform 100ms ease-out;
+}
+
+.cnc-msg-retry:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fecaca;
+}
+
+.cnc-msg-retry:active {
+    transform: scale(0.96);
+}
+
+@keyframes cncFailedShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+.cnc-msg-failed {
+    animation: cncFailedShake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cnc-msg.cnc-msg-pending,
+    .cnc-msg.cnc-msg-sent,
+    .cnc-msg.cnc-msg-failed,
+    .cnc-msg-status,
+    .cnc-msg-retry {
+        transition: none !important;
+    }
+    .cnc-msg-failed {
+        animation: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §60.2 — Optimistic UI states (Sprint S2 cliente)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §75 SPRINT S3 — Typing Indicator del asesor (cliente)
+   Estilo iMessage: avatar circular + bubble glass dorado tenue +
+   3 dots animados con fade staggered. Aparece dentro de cncMessages
+   como "pseudo-mensaje" al final de la lista.
+
+   Namespace `asesor` para no colisionar con `cnc-typing` del bot LLM
+   existente (líneas 775+ en concierge.js).
+   ═══════════════════════════════════════════════════════════════════ */
+.cnc-asesor-typing-indicator {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin: 8px 0 4px;
+    padding: 0 4px;
+    animation: cncAsesorTypingSlideIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.cnc-asesor-typing-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(184, 150, 88, 0.20);
+    border: 1px solid rgba(184, 150, 88, 0.30);
+}
+
+.cnc-asesor-typing-avatar--initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d4ad6e;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.cnc-asesor-typing-bubble {
+    background: rgba(184, 150, 88, 0.12);
+    border: 1px solid rgba(184, 150, 88, 0.22);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 9px 14px 11px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.72);
+    max-width: 78%;
+    line-height: 1.3;
+}
+
+.cnc-asesor-typing-name {
+    font-style: italic;
+    letter-spacing: 0.01em;
+}
+
+.cnc-asesor-typing-dots {
+    display: inline-flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 12px;
+}
+
+.cnc-asesor-typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(184, 150, 88, 0.65);
+    animation: cncAsesorTypingDot 1.4s ease-in-out infinite;
+}
+
+.cnc-asesor-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.cnc-asesor-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes cncAsesorTypingDot {
+    0%, 60%, 100% {
+        opacity: 0.32;
+        transform: scale(0.85) translateY(0);
+    }
+    30% {
+        opacity: 1;
+        transform: scale(1.10) translateY(-2px);
+    }
+}
+
+@keyframes cncAsesorTypingSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cnc-asesor-typing-indicator {
+        animation: none;
+    }
+    .cnc-asesor-typing-dots span {
+        animation: none;
+        opacity: 0.62;
+    }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §75 — Sprint S3 Typing Indicator (cliente)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §77 SPRINT S5 — Status del equipo en header del Concierge
+   Dot indicator color por status (online/away/offline) + label.
+   Cliente lo ve en cncStatus. Sin animations costosas — solo color
+   estático + transition discreta para el cambio entre estados.
+   ═══════════════════════════════════════════════════════════════════ */
+.cnc-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cnc-status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cnc-status-dot--online {
+    background: #22c55e;            /* verde semáforo */
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.55);
+}
+
+.cnc-status-dot--away {
+    background: #f59e0b;            /* ámbar */
+    box-shadow: 0 0 4px rgba(245, 158, 11, 0.45);
+}
+
+.cnc-status-dot--offline {
+    background: #6b7280;            /* gris neutral */
+    box-shadow: none;
+}
+
+.cnc-status-label {
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cnc-status-dot {
+        transition: none;
+    }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §77 — Sprint S5 Status del equipo
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §79 — Sprint S7: Rediseño visual cliente widget (CSS-only)
+   ═══════════════════════════════════════════════════════════════════
+   Cierre del Mega-Plan §59 ALTOR Hub. Refactor visual 100% CSS
+   con prefijo `.altorra-concierge` (wrapper del panel) para
+   máxima especificidad (0,2,0 vs 0,1,0 legacy) — override sin
+   !important. Cero JS, cero schema, cero deploy backend.
+   Alinea visual del cliente con el del admin Hub (§78 S6).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── A. Onboarding initial pulse del FAB — ELIMINADO §80 ─────────
+   §80 Hotfix: el `box-shadow: 0 0 0 32px` causaba un AURA CUADRADA
+   visible alrededor del FAB porque el button es transparente sin
+   border-radius:50% (el PNG ALTOR define la silueta visual, NO el
+   bounding box). El shadow seguía el rectángulo 108×108 → aura
+   cuadrada 172×172. El FAB original ya tiene altorFloat + altorGlow
+   suficientes para llamar la atención sin agregar pulse extra.
+   Bloque eliminado completamente. Cliente NO había pedido onboarding
+   pulse (overreach del §79). */
+
+/* ─── B. Bubbles refinement (alinear con S6 admin) ────────────────
+   Radius 18px (vs 14px legacy), padding 11×16 (vs 10×14), max-width
+   78% (vs 80%), box-shadow sutil, animation entry overshoot.
+   Selector .altorra-concierge .cnc-msg gana specificity (0,2,0)
+   vs .cnc-msg legacy (0,1,0). */
+.altorra-concierge .cnc-msg {
+    max-width: 78%;
+    padding: 11px 16px;
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    animation: cncMsgSlideInPremium 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@keyframes cncMsgSlideInPremium {
+    from { opacity: 0; transform: translateY(8px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Esquinas asimétricas (mismo patrón S6 admin):
+   - Bot/asesor: bottom-left-radius 4px (esquina cuadrada hacia
+     abajo-izquierda → indica "soy el emisor a la izquierda")
+   - User: bottom-right-radius 4px (esquina cuadrada hacia
+     abajo-derecha → indica "soy el emisor a la derecha")
+   Las reglas legacy ya tenían esta lógica con radius 14px.
+   Aquí solo refrescamos a 18px y agregamos sombra coordinada. */
+.altorra-concierge .cnc-bot-bubble {
+    border-bottom-left-radius: 4px;
+    background: linear-gradient(135deg,
+                rgba(184, 150, 88, 0.10) 0%,
+                rgba(184, 150, 88, 0.06) 100%);
+    border: 1px solid rgba(184, 150, 88, 0.14);
+}
+.altorra-concierge .cnc-asesor-bubble {
+    border-bottom-left-radius: 4px;
+    background: linear-gradient(135deg,
+                rgba(74, 222, 128, 0.12) 0%,
+                rgba(74, 222, 128, 0.08) 100%);
+    border-left: 2px solid #4ade80;
+}
+.altorra-concierge .cnc-user-bubble {
+    border-bottom-right-radius: 4px;
+    background: linear-gradient(135deg, #d4ad6e 0%, #b89658 50%, #9a7d44 100%);
+    box-shadow: 0 2px 6px rgba(184, 150, 88, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Mensajes system del cliente (mismo tratamiento que S6 admin) */
+.altorra-concierge .cnc-system-msg {
+    border-radius: 12px;
+    background: rgba(74, 222, 128, 0.10);
+    color: rgba(212, 243, 216, 0.85);
+    font-style: italic;
+    text-align: center;
+    align-self: center;
+    max-width: 84%;
+    padding: 7px 14px;
+    font-size: 0.78rem;
+}
+
+/* ─── C. Welcome bubble premium ───────────────────────────────────
+   Mejora del welcome bubble (cnc-welcome) con gradient sutil +
+   glow dorado tenue + animation entry diferenciada (suave, no
+   intrusiva). */
+.altorra-concierge .cnc-welcome {
+    background: linear-gradient(135deg,
+                rgba(184, 150, 88, 0.14) 0%,
+                rgba(184, 150, 88, 0.08) 100%);
+    border: 1px solid rgba(184, 150, 88, 0.28);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(184, 150, 88, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    padding: 16px 18px;
+    animation: cncWelcomeFadeIn 0.42s ease-out;
+}
+@keyframes cncWelcomeFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* CTA dentro del welcome bubble — refinado con hover lift */
+.altorra-concierge .cnc-bubble-cta {
+    border-radius: 10px;
+    transition: background-color 0.18s ease, transform 0.18s ease,
+                box-shadow 0.18s ease;
+}
+.altorra-concierge .cnc-bubble-cta:hover {
+    background: rgba(184, 150, 88, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(184, 150, 88, 0.20);
+}
+.altorra-concierge .cnc-bubble-cta:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(184, 150, 88, 0.15);
+}
+
+/* ─── D. Vehicle cards inline refinement ──────────────────────────
+   Las vehicle cards inline del bot (cnc-vcard-*) ya existen desde
+   §26.2. Aquí refinamos hover y transitions sin tocar layout. */
+.altorra-concierge .cnc-vcard {
+    border-radius: 14px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease,
+                border-color 0.18s ease;
+}
+.altorra-concierge .cnc-vcard:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.20);
+    border-color: rgba(184, 150, 88, 0.35);
+}
+
+/* ─── E. Skeleton loaders (preparados para futuro JS use) ─────────
+   Clases CSS-ready para que un futuro Sprint S8 muestre placeholders
+   visuales mientras Firestore conecta. JS de S1-S7 NO los usa
+   todavía — quedan disponibles. */
+.altorra-concierge .cnc-skeleton-bubble {
+    align-self: flex-start;
+    max-width: 72%;
+    height: 38px;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0.04) 0%,
+                rgba(255, 255, 255, 0.10) 50%,
+                rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: cncSkeletonShimmer 1.6s ease-in-out infinite;
+}
+.altorra-concierge .cnc-skeleton-bubble--user {
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 18px;
+    max-width: 64%;
+}
+.altorra-concierge .cnc-skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+    background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0.04) 0%,
+                rgba(255, 255, 255, 0.10) 50%,
+                rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: cncSkeletonShimmer 1.6s ease-in-out infinite;
+    margin: 4px 0;
+}
+.altorra-concierge .cnc-skeleton-line--short { width: 50%; }
+.altorra-concierge .cnc-skeleton-line--medium { width: 70%; }
+.altorra-concierge .cnc-skeleton-line--long { width: 90%; }
+@keyframes cncSkeletonShimmer {
+    0%, 100% { background-position: 200% 0; }
+    50%      { background-position: -200% 0; }
+}
+
+/* ─── F. CTA bubble timing refinement ─────────────────────────────
+   El CTA bubble rotativo del FAB (timings 2/6/6 del §57+) ya tiene
+   su lógica en JS. Aquí solo refinamos la entry animation para que
+   sea más natural (overshoot suave) sin tocar el JS. */
+.altorra-concierge-btn ~ .cnc-cta-bubble.is-visible,
+.cnc-cta-bubble.is-visible {
+    animation-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* ─── G. Mobile responsive @media (max-width: 480px) ──────────────
+   Refinamientos para pantallas chicas (iPhone vertical). */
+@media (max-width: 480px) {
+    .altorra-concierge .cnc-msg {
+        max-width: 84%;
+        padding: 10px 14px;
+        font-size: 0.86rem;
+    }
+    .altorra-concierge .cnc-welcome {
+        padding: 14px 16px;
+    }
+    .altorra-concierge .cnc-system-msg {
+        font-size: 0.74rem;
+        padding: 6px 12px;
+    }
+}
+
+/* ─── H. Accesibilidad — prefers-reduced-motion ───────────────────
+   Desactiva animations entry y skeleton shimmer. Fallback: estados
+   estáticos sin movimiento. (§80: onboarding pulse eliminado del
+   bloque A, ya no hace falta selector aquí.) */
+@media (prefers-reduced-motion: reduce) {
+    .altorra-concierge .cnc-msg {
+        animation: none;
+    }
+    .altorra-concierge .cnc-welcome {
+        animation: none;
+    }
+    .altorra-concierge .cnc-skeleton-bubble,
+    .altorra-concierge .cnc-skeleton-line {
+        animation: none;
+        opacity: 0.6;
+    }
+    .altorra-concierge .cnc-bubble-cta:hover,
+    .altorra-concierge .cnc-vcard:hover {
+        transform: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §79 — Sprint S7 Rediseño visual cliente widget
+   CIERRE Mega-Plan §59 ALTOR Hub (7 de 7 sprints completados)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §86 Sprint C-S8 — Carousel horizontal de vehicle cards (sub-feat B4)
+   Cuando el bot muestra 3+ vehículos en su respuesta, las cards pasan
+   de stack vertical a carousel horizontal con scroll-snap-type x
+   mandatory. Swipe nativo en mobile, scroll-x con shift+wheel desktop.
+   Patrón WhatsApp Business cards / Intercom Resolution Bot.
+
+   Selectores con prefijo .altorra-concierge para especificidad 0,2,0
+   sin necesidad de !important.
+
+   Cero impacto cuando vehicleCards.length < 3 (clase --carousel
+   no se aplica → mantiene flex-direction: column legacy).
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-concierge .cnc-vcard-list.cnc-vcard-list--carousel {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    /* Padding inferior para no recortar shadow del :hover de las cards */
+    padding-bottom: 6px;
+    /* Scrollbar dorada sutil (consistente con el resto del widget) */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(184, 150, 88, 0.4) transparent;
+}
+.altorra-concierge .cnc-vcard-list--carousel::-webkit-scrollbar {
+    height: 6px;
+}
+.altorra-concierge .cnc-vcard-list--carousel::-webkit-scrollbar-track {
+    background: transparent;
+}
+.altorra-concierge .cnc-vcard-list--carousel::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.4);
+    border-radius: 3px;
+}
+.altorra-concierge .cnc-vcard-list--carousel::-webkit-scrollbar-thumb:hover {
+    background: rgba(184, 150, 88, 0.65);
+}
+
+/* Cada card del carousel: width fija 280px + scroll-snap-align: start */
+.altorra-concierge .cnc-vcard.cnc-vcard--snap {
+    flex: 0 0 280px;
+    min-width: 280px;
+    max-width: 280px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+/* Hint visual: leve gradient en el borde derecho para indicar
+   que hay más cards al hacer scroll. Solo si hay overflow real. */
+.altorra-concierge .cnc-vcard-list--carousel::after {
+    content: '';
+    flex: 0 0 4px;
+    /* Spacer al final para que la última card no quede pegada al borde */
+}
+
+/* Mobile (<480px): cards un poco más chicas para encajar
+   mejor en pantallas estrechas (~360px de viewport). */
+@media (max-width: 480px) {
+    .altorra-concierge .cnc-vcard.cnc-vcard--snap {
+        flex: 0 0 240px;
+        min-width: 240px;
+        max-width: 240px;
+    }
+}
+
+/* prefers-reduced-motion: scroll instantáneo en lugar de smooth.
+   El scroll-snap del browser ya respeta reduced-motion nativamente,
+   pero forzamos scroll-behavior: auto por defensa. */
+@media (prefers-reduced-motion: reduce) {
+    .altorra-concierge .cnc-vcard-list--carousel {
+        scroll-behavior: auto;
+    }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §86 Sprint C-S8 — Welcome contextual + Progressive profiling +
+   Quick replies dinámicos + Carousel horizontal vehicle cards
+   ═══════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   §87 Sprint C-S9 — CSAT (Customer Satisfaction) post-cierre
+   Survey de 5 caritas estilo Intercom/Drift entre el radicado y los
+   botones de acción de la pantalla "Chat finalizado". Idempotente.
+   Cero transition: color (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, background-color (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, border-color (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, box-shadow (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, transform (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, opacity (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px, filter (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px;
+    padding: 14px 14px 12px;
+    background: rgba(184, 150, 88, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.18);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: cncCSATIn 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+.altorra-concierge .cnc-csat-question {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    text-align: center;
+    line-height: 1.4;
+}
+
+.altorra-concierge .cnc-csat-emojis {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+}
+
+.altorra-concierge .cnc-csat-emoji {
+    flex: 1 1 0;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    padding: 8px 4px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.altorra-concierge .cnc-csat-emoji:hover {
+    background: rgba(184, 150, 88, 0.14);
+    border-color: rgba(184, 150, 88, 0.5);
+    transform: translateY(-2px) scale(1.04);
+}
+
+.altorra-concierge .cnc-csat-emoji:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.altorra-concierge .cnc-csat-emoji--selected {
+    background: rgba(184, 150, 88, 0.22);
+    border-color: rgba(184, 150, 88, 0.8);
+    transform: translateY(-1px) scale(1.06);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.25);
+}
+
+.altorra-concierge .cnc-csat-emoji-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.altorra-concierge .cnc-csat-emoji-label {
+    font-size: 0.66rem;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: center;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.altorra-concierge .cnc-csat-emoji--selected .cnc-csat-emoji-label {
+    color: rgba(184, 150, 88, 0.95);
+    font-weight: 600;
+}
+
+.altorra-concierge .cnc-csat-comment {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: rgba(255, 255, 255, 0.92);
+    font-family: inherit;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    resize: none;
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.altorra-concierge .cnc-csat-comment:focus {
+    outline: none;
+    border-color: rgba(184, 150, 88, 0.55);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.altorra-concierge .cnc-csat-comment::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.altorra-concierge .cnc-csat-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+.altorra-concierge .cnc-csat-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease, color 0.18s ease;
+}
+
+.altorra-concierge .cnc-csat-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.altorra-concierge .cnc-csat-btn--ghost {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.altorra-concierge .cnc-csat-btn--ghost:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.altorra-concierge .cnc-csat-btn--primary {
+    background: linear-gradient(135deg, #d4ad6e, #b89658);
+    border-color: rgba(184, 150, 88, 0.7);
+    color: #1a1310;
+}
+
+.altorra-concierge .cnc-csat-btn--primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e0bb7d, #c4a466);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.3);
+}
+
+.altorra-concierge .cnc-csat-btn--primary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Estado "ya respondió" — bloque colapsado mostrando agradecimiento */
+.altorra-concierge .cnc-csat-block--submitted {
+    padding: 10px 14px;
+    background: rgba(74, 222, 128, 0.08);
+    border-color: rgba(74, 222, 128, 0.28);
+}
+
+.altorra-concierge .cnc-csat-thanks {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.altorra-concierge .cnc-csat-thanks-emoji {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+@keyframes cncCSATIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile: emojis compactos sin labels visibles */
+@media (max-width: 480px) {
+    .altorra-concierge .cnc-csat-block { padding: 12px; }
+    .altorra-concierge .cnc-csat-question { font-size: 0.86rem; }
+    .altorra-concierge .cnc-csat-emoji { padding: 7px 2px; }
+    .altorra-concierge .cnc-csat-emoji-icon { font-size: 1.4rem; }
+    .altorra-concierge .cnc-csat-emoji-label { font-size: 0.6rem; }
+    .altorra-concierge .cnc-csat-actions { flex-direction: column; align-items: stretch; gap: 6px; }
+    .altorra-concierge .cnc-csat-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .altorra-concierge .cnc-csat-block { animation: none; }
+    .altorra-concierge .cnc-csat-emoji,
+    .altorra-concierge .cnc-csat-btn--primary,
+    .altorra-concierge .cnc-csat-comment {
+        transition: none;
+    }
+    .altorra-concierge .cnc-csat-emoji:hover,
+    .altorra-concierge .cnc-csat-emoji--selected {
+        transform: none;
+    }
+    .altorra-concierge .cnc-csat-btn--primary:hover:not(:disabled) {
+        transform: none;
+    }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §87 Sprint C-S9 — CSAT post-cierre
+   ═══════════════════════════════════════════════════════════════════ */

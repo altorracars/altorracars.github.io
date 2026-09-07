@@ -1,0 +1,486 @@
+// Admin Panel — Real-time Sync & Data Loading
+(function() {
+    'use strict';
+    var AP = window.AP;
+    var $ = AP.$;
+
+    // Señaliza a las páginas públicas que los datos cambiaron.
+    // Se llama después del primer snapshot (cambios reales, no carga inicial).
+    function signalCacheInvalidation() {
+        if (!window.db) return;
+        window.db.doc('system/meta').set(
+            { lastModified: Date.now() },
+            { merge: true }
+        ).catch(function() { /* sin permisos o sin red — silencioso */ });
+    }
+
+    function startRealtimeSync() {
+        stopRealtimeSync();
+        AP._vehiclesLoaded = false;
+        AP._brandsLoaded = false;
+        var _vehiclesInitialized = false;
+        var _brandsInitialized   = false;
+
+        if (AP._loadingTimeout) clearTimeout(AP._loadingTimeout);
+        AP._loadingTimeout = setTimeout(function() {
+            if (!AP._vehiclesLoaded || !AP._brandsLoaded) {
+                if (AP._retryCount < AP.MAX_RETRIES) {
+                    AP._retryCount++;
+                    AP.toast('Reintentando cargar datos... (intento ' + AP._retryCount + '/' + AP.MAX_RETRIES + ')', 'warning');
+                    startRealtimeSync();
+                } else {
+                    showLoadingError();
+                }
+            }
+        }, 15000);
+
+        AP.unsubVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
+            AP._vehiclesLoaded = true;
+            AP.vehicles = snap.docs.map(function(d) { return d.data(); });
+
+            // F0.5: Automatic schema migration — runs once on first load
+            // Idempotent: only touches vehicles missing required fields
+            if (!_vehiclesInitialized && window.db && AP.hasPermission && (AP.hasPermission('vehicles.create') || AP.hasPermission('vehicles.edit'))) {
+                migrateVehicleSchema(AP.vehicles);
+            }
+
+            // Primer snapshot = carga inicial; los siguientes = cambios reales del admin
+            if (_vehiclesInitialized) signalCacheInvalidation();
+            _vehiclesInitialized = true;
+            if (AP.renderVehiclesTable) AP.renderVehiclesTable();
+            if (AP._populateVehicleFilters) AP._populateVehicleFilters();
+            if (AP.updateStats) AP.updateStats();
+            if (AP.renderActivityFeed) AP.renderActivityFeed();
+
+            if (AP.updateNavBadges) AP.updateNavBadges();
+            if (AP.renderVehiclesByOrigin) AP.renderVehiclesByOrigin();
+            if (AP.renderDealersList) AP.renderDealersList();
+            checkLoadingComplete();
+        }, function(err) {
+            console.error('Vehicles snapshot error:', err);
+            handleSnapshotError('vehiculos', err);
+        });
+
+        AP.unsubBrands = window.db.collection('marcas').onSnapshot(function(snap) {
+            AP._brandsLoaded = true;
+            AP.brands = snap.docs.map(function(d) { return d.data(); });
+            if (_brandsInitialized) signalCacheInvalidation();
+            _brandsInitialized = true;
+            if (AP.renderBrandsTable) AP.renderBrandsTable();
+            if (AP.populateBrandSelect) AP.populateBrandSelect();
+            if (AP.updateStats) AP.updateStats();
+            if (AP.renderActivityFeed) AP.renderActivityFeed();
+            if (AP.updateNavBadges) AP.updateNavBadges();
+            checkLoadingComplete();
+        }, function(err) {
+            console.error('Brands snapshot error:', err);
+            handleSnapshotError('marcas', err);
+        });
+
+        if (AP.hasPermission('users.create') || AP.hasPermission('users.edit')) {
+            loadUsers();
+        }
+    }
+
+    function checkLoadingComplete() {
+        if (AP._vehiclesLoaded && AP._brandsLoaded) {
+            if (AP._loadingTimeout) { clearTimeout(AP._loadingTimeout); AP._loadingTimeout = null; }
+            AP._retryCount = 0;
+            // F3.6: Auto-cache data for offline mode
+            if (AP._autoCacheData) AP._autoCacheData();
+        }
+    }
+
+    function handleSnapshotError(collection, err) {
+        if (err.code === 'permission-denied') {
+            AP.toast('Sin permisos para acceder a ' + collection + '. Verifica tu rol.', 'error');
+        }
+    }
+
+    function showLoadingError() {
+        var vBody = $('vehiclesTableBody');
+        if (vBody && AP.vehicles.length === 0) {
+            vBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f85149;">' +
+                'Error al cargar vehiculos. <a href="#" data-action="retryLoad" style="color:#58a6ff;text-decoration:underline;">Reintentar</a>' +
+                '</td></tr>';
+        }
+        AP.toast('No se pudieron cargar los datos. Verifica tu conexion a internet.', 'error');
+    }
+
+    function retryLoad() {
+        AP._retryCount = 0;
+        AP.toast('Recargando datos...', 'info');
+        AP.loadData();
+    }
+
+    function stopRealtimeSync() {
+        if (AP.unsubVehicles) { AP.unsubVehicles(); AP.unsubVehicles = null; }
+        if (AP.unsubBrands) { AP.unsubBrands(); AP.unsubBrands = null; }
+        if (AP.unsubAppointments) { AP.unsubAppointments(); AP.unsubAppointments = null; }
+        if (AP.unsubDealers) { AP.unsubDealers(); AP.unsubDealers = null; }
+        if (AP.unsubAuditLog) { AP.unsubAuditLog(); AP.unsubAuditLog = null; }
+        if (AP.unsubBanners) { AP.unsubBanners(); AP.unsubBanners = null; }
+        if (AP.unsubReviews) { AP.unsubReviews(); AP.unsubReviews = null; }
+        if (AP.stopDraftsListener) { AP.stopDraftsListener(); } // §107 — evita listener huérfano de la subcolección de borradores tras logout
+    }
+
+    function loadData() {
+        // F3.6: Try loading from cache if offline
+        if (AP.loadFromCacheIfOffline && AP.loadFromCacheIfOffline()) return;
+        // F2.2: Show skeleton loaders while data loads
+        if (AP.showStatsSkeleton) AP.showStatsSkeleton();
+        if (AP.showTableSkeleton) AP.showTableSkeleton('vehiclesTableBody', 8);
+        startRealtimeSync();
+        checkFirestoreRulesDeployed();
+        try {
+            if (AP.loadAppointments) AP.loadAppointments();
+            if (AP.loadDealers) AP.loadDealers();
+            if (AP.loadAvailabilityConfig) AP.loadAvailabilityConfig();
+            if (AP.loadAuditLog) AP.loadAuditLog();
+            if (AP.subscribeBanners) AP.subscribeBanners();
+            if (AP.subscribeReviews) AP.subscribeReviews();
+            if (AP.startDraftsListener) AP.startDraftsListener();
+        } catch (e) {
+            console.warn('[Phase5] Error loading:', e);
+        }
+        if (window.DynamicLists) {
+            window.DynamicLists.load().then(function() {
+                window.DynamicLists.populateAdminForm();
+                if (AP.renderFeatureCheckboxes) AP.renderFeatureCheckboxes(); // §D.1
+                if (AP.renderListsSection) AP.renderListsSection();
+                if (AP.loadBlockedDates) AP.loadBlockedDates();
+            });
+        }
+    }
+
+    // ========== F0.5: VEHICLE SCHEMA MIGRATION ==========
+    // Runs once on first snapshot. Idempotent, non-destructive, parallel.
+    // Generates codigoUnico for legacy vehicles, fills missing defaults.
+    var _migrationRan = false;
+    function migrateVehicleSchema(vehicles) {
+        if (_migrationRan) return;
+        _migrationRan = true;
+
+        // Schema defaults — only applied if field is missing/falsy
+        var DEFAULTS = {
+            estado: 'disponible',
+            tipo: 'usado',
+            direccion: 'Electrica',
+            ubicacion: 'Cartagena',
+            puertas: 5,
+            pasajeros: 5,
+            asientos: 5,
+            placa: 'Disponible al contactar',
+            codigoFasecolda: 'Consultar',
+            revisionTecnica: true,
+            peritaje: true,
+            destacado: false,
+            featuredWeek: false,
+            prioridad: 0,
+            oferta: false
+        };
+
+        // Find vehicles needing migration
+        var toMigrate = vehicles.filter(function(v) {
+            if (!v.codigoUnico) return true;
+            if (!v._version && v._version !== 0) return true;
+            if (!v.estado) return true;
+            // featuredWeek must match destacado
+            if (!!v.featuredWeek !== !!v.destacado) return true;
+            return false;
+        });
+
+        if (toMigrate.length === 0) return;
+
+        // Get the current code sequence counter
+        var counterRef = window.db.collection('config').doc('counters');
+        counterRef.get().then(function(counterDoc) {
+            var currentSeq = counterDoc.exists ? (counterDoc.data().vehicleCodeSeq || 0) : 0;
+            var needsCodes = toMigrate.filter(function(v) { return !v.codigoUnico; });
+            var newSeq = currentSeq + needsCodes.length;
+
+            // Generate codes for vehicles without one
+            var codeIndex = 0;
+            var now = new Date();
+            var yyyy = now.getFullYear();
+            var mm = String(now.getMonth() + 1).padStart(2, '0');
+
+            // Build batch updates (max 500 per batch)
+            var batches = [window.db.batch()];
+            var batchCount = 0;
+            var totalMigrated = 0;
+
+            toMigrate.forEach(function(v) {
+                var patch = {};
+                var needsUpdate = false;
+
+                // Generate codigoUnico if missing
+                if (!v.codigoUnico) {
+                    codeIndex++;
+                    var seq = String(currentSeq + codeIndex).padStart(4, '0');
+                    patch.codigoUnico = 'ALT-' + yyyy + mm + '-' + seq;
+                    needsUpdate = true;
+                }
+
+                // Track if _version itself is missing (needs initialization)
+                var versionMissing = !v._version && v._version !== 0;
+                if (versionMissing) needsUpdate = true;
+
+                // Fill missing defaults
+                Object.keys(DEFAULTS).forEach(function(key) {
+                    if (v[key] === undefined || v[key] === null || v[key] === '') {
+                        // Don't overwrite explicit false/0 values
+                        if (typeof DEFAULTS[key] === 'boolean' && v[key] === false) return;
+                        if (typeof DEFAULTS[key] === 'number' && v[key] === 0) return;
+                        patch[key] = DEFAULTS[key];
+                        needsUpdate = true;
+                    }
+                });
+
+                // Sync featuredWeek with destacado
+                if (!!v.featuredWeek !== !!v.destacado) {
+                    patch.featuredWeek = !!v.destacado;
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate) {
+                    // Always increment _version so the write passes validVersion() in Firestore rules
+                    // This ensures editors (not just super_admin) can run migrations
+                    if (versionMissing) {
+                        patch._version = 1;
+                    } else {
+                        patch._version = (v._version || 0) + 1;
+                    }
+                    if (batchCount >= 499) {
+                        batches.push(window.db.batch());
+                        batchCount = 0;
+                    }
+                    var ref = window.db.collection('vehiculos').doc(String(v.id));
+                    batches[batches.length - 1].update(ref, patch);
+                    batchCount++;
+                    totalMigrated++;
+                }
+            });
+
+            if (totalMigrated === 0) return;
+
+            // Update counter if codes were generated
+            if (needsCodes.length > 0) {
+                batches[batches.length - 1].set(counterRef, { vehicleCodeSeq: newSeq }, { merge: true });
+            }
+
+            // Commit all batches in parallel
+            Promise.all(batches.map(function(b) { return b.commit(); }))
+                .then(function() {
+                    AP.toast(totalMigrated + ' vehiculo(s) migrados al nuevo esquema', 'info');
+                    AP.writeAuditLog('vehicle_migration', 'sistema', 'Migrados ' + totalMigrated + ' vehiculos (codigos, defaults, version)');
+                })
+                .catch(function(err) {
+                    if (err.code === 'permission-denied') {
+                        console.error('[Migration] Permission denied — Firestore rules may not be deployed. Run: firebase deploy --only firestore:rules');
+                    } else {
+                        console.warn('[Migration] Error:', err.message);
+                    }
+                });
+        }).catch(function(err) {
+            console.warn('[Migration] Could not read counter:', err.message);
+        });
+    }
+
+    // Diagnostic: verify Firestore rules are deployed and allow role-based writes
+    var _ruleCheckDone = false;
+    function checkFirestoreRulesDeployed() {
+        if (_ruleCheckDone || !window.db || !AP.currentUserRole) return;
+        _ruleCheckDone = true;
+        // Test 1: auditLog create (requires isEditorOrAbove() — no fallback)
+        var testId = '_rulesCheck_' + Date.now();
+        var testRef = window.db.collection('auditLog').doc(testId);
+        testRef.set({
+            action: 'rules_check',
+            user: (AP.currentUserProfile && AP.currentUserProfile.email) || 'unknown',
+            timestamp: new Date().toISOString()
+        }).then(function() {
+            console.info('[Rules] Firestore rules OK: role-based writes work (auditLog create passed).');
+            // Clean up test document
+            return testRef.delete().catch(function() {});
+        }).catch(function(err) {
+            if (err.code === 'permission-denied') {
+                console.error('[Rules] CRITICAL: Role-based writes DENIED. Your role "' + AP.currentUserRole + '" is not recognized by Firestore rules. Deploy rules: firebase deploy --only firestore:rules');
+                AP.toast('Error de permisos: las reglas de Firestore no reconocen tu rol. Redespliega con: firebase deploy --only firestore:rules', 'error');
+            }
+        });
+    }
+    AP.checkFirestoreRulesDeployed = checkFirestoreRulesDeployed;
+
+    // ========== MF1.2: SOLICITUDES SCHEMA MIGRATION ==========
+    // Inspect existing solicitudes; for any doc lacking `kind`, infer from
+    // legacy fields (requiereCita, tipo) and remap `estado` to the kind's
+    // canonical state set. Idempotent: re-running on already-migrated docs
+    // is a no-op. Preserves `legacyEstado` for audit/rollback.
+    var _commMigrationRan = false;
+    function migrateCommunicationsSchema(solicitudes) {
+        if (_commMigrationRan) return;
+        if (!window.AltorraCommSchema) {
+            console.warn('[CommMigration] AltorraCommSchema not loaded yet — skipping');
+            return;
+        }
+        if (!Array.isArray(solicitudes) || solicitudes.length === 0) return;
+        // Only users with crm.edit permission attempt the migration (writes
+        // require equivalent server-side via Firestore rules R6)
+        if (!AP.hasPermission || !(AP.hasPermission('crm.edit') || AP.hasPermission('appointments.edit'))) return;
+        _commMigrationRan = true;
+
+        var schema = window.AltorraCommSchema;
+        var toMigrate = solicitudes.filter(function (s) { return !s.kind; });
+        if (toMigrate.length === 0) return;
+
+        // Build batches of max 500
+        var batches = [window.db.batch()];
+        var batchCount = 0;
+        var totalMigrated = 0;
+        var statsByKind = { cita: 0, solicitud: 0, lead: 0 };
+
+        toMigrate.forEach(function (s) {
+            var kind = schema.inferKind(s);
+            var legacyEstado = s.estado || '';
+            var newEstado = schema.remapEstado(legacyEstado, kind);
+
+            var patch = {
+                kind: kind,
+                _migration_v1: true,
+                _migrationAt: new Date().toISOString()
+            };
+            // Only remap estado if it actually changed (preserve audit)
+            if (newEstado !== legacyEstado) {
+                patch.estado = newEstado;
+                patch.legacyEstado = legacyEstado;
+            }
+
+            batches[batches.length - 1].update(
+                window.db.collection('solicitudes').doc(s._docId),
+                patch
+            );
+            batchCount++;
+            statsByKind[kind]++;
+            totalMigrated++;
+
+            if (batchCount >= 500) {
+                batches.push(window.db.batch());
+                batchCount = 0;
+            }
+        });
+
+        // Commit batches sequentially
+        var commit = function (i) {
+            if (i >= batches.length) {
+                console.info('[CommMigration] Migrated ' + totalMigrated + ' solicitudes:',
+                    'citas=' + statsByKind.cita,
+                    'solicitudes=' + statsByKind.solicitud,
+                    'leads=' + statsByKind.lead);
+                if (AP && AP.toast) {
+                    AP.toast('Esquema de comunicaciones actualizado: ' + totalMigrated + ' docs (' + statsByKind.cita + ' citas, ' + statsByKind.solicitud + ' solicitudes, ' + statsByKind.lead + ' leads)');
+                }
+                return;
+            }
+            batches[i].commit().then(function () { commit(i + 1); }).catch(function (err) {
+                console.warn('[CommMigration] Batch ' + i + ' failed:', err.message || err);
+                // Continue anyway — partial migration is fine, retry happens
+                // automatically if any of these docs are touched again
+                commit(i + 1);
+            });
+        };
+        commit(0);
+    }
+    AP.migrateCommunicationsSchema = migrateCommunicationsSchema;
+
+    function loadUsers() {
+        if (!AP.hasPermission('users.create') && !AP.hasPermission('users.edit') && !AP.hasPermission('users.read')) return;
+        window.db.collection('usuarios').get().then(function(snap) {
+            AP.users = snap.docs.map(function(d) {
+                var data = d.data();
+                data._docId = d.id;
+                return data;
+            });
+            if (AP.renderUsersTable) AP.renderUsersTable();
+        }).catch(function(err) {
+            var msg = 'Error al cargar usuarios.';
+            if (err.code === 'permission-denied') {
+                msg = 'Sin permisos para ver usuarios. Verifica que las Firestore Rules esten desplegadas y tu rol sea super_admin.';
+            } else {
+                msg += ' ' + err.message;
+            }
+            $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">' + msg + '</td></tr>';
+        });
+    }
+
+    // F9.3: Single-pass updateStats with accumulator
+    // §36.4 — Guards `if (el)` en cada acceso al DOM. Los stats genéricos
+    // (statTotal, statNuevos, statUsados, etc.) fueron ELIMINADOS del
+    // dashboard en §27.2 cuando se rediseñó el Inicio productivo.
+    // updateStats() sigue siendo llamada por listeners viejos de
+    // vehiculos+marcas+appointments, pero los elementos del DOM ya no
+    // existen → null.textContent crash. Los guards lo silencian sin
+    // romper la lógica de cómputo (que sigue pre-calculando stats).
+    function updateStats() {
+        var s = { nuevos: 0, usados: 0, ofertas: 0, destacados: 0, vendidos: 0 };
+        AP.vehicles.forEach(function(v) {
+            if (v.tipo === 'nuevo') s.nuevos++;
+            else if (v.tipo === 'usado') s.usados++;
+            if (v.oferta || v.precioOferta) s.ofertas++;
+            if (v.destacado) s.destacados++;
+            if (v.estado === 'vendido') s.vendidos++;
+        });
+        var el;
+        el = $('statTotal');      if (el) el.textContent = AP.vehicles.length;
+        el = $('statNuevos');     if (el) el.textContent = s.nuevos;
+        el = $('statUsados');     if (el) el.textContent = s.usados;
+        el = $('statOfertas');    if (el) el.textContent = s.ofertas;
+        el = $('statDestacados'); if (el) el.textContent = s.destacados;
+        el = $('statMarcas');     if (el) el.textContent = AP.brands.length;
+        el = $('statVendidos');   if (el) el.textContent = s.vendidos;
+        var citasEl = $('statCitas');
+        if (citasEl) citasEl.textContent = (AP.appointments && AP.appointments.length > 0) ? AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
+    }
+
+    function updateNavBadges() {
+        var vBadge = $('navBadgeVehicles');
+        var bBadge = $('navBadgeBrands');
+        if (vBadge) vBadge.textContent = AP.vehicles.length || '';
+        if (bBadge) bBadge.textContent = AP.brands.length || '';
+
+        // F8.3: Unread appointments badge
+        var aBadge = $('navBadgeAppointments');
+        if (aBadge && AP.appointments) {
+            var lastVisit = parseInt(localStorage.getItem('ac_citas_last_visit') || '0', 10);
+            var unread = AP.appointments.filter(function(a) {
+                if (!a.createdAt) return false;
+                var ts = typeof a.createdAt === 'number' ? a.createdAt :
+                    (a.createdAt && typeof a.createdAt.toDate === 'function') ? a.createdAt.toDate().getTime() :
+                    new Date(a.createdAt).getTime();
+                return ts > lastVisit;
+            }).length;
+            aBadge.textContent = unread > 0 ? unread : '';
+            aBadge.classList.toggle('badge-unread', unread > 0);
+        }
+    }
+
+    // F6.4: Event delegation for retry link
+    var vBody = $('vehiclesTableBody');
+    if (vBody) {
+        vBody.addEventListener('click', function(e) {
+            var el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+            var link = el && el.closest ? el.closest('[data-action="retryLoad"]') : null;
+            if (link) { e.preventDefault(); retryLoad(); }
+        });
+    }
+
+    // Expose
+    AP.loadData = loadData;
+    AP.loadUsers = loadUsers;
+    AP.stopRealtimeSync = stopRealtimeSync;
+    AP.retryLoad = retryLoad;
+    AP.updateStats = updateStats;
+    AP.updateNavBadges = updateNavBadges;
+
+    AP.signalCacheInvalidation = signalCacheInvalidation;
+})();

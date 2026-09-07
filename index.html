@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ALTORRA CARS | Carros Usados en Cartagena — Venta de Vehículos de Confianza</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Compra y venta de carros usados en Cartagena, Colombia. ALTORRA CARS: vehículos usados certificados con transparencia total, calidad verificada y atención personalizada. SUVs, sedanes, camionetas y hatchbacks.">
+    <meta name="keywords" content="carros usados Cartagena, venta carros usados Cartagena, comprar carro usado Cartagena, vehículos usados Cartagena Colombia, carros usados Bolívar, autos usados Cartagena, carros usados certificados, compra venta carros Cartagena, Chevrolet usado Cartagena, Renault usado, Nissan usado, Kia usado, Mazda usado, Toyota usado, SUV usado Cartagena, camioneta usada Cartagena, financiación carros usados Cartagena, ALTORRA CARS">
+    <meta name="author" content="ALTORRA Company SAS">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="Spanish">
+    <meta name="geo.region" content="CO-BOL">
+    <meta name="geo.placename" content="Cartagena">
+
+    <!-- Cache Control - Force fresh content -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://altorracars.github.io/">
+    <meta property="og:title" content="ALTORRA CARS — Carros Usados en Cartagena | Transparencia y Calidad">
+    <meta property="og:description" content="Compra tu próximo carro usado en Cartagena con ALTORRA CARS. Vehículos certificados, información honesta y atención personalizada. SUVs, sedanes, camionetas y hatchbacks disponibles.">
+    <meta property="og:image" content="https://altorracars.github.io/multimedia/hero-car.jpg">
+    <meta property="og:site_name" content="ALTORRA CARS">
+    <meta property="og:locale" content="es_CO">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://altorracars.github.io/">
+    <meta name="twitter:title" content="ALTORRA CARS — Carros Usados en Cartagena | Transparencia y Calidad">
+    <meta name="twitter:description" content="Compra tu próximo carro usado en Cartagena con ALTORRA CARS. Vehículos certificados, información honesta y atención personalizada.">
+    <meta name="twitter:image" content="https://altorracars.github.io/multimedia/hero-car.jpg">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://altorracars.github.io/">
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+
+    <!-- Additional SEO -->
+    <meta name="theme-color" content="#b89658">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ALTORRA CARS">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/multimedia/favicon-32.png">
+    <link rel="apple-touch-icon" href="/multimedia/apple-touch-icon-180.png">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="css/dark-theme.css" as="style">
+    <link rel="preload" href="js/core/components.js" as="script">
+    <link rel="preload" href="js/core/database.js" as="script">
+    <!-- §91 Sprint 3A — LCP hero preload responsive AVIF/WebP.
+         Browser que soporta AVIF descarga del primer preload (más liviano ~70%).
+         Browser que NO soporta AVIF ignora ese, descarga del segundo preload WebP.
+         Browser sin AVIF ni WebP cae al <img src="multimedia/heroindex.webp"> legacy
+         (no preload, descarga al parsear el <picture>). Matches exact URLs en
+         <picture> abajo → cache hit garantizado, LCP -40-60% vs WebP único. -->
+    <!-- §95: variant 1920w ELIMINADA — la imagen fuente
+         multimedia/heroindex.webp tiene resolución máx 1280px, el optimizer
+         NO genera upscaling, por eso heroindex-1920.avif/.webp NUNCA
+         existieron → browser intentaba descargar, 404, JS .hero-img-loaded
+         fallaba parcialmente → hero quedaba en gradient negro sin imagen
+         real. Fix: solo referenciar variants que realmente existen en
+         multimedia/optimized/. -->
+    <!-- LCP hero preload (TODO-53 P3): SOLO AVIF para no doble-descargar — el
+         <picture> del hero usa AVIF en navegadores modernos (mayoría); los sin
+         AVIF saltan este preload (type mismatch) y cargan el WebP del <picture>. -->
+    <link rel="preload" as="image" type="image/avif" fetchpriority="high"
+          imagesrcset="multimedia/optimized/heroindex-480.avif 480w,
+                       multimedia/optimized/heroindex-768.avif 768w,
+                       multimedia/optimized/heroindex-1280.avif 1280w"
+          imagesizes="100vw">
+    <!-- §PERF Fase 0: preload de favicon (logo-placeholder.png 412KiB) ELIMINADO —
+         era un favicon en alta prioridad que competía con el LCP. -->
+
+
+
+    <!-- Fuentes self-hosted (css/fonts.css, TODO-54 perf-v2) → ya NO se hace preconnect a
+         Google Fonts. Firebase/Firestore cargan diferidos → dns-prefetch basta. -->
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+
+    <!-- Prefetch top navigation targets (browser fetches in idle time) -->
+    <link rel="prefetch" href="vehiculos-suv.html">
+    <link rel="prefetch" href="marcas.html">
+    <link rel="prefetch" href="contacto.html">
+
+    <!-- Structured Data - LocalBusiness Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "AutoDealer",
+      "name": "ALTORRA CARS",
+      "legalName": "ALTORRA Company SAS",
+      "url": "https://altorracars.github.io",
+      "logo": "https://altorracars.github.io/multimedia/apple-touch-icon-180.png",
+      "image": "https://altorracars.github.io/multimedia/heroindex.webp",
+      "description": "Especialistas en compra y venta de carros usados en Cartagena, Colombia. Vehículos usados certificados con transparencia total, calidad verificada y atención personalizada en cada negociación.",
+      "telephone": "+573235016747",
+      "email": "altorracarssale@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Cartagena",
+        "addressRegion": "Bolívar",
+        "addressCountry": "CO"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "10.3910485",
+        "longitude": "-75.4794257"
+      },
+      "sameAs": [
+        "https://wa.me/573235016747"
+      ],
+      "priceRange": "$$",
+      "currenciesAccepted": "COP",
+      "paymentAccepted": "Cash, Credit Card, Financing",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "6",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "08:00",
+          "closes": "18:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "Saturday",
+          "opens": "09:00",
+          "closes": "14:00"
+        }
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Vehículos disponibles",
+        "url": "https://altorracars.github.io/busqueda.html"
+      }
+    }
+    </script>
+
+    <!-- Structured Data - WebSite Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "ALTORRA CARS",
+      "url": "https://altorracars.github.io",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://altorracars.github.io/busqueda.html?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- Structured Data - FAQ Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Venden carros usados en Cartagena?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, ALTORRA CARS es especialista en la venta de carros usados en Cartagena, Colombia. Nuestro inventario incluye SUVs, sedanes, camionetas, pickups y hatchbacks de las mejores marcas, todos revisados y certificados."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cómo garantizan la calidad de los vehículos usados?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Cada vehículo usado en nuestro inventario pasa por un proceso de revisión técnica para verificar su estado mecánico, documentación y kilometraje. Brindamos información clara y honesta en cada transacción, sin letras pequeñas."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Ofrecen financiación para carros usados?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, contamos con aliados estratégicos financieros para ofrecerte las mejores opciones de crédito para tu carro usado, con plazos de 12 a 72 meses y tasas competitivas."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Puedo agendar una cita para ver un carro usado?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, puedes agendar una cita directamente desde nuestra página web o contactarnos por WhatsApp al +57 323 501 6747 para coordinar una visita presencial en Cartagena."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿En qué ciudad está ubicado ALTORRA CARS?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ALTORRA CARS está ubicado en Cartagena, Bolívar, Colombia. Somos tu concesionario de carros usados de confianza en la ciudad."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- BreadcrumbList - Mejora navegación en resultados de Google -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Inicio",
+          "item": "https://altorracars.github.io/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Catálogo",
+          "item": "https://altorracars.github.io/busqueda.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "SUV",
+          "item": "https://altorracars.github.io/vehiculos-suv.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Nosotros",
+          "item": "https://altorracars.github.io/nosotros.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Contacto",
+          "item": "https://altorracars.github.io/contacto.html"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Critical CSS Inline - Above the fold styles for faster FCP.
+         Cinematic redesign: el fondo base oscuro previene flash blanco
+         antes de que carguen tokens-redesign/cinematic. -->
+    <style>
+        :root{--gold-primary:#d4af37;--gold-secondary:#b89658;--black-deep:#0a0a0a}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html{background:#08070A}
+        body{font-family:'Manrope','Plus Jakarta Sans',system-ui,sans-serif;background:#08070A;color:#F4EEDE;line-height:1.6;overflow-x:hidden;min-height:100vh}
+    </style>
+
+    <!-- Critical CSS (render-blocking — needed for first paint) -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/performance-fixes.css">
+
+    <!-- Below-fold + delayed CSS (deferred — not needed for first paint) -->
+    <link rel="stylesheet" href="css/cookies.css" media="print" onload="this.media='all'">
+
+    <!-- Non-critical CSS (deferred — loads after first paint) -->
+    <link rel="stylesheet" href="css/toast-notifications.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/contact-forms.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/comparador.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/calculadora-financiamiento.css" media="print" onload="this.media='all'">
+    <!-- css/historial-visitas.css removed (T7): widget legacy reemplazado por .cin-trail. El módulo js/core/historial-visitas.js sigue cargando: su API (getCount/getHistory) la consumen home-carousels.js y quicktools.js. -->
+    <link rel="stylesheet" href="css/reviews.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/animaciones.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/citas.css" media="print" onload="this.media='all'">
+
+    <!-- ============================================================
+         REDISEÑO CINEMATIC (Fase 1) — fuentes + CSS namespaced css/home/*
+         Cascade obligatorio: tokens → base → chrome → cinematic → quicktools.
+         Cargan DESPUÉS del CSS legacy para ganar donde haya solape de chrome.
+         (El retiro del CSS viejo del index = Task 7.)
+         ============================================================ -->
+    <!-- Fuentes self-hosted (TODO-54 perf-v2): fonts.css = Manrope+Instrument Serif+Cardo+Poppins
+         (universal; el marcador data-altorra-fonts frena la reinyección de Google en components.js).
+         fonts-inter.css = Inter (--font-body del home). Ambas same-origin → fuera del critical path. -->
+    <link rel="stylesheet" data-altorra-fonts href="css/fonts.css">
+    <link rel="stylesheet" href="css/fonts-inter.css">
+
+    <link rel="stylesheet" href="css/home/tokens-redesign.css">
+    <link rel="stylesheet" href="css/home/base-redesign.css">
+    <link rel="stylesheet" href="css/home/chrome-redesign.css">
+    <link rel="stylesheet" href="css/home/cinematic.css">
+    <!-- §PERF Fase 1.3 (slice seguro) — quicktools.css (dock flotante) NO es
+         above-fold: el dock lo inyecta quicktools.js (deferred) tras el render.
+         Se difiere con el truco media=print (mismo patrón que líneas 279-289) →
+         sale del CSS render-blocking sin riesgo FOUC. Los demás CSS del home
+         (style/dark-theme/cinematic/chrome/tokens/base) son críticos above-fold
+         → requieren extracción de CSS crítico + verificación visual live. -->
+    <link rel="stylesheet" href="css/home/quicktools.css" media="print" onload="this.media='all'">
+
+    <!-- Poppins (legacy/modales) ya viene incluido en css/fonts.css self-hosted. -->
+
+    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
+         unauthenticated header buttons when the user is already logged in.
+         Sets html.auth-authenticated or html.auth-guest based on the
+         localStorage flag persisted by auth.js (updateHeaderAuthState).
+         CSS in style.css uses these classes to hide/show login buttons. -->
+    <script>
+    (function () {
+        try {
+            var hint = localStorage.getItem('altorra_auth_hint');
+            document.documentElement.classList.add(
+                hint === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+            );
+        } catch (e) {
+            document.documentElement.classList.add('auth-guest');
+        }
+    })();
+    </script>
+    <!-- Auth-hint chrome rules para el nav cinematic nuevo. Cuando el usuario
+         está logueado se ocultan los botones Ingresar/Registrarse y el área de
+         usuario (#headerUserArea) se muestra; auth.js los rellena. -->
+    <style>
+    html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
+    html.auth-guest #headerUserArea{display:none!important}
+    html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+    </style>
+    <!-- Page Loader — Critical Inline CSS (cross-browser) -->
+    <style>
+    #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:24px;-webkit-transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}
+    #page-loader.pl-done{opacity:0;visibility:hidden;pointer-events:none;}
+    .pl-logo{width:68px;height:68px;-o-object-fit:contain;object-fit:contain;-webkit-animation:plPulse 2s ease-in-out infinite;animation:plPulse 2s ease-in-out infinite;}
+    .pl-ring{width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;-webkit-animation:plSpin .8s linear infinite;animation:plSpin .8s linear infinite;}
+    @-webkit-keyframes plPulse{0%,100%{opacity:1;-webkit-transform:scale(1);transform:scale(1)}50%{opacity:.6;-webkit-transform:scale(.93);transform:scale(.93)}}
+    @keyframes plPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.93)}}
+    @-webkit-keyframes plSpin{to{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}
+    @keyframes plSpin{to{transform:rotate(360deg)}}
+    </style>
+    <link rel="stylesheet" href="css/page-loader.css">
+</head>
+<body data-cin="on">
+    <!-- Page Loader -->
+    <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
+        <img src="/multimedia/logo-wheel-128.webp" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
+        <div class="pl-ring" aria-hidden="true"></div>
+    </div>
+
+    <!-- Barra de progreso de scroll (cinematic) — JS la alimenta en Task 4 -->
+    <div class="cin-scroll-progress" aria-hidden="true"></div>
+
+    <!-- ============================================================
+         NAV cinematic (index-only en Fase 1).
+         Contratos preservados para los módulos existentes:
+           - id="header" + .alt-nav  → favoritesManager._forceShowHeader()
+           - id="btnLogin"           → auth.js updateHeaderAuthState/rewireBtn
+           - id="btnRegister"        → auth.js (oculto cuando guest por defecto)
+           - id="headerUserArea"     → auth.js renderUserArea (avatar logueado)
+           - id="favCount"           → favoritesManager.updateAllCounters()
+           - .mob-auth-row           → auth.js updateMobileAuthRow
+         El comportamiento (ocultarse/dropdown/drawer) = Task 3.
+         ============================================================ -->
+    <header class="alt-nav" id="header">
+        <div class="alt-nav-inner container">
+            <a href="index.html" class="alt-logo" aria-label="ALTORRA CARS — Inicio">
+                <span class="alt-logo-stage">
+                    <span class="alt-logo-skid"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-1"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-2"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-3"></span>
+                    <img src="multimedia/logo-wheel-128.webp" alt="" class="alt-logo-icon" width="38" height="38">
+                </span>
+                <span class="alt-logo-text">
+                    <span class="t-gold-grad alt-logo-name" style="font-weight:800;font-size:18px;letter-spacing:0.04em;">ALTORRA</span>
+                    <span class="alt-logo-sub" style="font-size:10px;letter-spacing:0.32em;color:var(--ink-text-muted);font-weight:600;">CARS</span>
+                </span>
+            </a>
+
+            <nav class="alt-nav-links" aria-label="Navegación principal">
+                <a href="index.html" class="nav-link active">Inicio</a>
+                <div class="nav-dd-wrap">
+                    <button type="button" class="nav-link" aria-haspopup="true" aria-expanded="false">
+                        Vehículos
+                        <span class="nav-chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </button>
+                    <!-- Mega-dropdown "Vehículos" — wiring (hover/abrir) = Task 3.
+                         Categorías → vehiculos-*.html · condición → páginas reales. -->
+                    <div class="nav-dd acrylic-hi nav-dd-pro" hidden>
+                        <div class="nav-dd-h">Por categoría</div>
+                        <a class="nav-dd-link" href="vehiculos-suv.html">
+                            <span class="nav-dd-thumb" style="background-image:url('multimedia/optimized/SUV-768.webp');"></span>
+                            <span><strong>SUV</strong></span>
+                        </a>
+                        <a class="nav-dd-link" href="vehiculos-sedan.html">
+                            <span class="nav-dd-thumb" style="background-image:url('multimedia/optimized/SEDAN-768.webp');"></span>
+                            <span><strong>Sedán</strong></span>
+                        </a>
+                        <a class="nav-dd-link" href="vehiculos-pickup.html">
+                            <span class="nav-dd-thumb" style="background-image:url('multimedia/optimized/PICKUP-768.webp');"></span>
+                            <span><strong>Pickup</strong></span>
+                        </a>
+                        <a class="nav-dd-link" href="vehiculos-hatchback.html">
+                            <span class="nav-dd-thumb" style="background-image:url('multimedia/optimized/HATCHBACK-768.webp');"></span>
+                            <span><strong>Hatchback</strong></span>
+                        </a>
+                        <div class="nav-dd-divider"></div>
+                        <a class="nav-dd-link nav-dd-all" href="busqueda.html">
+                            <span><strong>Ver todos los vehículos</strong></span>
+                            <span class="nav-dd-arrow" aria-hidden="true">→</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="marcas.html" class="nav-link">Marcas</a>
+                <a href="nosotros.html" class="nav-link">Nosotros</a>
+                <a href="resenas.html" class="nav-link">Reseñas</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
+
+            <div class="alt-nav-actions">
+                <a href="#" data-modal="vende-auto" class="nav-publish" aria-label="Publica tu vehículo">
+                    <span class="nav-publish-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </span>
+                    <span class="nav-publish-label">Publica tu vehículo</span>
+                    <span class="nav-publish-shine" aria-hidden="true"></span>
+                </a>
+                <a href="favoritos.html" class="btn btn-icon btn-ghost" aria-label="Favoritos" style="position:relative;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>
+                    <span class="nav-pip" id="favCount" aria-live="polite">0</span>
+                </a>
+                <button type="button" class="btn btn-subtle" id="btnLogin" aria-label="Ingresar">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+                    <span class="hide-sm">Ingresar</span>
+                </button>
+                <!-- Botón Registrarse (oculto por defecto para guest vía auth-hint;
+                     auth.js lo gestiona). Mantiene contrato #btnRegister. -->
+                <button type="button" class="btn btn-primary" id="btnRegister" style="display:none;" aria-label="Registrarse">
+                    <span class="hide-sm">Registrarse</span>
+                </button>
+                <!-- Área de usuario logueado — auth.js renderUserArea() la rellena -->
+                <div id="headerUserArea" style="display:none;"></div>
+                <button type="button" class="btn btn-icon btn-ghost mob-only" id="navMobOpen" aria-label="Menú" aria-expanded="false" aria-controls="navMobDrawer">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile drawer — toggle (hamburguesa) = Task 3. Oculto por defecto.
+             style="display:none" inline porque .mob-drawer{display:flex} (CSS)
+             vencería al atributo [hidden] de la UA stylesheet; home-chrome.js
+             alterna display:none/'' al abrir/cerrar. -->
+        <div class="mob-drawer" id="navMobDrawer" hidden style="display:none;">
+            <div class="mob-panel acrylic-hi">
+                <div class="row" style="justify-content:space-between;">
+                    <strong class="t-title-sm t-gold-grad">ALTORRA</strong>
+                    <button type="button" class="btn btn-icon btn-ghost" id="navMobClose" aria-label="Cerrar">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <!-- Fila de auth móvil — auth.js updateMobileAuthRow() la rellena -->
+                <div class="mob-auth-row"></div>
+                <div class="mob-links">
+                    <a class="mob-link" href="index.html">Inicio<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="busqueda.html">Vehículos<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="marcas.html">Marcas<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="simulador-credito.html">Simulador<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="comparar.html">Comparar<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="nosotros.html">Nosotros<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="resenas.html">Reseñas<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="contacto.html">Contacto<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link mob-link--fav" href="favoritos.html">
+                        <span class="mob-link-label">Favoritos<!-- pip de favoritos (contrato favCountMobile de favorites-manager.js).
+                             Oculto hasta count>0; home-chrome.js lo muestra/oculta
+                             escuchando el evento favoritesChanged. Estilado como .nav-pip. -->
+                        <span class="nav-pip mob-link-pip" id="favCountMobile" aria-live="polite" style="position:static;display:none;margin-left:8px;">0</span></span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         01 · HERO (CinHero)
+         ============================================================ -->
+    <section class="cin-hero" data-screen-label="01 Hero">
+        <div class="cin-hero-bg" aria-hidden="true">
+            <picture>
+                <source type="image/avif" srcset="multimedia/optimized/heroindex-480.avif 480w, multimedia/optimized/heroindex-768.avif 768w, multimedia/optimized/heroindex-1280.avif 1280w" sizes="100vw">
+                <img class="cin-hero-img" src="multimedia/optimized/heroindex-1280.webp" srcset="multimedia/optimized/heroindex-480.webp 480w, multimedia/optimized/heroindex-768.webp 768w, multimedia/optimized/heroindex-1280.webp 1280w" sizes="100vw" alt="" fetchpriority="high" decoding="async">
+            </picture>
+        </div>
+        <div class="cin-grain" aria-hidden="true"></div>
+
+        <header class="cin-hero-meta">
+            <div><span class="cin-pulse" aria-hidden="true"></span>Concesionario Líder en Cartagena</div>
+            <div class="cin-hero-meta-r" id="cinHeroClock"></div>
+        </header>
+
+        <div class="cin-hero-stage">
+            <!-- WordReveal portado 1:1: cada palabra es .cin-word con su
+                 animation-delay inline (la animación cinWord es CSS-only, no
+                 requiere JS). El span .sr-only añade keyword SEO sin afectar
+                 el reveal. El acento usa .cin-word para heredar el degradado
+                 dorado (.cin-headline-accent .cin-word en cinematic.css). -->
+            <h1 class="cin-headline">
+                <span class="sr-only">Carros Usados Certificados en Cartagena — </span><span class="cin-word" style="animation-delay:150ms">Encuentra</span> <span class="cin-word" style="animation-delay:245ms">el</span> <span class="cin-word" style="animation-delay:340ms">Auto</span>
+                <br>
+                <span class="cin-headline-accent">
+                    <span class="cin-word" style="animation-delay:560ms">de</span> <span class="cin-word" style="animation-delay:660ms">tus</span> <span class="cin-word" style="animation-delay:760ms">Sueños</span>
+                </span>
+            </h1>
+        </div>
+
+        <footer class="cin-hero-foot">
+            <div class="cin-hero-foot-l">
+                <b id="cinHeroVehicleCount">Decenas de vehículos</b> de aliados estratégicos en Colombia.
+                Conectamos compradores con los mejores concesionarios del país.
+            </div>
+
+            <!-- HERO SEARCH — contrato: #heroSearchInput + #heroSearchDropdown
+                 (initHeroSearch en js/core/main.js). .hero-search-wrap añadido
+                 para el handler de click-fuera existente. Dropdown vacío/hidden
+                 lo rellena el JS. -->
+            <form class="hero-search hero-search-wrap" role="search" aria-label="Búsqueda inteligente" onsubmit="return false;">
+                <span class="hero-search-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input
+                    type="text"
+                    id="heroSearchInput"
+                    placeholder="Busca por marca, modelo o año…"
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-controls="heroSearchDropdown"
+                    aria-label="Buscar vehículos">
+                <button type="submit" class="hero-search-submit" aria-label="Buscar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                </button>
+                <ul id="heroSearchDropdown" class="hero-search-dropdown" role="listbox" aria-label="Sugerencias" hidden></ul>
+            </form>
+
+            <div class="cin-hero-foot-r">
+                <b>Vende con nosotros</b><br>
+                Te ayudamos a vender al mejor precio del mercado.
+            </div>
+        </footer>
+    </section>
+
+    <!-- ============================================================
+         02 · DISPONIBLES (CinAvailable)
+         Contenedor vacío → home-carousels.js lo rellena (Task 5.1).
+         ============================================================ -->
+    <section class="cin-av" data-screen-label="05 Disponibles">
+        <div class="cin-av-head">
+            <h2 class="cin-av-h">Vehículos <em>disponibles</em>.</h2>
+            <a href="busqueda.html" class="cin-av-all">
+                Ver todos
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+
+        <div class="cin-av-track-wrap">
+            <button class="cin-nav cin-nav--prev" type="button" aria-label="Anterior" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="cin-nav cin-nav--next" type="button" aria-label="Siguiente">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+
+            <!-- Cards de vehículos disponibles → JS (.cin-av-card) -->
+            <div class="cin-av-track" id="cinAvailableTrack"></div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         03 · LA COLECCIÓN (CinCollection)
+         Contenedor vacío → home-carousels.js (Task 5.2, destacados + tag).
+         ============================================================ -->
+    <section class="cin-collection" data-screen-label="03 Vehículos">
+        <div class="cin-collection-head">
+            <h2 class="cin-collection-h">La colección, <em>esta semana</em>.</h2>
+            <p class="cin-collection-aside">
+                Llegadas seleccionadas con historial verificado y documentación lista.
+                Coordinamos visita o entrega con el aliado que tenga el vehículo.
+            </p>
+        </div>
+
+        <div class="cin-track-wrap">
+            <button class="cin-nav cin-nav--prev" type="button" aria-label="Anterior" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="cin-nav cin-nav--next" type="button" aria-label="Siguiente">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+
+            <!-- Cards de la colección → JS (.cin-card) -->
+            <div class="cin-track" id="cinCollectionTrack"></div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         04 · CATEGORÍAS (CinCats) — set fijo de 4 tiles (no data-driven).
+         Links reales a vehiculos-*.html + imágenes reales; el conteo
+         (.cin-cat-count) lo rellena el JS (Task 5.6).
+         ============================================================ -->
+    <section class="cin-cats" data-screen-label="04 Categorías">
+        <div class="cin-cats-head">
+            <h2 class="cin-cats-h">Empieza por <em>cómo lo manejas</em>.</h2>
+            <p class="cin-collection-aside">Filtra por tipo. Sigue por marca, precio o año.</p>
+        </div>
+        <div class="cin-cats-grid">
+            <a href="vehiculos-suv.html" class="cin-cat" data-cat="suv">
+                <div class="cin-cat-img" style="background-image:url('multimedia/optimized/SUV-768.webp');"></div>
+                <div class="cin-cat-label">
+                    <span class="cin-cat-name">SUV</span>
+                    <span class="cin-cat-count" data-count-for="suv"></span>
+                </div>
+            </a>
+            <a href="vehiculos-sedan.html" class="cin-cat" data-cat="sedan">
+                <div class="cin-cat-img" style="background-image:url('multimedia/optimized/SEDAN-768.webp');"></div>
+                <div class="cin-cat-label">
+                    <span class="cin-cat-name">Sedán</span>
+                    <span class="cin-cat-count" data-count-for="sedan"></span>
+                </div>
+            </a>
+            <a href="vehiculos-pickup.html" class="cin-cat" data-cat="pickup">
+                <div class="cin-cat-img" style="background-image:url('multimedia/optimized/PICKUP-768.webp');"></div>
+                <div class="cin-cat-label">
+                    <span class="cin-cat-name">Pickup</span>
+                    <span class="cin-cat-count" data-count-for="pickup"></span>
+                </div>
+            </a>
+            <a href="vehiculos-hatchback.html" class="cin-cat" data-cat="hatchback">
+                <div class="cin-cat-img" style="background-image:url('multimedia/optimized/HATCHBACK-768.webp');"></div>
+                <div class="cin-cat-label">
+                    <span class="cin-cat-name">Hatchback</span>
+                    <span class="cin-cat-count" data-count-for="hatchback"></span>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         05 · PROMOS / PROGRAMAS (CinPrograms)
+         Carrusel de banners home_promo → home-carousels.js (Task 5.3).
+         La sección se oculta si no hay banners. Track vacío.
+         ============================================================ -->
+    <section class="promo-section" id="promoSection" data-screen-label="02 Promos">
+        <div class="promo-head">
+            <span class="cin-eyebrow">Promos y programas Altorra</span>
+            <h2 class="promo-h">Lo que está pasando <em>esta semana</em>.</h2>
+        </div>
+
+        <div class="promo-stage">
+            <!-- Slides (.promo-slide) → JS -->
+            <div class="promo-track" id="promoTrack"></div>
+
+            <button type="button" class="promo-arrow promo-arrow--prev" aria-label="Anterior">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="promo-arrow promo-arrow--next" aria-label="Siguiente">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         Franja PROMOCIONAL — banners position='promocional'. Render por
+         loadPromoBanners() en js/core/main.js. Slot restaurado: el port
+         SP-1 lo omitió (§211). IDs = contrato de main.js, NO renombrar (§17.4).
+         ============================================================ -->
+    <section class="promo-banner-section" id="promoBannerSection" style="display:none;">
+        <div class="promo-banner-wrapper" id="promoBannerWrapper"></div>
+    </section>
+
+    <!-- ============================================================
+         06 · TU RASTRO / RECOMENDADOS (CinTrail)
+         Contenido → home-carousels.js (Task 5.5). Stage vacío.
+         ============================================================ -->
+    <section class="cin-trail" id="cinTrail" data-screen-label="07 Rastro">
+        <div class="cin-trail-head">
+            <span class="cin-eyebrow">Tu rastro</span>
+            <h2 class="cin-trail-h">Los que <em>volverías a mirar.</em></h2>
+            <button class="cin-trail-clear" type="button" id="cinTrailClear" hidden>
+                Limpiar rastro
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18L18 6"/></svg>
+            </button>
+        </div>
+        <!-- Stage (card grande + lista lateral) o variante "Recomendados" → JS -->
+        <div id="cinTrailBody"></div>
+    </section>
+
+    <!-- ============================================================
+         07 · MARCAS (CinBrands) — marquee con logos reales.
+         Track vacío → home-carousels.js (Task 5.4). id="marcas" (contrato
+         de ancla #marcas usada por nav + hash-scroll de components.js).
+         ============================================================ -->
+    <section class="cin-brands" id="marcas" data-screen-label="02 Marcas">
+        <div class="cin-brands-head">
+            <h2 class="cin-brands-h">16 marcas. <em>Una vitrina.</em></h2>
+            <p class="cin-brands-aside">
+                Del Renault Twingo al Toyota Prado. Inventario rotativo cada semana —
+                si la marca está, la tenemos lista para mostrar.
+            </p>
+        </div>
+
+        <div class="cin-marquee">
+            <!-- Logos (.cin-brand) duplicados para loop → JS -->
+            <div class="cin-marquee-track" id="cinBrandsTrack"></div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         08 · MANIFIESTO (CinManifesto) — reveal por scroll (Task 4).
+         ============================================================ -->
+    <section class="cin-manifesto" id="manifesto" data-screen-label="05 Manifiesto">
+        <div class="cin-manifesto-inner">
+            <span class="cin-eyebrow">Manifiesto</span>
+            <p class="cin-manifesto-text">
+                <span>Cada carro pasa por nuestras manos.</span>
+                <span>Cada cliente, por <em>nuestra historia</em>.</span>
+                <span>No vendemos vehículos —</span> <span><em>acompañamos decisiones</em>.</span>
+            </p>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         09 · CONSIGNA / VENDE CON NOSOTROS (CinConv)
+         ============================================================ -->
+    <section class="cin-conv" data-screen-label="06 Consignación">
+        <div class="cin-conv-inner">
+            <div class="cin-conv-head">
+                <span class="cin-eyebrow">Vende con nosotros</span>
+                <h2 class="cin-conv-h">Tu carro merece <em>la mejor vitrina</em>.</h2>
+            </div>
+
+            <div class="cin-conv-thread">
+                <div class="cin-bubble cin-bubble--them">
+                    <div class="cin-bubble-meta">Tú</div>
+                    Quiero vender mi carro, pero no quiero perder tiempo con curiosos.
+                </div>
+                <div class="cin-bubble cin-bubble--us">
+                    <div class="cin-bubble-meta">Altorra</div>
+                    <strong>Te entendemos.</strong> Avalúo, peritaje técnico y fotografía profesional gratis.
+                    Solo cuando esté listo lo publicamos en <em>nuestros canales</em>.
+                </div>
+                <div class="cin-bubble cin-bubble--them">
+                    <div class="cin-bubble-meta">Tú</div>
+                    ¿Y la comisión?
+                </div>
+                <div class="cin-bubble cin-bubble--us">
+                    <div class="cin-bubble-meta">Altorra</div>
+                    <strong>Flexible.</strong> Lo acordamos contigo antes — porcentaje o precio base. Solo cobramos cuando tu carro se vende.
+                </div>
+                <div class="cin-bubble cin-bubble--them">
+                    <div class="cin-bubble-meta">Tú</div>
+                    ¿Cuánto se demora?
+                </div>
+                <div class="cin-bubble cin-bubble--us">
+                    <div class="cin-bubble-meta">Altorra</div>
+                    Depende del carro, del precio y del momento. Lo que sí: <strong>tú no abres la puerta a nadie</strong> mientras nosotros lo mostramos.
+                </div>
+            </div>
+
+            <div class="cin-conv-cta">
+                <span class="cin-magnet">
+                    <a href="#" data-modal="vende-auto" class="cin-link">
+                        Empieza con un <em>avalúo gratis</em>
+                        <span class="cin-link-arrow">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                        </span>
+                    </a>
+                </span>
+                <span class="cin-conv-fine">Respondemos en menos de 2 horas</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         10 · STATS (CinStats) — counters animados (Task 4).
+         Cifras reales de vehicleDB para vehículos/marcas (Task 4 Step 2).
+         ============================================================ -->
+    <section class="cin-stats" data-screen-label="07 Datos">
+        <div class="cin-stats-grid">
+            <div class="cin-stat">
+                <div class="cin-stat-num" data-counter="2400" data-suffix="+"><span>0</span></div>
+                <div class="cin-stat-label">Clientes desde 2017</div>
+            </div>
+            <div class="cin-stat">
+                <div class="cin-stat-num" data-counter="8" data-suffix="+"><span>0</span><em>años</em></div>
+                <div class="cin-stat-label">En el mercado</div>
+            </div>
+            <div class="cin-stat">
+                <div class="cin-stat-num" data-counter="16" data-counter-source="brands"><span>0</span></div>
+                <div class="cin-stat-label">Marcas en vitrina</div>
+            </div>
+            <div class="cin-stat">
+                <div class="cin-stat-num"><em>Flexible</em></div>
+                <div class="cin-stat-label">Comisión acordada</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         11 · CIERRE (CinEnd) — newsletter fusionado.
+         ============================================================ -->
+    <section class="cin-end" data-screen-label="11 Cierre">
+        <div class="cin-end-grid">
+            <div class="cin-end-lead">
+                <span class="cin-eyebrow">Una ventana, todos los carros</span>
+                <h2 class="cin-end-text">
+                    Toda Colombia<br>
+                    <em>en una sola vitrina.</em>
+                </h2>
+                <p class="cin-end-lead-sub">
+                    Altorra es un marketplace digital. Conectamos compradores con concesionarios
+                    aliados verificados en todo el país. Sin desplazamientos. Sin presión.
+                    Sin letras chicas.
+                </p>
+            </div>
+
+            <form class="cin-end-news" aria-label="Suscríbete" onsubmit="return false;">
+                <span class="cin-end-news-mark" aria-hidden="true">✦</span>
+                <div class="cin-end-news-copy">
+                    <h3 class="cin-end-news-h">Los mejores carros, <em>antes que nadie</em>.</h3>
+                    <p>Una vez por semana: llegadas frescas, bajadas de precio y consejos para comprar mejor. Cero spam.</p>
+                </div>
+                <div class="cin-end-news-row">
+                    <input
+                        type="email" required maxlength="254"
+                        placeholder="tu@email.com"
+                        class="cin-end-news-input"
+                        aria-label="Tu correo electrónico">
+                    <button type="submit" class="cin-end-news-btn">
+                        Suscribirme
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+                <div class="cin-end-news-foot">
+                    <span>Más de 2.400 lectores ya están dentro</span>
+                    <span>Date de baja en un clic</span>
+                </div>
+                <p class="cin-end-news-legal" style="font-size:.72rem;opacity:.6;margin-top:8px;">
+                    Al suscribirte aceptas nuestra <a href="privacidad.html" style="color:inherit;text-decoration:underline;">política de tratamiento de datos</a>.
+                </p>
+            </form>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         FOOTER cinematic (Footer de components.jsx, adaptado a estático).
+         Iconos chat/mail (indefinidos en el diseño) sustituidos por SVG
+         reales. Tarjetas sociales con URLs reales (contrato Pre-flight).
+         ============================================================ -->
+    <footer class="alt-footer">
+        <div class="footer-topline" aria-hidden="true"></div>
+
+        <div class="footer-body">
+            <span class="footer-wm" aria-hidden="true">ALTORRA</span>
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-col footer-col--brand">
+                        <div class="footer-mark">
+                            <span class="footer-mark__name">ALTORRA</span>
+                            <span class="footer-mark__rule" aria-hidden="true"></span>
+                            <span class="footer-mark__sub">Cars</span>
+                        </div>
+                        <p class="footer-tagline">
+                            <strong>Donde la calidad y la confianza convergen.</strong>
+                            Conectamos oportunidades sobre ruedas, ofreciendo una experiencia de compra y venta de vehículos usados más cercana, estratégica, profesional y orientada a generar valor en cada decisión.
+                        </p>
+                    </div>
+
+                    <div class="footer-col-sep" aria-hidden="true"></div>
+
+                    <div class="footer-col footer-col--contact">
+                        <h3 class="footer-col-heading">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            <span>Hablemos</span>
+                        </h3>
+                        <div class="footer-contact">
+                            <a href="mailto:altorracarssale@gmail.com" class="footer-ci">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+                                <span>altorracarssale@gmail.com</span>
+                            </a>
+                            <a href="tel:+573235016747" class="footer-ci">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>+57 323 501 6747</span>
+                            </a>
+                            <span class="footer-ci">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <span>Marketplace digital · Colombia</span>
+                            </span>
+                        </div>
+                        <div class="footer-schedule">
+                            <span class="footer-schedule__label">Atención al cliente</span>
+                            <span class="footer-schedule__value">Lun – Vie · 8:00 am – 6:00 pm</span>
+                            <span class="footer-schedule__value">Sáb · 9:00 am – 2:00 pm</span>
+                        </div>
+                    </div>
+
+                    <div class="footer-col-sep" aria-hidden="true"></div>
+
+                    <div class="footer-col footer-col--social">
+                        <h3 class="footer-col-heading"><span>Conéctate con Nosotros</span></h3>
+                        <div class="footer-social">
+                            <a href="https://wa.me/573235016747" class="footer-soc footer-soc--wa" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9s-.5-.1-.6.1-.7.9-.8 1.1-.3.2-.5.1c-.7-.4-1.5-.8-2.3-1.7-.6-.6-1-1.4-1.2-1.6s0-.3.1-.4l.4-.5.3-.5c0-.2 0-.3 0-.4l-.6-1.4c-.1-.4-.3-.4-.4-.4h-.4c-.2 0-.4 0-.6.3-.2.3-.8.8-.8 1.9 0 1.1.8 2.2 1 2.4.1.2 1.7 2.6 4.1 3.7 1.4.6 2 .7 2.7.6.4-.1 1.3-.5 1.5-1.1.2-.5.2-1 .1-1.1-.1-.1-.3-.2-.5-.3zM12 2C6.5 2 2 6.5 2 12c0 1.7.5 3.4 1.3 4.9L2 22l5.3-1.3c1.4.7 3 1.1 4.7 1.1 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+                                <span class="footer-soc__label">WhatsApp</span>
+                            </a>
+                            <a href="https://www.instagram.com/altorracars/" class="footer-soc footer-soc--ig" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor"/></svg>
+                                <span class="footer-soc__label">Instagram</span>
+                            </a>
+                            <a href="https://www.facebook.com/share/14XKk6MCmiT/" class="footer-soc footer-soc--fb" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H8v-3h2.4V9.4c0-2.4 1.4-3.7 3.6-3.7 1 0 2.1.2 2.1.2v2.3h-1.2c-1.2 0-1.5.7-1.5 1.5V12h2.6l-.4 3h-2.2v7A10 10 0 0 0 22 12z"/></svg>
+                                <span class="footer-soc__label">Facebook</span>
+                            </a>
+                        </div>
+                        <div class="footer-rating">
+                            <span class="review-stars">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </span>
+                            <strong>4.9</strong>
+                            <span class="t-caption t-muted">· 247 reseñas Google</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="footer-bottom__row">
+                    <p class="footer-copy">© 2026 <strong>ALTORRA CARS</strong> — ALTORRA COMPANY SAS. Todos los derechos reservados.</p>
+                    <nav class="footer-legal" aria-label="Legal">
+                        <a class="alt-footer-bottom-link" href="terminos.html">Términos</a>
+                        <span aria-hidden="true">·</span>
+                        <a class="alt-footer-bottom-link" href="privacidad.html">Privacidad</a>
+                        <span aria-hidden="true">·</span>
+                        <a class="alt-footer-bottom-link" href="cookies.html">Cookies</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- QuickTools mount point — quicktools.js (Task 6) lo rellena -->
+    <div id="quicktools-root"></div>
+
+    <!-- Modal: Vende tu Auto — Wizard 3 pasos -->
+    <div class="modal-overlay" id="vende-auto-modal" role="dialog" aria-modal="true" aria-labelledby="vende-auto-title">
+        <div class="modal-container modal-container--wizard">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" id="vende-auto-title">Vende tu Auto</h2>
+                    <p class="modal-subtitle" id="vendeWizardSubtitle">Paso 1 de 3 — Datos de contacto</p>
+                </div>
+                <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="wizard-progress" aria-label="Progreso del formulario">
+                <div class="wizard-track">
+                    <div class="wizard-fill" id="vendeWizardFill" style="width:33%"></div>
+                </div>
+                <div class="wizard-steps-row" role="list">
+                    <div class="wizard-step-item active" data-step="1" role="listitem" aria-current="step">
+                        <div class="wizard-dot">1</div>
+                        <span>Contacto</span>
+                    </div>
+                    <div class="wizard-step-item" data-step="2" role="listitem">
+                        <div class="wizard-dot">2</div>
+                        <span>Vehículo</span>
+                    </div>
+                    <div class="wizard-step-item" data-step="3" role="listitem">
+                        <div class="wizard-dot">3</div>
+                        <span>Oferta</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <form id="vendeAutoForm" novalidate>
+
+                    <!-- PASO 1: Datos de contacto -->
+                    <div class="wizard-panel active" data-panel="1">
+                        <p class="wizard-panel-hint">¿Cómo te contactamos para enviarte la oferta?</p>
+                        <div class="form-group">
+                            <label class="form-label required" for="vende-nombre">Nombre completo</label>
+                            <input type="text" id="vende-nombre" name="nombre" class="form-input" maxlength="120" placeholder="Ej: Juan Pérez" autocomplete="name">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex:0 0 130px">
+                                <label class="form-label required" for="vende-pais">País</label>
+                                <select id="vende-pais" name="pais" class="form-input">
+                                    <option value="+57">🇨🇴 +57</option>
+                                    <option value="+58">🇻🇪 +58</option>
+                                    <option value="+593">🇪🇨 +593</option>
+                                    <option value="+507">🇵🇦 +507</option>
+                                    <option value="+52">🇲🇽 +52</option>
+                                    <option value="+1">🇺🇸 +1</option>
+                                    <option value="+51">🇵🇪 +51</option>
+                                    <option value="+56">🇨🇱 +56</option>
+                                    <option value="+54">🇦🇷 +54</option>
+                                    <option value="+34">🇪🇸 +34</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-telefono">Teléfono</label>
+                                <input type="tel" id="vende-telefono" name="telefono" class="form-input" placeholder="Ej: 3001234567" autocomplete="tel">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-email">Email</label>
+                                <input type="email" id="vende-email" name="email" class="form-input" maxlength="254" placeholder="Ej: correo@ejemplo.com" autocomplete="email">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                        </div>
+                        <div class="wizard-nav">
+                            <span class="wizard-trust-inline">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                Tus datos están protegidos
+                            </span>
+                            <button type="button" class="wizard-btn-next" data-panel="1">
+                                Siguiente
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PASO 2: Datos del vehículo -->
+                    <div class="wizard-panel" data-panel="2">
+                        <p class="wizard-panel-hint">Cuéntanos sobre el vehículo que deseas vender</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-marca">Marca</label>
+                                <input type="text" id="vende-marca" name="marca" class="form-input" maxlength="60" placeholder="Ej: Chevrolet">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-modelo">Modelo</label>
+                                <input type="text" id="vende-modelo" name="modelo" class="form-input" maxlength="60" placeholder="Ej: Spark GT">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-year">Año</label>
+                                <input type="number" id="vende-year" name="year" class="form-input" placeholder="Ej: 2020" min="1990" max="2026">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-km">Kilometraje</label>
+                                <input type="number" id="vende-km" name="kilometraje" class="form-input" placeholder="Ej: 50000">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                        </div>
+                        <div class="wizard-nav">
+                            <button type="button" class="wizard-btn-back" data-panel="2">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                                Atrás
+                            </button>
+                            <button type="button" class="wizard-btn-next" data-panel="2">
+                                Siguiente
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PASO 3: Precio y envío -->
+                    <div class="wizard-panel" data-panel="3">
+                        <p class="wizard-panel-hint">¡Ya casi! Solo indícanos el precio que esperas</p>
+                        <div class="form-group">
+                            <label class="form-label required" for="vende-precio">Precio esperado</label>
+                            <input type="text" id="vende-precio" name="precio" class="form-input" placeholder="Ej: $35,000,000">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="vende-comentarios">Comentarios adicionales</label>
+                            <textarea id="vende-comentarios" name="comentarios" class="form-textarea" maxlength="3000" placeholder="Estado del vehículo, extras, historial de mantenimiento..."></textarea>
+                        </div>
+                        <div class="wizard-trust-box">
+                            <div class="wizard-trust-items">
+                                <span>⚡ Respuesta en menos de 24h</span>
+                                <span>🤝 Sin compromiso de venta</span>
+                                <span>💰 Oferta al precio del mercado</span>
+                            </div>
+                        </div>
+                        <div class="wizard-nav">
+                            <button type="button" class="wizard-btn-back" data-panel="3">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                                Atrás
+                            </button>
+                            <!-- A.1 (mega-plan v4) — botón submit limpio, sin redirect a WhatsApp -->
+                            <button type="submit" class="form-submit form-submit--inline">
+                                <svg class="form-submit-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M22 2L11 13"/>
+                                    <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                                Enviar solicitud
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Financiación -->
+    <div class="modal-overlay" id="financiacion-modal" role="dialog" aria-modal="true" aria-labelledby="financiacion-title">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title" id="financiacion-title">Solicitud de Financiación</h2>
+                <p class="modal-subtitle">Te ayudamos a conseguir el mejor crédito</p>
+                <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="financiacionForm" novalidate>
+                    <div class="form-group">
+                        <label class="form-label required" for="fin-nombre">Nombre completo</label>
+                        <input type="text" id="fin-nombre" name="nombre" class="form-input" maxlength="120" autocomplete="name" placeholder="Ej: Juan Pérez">
+                        <span class="form-error" aria-live="polite"></span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex:0 0 130px">
+                            <label class="form-label required" for="fin-pais">País</label>
+                            <select id="fin-pais" name="pais" class="form-input">
+                                <option value="+57">🇨🇴 +57</option>
+                                <option value="+58">🇻🇪 +58</option>
+                                <option value="+593">🇪🇨 +593</option>
+                                <option value="+507">🇵🇦 +507</option>
+                                <option value="+52">🇲🇽 +52</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+51">🇵🇪 +51</option>
+                                <option value="+56">🇨🇱 +56</option>
+                                <option value="+54">🇦🇷 +54</option>
+                                <option value="+34">🇪🇸 +34</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required" for="fin-telefono">Teléfono</label>
+                            <input type="tel" id="fin-telefono" name="telefono" class="form-input" autocomplete="tel" placeholder="Ej: 3001234567">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required" for="fin-email">Email</label>
+                            <input type="email" id="fin-email" name="email" class="form-input" maxlength="254" autocomplete="email" placeholder="Ej: correo@ejemplo.com">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="fin-vehiculo">Vehículo de interés</label>
+                        <input type="text" id="fin-vehiculo" name="vehiculo-interes" class="form-input" maxlength="160" placeholder="Ej: Chevrolet Spark GT 2020">
+                        <span class="form-error" aria-live="polite"></span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required" for="fin-precio">Precio del vehículo</label>
+                            <input type="text" id="fin-precio" name="precio-vehiculo" class="form-input" placeholder="Ej: $35,000,000">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required" for="fin-cuota">Cuota inicial disponible</label>
+                            <input type="text" id="fin-cuota" name="cuota-inicial" class="form-input" placeholder="Ej: $10,000,000">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required" for="fin-plazo">Plazo deseado</label>
+                            <select id="fin-plazo" name="plazo" class="form-select">
+                                <option value="">Seleccionar...</option>
+                                <option value="12 meses">12 meses</option>
+                                <option value="24 meses">24 meses</option>
+                                <option value="36 meses">36 meses</option>
+                                <option value="48 meses">48 meses</option>
+                                <option value="60 meses">60 meses</option>
+                                <option value="72 meses">72 meses</option>
+                            </select>
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required" for="fin-ingresos">Ingresos mensuales</label>
+                            <input type="text" id="fin-ingresos" name="ingresos" class="form-input" placeholder="Ej: $3,000,000">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required" for="fin-situacion">Situación laboral</label>
+                            <select id="fin-situacion" name="situacion-laboral" class="form-select">
+                                <option value="">Seleccionar...</option>
+                                <option value="Empleado">Empleado</option>
+                                <option value="Independiente / Freelance">Independiente / Freelance</option>
+                                <option value="Empresario / Propietario">Empresario / Propietario</option>
+                                <option value="Pensionado">Pensionado</option>
+                            </select>
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="fin-ciudad">Ciudad</label>
+                            <input type="text" id="fin-ciudad" name="ciudad" class="form-input" autocomplete="address-level2" placeholder="Ej: Cartagena">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="fin-comentarios">Comentarios adicionales</label>
+                        <textarea id="fin-comentarios" name="comentarios" class="form-textarea" maxlength="3000" placeholder="Cuéntanos más sobre tu solicitud..."></textarea>
+                    </div>
+
+                    <!-- A.1 (mega-plan v4) — botón submit limpio, sin redirect a WhatsApp -->
+                    <button type="submit" class="form-submit">
+                        <svg class="form-submit-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M22 2L11 13"/>
+                            <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+                        </svg>
+                        Enviar solicitud
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="js/core/firebase-config.js" defer></script>
+    <script src="js/core/comm-schema.js" defer></script>
+
+    <!-- Scripts - Optimized Loading.
+         components.js sigue cargando: bootstrapea el modal de auth
+         (snippets/auth-modal.html + auth.js), el Concierge (ALTOR), Lucide,
+         GIS y cookies. Ya NO inyecta el header/footer viejos porque se
+         quitaron los placeholders #header-placeholder/#footer-placeholder
+         (el nav y footer ahora son estáticos arriba). El wiring del nav nuevo
+         (ocultarse/dropdown/drawer) llega en Task 3. -->
+    <script src="js/core/favorites-manager.js" defer></script>
+    <script src="js/core/favorites-watcher.js" defer></script>
+    <script src="js/core/toast.js" defer></script>
+    <script src="js/public/contact-forms.js" defer></script>
+    <script src="js/core/components.js" defer></script>
+    <script src="js/core/database.js" defer></script>
+    <script src="js/core/render.js" defer></script>
+    <script src="js/core/main.js" defer></script>
+    <!-- Chrome del index cinematic (Task 3): nav hide-on-scroll (3 estados),
+         mega-dropdown "Vehículos" y drawer móvil. Se auto-monta en
+         DOMContentLoaded; idempotente (no choca con home.js de Task 4). -->
+    <script src="js/public/home/home-chrome.js" defer></script>
+    <!-- Motion cinematic (Task 4): scroll-progress bar, hero parallax,
+         word-reveal stagger delays, IntersectionObserver reveals
+         (promo is-in, manifesto cin-mani-in, trail cin-trail-in,
+          bubbles cin-in) y counters animados del strip .cin-stats.
+         Se auto-monta en DOMContentLoaded; idempotente. -->
+    <script src="js/public/home/home-motion.js" defer></script>
+    <!-- Secciones data-driven (Task 5): disponibles, colección, promos,
+         marcas, rastro/recomendados y conteos de categorías. Se registra
+         en window.AltorraHome.carousels para que home.js lo llame. -->
+    <!-- SP-4 (§138): motor de recomendación por similitud al rastro. DEBE ir antes
+         de home-carousels.js (que lo consume en renderTrailRecommended). -->
+    <script src="js/core/recommendations.js" defer></script>
+    <script src="js/public/home/home-carousels.js" defer></script>
+    <!-- Dock flotante de herramientas (Task 6): simulador, comparar,
+         favoritos, historial y financiación. Hide-on-scroll-down,
+         badges desde fuentes reales, collision con comparador-widget.
+         Se registra en window.AltorraHome.quicktools para que home.js
+         lo llame. SIEMPRE antes de home.js. -->
+    <script src="js/public/home/quicktools.js" defer></script>
+    <!-- Orquestador del home (Task 4): body[data-cin], namespace
+         AltorraHome, guards para carousels (Task 5) y quicktools
+         (Task 6). SIEMPRE el último script js/public/home/*. -->
+    <script src="js/public/home/home.js" defer></script>
+    <!-- Comparador — deferred to idle. Cards render fine without it
+         (render.js uses defensive typeof check); user-triggered actions
+         only fire after the script loads. -->
+    <script>
+    (function () {
+        function loadComparador() {
+            if (window._comparadorLoaded) return;
+            window._comparadorLoaded = true;
+            var s = document.createElement('script');
+            s.src = 'js/public/comparador.js';
+            s.async = false;
+            document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadComparador, { timeout: 3000 });
+        } else if (document.readyState === 'complete') {
+            setTimeout(loadComparador, 1500);
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(loadComparador, 1500);
+            });
+        }
+    })();
+    </script>
+    <script src="js/core/historial-visitas.js" defer></script>
+    <script src="js/core/performance.js" defer></script>
+
+    <!-- Cookie Consent — deferred to idle. The banner only appears
+         after a UX delay anyway, so no point blocking initial parse. -->
+    <script>
+    (function () {
+        function loadCookies() {
+            var s = document.createElement('script');
+            s.src = 'js/public/cookies.js';
+            s.async = false;
+            document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadCookies, { timeout: 3000 });
+        } else if (document.readyState === 'complete') {
+            setTimeout(loadCookies, 1500);
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(loadCookies, 1500);
+            });
+        }
+    })();
+    </script>
+
+    <script src="js/core/page-loader.js"></script>
+    <!-- Cache Manager - Handles SW updates and cache invalidation -->
+    <script src="js/core/cache-manager.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,741 @@
+/**
+ * ALTORRA NOTIFICATIONS — Compact snackbar design
+ *
+ * Modern Sonner-inspired toast styling:
+ *  - Bottom-center positioning
+ *  - Compact flex layout (no flag/banner look)
+ *  - Glassmorphism with subtle shadow
+ *  - Smooth slide-up entrance/exit
+ *  - No progress bar
+ *  - Hover-only close button
+ *  - Mobile-aware with safe-area-inset
+ */
+
+:root {
+    --notify-bg: rgba(20, 22, 28, 0.92);
+    --notify-bg-solid: #161821;
+    --notify-text: #f0f2f6;
+    --notify-text-muted: #9ca3b4;
+    --notify-border: rgba(255, 255, 255, 0.06);
+    --notify-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
+
+    --notify-success: #22c55e;
+    --notify-success-glow: rgba(34, 197, 94, 0.15);
+    --notify-error: #ef4444;
+    --notify-error-glow: rgba(239, 68, 68, 0.15);
+    --notify-info: #b89658;
+    --notify-info-glow: rgba(184, 150, 88, 0.15);
+    --notify-warning: #f59e0b;
+    --notify-warning-glow: rgba(245, 158, 11, 0.15);
+}
+
+:root.light-mode {
+    --notify-bg: rgba(255, 255, 255, 0.94);
+    --notify-bg-solid: #ffffff;
+    --notify-text: #1a1d24;
+    --notify-text-muted: #5a6072;
+    --notify-border: rgba(0, 0, 0, 0.06);
+    --notify-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* ─── Container: bottom-center ─────────────────────────────── */
+.altorra-notify-container {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100000;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    width: auto;
+    max-width: calc(100vw - 24px);
+}
+
+/* ─── Toast: compact snackbar ──────────────────────────────── */
+.altorra-notify {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px 14px 18px;
+    background: var(--notify-bg);
+    color: var(--notify-text);
+    border-radius: 14px;
+    box-shadow: var(--notify-shadow);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    pointer-events: auto;
+    overflow: hidden;
+    will-change: transform, opacity;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.2s ease;
+    font-family: inherit;
+    /* Fixed width so all notifications look uniform regardless of message length */
+    width: 380px;
+    max-width: calc(100vw - 32px);
+}
+
+/* Subtle left accent — 3px solid, type-colored */
+.altorra-notify::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 14px 0 0 14px;
+    background: var(--notify-info);
+}
+.altorra-notify--success::before { background: var(--notify-success); }
+.altorra-notify--error::before   { background: var(--notify-error); }
+.altorra-notify--warning::before { background: var(--notify-warning); }
+
+/* ─── Icon: inline colored, no background box ──────────────── */
+.altorra-notify__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+}
+.altorra-notify__icon i,
+.altorra-notify__icon svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+}
+.altorra-notify--success .altorra-notify__icon { color: var(--notify-success); }
+.altorra-notify--error .altorra-notify__icon   { color: var(--notify-error); }
+.altorra-notify--info .altorra-notify__icon    { color: var(--notify-info); }
+.altorra-notify--warning .altorra-notify__icon { color: var(--notify-warning); }
+
+/* ─── Body ─────────────────────────────────────────────────── */
+.altorra-notify__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.altorra-notify__title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--notify-text);
+    letter-spacing: -0.01em;
+}
+.altorra-notify__message {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--notify-text-muted);
+    word-wrap: break-word;
+}
+
+/* ─── Action button ────────────────────────────────────────── */
+.altorra-notify__action {
+    margin-top: 6px;
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--notify-text);
+    padding: 5px 14px;
+    border-radius: 7px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.altorra-notify__action:hover {
+    background: var(--notify-info-glow);
+    border-color: var(--notify-info);
+    color: var(--notify-info);
+}
+
+/* ─── Close button: hover-reveal on desktop ────────────────── */
+.altorra-notify__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
+    color: var(--notify-text-muted);
+    cursor: pointer;
+    border-radius: 6px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.altorra-notify:hover .altorra-notify__close {
+    opacity: 1;
+}
+.altorra-notify__close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--notify-text);
+}
+.altorra-notify__close i,
+.altorra-notify__close svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Critical: always show close (no auto-dismiss) */
+.altorra-notify[data-priority="critical"] .altorra-notify__close { opacity: 0.7; }
+
+/* Progress bar — hidden in compact design */
+.altorra-notify__progress { display: none; }
+.altorra-notify__progress-bar { display: none; }
+
+/* ─── Animations: slide up from bottom ─────────────────────── */
+.altorra-notify--enter {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+}
+.altorra-notify--visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+.altorra-notify--leave {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+    transition: transform 0.22s ease, opacity 0.2s ease;
+}
+
+/* ─── Variant: Attention (vibrant gold for login prompts) ──── */
+.altorra-notify--attention {
+    background: linear-gradient(135deg, #c9a663 0%, #b89658 50%, #9a7d44 100%);
+    background-size: 200% 200%;
+    color: #1a1d24;
+    border: none;
+    box-shadow: 0 16px 50px -8px rgba(184, 150, 88, 0.55),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                0 0 30px rgba(184, 150, 88, 0.4);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    width: 420px;
+    max-width: calc(100vw - 32px);
+    padding: 16px 18px 16px 20px;
+    animation: notify-attention-shimmer 4s linear infinite,
+               notify-attention-pulse 2s ease-in-out infinite;
+}
+.altorra-notify--attention::before {
+    background: linear-gradient(180deg, #fff7e0, #fff);
+    width: 4px;
+    box-shadow: 0 0 12px rgba(255, 247, 224, 0.6);
+}
+.altorra-notify--attention .altorra-notify__icon {
+    color: #1a1d24;
+    background: rgba(255, 255, 255, 0.25);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+.altorra-notify--attention .altorra-notify__icon i,
+.altorra-notify--attention .altorra-notify__icon svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.4;
+}
+.altorra-notify--attention .altorra-notify__title {
+    color: #1a1d24;
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+.altorra-notify--attention .altorra-notify__message {
+    color: rgba(26, 29, 36, 0.82);
+    font-weight: 500;
+    font-size: 0.82rem;
+}
+.altorra-notify--attention .altorra-notify__action {
+    background: #1a1d24;
+    color: #fff;
+    border: 1px solid #1a1d24;
+    font-size: 0.82rem;
+    padding: 7px 16px;
+    font-weight: 700;
+    margin-top: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.altorra-notify--attention .altorra-notify__action:hover {
+    background: #000;
+    border-color: #000;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.altorra-notify--attention .altorra-notify__close {
+    color: rgba(26, 29, 36, 0.7);
+    opacity: 0.8;
+}
+.altorra-notify--attention .altorra-notify__close:hover {
+    background: rgba(26, 29, 36, 0.15);
+    color: #1a1d24;
+}
+
+/* Entrance shake — draws attention without being annoying */
+.altorra-notify--attention.altorra-notify--visible {
+    animation: notify-attention-enter 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+               notify-attention-shimmer 4s linear infinite 0.75s,
+               notify-attention-pulse 2s ease-in-out infinite 0.75s;
+}
+@keyframes notify-attention-enter {
+    0%   { opacity: 0; transform: translateY(20px) scale(0.92) rotate(0deg); }
+    40%  { opacity: 1; transform: translateY(-4px) scale(1.02) rotate(0deg); }
+    55%  { transform: translateY(0) scale(1) rotate(-1.2deg); }
+    70%  { transform: translateY(0) scale(1) rotate(1.2deg); }
+    82%  { transform: translateY(0) scale(1) rotate(-0.6deg); }
+    92%  { transform: translateY(0) scale(1) rotate(0.4deg); }
+    100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+@keyframes notify-attention-shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+}
+@keyframes notify-attention-pulse {
+    0%, 100% {
+        box-shadow: 0 16px 50px -8px rgba(184, 150, 88, 0.55),
+                    0 0 0 1px rgba(255, 255, 255, 0.1),
+                    0 0 30px rgba(184, 150, 88, 0.4);
+    }
+    50% {
+        box-shadow: 0 20px 60px -8px rgba(184, 150, 88, 0.7),
+                    0 0 0 1px rgba(255, 255, 255, 0.15),
+                    0 0 50px rgba(184, 150, 88, 0.6);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .altorra-notify--attention.altorra-notify--visible {
+        animation: none;
+    }
+    .altorra-notify--attention { animation: none; }
+}
+
+/* Buzz: replayed when user re-triggers an existing attention toast */
+.altorra-notify--attention.altorra-notify--buzz {
+    animation: notify-attention-buzz 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97),
+               notify-attention-shimmer 4s linear infinite 0.55s,
+               notify-attention-pulse 2s ease-in-out infinite 0.55s !important;
+}
+
+@keyframes notify-attention-buzz {
+    0%   { transform: translate3d(0, 0, 0) rotate(0deg); }
+    10%  { transform: translate3d(-6px, 0, 0) rotate(-1.5deg); }
+    20%  { transform: translate3d(6px, 0, 0) rotate(1.5deg); }
+    30%  { transform: translate3d(-5px, 0, 0) rotate(-1.2deg); }
+    40%  { transform: translate3d(5px, 0, 0) rotate(1.2deg); }
+    50%  { transform: translate3d(-4px, 0, 0) rotate(-0.8deg); }
+    60%  { transform: translate3d(4px, 0, 0) rotate(0.8deg); }
+    70%  { transform: translate3d(-3px, 0, 0) rotate(-0.5deg); }
+    80%  { transform: translate3d(2px, 0, 0) rotate(0.3deg); }
+    90%  { transform: translate3d(-1px, 0, 0); }
+    100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .altorra-notify--attention.altorra-notify--buzz { animation: none !important; }
+}
+
+/* Paused state (hover blocks auto-close, no visual change) */
+.altorra-notify--paused {}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .altorra-notify {
+        transition: opacity 0.15s ease;
+    }
+    .altorra-notify--enter { transform: none; }
+    .altorra-notify--leave { transform: none; }
+}
+
+/* ─── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .altorra-notify-container {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+        left: 12px;
+        right: 12px;
+        transform: none;
+        width: auto;
+        max-width: none;
+    }
+    .altorra-notify {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+    }
+    .altorra-notify__close { opacity: 0.6; }
+}
+
+/* Touch: always show close */
+@media (hover: none) {
+    .altorra-notify__close { opacity: 0.6; }
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Spotlight effect — dims page, highlights login button + tooltip
+   ═════════════════════════════════════════════════════════════════ */
+.altorra-spotlight {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 99990;
+    animation: spotlight-in 0.35s ease;
+    cursor: pointer;
+}
+.altorra-spotlight--fade {
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+}
+@keyframes spotlight-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.hdr-btn--spotlight {
+    position: relative;
+    z-index: 99991 !important;
+    box-shadow: 0 0 0 4px rgba(184, 150, 88, 0.5),
+                0 0 24px rgba(184, 150, 88, 0.35) !important;
+    animation: spotlight-glow 1.2s ease-in-out infinite !important;
+    border-color: #b89658 !important;
+}
+@keyframes spotlight-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 4px rgba(184, 150, 88, 0.5),
+                    0 0 24px rgba(184, 150, 88, 0.35);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(184, 150, 88, 0.3),
+                    0 0 36px rgba(184, 150, 88, 0.45);
+    }
+}
+
+.altorra-login-tooltip {
+    position: fixed;
+    z-index: 99992;
+    transform: translateX(-50%);
+    background: #b89658;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+    animation: tooltip-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+.altorra-login-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: #b89658;
+    border-top: 0;
+}
+@keyframes tooltip-enter {
+    0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   ALTORRA NOTIFICATION CENTER (Phase N3)
+   Bell icon + slide-out panel
+   ═════════════════════════════════════════════════════════════════ */
+
+.altorra-bell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid var(--notify-border);
+    color: var(--notify-text);
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.altorra-bell:hover {
+    background: var(--notify-info-glow);
+    color: var(--notify-info);
+    transform: translateY(-1px);
+}
+.altorra-bell i,
+.altorra-bell svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.2;
+}
+.altorra-bell__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--notify-error);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--notify-bg-solid, #161821);
+    box-shadow: 0 0 0 0 var(--notify-error-glow);
+    animation: bell-pulse 2s ease-in-out infinite;
+}
+@keyframes bell-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+.altorra-bell__badge[hidden] { display: none; }
+
+/* Panel */
+.altorra-notify-center {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    right: calc(env(safe-area-inset-right, 0px) + 16px);
+    width: 380px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    background: var(--notify-bg);
+    border: 1px solid var(--notify-border);
+    border-radius: 16px;
+    box-shadow: var(--notify-shadow);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.altorra-notify-center--open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.altorra-notify-center__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--notify-border);
+}
+.altorra-notify-center__head h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--notify-text);
+    letter-spacing: -0.01em;
+}
+.altorra-notify-center__head-actions {
+    display: flex;
+    gap: 4px;
+}
+.altorra-notify-center__action,
+.altorra-notify-center__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: none;
+    color: var(--notify-text-muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+}
+.altorra-notify-center__action:hover,
+.altorra-notify-center__close:hover {
+    background: var(--notify-border);
+    color: var(--notify-text);
+}
+.altorra-notify-center__action i,
+.altorra-notify-center__close i {
+    width: 16px;
+    height: 16px;
+}
+
+.altorra-notify-center__list {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 6px 0;
+    max-height: 460px;
+}
+
+.altorra-notify-center__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+    color: var(--notify-text-muted);
+    gap: 10px;
+}
+.altorra-notify-center__empty i {
+    width: 32px;
+    height: 32px;
+    opacity: 0.5;
+}
+.altorra-notify-center__empty p {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.altorra-notify-center__item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 36px 1fr 24px;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.15s ease;
+}
+.altorra-notify-center__item:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+.altorra-notify-center__item--unread {
+    background: rgba(184, 150, 88, 0.06);
+    border-left-color: var(--notify-info);
+}
+.altorra-notify-center__item[data-type="error"].altorra-notify-center__item--unread { border-left-color: var(--notify-error); background: rgba(239,68,68,0.05); }
+.altorra-notify-center__item[data-type="success"].altorra-notify-center__item--unread { border-left-color: var(--notify-success); background: rgba(22,163,74,0.05); }
+.altorra-notify-center__item[data-type="warning"].altorra-notify-center__item--unread { border-left-color: var(--notify-warning); background: rgba(234,179,8,0.05); }
+
+.altorra-notify-center__item-icon {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 2px;
+}
+.altorra-notify-center__item-icon i {
+    width: 18px;
+    height: 18px;
+}
+.altorra-notify-center__item[data-type="success"] .altorra-notify-center__item-icon { color: var(--notify-success); }
+.altorra-notify-center__item[data-type="error"] .altorra-notify-center__item-icon { color: var(--notify-error); }
+.altorra-notify-center__item[data-type="warning"] .altorra-notify-center__item-icon { color: var(--notify-warning); }
+.altorra-notify-center__item[data-type="info"] .altorra-notify-center__item-icon { color: var(--notify-info); }
+
+.altorra-notify-center__item-body {
+    min-width: 0;
+}
+.altorra-notify-center__item-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--notify-text);
+    margin-bottom: 2px;
+}
+.altorra-notify-center__item-message {
+    font-size: 0.78rem;
+    color: var(--notify-text-muted);
+    line-height: 1.4;
+    margin-bottom: 4px;
+    word-wrap: break-word;
+}
+.altorra-notify-center__item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.altorra-notify-center__item-time {
+    font-size: 0.7rem;
+    color: var(--notify-text-muted);
+    opacity: 0.7;
+}
+.altorra-notify-center__item-cat {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(184, 150, 88, 0.12);
+    color: rgba(184, 150, 88, 0.95);
+    border: 1px solid rgba(184, 150, 88, 0.2);
+    line-height: 1.3;
+}
+/* Per-category accent — subtle differentiation */
+.altorra-notify-center__item[data-category="price_alert"] .altorra-notify-center__item-cat {
+    background: rgba(22, 163, 74, 0.12);
+    color: rgba(22, 163, 74, 0.95);
+    border-color: rgba(22, 163, 74, 0.25);
+}
+.altorra-notify-center__item[data-category="inventory_change"] .altorra-notify-center__item-cat {
+    background: rgba(234, 179, 8, 0.12);
+    color: rgba(234, 179, 8, 0.95);
+    border-color: rgba(234, 179, 8, 0.25);
+}
+.altorra-notify-center__item[data-category="security"] .altorra-notify-center__item-cat {
+    background: rgba(239, 68, 68, 0.12);
+    color: rgba(239, 68, 68, 0.95);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+/* Linkable items: subtle hover hint that it navigates */
+.altorra-notify-center__item--linkable:hover {
+    background: rgba(184, 150, 88, 0.06);
+}
+.altorra-notify-center__item--linkable:hover .altorra-notify-center__item-title {
+    color: rgba(184, 150, 88, 0.95);
+}
+
+.altorra-notify-center__item-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
+    color: var(--notify-text-muted);
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.18s, background 0.18s, color 0.18s;
+}
+.altorra-notify-center__item:hover .altorra-notify-center__item-remove {
+    opacity: 1;
+}
+.altorra-notify-center__item-remove:hover {
+    background: var(--notify-border);
+    color: var(--notify-text);
+}
+.altorra-notify-center__item-remove i {
+    width: 14px;
+    height: 14px;
+}
+
+@media (hover: none) {
+    .altorra-notify-center__item-remove { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+    .altorra-notify-center {
+        top: calc(env(safe-area-inset-top, 0px) + 8px);
+        left: calc(env(safe-area-inset-left, 0px) + 8px);
+        right: calc(env(safe-area-inset-right, 0px) + 8px);
+        width: auto;
+    }
+    .altorra-notify-center__list { max-height: 60vh; }
+}

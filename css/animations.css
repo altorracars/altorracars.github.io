@@ -1,0 +1,239 @@
+/**
+ * ALTORRA CARS — Animation System (Mega-Plan v4, Microfase T.5)
+ * ==============================================================
+ * Single source of truth for animations. Replaces ad-hoc keyframes
+ * scattered across the codebase.
+ *
+ * Naming: alt-animate-{name} for utility classes, alt-{name} for keyframes.
+ * Durations + curves come from tokens.css (T.1).
+ *
+ * Categories:
+ *   1. Entrance animations (fadeIn, slideUp, scaleIn, popIn, slideInLeft/Right)
+ *   2. Exit animations (fadeOut, slideDown, scaleOut)
+ *   3. Attention seekers (pulse, shake, wiggle, bounce)
+ *   4. Continuous (spin, ping, breathe)
+ *   5. Stagger helper (.alt-stagger > *)
+ *   6. Page transitions
+ *
+ * All animations respect prefers-reduced-motion via tokens.css global rule.
+ */
+
+/* ═══════════════════════════════════════════════════════════
+   1. ENTRANCE
+   ═══════════════════════════════════════════════════════════ */
+@keyframes alt-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes alt-slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes alt-slide-down {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes alt-slide-in-left {
+    from { opacity: 0; transform: translateX(-16px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes alt-slide-in-right {
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes alt-scale-in {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+@keyframes alt-pop-in {
+    0% { opacity: 0; transform: scale(0.6); }
+    60% { opacity: 1; transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2. EXIT
+   ═══════════════════════════════════════════════════════════ */
+@keyframes alt-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+@keyframes alt-slide-out-down {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(12px); }
+}
+@keyframes alt-scale-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.92); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3. ATTENTION SEEKERS
+   ═══════════════════════════════════════════════════════════ */
+@keyframes alt-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+}
+@keyframes alt-shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+@keyframes alt-wiggle {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-3deg); }
+    75% { transform: rotate(3deg); }
+}
+@keyframes alt-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+@keyframes alt-flash {
+    0%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.4; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   4. CONTINUOUS
+   ═══════════════════════════════════════════════════════════ */
+@keyframes alt-spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes alt-ping {
+    75%, 100% { transform: scale(2); opacity: 0; }
+}
+@keyframes alt-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+@keyframes alt-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITY CLASSES (apply animations declaratively)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Entrance utilities — run once on mount */
+.alt-animate-fade-in {
+    animation: alt-fade-in var(--duration-normal) var(--ease-snap) both;
+}
+.alt-animate-slide-up {
+    animation: alt-slide-up var(--duration-normal) var(--ease-spring) both;
+}
+.alt-animate-slide-down {
+    animation: alt-slide-down var(--duration-normal) var(--ease-spring) both;
+}
+.alt-animate-slide-in-left {
+    animation: alt-slide-in-left var(--duration-normal) var(--ease-spring) both;
+}
+.alt-animate-slide-in-right {
+    animation: alt-slide-in-right var(--duration-normal) var(--ease-spring) both;
+}
+.alt-animate-scale-in {
+    animation: alt-scale-in var(--duration-normal) var(--ease-spring) both;
+}
+.alt-animate-pop-in {
+    animation: alt-pop-in var(--duration-slow) var(--ease-spring) both;
+}
+
+/* Exit utilities — typically toggled by JS at unmount */
+.alt-animate-fade-out {
+    animation: alt-fade-out var(--duration-fast) var(--ease-accelerate) forwards;
+}
+.alt-animate-scale-out {
+    animation: alt-scale-out var(--duration-fast) var(--ease-accelerate) forwards;
+}
+
+/* Attention seekers — looping or one-shot */
+.alt-animate-pulse {
+    animation: alt-pulse 2s var(--ease-soft) infinite;
+}
+.alt-animate-shake {
+    animation: alt-shake var(--duration-slow) var(--ease-snap) 1;
+}
+.alt-animate-wiggle {
+    animation: alt-wiggle var(--duration-slower) var(--ease-snap) 1;
+}
+.alt-animate-bounce {
+    animation: alt-bounce 1s var(--ease-spring) infinite;
+}
+.alt-animate-flash {
+    animation: alt-flash 1.4s var(--ease-soft) infinite;
+}
+
+/* Continuous */
+.alt-animate-spin {
+    animation: alt-spin 1s var(--ease-linear) infinite;
+}
+.alt-animate-ping {
+    animation: alt-ping 1.5s var(--ease-soft) infinite;
+}
+.alt-animate-breathe {
+    animation: alt-breathe 3s var(--ease-soft) infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STAGGER — children of .alt-stagger animate in sequence
+   Use with any of the entrance utilities on the children.
+   delay = nth * --alt-stagger-delay (default 60ms)
+   ═══════════════════════════════════════════════════════════ */
+.alt-stagger {
+    --alt-stagger-delay: 60ms;
+}
+.alt-stagger > * {
+    animation-delay: calc(var(--alt-stagger-delay) * var(--alt-stagger-index, 0));
+}
+.alt-stagger > *:nth-child(1) { --alt-stagger-index: 0; }
+.alt-stagger > *:nth-child(2) { --alt-stagger-index: 1; }
+.alt-stagger > *:nth-child(3) { --alt-stagger-index: 2; }
+.alt-stagger > *:nth-child(4) { --alt-stagger-index: 3; }
+.alt-stagger > *:nth-child(5) { --alt-stagger-index: 4; }
+.alt-stagger > *:nth-child(6) { --alt-stagger-index: 5; }
+.alt-stagger > *:nth-child(7) { --alt-stagger-index: 6; }
+.alt-stagger > *:nth-child(8) { --alt-stagger-index: 7; }
+.alt-stagger > *:nth-child(9) { --alt-stagger-index: 8; }
+.alt-stagger > *:nth-child(10) { --alt-stagger-index: 9; }
+.alt-stagger > *:nth-child(n+11) { --alt-stagger-index: 10; }
+
+/* Stagger speed variants */
+.alt-stagger--fast { --alt-stagger-delay: 30ms; }
+.alt-stagger--slow { --alt-stagger-delay: 100ms; }
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE TRANSITION (View Transitions API ready)
+   ═══════════════════════════════════════════════════════════ */
+@supports (view-transition-name: none) {
+    @view-transition {
+        navigation: auto;
+    }
+    /* Cross-fade between pages where supported (Chrome 126+) */
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: var(--duration-normal);
+        animation-timing-function: var(--ease-snap);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE BADGE (used by Concierge/Inbox to indicate live status)
+   Pulsing dot + ping ring
+   ═══════════════════════════════════════════════════════════ */
+.alt-live-indicator {
+    position: relative;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+}
+.alt-live-indicator::before,
+.alt-live-indicator::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--status-success);
+}
+.alt-live-indicator::after {
+    animation: alt-ping 1.6s var(--ease-soft) infinite;
+}

@@ -1,0 +1,571 @@
+/**
+ * ALTORRA CARS — Design Tokens (Mega-Plan v4, Microfase T.1)
+ * ============================================================
+ * Single source of truth for ALL design values.
+ *
+ * Replaces hardcoded values across the codebase. Future CSS must
+ * reference these tokens via var(--token-name) — never raw values.
+ *
+ * Categories:
+ *   1. Color palette + semantic mapping
+ *   2. Spacing scale (4-point base)
+ *   3. Typography scale + line-heights
+ *   4. Shadows + elevation
+ *   5. Border radius
+ *   6. Transitions + animation curves
+ *   7. Z-index scale
+ *   8. Breakpoints (info, used via @media)
+ *   9. Layout (max-width, sidebar widths)
+ *  10. Theme variants (dark default + light + high-contrast in T.4/T.8)
+ *
+ * Naming convention:
+ *   --color-{semantic}-{variant}     (e.g. --color-brand-500)
+ *   --space-{size}                   (e.g. --space-4)
+ *   --font-size-{size}               (e.g. --font-size-md)
+ *   --shadow-{level}                 (e.g. --shadow-md)
+ *   --radius-{size}                  (e.g. --radius-md)
+ *   --duration-{tempo}               (e.g. --duration-fast)
+ *   --ease-{curve}                   (e.g. --ease-snap)
+ *   --z-{layer}                      (e.g. --z-modal)
+ */
+
+:root {
+    /* ═══════════════════════════════════════════════════════════
+       1. COLOR PALETTE — raw colors (don't use directly in code)
+       ═══════════════════════════════════════════════════════════ */
+
+    /* Brand gold — Altorra primary */
+    --color-brand-50:   #fdfaf2;
+    --color-brand-100:  #f9f1de;
+    --color-brand-200:  #f0dfb0;
+    --color-brand-300:  #e6c97e;
+    --color-brand-400:  #d4ae50;
+    --color-brand-500:  #b89658;  /* primary */
+    --color-brand-600:  #a37e44;
+    --color-brand-700:  #836434;
+    --color-brand-800:  #634b25;
+    --color-brand-900:  #3f2f17;
+
+    /* Neutrals (dark theme baseline) */
+    --color-neutral-0:    #ffffff;
+    --color-neutral-50:   #fafafa;
+    --color-neutral-100:  #f5f5f5;
+    --color-neutral-200:  #e5e5e5;
+    --color-neutral-300:  #d4d4d4;
+    --color-neutral-400:  #a3a3a3;
+    --color-neutral-500:  #737373;
+    --color-neutral-600:  #525252;
+    --color-neutral-700:  #404040;
+    --color-neutral-800:  #262626;
+    --color-neutral-850:  #1a1a1a;
+    --color-neutral-900:  #171717;
+    --color-neutral-950:  #0a0a0a;
+
+    /* Semantic colors */
+    --color-success-100: #dcfce7;
+    --color-success-500: #22c55e;
+    --color-success-700: #15803d;
+
+    --color-warning-100: #fef3c7;
+    --color-warning-500: #eab308;
+    --color-warning-700: #a16207;
+
+    --color-danger-100:  #fee2e2;
+    --color-danger-500:  #ef4444;
+    --color-danger-700:  #b91c1c;
+
+    --color-info-100:    #dbeafe;
+    --color-info-500:    #3b82f6;
+    --color-info-700:    #1d4ed8;
+
+    --color-purple-500:  #8b5cf6;  /* AI / inteligencia */
+    --color-cyan-500:    #06b6d4;  /* realtime / collab */
+
+    /* ═══════════════════════════════════════════════════════════
+       2. SEMANTIC TOKENS — use these in components (not raw)
+       ═══════════════════════════════════════════════════════════ */
+
+    /* Background layers (dark theme default) */
+    --bg-base:        var(--color-neutral-950);
+    --bg-elevated:    var(--color-neutral-900);
+    --bg-card:        var(--color-neutral-850);
+    --bg-overlay:     rgba(0, 0, 0, 0.7);
+    --bg-input:       rgba(255, 255, 255, 0.04);
+    --bg-input-focus: rgba(255, 255, 255, 0.08);
+    --bg-hover:       rgba(255, 255, 255, 0.04);
+    --bg-active:      rgba(255, 255, 255, 0.08);
+
+    /* Text */
+    --text-primary:   var(--color-neutral-50);
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-tertiary:  rgba(255, 255, 255, 0.5);
+    --text-disabled:  rgba(255, 255, 255, 0.3);
+    --text-inverse:   var(--color-neutral-900);
+    --text-on-brand:  #1a1100;          /* readable on gold */
+
+    /* Borders */
+    --border-subtle:  rgba(255, 255, 255, 0.06);
+    --border-default: rgba(255, 255, 255, 0.12);
+    --border-strong:  rgba(255, 255, 255, 0.24);
+    --border-brand:   var(--color-brand-500);
+    --border-focus:   var(--color-brand-400);
+
+    /* Brand */
+    --brand-primary:        var(--color-brand-500);
+    --brand-primary-hover:  var(--color-brand-400);
+    --brand-primary-active: var(--color-brand-600);
+    --brand-subtle:         rgba(184, 150, 88, 0.12);
+    --brand-on-primary:     var(--text-on-brand);
+
+    /* Status */
+    --status-success: var(--color-success-500);
+    --status-warning: var(--color-warning-500);
+    --status-danger:  var(--color-danger-500);
+    --status-info:    var(--color-info-500);
+
+    --status-success-bg: rgba(34, 197, 94, 0.15);
+    --status-warning-bg: rgba(234, 179, 8, 0.15);
+    --status-danger-bg:  rgba(239, 68, 68, 0.15);
+    --status-info-bg:    rgba(59, 130, 246, 0.15);
+
+    /* AI / collab accents */
+    --accent-ai:     var(--color-purple-500);
+    --accent-ai-bg:  rgba(139, 92, 246, 0.15);
+    --accent-collab: var(--color-cyan-500);
+
+    /* ═══════════════════════════════════════════════════════════
+       3. SPACING — 4-point base scale
+       ═══════════════════════════════════════════════════════════ */
+    --space-0:   0;
+    --space-1:   4px;
+    --space-2:   8px;
+    --space-3:   12px;
+    --space-4:   16px;
+    --space-5:   20px;
+    --space-6:   24px;
+    --space-8:   32px;
+    --space-10:  40px;
+    --space-12:  48px;
+    --space-16:  64px;
+    --space-20:  80px;
+    --space-24:  96px;
+
+    /* ═══════════════════════════════════════════════════════════
+       4. TYPOGRAPHY
+       ═══════════════════════════════════════════════════════════ */
+    --font-family-base:    'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family-display: 'Cardo', Georgia, serif;
+    --font-family-mono:    'SFMono-Regular', Menlo, Consolas, monospace;
+
+    --font-weight-regular: 400;
+    --font-weight-medium:  500;
+    --font-weight-semibold:600;
+    --font-weight-bold:    700;
+    --font-weight-extra:   800;
+
+    --font-size-xs:   0.72rem;   /* ~11.5px */
+    --font-size-sm:   0.82rem;   /* ~13px */
+    --font-size-md:   0.92rem;   /* ~14.7px */
+    --font-size-base: 1rem;      /* 16px */
+    --font-size-lg:   1.15rem;   /* ~18.4px */
+    --font-size-xl:   1.4rem;    /* ~22.4px */
+    --font-size-2xl:  1.8rem;    /* ~28.8px */
+    --font-size-3xl:  2.4rem;    /* ~38.4px */
+
+    --line-height-tight:   1.15;
+    --line-height-snug:    1.3;
+    --line-height-normal:  1.5;
+    --line-height-relaxed: 1.65;
+
+    --letter-spacing-tight:  -0.02em;
+    --letter-spacing-normal: 0;
+    --letter-spacing-wide:   0.04em;
+    --letter-spacing-extra:  0.08em;
+
+    /* ═══════════════════════════════════════════════════════════
+       5. SHADOWS / ELEVATION
+       ═══════════════════════════════════════════════════════════ */
+    --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.20);
+    --shadow-sm:  0 2px 6px rgba(0, 0, 0, 0.25);
+    --shadow-md:  0 6px 18px rgba(0, 0, 0, 0.32);
+    --shadow-lg:  0 12px 32px rgba(0, 0, 0, 0.40);
+    --shadow-xl:  0 24px 60px rgba(0, 0, 0, 0.48);
+    --shadow-glow-brand: 0 0 24px rgba(184, 150, 88, 0.32);
+    --shadow-focus-ring: 0 0 0 3px rgba(184, 150, 88, 0.45);
+
+    /* ═══════════════════════════════════════════════════════════
+       6. BORDER RADIUS
+       ═══════════════════════════════════════════════════════════ */
+    --radius-none: 0;
+    --radius-xs:   3px;
+    --radius-sm:   6px;
+    --radius-md:   8px;
+    --radius-lg:   12px;
+    --radius-xl:   16px;
+    --radius-2xl:  24px;
+    --radius-pill: 999px;
+    --radius-circle: 50%;
+
+    /* ═══════════════════════════════════════════════════════════
+       7. ANIMATION CURVES + DURATIONS
+       Five curated curves — every animation should reference these
+       ═══════════════════════════════════════════════════════════ */
+    --ease-linear:   linear;
+    --ease-snap:     cubic-bezier(0.25, 0.1, 0.25, 1);    /* default ease — fast & natural */
+    --ease-soft:     cubic-bezier(0.4, 0, 0.2, 1);        /* material standard */
+    --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);   /* overshoot bounce */
+    --ease-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1);    /* enter from offscreen */
+    --ease-accelerate: cubic-bezier(0.4, 0.0, 1, 1);      /* exit to offscreen */
+
+    --duration-instant: 0ms;
+    --duration-fast:    150ms;
+    --duration-normal:  250ms;
+    --duration-slow:    400ms;
+    --duration-slower:  600ms;
+
+    /* ═══════════════════════════════════════════════════════════
+       8. Z-INDEX SCALE
+       ═══════════════════════════════════════════════════════════ */
+    --z-base:        0;
+    --z-raised:      10;
+    --z-sticky:      100;
+    --z-banner:      200;
+    --z-overlay:     1000;
+    --z-modal:       1100;
+    --z-popover:     1200;
+    --z-tooltip:     1300;
+    --z-toast:       1400;
+    --z-spotlight:   1500;
+    --z-max:         9999;
+
+    /* ═══════════════════════════════════════════════════════════
+       9. LAYOUT
+       ═══════════════════════════════════════════════════════════ */
+    --layout-max-content: 1280px;
+    --layout-sidebar-w-collapsed: 56px;
+    --layout-sidebar-w-expanded:  256px;  /* §27 HarmonyOS — más espacio para respirar */
+    --layout-header-h:    64px;
+    --layout-content-p:   var(--space-6);
+
+    /* ═══════════════════════════════════════════════════════════
+       10. BREAKPOINTS (informational — used in @media queries)
+       ═══════════════════════════════════════════════════════════ */
+    /* sm: 480px / md: 768px / lg: 1024px / xl: 1280px / 2xl: 1536px */
+
+    /* ═══════════════════════════════════════════════════════════
+       11. HARMONYOS LANGUAGE (§27 — ALTORRA HARMONY CRM)
+       Tokens visuales inspirados en HarmonyOS: bordes suaves,
+       sombras difuminadas, transiciones fluidas, glassmorphism,
+       espacios respiran. Aplicar prefijo --hmy-* para mapeo claro.
+       ═══════════════════════════════════════════════════════════ */
+    --hmy-radius-card-soft:   16px;     /* cards default */
+    --hmy-radius-card-large:  24px;     /* hero KPIs / modales */
+    --hmy-radius-card-xl:     32px;     /* hero principal página */
+    --hmy-radius-button:      12px;     /* botones más redondeados */
+    --hmy-radius-input:       12px;
+    --hmy-radius-pill:        999px;
+    --hmy-radius-modal:       20px;
+
+    /* Sombras difuminadas (no más sombras sólidas duras) */
+    --hmy-shadow-soft-xs:  0 1px 4px rgba(0, 0, 0, 0.04);
+    --hmy-shadow-soft-sm:  0 2px 12px rgba(0, 0, 0, 0.06);
+    --hmy-shadow-soft-md:  0 4px 24px rgba(0, 0, 0, 0.08);
+    --hmy-shadow-soft-lg:  0 12px 40px rgba(0, 0, 0, 0.10);
+    --hmy-shadow-soft-xl:  0 24px 64px rgba(0, 0, 0, 0.12);
+    --hmy-shadow-glow-soft: 0 0 32px rgba(184, 150, 88, 0.18);
+    --hmy-shadow-glass:     0 8px 32px rgba(0, 0, 0, 0.20),
+                            0 1px 0 rgba(255, 255, 255, 0.04) inset;
+
+    /* Transiciones fluidas — duraciones extendidas */
+    --hmy-transition-fluid:  0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --hmy-transition-quick:  0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    --hmy-transition-spring: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Espacios — respiran (más generosos que defaults) */
+    --hmy-space-card-padding:  24px;    /* default 16-20px → 24px */
+    --hmy-space-card-gap:      20px;
+    --hmy-space-section-gap:   32px;
+    --hmy-space-page-gutter:   28px;
+
+    /* Glassmorphism (sidebar + modales) */
+    --hmy-glass-blur:           20px;
+    --hmy-glass-bg-dark:        rgba(15, 15, 15, 0.72);
+    --hmy-glass-bg-card:        rgba(255, 255, 255, 0.04);
+    --hmy-glass-border:         rgba(255, 255, 255, 0.08);
+
+    /* Workspace colors extendidos (§27 — coral nuevo) */
+    --ws-color-gold:    #b89658;
+    --ws-color-coral:   #f97066;       /* NUEVO — Sitio público */
+    --ws-color-blue:    #3b82f6;       /* CRM */
+    --ws-color-violet:  #8b5cf6;       /* Agenda */
+    --ws-color-green:   #10b981;       /* Comunicaciones */
+    --ws-color-cyan:    #06b6d4;       /* Reportes */
+    --ws-color-amber:   #f59e0b;       /* Workflows */
+    --ws-color-neutral: #6b7280;       /* Configuración */
+
+    /* ════════════════════════════════════════════════════════════
+       §115 — ACCENT TOKENS (theme engine). Default = Dorado clásico.
+       Las paletas (gold/blue/violet/emerald/crimson/cyan) overridean
+       TODO este set vía html.theme-{name} en admin-theme-engine.css.
+       Los literales dorados hardcoded del admin se remapearon a estos
+       tokens con fallback al valor dorado original (reversible/seguro).
+       --ak-rgb es el triplete R,G,B para expandir dentro de rgba().
+       ════════════════════════════════════════════════════════════ */
+    --ak-rgb:        184, 150, 88;     /* primary triplet (gold)   */
+    --ak-primary:    #b89658;          /* primary hex              */
+    --ak-light:      #d4ad6e;          /* lighter shade            */
+    --ak-light-rgb:  212, 173, 110;
+    --ak-dark:       #9a7d44;          /* darker shade             */
+    --ak-mid:        #c9a663;          /* mid shade                */
+    --ak-mid-rgb:    201, 166, 99;
+    --ak-bright:     #d4af37;          /* bright/saturated accent  */
+    --ak-bright-rgb: 212, 175, 55;
+    --ak-on-accent:  #1a1310;          /* §117 texto sobre acento (gold=oscuro) */
+
+    /* Tipografía jerárquica HarmonyOS */
+    --hmy-font-page-title:     2rem;          /* 32px */
+    --hmy-font-page-title-lh:  1.2;
+    --hmy-font-page-title-ls:  -0.02em;       /* tight letter-spacing */
+    --hmy-font-section-title:  1.25rem;       /* 20px */
+    --hmy-font-card-title:     1.0625rem;     /* 17px */
+    --hmy-font-body:           0.9375rem;     /* 15px */
+    --hmy-font-body-lh:        1.6;           /* generoso */
+    --hmy-font-caption:        0.8125rem;     /* 13px */
+}
+
+/* ───────────────────────────────────────────────────────────────
+   LIGHT THEME OVERRIDE — activated with [data-theme="light"]
+   Implementation in T.4. This is the contract.
+   ─────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+    --bg-base:        var(--color-neutral-50);
+    --bg-elevated:    var(--color-neutral-0);
+    --bg-card:        var(--color-neutral-0);
+    --bg-overlay:     rgba(0, 0, 0, 0.4);
+    --bg-input:       rgba(0, 0, 0, 0.03);
+    --bg-input-focus: rgba(0, 0, 0, 0.06);
+    --bg-hover:       rgba(0, 0, 0, 0.04);
+    --bg-active:      rgba(0, 0, 0, 0.08);
+
+    --text-primary:   var(--color-neutral-900);
+    --text-secondary: var(--color-neutral-700);
+    --text-tertiary:  var(--color-neutral-500);
+    --text-disabled:  var(--color-neutral-300);
+    --text-inverse:   var(--color-neutral-50);
+
+    --border-subtle:  rgba(0, 0, 0, 0.06);
+    --border-default: rgba(0, 0, 0, 0.12);
+    --border-strong:  rgba(0, 0, 0, 0.24);
+
+    --brand-subtle:   rgba(184, 150, 88, 0.10);
+
+    --status-success-bg: rgba(34, 197, 94, 0.10);
+    --status-warning-bg: rgba(234, 179, 8, 0.10);
+    --status-danger-bg:  rgba(239, 68, 68, 0.10);
+    --status-info-bg:    rgba(59, 130, 246, 0.10);
+
+    --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm:  0 2px 6px rgba(0, 0, 0, 0.08);
+    --shadow-md:  0 6px 18px rgba(0, 0, 0, 0.10);
+    --shadow-lg:  0 12px 32px rgba(0, 0, 0, 0.12);
+    --shadow-xl:  0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   HIGH-CONTRAST MODE — WCAG AAA (T.8)
+   Activated with [data-theme="high-contrast"] OR via media query
+   prefers-contrast: more. All ratios verified ≥ 7:1 (AAA).
+   ─────────────────────────────────────────────────────────────── */
+[data-theme="high-contrast"],
+[data-theme="high-contrast"] [data-theme="dark"],
+[data-theme="high-contrast"] [data-theme="light"] {
+    /* Pure black/white — maximum contrast */
+    --bg-base:         #000000;
+    --bg-elevated:     #000000;
+    --bg-card:         #0a0a0a;
+    --bg-overlay:      rgba(0, 0, 0, 0.95);
+    --bg-input:        #000000;
+    --bg-input-focus:  #1a1a1a;
+    --bg-hover:        #1f1f1f;
+    --bg-active:       #2a2a2a;
+
+    /* Text — all 7:1 minimum vs --bg-base */
+    --text-primary:   #ffffff;            /* 21:1 — AAA */
+    --text-secondary: #ffffff;            /* 21:1 — AAA (no faded grays) */
+    --text-tertiary:  #e5e5e5;            /* 17:1 — AAA */
+    --text-disabled:  #a0a0a0;            /* 7.5:1 — AAA */
+    --text-inverse:   #000000;
+    --text-on-brand:  #000000;            /* black on gold = 14:1 */
+
+    /* Borders — fully visible */
+    --border-subtle:  #ffffff;
+    --border-default: #ffffff;
+    --border-strong:  #ffffff;
+    --border-brand:   #ffd84d;
+    --border-focus:   #ffd84d;
+
+    /* Brand — higher-luminance gold for AAA on black */
+    --brand-primary:        #ffd84d;      /* on black = 14.5:1 — AAA */
+    --brand-primary-hover:  #ffe580;
+    --brand-primary-active: #d4af37;
+    --brand-subtle:         rgba(255, 216, 77, 0.20);
+    --brand-on-primary:     #000000;
+
+    /* Status — saturated colors that hit AAA on black */
+    --status-success: #4ade80;            /* 11:1 */
+    --status-warning: #facc15;            /* 14:1 */
+    --status-danger:  #ff6b6b;            /* 8:1 */
+    --status-info:    #60a5fa;            /* 7.5:1 */
+
+    --status-success-bg: rgba(74, 222, 128, 0.20);
+    --status-warning-bg: rgba(250, 204, 21, 0.20);
+    --status-danger-bg:  rgba(255, 107, 107, 0.20);
+    --status-info-bg:    rgba(96, 165, 250, 0.20);
+
+    /* AI accent — magenta hits AAA on black */
+    --accent-ai:     #c084fc;             /* 7.6:1 */
+    --accent-ai-bg:  rgba(192, 132, 252, 0.20);
+    --accent-collab: #67e8f9;             /* 12:1 */
+
+    /* Shadows replaced by visible borders (shadows fail in AAA) */
+    --shadow-xs:  0 0 0 1px var(--border-strong);
+    --shadow-sm:  0 0 0 1px var(--border-strong);
+    --shadow-md:  0 0 0 2px var(--border-strong);
+    --shadow-lg:  0 0 0 2px var(--border-strong);
+    --shadow-xl:  0 0 0 3px var(--border-strong);
+    --shadow-glow-brand: 0 0 0 3px var(--brand-primary);
+    --shadow-focus-ring: 0 0 0 4px var(--brand-primary), 0 0 0 6px #000000;
+}
+
+/* Auto-activate high-contrast if user prefers it via OS, only when no
+   explicit theme is set. */
+@media (prefers-contrast: more) {
+    :root:not([data-theme]) {
+        --bg-base:        #000000;
+        --text-primary:   #ffffff;
+        --border-default: #ffffff;
+        --brand-primary:  #ffd84d;
+    }
+}
+
+/* In high-contrast: thicken focus rings + outlines + force underlines on
+   text links so they're discoverable without color */
+[data-theme="high-contrast"] a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+[data-theme="high-contrast"] *:focus-visible {
+    outline: 3px solid var(--brand-primary) !important;
+    outline-offset: 2px !important;
+}
+/* Remove decorative gradients — solid colors only */
+[data-theme="high-contrast"] .alt-btn--primary,
+[data-theme="high-contrast"] .alt-avatar {
+    background: var(--brand-primary) !important;
+    color: var(--brand-on-primary) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   THEME TRANSITION (T.4) — smooth cross-fade between themes
+   The .alt-theme-transitioning class is added briefly when switching;
+   during it, applicable CSS properties animate smoothly instead of
+   snapping. Disabled in reduced-motion.
+   ─────────────────────────────────────────────────────────────── */
+html.alt-theme-transitioning,
+html.alt-theme-transitioning *,
+html.alt-theme-transitioning *::before,
+html.alt-theme-transitioning *::after {
+    transition: background-color var(--duration-normal) var(--ease-snap),
+                color var(--duration-normal) var(--ease-snap),
+                border-color var(--duration-normal) var(--ease-snap),
+                box-shadow var(--duration-normal) var(--ease-snap),
+                fill var(--duration-normal) var(--ease-snap),
+                stroke var(--duration-normal) var(--ease-snap) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   REDUCED-MOTION OVERRIDE
+   Anyone setting prefers-reduced-motion: reduce gets near-instant
+   transitions across the platform. Component CSS should use these
+   tokens so this single rule disables motion globally.
+   ─────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --duration-fast:   0ms;
+        --duration-normal: 0ms;
+        --duration-slow:   0ms;
+        --duration-slower: 0ms;
+    }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   12. NOVA — Fusión visual ULTIMATE (ADR-028)
+       HarmonyOS + Windows 11 Fluent + iOS 26 Liquid + Material You.
+       Capa por encima de §11 HarmonyOS. Prefijo --nova-*.
+   ─────────────────────────────────────────────────────────────── */
+:root {
+    /* Mica/Acrylic backgrounds (Windows 11) — capas semi-translúcidas
+       con saturación y blur fuerte. Para sidebars, headers y modales. */
+    --nova-mica-bg:           rgba(18, 18, 20, 0.72);
+    --nova-mica-bg-strong:    rgba(15, 15, 17, 0.85);
+    --nova-acrylic-bg:        rgba(28, 28, 30, 0.55);
+    --nova-acrylic-tint-gold: rgba(184, 150, 88, 0.04);
+    --nova-blur-xs:           8px;
+    --nova-blur-sm:           14px;
+    --nova-blur-md:           24px;
+    --nova-blur-lg:           36px;
+    --nova-blur-xl:           48px;
+
+    /* Liquid Glass borders (iOS 26) — bordes con gradiente sutil */
+    --nova-border-glass:      1px solid rgba(255, 255, 255, 0.07);
+    --nova-border-glass-hi:   1px solid rgba(255, 255, 255, 0.12);
+    --nova-border-gold:       1px solid rgba(184, 150, 88, 0.18);
+    --nova-border-gold-hi:    1px solid rgba(184, 150, 88, 0.32);
+
+    /* Reveal hover (Windows 11 Fluent) — radial-gradient que sigue cursor */
+    --nova-reveal-color:      rgba(184, 150, 88, 0.10);
+    --nova-reveal-color-hi:   rgba(184, 150, 88, 0.18);
+
+    /* Tinted backgrounds por workspace (Material You inspired) */
+    --nova-tint-gold:    rgba(184, 150, 88, 0.06);
+    --nova-tint-coral:   rgba(249, 112, 102, 0.06);
+    --nova-tint-blue:    rgba(59, 130, 246, 0.06);
+    --nova-tint-violet:  rgba(139, 92, 246, 0.06);
+    --nova-tint-green:   rgba(16, 185, 129, 0.06);
+    --nova-tint-cyan:    rgba(6, 182, 212, 0.06);
+    --nova-tint-amber:   rgba(245, 158, 11, 0.06);
+
+    /* Spring animations (iOS 26 Liquid feel) */
+    --nova-spring-soft:   0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    --nova-spring-bounce: 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --nova-spring-snap:   0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    --nova-spring-flow:   0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Shadow stacks NOVA — múltiples capas (HarmonyOS + Windows + iOS) */
+    --nova-shadow-elev-1: 0 1px 2px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+    --nova-shadow-elev-2: 0 2px 4px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10);
+    --nova-shadow-elev-3: 0 4px 12px rgba(0,0,0,0.12), 0 16px 48px rgba(0,0,0,0.14);
+    --nova-shadow-elev-4: 0 8px 24px rgba(0,0,0,0.16), 0 32px 80px rgba(0,0,0,0.20);
+    --nova-shadow-glow:   0 0 0 1px rgba(184,150,88,0.15), 0 0 24px rgba(184,150,88,0.20);
+
+    /* Density variants (Windows 11) */
+    --nova-density-compact-row:    36px;
+    --nova-density-default-row:    48px;
+    --nova-density-comfortable-row:56px;
+
+    /* Focus rings NOVA (Material You + iOS) — anillos suaves dorados */
+    --nova-focus-ring:        0 0 0 3px rgba(184, 150, 88, 0.32);
+    --nova-focus-ring-soft:   0 0 0 3px rgba(184, 150, 88, 0.16);
+    --nova-focus-ring-coral:  0 0 0 3px rgba(249, 112, 102, 0.32);
+    --nova-focus-ring-error:  0 0 0 3px rgba(239, 68, 68, 0.32);
+
+    /* Scrim (overlays para modales/drawers) — gradient radial dark */
+    --nova-scrim:             radial-gradient(ellipse at center, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.78) 100%);
+    --nova-scrim-light:       rgba(0, 0, 0, 0.45);
+}

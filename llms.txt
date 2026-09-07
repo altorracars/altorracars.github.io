@@ -1,0 +1,67 @@
+# ALTORRA CARS
+
+> Concesionario de compra y venta de carros usados en Cartagena, Colombia. Vehículos usados certificados con transparencia total, calidad verificada y atención personalizada. Operado por ALTORRA Company SAS.
+
+Datos clave del negocio:
+
+- **Qué es**: concesionario (dealership) de vehículos usados certificados.
+- **Ubicación**: Cartagena de Indias, Bolívar, Colombia.
+- **Contacto / WhatsApp**: +57 323 501 6747.
+- **Categorías de vehículos**: SUVs, sedanes, camionetas (pickups) y hatchbacks.
+- **Servicios**: venta de usados certificados, financiación, recepción de vehículos ("vende tu auto"), comparador de modelos y simulador de crédito.
+- **Inventario en vivo**: el catálogo se actualiza automáticamente; las páginas de vehículos individuales se generan desde la base de datos. Para el listado completo y actualizado usar el [sitemap](https://altorracars.github.io/sitemap.xml).
+
+## Inventario y búsqueda
+
+- [Búsqueda de vehículos](https://altorracars.github.io/busqueda.html): catálogo completo con filtros por marca, tipo de carrocería, precio, año y kilometraje.
+- [SUVs](https://altorracars.github.io/vehiculos-suv.html): vehículos utilitarios deportivos usados disponibles.
+- [Sedanes](https://altorracars.github.io/vehiculos-sedan.html): sedanes usados disponibles.
+- [Camionetas / Pickups](https://altorracars.github.io/vehiculos-pickup.html): camionetas y pickups usadas disponibles.
+- [Hatchbacks](https://altorracars.github.io/vehiculos-hatchback.html): hatchbacks usados disponibles.
+- [Camionetas (todoterreno/familiares)](https://altorracars.github.io/vehiculos-camionetas.html): camionetas familiares y todoterreno.
+
+## Marcas
+
+Marcas disponibles en el inventario (cada página lista los modelos usados de esa marca):
+
+- [Audi](https://altorracars.github.io/marcas/audi.html)
+- [BMW](https://altorracars.github.io/marcas/bmw.html)
+- [Chevrolet](https://altorracars.github.io/marcas/chevrolet.html)
+- [Citroën](https://altorracars.github.io/marcas/citroen.html)
+- [Fiat](https://altorracars.github.io/marcas/fiat.html)
+- [Ford](https://altorracars.github.io/marcas/ford.html)
+- [Honda](https://altorracars.github.io/marcas/honda.html)
+- [Hyundai](https://altorracars.github.io/marcas/hyundai.html)
+- [Jeep](https://altorracars.github.io/marcas/jeep.html)
+- [Kia](https://altorracars.github.io/marcas/kia.html)
+- [Mazda](https://altorracars.github.io/marcas/mazda.html)
+- [Mitsubishi](https://altorracars.github.io/marcas/mitsubishi.html)
+- [Nissan](https://altorracars.github.io/marcas/nissan.html)
+- [Peugeot](https://altorracars.github.io/marcas/peugeot.html)
+- [Renault](https://altorracars.github.io/marcas/renault.html)
+- [Suzuki](https://altorracars.github.io/marcas/suzuki.html)
+- [Toyota](https://altorracars.github.io/marcas/toyota.html)
+- [Volkswagen](https://altorracars.github.io/marcas/volkswagen.html)
+- [Todas las marcas](https://altorracars.github.io/marcas.html): índice general de marcas.
+
+## Servicios y herramientas
+
+- [Simulador de crédito](https://altorracars.github.io/simulador-credito.html): calcula cuotas y planes de financiación para un vehículo.
+- [Comparar vehículos](https://altorracars.github.io/comparar.html): compara modelos lado a lado (precio, año, kilometraje, especificaciones).
+- [Favoritos](https://altorracars.github.io/favoritos.html): guarda vehículos de interés (requiere cuenta).
+- [Reseñas](https://altorracars.github.io/resenas.html): opiniones y testimonios de clientes.
+
+## Empresa y contacto
+
+- [Nosotros](https://altorracars.github.io/nosotros.html): quiénes somos, propuesta de valor y proceso de certificación de los usados.
+- [Contacto](https://altorracars.github.io/contacto.html): formularios de contacto, cotización y "vende tu auto"; teléfono y WhatsApp.
+
+## Legal
+
+- [Términos y condiciones](https://altorracars.github.io/terminos.html)
+- [Política de privacidad](https://altorracars.github.io/privacidad.html)
+- [Política de cookies](https://altorracars.github.io/cookies.html)
+
+## Optional
+
+- [Sitemap XML](https://altorracars.github.io/sitemap.xml): listado completo de todas las URLs, incluidas las páginas de vehículos individuales del inventario en vivo.

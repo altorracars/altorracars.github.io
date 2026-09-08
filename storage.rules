@@ -2,10 +2,11 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper: get user role from Firestore
-    function isAuthenticated() {
-      return request.auth != null;
-    }
+    // ⛔ RETIRADA 2026-09-08: aqui vivia `isAuthenticated()` (= `request.auth != null`). El comentario
+    // de abajo explica por que NO sirve en este sitio: se firman sesiones anonimas, asi que daba por
+    // bueno a cualquier visitante. La reemplazo `isStaff()` en OLA-0.1, pero la vieja se quedo — muerta
+    // y a mano de quien la volviera a usar. El compilador la delataba en cada deploy («Unused function»
+    // + «Invalid variable name: request»). Si alguna vez hace falta «hay sesion», NO es esta.
 
     // OLA-0.1 (plan maestro 03/07, P0-SEC): el sitio público firma sesiones ANÓNIMAS
     // (js/core/auth.js signInAnonymously) → `request.auth != null` incluía a CUALQUIER

@@ -12,8 +12,9 @@ CARPETA»). **Si no los ves, el hook falló: LÉELOS POR RUTA antes de tocar nad
 
 - Cerebro (`docs/`, router, ADRs) → **en la bóveda** `../brain-private/`; su pre-commit corre el linter allí.
   Aquí no hay linter.
-- Sitio (web, `admin-app/`, `functions/`) → **aquí**, en `dev`; `dev`→`main` al cerrar trabajo
-  verificado (push a `main` = deploy). Nunca los dos en el mismo commit.
+- Sitio (web, `admin-app/`, `functions/`) → **aquí**, **directo en `main`** (push a `main` = deploy). Nunca los dos
+  en el mismo commit. ⛔ **`dev` es HISTORIA** (remoto `archivo`) y **JAMÁS se mergea**: desde el cascarón (7-sep)
+  no comparte historia con `main` (`merge-base` exit 1); forzarlo republicaría 3.401 commits privatizados (§198.3/§310).
 
 ## Reglas de oro DE ESTE SITIO
 

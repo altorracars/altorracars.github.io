@@ -21,7 +21,8 @@ CARPETA»). **Si no los ves, el hook falló: LÉELOS POR RUTA antes de tocar nad
 - User-site `altorracars.github.io`, sin CNAME. **NO borres `_config.yml`** ni pongas `.nojekyll` (Jekyll
   con `exclude`, E-00). El CI regenera `vehiculos/` cada 4 h (`scripts/generate-vehicles.mjs`).
 - Cache: bump `CACHE_VERSION` (`service-worker.js`) + `APP_VERSION` (`js/core/cache-manager.js`);
-  la vigente vive en el `05`. Deploys Firebase: los hace Claude, nunca el dueño.
+  la vigente la dice el código, no el `05` (el sidecar, solo si su `generado:` es de hoy). Deploys
+  Firebase: los hace Claude, nunca el dueño.
 - `git add` específico, jamás `-A`. **NUNCA** `--amend`, `--no-verify` ni push forzado. **JAMÁS**
   secretos: repo PÚBLICO (`secretos.yml` lo escanea en CI).
 
